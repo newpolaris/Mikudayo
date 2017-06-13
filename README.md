@@ -1,8 +1,12 @@
-# DX11 Engine based on MiniEngine
+# MIKU.VIEWER
 
-## MiniEngine
-https://github.com/Microsoft/DirectX-Graphics-Samples/
+## MikuMikuDance(MMD) viewer
+Current target file portmat: PMD(PolygonMoDel), VMD
 
-## Current target
-Apr 21, 2017 "Update readme.md"
-https://github.com/Microsoft/DirectX-Graphics-Samples/tree/1525d3cc2cafcb49cb579e617a7b18fcead920e8
+### Acknowledgements
+* [MMD.js](https://github.com/edvakf/MMD.js)
+* [zerogram.info](http://zerogram.info)
+
+## DX11 Engine based on MiniEngine
+[MiniEngine](https://github.com/Microsoft/DirectX-Graphics-Samples/)
+Current engine porting target: [Update readme.md](https://github.com/Microsoft/DirectX-Graphics-Samples/) (Apr 21, 2017)
