@@ -1,0 +1,10 @@
+*.dll
+*.ipch
+*.opensdf
+*.opendb
+*.sdf
+*.user
+*.VC.db
+Build_VS14
+packages
+.vs
