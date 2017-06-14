@@ -120,9 +120,3 @@ void SIMDMemFill( void* __restrict _Dest, __m128 FillVector, size_t NumQuadwords
 
 	_mm_sfence();
 }
-
-std::wstring MakeWStr( const std::string& str )
-{
-	return std::wstring(str.begin(), str.end());
-}
-

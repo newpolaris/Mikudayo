@@ -18,6 +18,7 @@
 #include "GpuResource.h"
 #include "Mapping.h"
 #include "Utility.h"
+#include "TextUtility.h"
 
 class Texture : public GpuResource
 {
@@ -82,17 +83,17 @@ namespace TextureManager
 
 	inline const ManagedTexture* LoadFromFile( const std::string& fileName, bool sRGB = false )
 	{
-		return LoadFromFile(MakeWStr(fileName), sRGB);
+		return LoadFromFile(Utility::MakeWStr(fileName), sRGB);
 	}
 
 	inline const ManagedTexture* LoadDDSFromFile( const std::string& fileName, bool sRGB = false )
 	{
-		return LoadDDSFromFile(MakeWStr(fileName), sRGB);
+		return LoadDDSFromFile(Utility::MakeWStr(fileName), sRGB);
 	}
 
 	inline const ManagedTexture* LoadWISFromFile( const std::string& fileName, bool sRGB = false )
 	{
-		return LoadWISFromFile(MakeWStr(fileName), sRGB);
+		return LoadWISFromFile(Utility::MakeWStr(fileName), sRGB);
 	}
 
 	const Texture& GetBlackTex2D(void);

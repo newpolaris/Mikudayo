@@ -344,7 +344,10 @@ const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	Utility::ByteArray ba = Utility::ReadFileSync( s_RootPath + fileName );
+	boost::filesystem::path path( s_RootPath );
+	path /= fileName;
+
+	Utility::ByteArray ba = Utility::ReadFileSync( path.generic_wstring() );
 	if (ba->size() == 0 || !ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ))
 		ManTex->SetToInvalidTexture();
 	else
@@ -366,7 +369,10 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	Utility::ByteArray ba = Utility::ReadFileSync( s_RootPath + fileName );
+	boost::filesystem::path path( s_RootPath );
+	path /= fileName;
+
+	Utility::ByteArray ba = Utility::ReadFileSync( path.generic_wstring() );
 	if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
 		ManTex->SetToInvalidTexture();
 

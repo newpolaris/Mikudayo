@@ -11,4 +11,9 @@ namespace Utility
 		std::wsregex_token_iterator First { Input.begin(), Input.end(), Reg, 0 }, Last;
 		return { First, Last };
 	}
+
+	std::wstring MakeWStr( const std::string& str )
+	{
+		return std::wstring( str.begin(), str.end() );
+	}
 }

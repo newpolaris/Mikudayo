@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "FileUtility.h"
 #include <fstream>
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace Utility;
@@ -9,7 +10,7 @@ namespace Utility
 {
 	ByteArray NullFile = make_shared<FileContainer>( FileContainer() );
 
-	ByteArray ReadFileSync( const wstring & fileName )
+	ByteArray ReadFileSync( const wstring& fileName )
 	{
 		std::ifstream inputFile;
 		inputFile.open( fileName, std::ios::binary | std::ios::ate );

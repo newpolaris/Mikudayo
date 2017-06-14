@@ -11,6 +11,7 @@
 #include "pch.h"
 #include "Shader.h"
 #include "GraphicsCore.h"
+#include "TextUtility.h"
 
 using namespace std;
 using Microsoft::WRL::ComPtr;
@@ -215,6 +216,6 @@ void Shader::Bind( ID3D11DeviceContext* pContext )
 ShaderByteCode::ShaderByteCode( const std::string & name, void * pBytecode, size_t length ) :
 	pShaderBytecode(pBytecode), Length(length)
 { 
-	Name = MakeWStr(name);
+	Name = Utility::MakeWStr(name);
 }
 

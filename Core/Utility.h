@@ -146,8 +146,6 @@ namespace Utility
 void SIMDMemCopy( void* __restrict Dest, const void* __restrict Source, size_t NumQuadwords );
 void SIMDMemFill( void* __restrict Dest, __m128 FillVector, size_t NumQuadwords );
 
-std::wstring MakeWStr( const std::string& str );
-
 inline void SetName( ID3D11Resource* Resource, const std::string& Name )
 {
 #ifdef _DEBUG
