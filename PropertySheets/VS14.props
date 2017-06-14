@@ -3,8 +3,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <OutDir>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName)\</OutDir>
-    <IntDir>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Intermediate\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Intermediate\$(ProjectName)\</IntDir>
     <IncludePath>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>

@@ -181,6 +181,9 @@
     <ClInclude Include="TextUtility.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Zip.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -286,6 +289,9 @@
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="TextUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Zip.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
