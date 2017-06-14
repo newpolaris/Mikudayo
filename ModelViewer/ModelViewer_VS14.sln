@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ModelViewer", "ModelViewer_VS14.vcxproj", "{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6} = {AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "..\Core\Core_VS14.vcxproj", "{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Profile|x64 = Profile|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}.Debug|x64.ActiveCfg = Debug|x64
+		{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}.Debug|x64.Build.0 = Debug|x64
+		{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}.Profile|x64.ActiveCfg = Profile|x64
+		{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}.Profile|x64.Build.0 = Profile|x64
+		{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}.Release|x64.ActiveCfg = Release|x64
+		{DA778ADD-CBFF-4461-B9C9-CCD7CD6CB606}.Release|x64.Build.0 = Release|x64
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}.Debug|x64.ActiveCfg = Debug|x64
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}.Debug|x64.Build.0 = Debug|x64
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}.Profile|x64.ActiveCfg = Release|x64
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}.Profile|x64.Build.0 = Release|x64
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}.Release|x64.ActiveCfg = Release|x64
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
