@@ -122,6 +122,9 @@
     <ClInclude Include="Camera1.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\3rdParty\zlib-win64\ZLib_VS14.vcxproj">
+      <Project>{ae5221d1-87e2-4428-8ef9-f25909c43291}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Core_VS14.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
     </ProjectReference>
