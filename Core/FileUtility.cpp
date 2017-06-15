@@ -14,7 +14,6 @@ namespace Utility
 	{
 		std::ifstream inputFile;
 		inputFile.open( fileName, std::ios::binary | std::ios::ate );
-		ASSERT( inputFile.is_open(), L"File to open model file " + fileName );
 		if (!inputFile.is_open())
 			return NullFile;
 		auto filesize = static_cast<size_t>(inputFile.tellg());

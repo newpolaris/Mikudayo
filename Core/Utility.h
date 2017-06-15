@@ -149,6 +149,7 @@ void SIMDMemFill( void* __restrict Dest, __m128 FillVector, size_t NumQuadwords 
 inline void SetName( ID3D11Resource* Resource, const std::string& Name )
 {
 #ifdef _DEBUG
+	ASSERT( Resource != nullptr );
 	Resource->SetPrivateData( WKPDID_D3DDebugObjectName, static_cast<UINT>(Name.size()), Name.c_str() );
 #else
 	(Resource);

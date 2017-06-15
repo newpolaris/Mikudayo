@@ -10,8 +10,10 @@ namespace Utility
 	{
 		using boost::locale::conv::to_utf;
 		return to_utf<wchar_t>(
-			std::string( (char*)(t), (char*)(t)+sizeof( t ) ), enc );
+			std::string( (char*)(t) ), enc );
 	}
+
+	std::wstring to_utf( const std::string& t, std::string enc );
 
 	template <typename T>
 	std::wstring sjis_to_utf( const T& t )
@@ -20,9 +22,15 @@ namespace Utility
 	}
 
 	template <typename T>
+	std::string read_default( const T& t )
+	{
+		return std::string( (char*)(t) );
+	}
+
+	template <typename T>
 	std::wstring ascii_to_utf( const T& t )
 	{
-		std::string text( (char*)(t), (char*)(t)+sizeof( t ) );
+		std::string text( (char*)(t) );
 		return std::wstring( text.begin(), text.end() );
 	}
 }
