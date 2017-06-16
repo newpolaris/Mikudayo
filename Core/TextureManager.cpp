@@ -24,6 +24,7 @@
 #include <boost/filesystem.hpp>
 #include <map>
 #include <thread>
+#include <sstream>
 
 using namespace std;
 using namespace Graphics;
@@ -265,13 +266,13 @@ bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, boo
 
 namespace TextureManager
 {
+	namespace fs = boost::filesystem;
+
 	wstring s_RootPath = L"";
 	map< wstring, unique_ptr<ManagedTexture> > s_TextureCache;
 
 	void Initialize( const std::wstring& TextureLibRoot )
 	{
-		auto current = boost::filesystem::current_path().wstring();
-		
 		s_RootPath = TextureLibRoot;
 	}
 
@@ -282,7 +283,7 @@ namespace TextureManager
 
 	std::wstring GetTexturePath( const std::wstring& filePath )
 	{
-		boost::filesystem::path root(s_RootPath);
+		fs::path root(s_RootPath);
 		root /= filePath;
 		return root.generic_wstring();
 	}
@@ -314,15 +315,30 @@ void ManagedTexture::WaitForLoad( void ) const
 
 const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, bool sRGB )
 {
-	std::wstring CatPath = boost::to_upper_copy(fileName);
+	fs::path path( fileName );
+	if (path.has_extension())
+	{
+		auto ext = path.extension().generic_wstring();
 
-	const ManagedTexture* Tex = nullptr;
-	if (wstring::npos != CatPath.rfind( L".DDS" ))
-		Tex = LoadDDSFromFile( fileName, sRGB );
+		const ManagedTexture* Tex = nullptr;
+		if (boost::to_lower_copy(ext) == L".dds" )
+			Tex = LoadDDSFromFile( fileName, sRGB );
+		else
+			Tex = LoadWISFromFile( fileName, sRGB );
+		return Tex;
+	}
 	else
-		Tex = LoadWISFromFile( fileName, sRGB );
-
-	return Tex;
+	{
+		path.replace_extension( L".dds" );
+		const ManagedTexture* Tex = nullptr;
+		Tex = LoadDDSFromFile( fileName, sRGB );
+		if (!Tex->IsValid())
+		{
+			path.replace_extension( L".png" );
+			Tex = LoadWISFromFile( fileName, sRGB );
+		}
+		return Tex;
+	}
 }
 
 void ManagedTexture::SetToInvalidTexture( void )
@@ -344,10 +360,15 @@ const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	boost::filesystem::path path( s_RootPath );
-	path /= fileName;
+	Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+	if (ba->size() == 0)
+	{
+		fs::path path( s_RootPath );
+		path /= fileName;
 
-	Utility::ByteArray ba = Utility::ReadFileSync( path.generic_wstring() );
+		ba = Utility::ReadFileSync( path.generic_wstring() );
+	}
+
 	if (ba->size() == 0 || !ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ))
 		ManTex->SetToInvalidTexture();
 	else
@@ -369,14 +390,47 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	boost::filesystem::path path( s_RootPath );
-	path /= fileName;
+	Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+	if (ba->size() == 0)
+	{
+		fs::path path( s_RootPath );
+		path /= fileName;
 
-	Utility::ByteArray ba = Utility::ReadFileSync( path.generic_wstring() );
+		ba = Utility::ReadFileSync( path.generic_wstring() );
+	}
+
 	if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
 		ManTex->SetToInvalidTexture();
 
 	SetName( ManTex->GetResource(), fileName );
 
 	return ManTex;
+}
+
+const ManagedTexture* TextureManager::LoadFromStream( const std::wstring& key, std::istream& stream, bool sRGB )
+{
+	auto ManagedTex = FindOrLoadTexture( key );
+
+	ManagedTexture* ManTex = ManagedTex.first;
+	const bool RequestsLoad = ManagedTex.second;
+
+	if (!RequestsLoad)
+	{
+		ManTex->WaitForLoad();
+		return ManTex;
+	}
+
+   std::ostringstream ss;
+   ss << stream.rdbuf();
+   const std::string& s = ss.str();
+   std::vector<char> buf(s.begin(), s.end());
+
+   if (buf.size() == 0 ||
+	   !(ManTex->CreateDDSFromMemory( buf.data(), buf.size(), sRGB ) ||
+		   ManTex->CreateWICFromMemory( buf.data(), buf.size(), sRGB )))
+	   ManTex->SetToInvalidTexture();
+   else
+	   SetName( ManTex->GetResource(), key );
+
+   return ManTex;
 }

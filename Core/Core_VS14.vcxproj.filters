@@ -184,6 +184,9 @@
     <ClInclude Include="Zip.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Archive.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -292,6 +295,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Zip.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Encoding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Archive.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

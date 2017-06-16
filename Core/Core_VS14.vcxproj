@@ -15,6 +15,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Archive.h" />
     <ClInclude Include="BlendState.h" />
     <ClInclude Include="BufferManager.h" />
     <ClInclude Include="Camera.h" />
@@ -71,6 +72,7 @@
     <ClInclude Include="Zip.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Archive.cpp" />
     <ClCompile Include="BlendState.cpp" />
     <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -82,6 +84,7 @@
     <ClCompile Include="DepthBuffer.cpp" />
     <ClCompile Include="DepthOfField.cpp" />
     <ClCompile Include="DepthStencilState.cpp" />
+    <ClCompile Include="Encoding.cpp" />
     <ClCompile Include="EngineProfiling.cpp" />
     <ClCompile Include="EngineTuning.cpp" />
     <ClCompile Include="FileUtility.cpp" />

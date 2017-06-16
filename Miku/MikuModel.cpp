@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 #include <DirectXMath.h>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "TextureManager.h"
 #include "FileUtility.h"
@@ -26,6 +28,18 @@ const auto MinIK = Vector3( -XM_PI, -XM_PI, -XM_PI );
 const auto MaxIK = Vector3( XM_PI, XM_PI, XM_PI );
 const auto EpsIK = Vector3( 0.02f, 0.02f, 0.02f ); // near 1.4 degree
 
+namespace Pmd {
+	std::vector<InputDesc> InputDescriptor
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_ID", 0, DXGI_FORMAT_R16G16_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "EDGE_FLAT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+}
+
 MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand ) 
 {
 }
@@ -42,39 +56,76 @@ void MikuModel::LoadMotion( const std::wstring& model )
 
 void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
 {
-	auto fileBuffer = Utility::ReadFileSync( modelPath );
+	using Path = fs::path;
+	Path model ( modelPath );
 
-	Utility::ByteArrayWrapBuf DataBuffer( fileBuffer );
-	Utility::bufferstream is( &DataBuffer );
+	bool bZipArchive = Utility::isZip( model );
+
+	if (bZipArchive)
+	{
+		auto archive = std::make_shared<Utility::ZipArchive>( modelPath );
+		auto Filenames = archive->GetFileList();
+
+		Path pmdname;
+		for (auto& name : Filenames)
+		{
+			auto ext = Path(name).extension().generic_wstring();
+			if (boost::to_lower_copy(ext) == L".pmd")
+			{
+				pmdname = name;
+				break;
+			}
+		}
+		ASSERT( !pmdname.empty() );
+		LoadPmd( archive, pmdname, bRightHand );
+
+	}
+	else
+	{
+		auto archive = std::make_shared<Utility::RelativeFile>( model.parent_path() );
+		LoadPmd( archive, model.filename(), bRightHand );
+	}
+}
+
+void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand )
+{
+	auto is = archive->GetFile( pmdPath );
+
 	Pmd::PMD pmd;
-	pmd.Fill( is, bRightHand );
+	pmd.Fill( *is, bRightHand );
 
-	m_VertexBuffer.Create( L"MikuVertex", 
+	// 
+	// raw: decode with system default
+	// unicode: decode with shift-jis
+	//
+	auto LoadTexture = []( std::shared_ptr<Utility::Archive> archive, const std::string& raw, const std::wstring& unicode )
+	{
+		//
+		// zip format does not support unicode.
+		// So, it is convenient to use unified ecoding, system default
+		//
+		auto key = archive->GetKeyName( raw );
+		auto is = archive->GetFile( key );
+		auto texture = TextureManager::LoadFromStream( key.generic_wstring(), *is, true );
+		auto UnicodKey = archive->GetKeyName( unicode );
+		if (!texture->IsValid())
+			texture = TextureManager::LoadFromStream( UnicodKey.generic_wstring(), *is, true );
+		if (!texture->IsValid())
+			texture = TextureManager::LoadFromFile( "default", true );
+		return texture->GetSRV();
+	};
+
+	m_VertexBuffer.Create( pmd.m_Header.Name + L"_VertexBuf", 
 		static_cast<uint32_t>(pmd.m_Vertices.size()),
 		sizeof( pmd.m_Vertices[0] ),
 		pmd.m_Vertices.data() );
 
-	m_IndexBuffer.Create( L"IndexBuffer",
+	m_IndexBuffer.Create( pmd.m_Header.Name + L"_IndexBuf",
 		static_cast<uint32_t>(pmd.m_Indices.size()),
 		sizeof( pmd.m_Indices[0] ),
 		pmd.m_Indices.data() );
 
-	m_InputDesc = std::vector<InputDesc>
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_ID", 0, DXGI_FORMAT_R16G16_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "EDGE_FLAT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-	auto LoadTexture = []( const std::wstring& name ) {
-		const ManagedTexture* texture = TextureManager::LoadFromFile( name, true );
-		if (!texture->IsValid())
-			texture = TextureManager::LoadFromFile( "default" );
-		return texture->GetSRV();
-	};
+	m_InputDesc = Pmd::InputDescriptor;
 
 	uint32_t IndexOffset = 0;
 	for (auto& material : pmd.m_Materials)
@@ -87,9 +138,9 @@ void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
 		mesh.IndexOffset = IndexOffset;
 		IndexOffset += material.FaceVertexCount;
 		if (!material.Texture.empty())
-			mesh.Texture[0] = LoadTexture( material.Texture );
+			mesh.Texture[0] = LoadTexture( archive, material.TextureRaw, material.Texture );
 		if (!material.Sphere.empty())
-			mesh.Texture[1] = LoadTexture( material.Sphere );
+			mesh.Texture[1] = LoadTexture( archive, material.SphereRaw, material.Texture );
 
 		m_Mesh.push_back(mesh);
 	}
@@ -285,7 +336,7 @@ void MikuModel::LoadBone()
 		sizeof( Indices[0] ),
 		Indices.data() );
 
-	m_BoneInputDesc = std::vector<InputDesc>
+	std::vector<InputDesc> boneInputDesc 
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -296,7 +347,7 @@ void MikuModel::LoadBone()
 	D3D11_RASTERIZER_DESC RasterizerWire = RasterizerDefault;
 	RasterizerWire.FillMode = D3D11_FILL_WIREFRAME;
 
-	m_BonePSO.SetInputLayout( static_cast<UINT>(m_BoneInputDesc.size()), m_BoneInputDesc.data() );
+	m_BonePSO.SetInputLayout( static_cast<UINT>(boneInputDesc.size()), boneInputDesc.data() );
 	m_BonePSO.SetVertexShader( MY_SHADER_ARGS( g_pBoneVS ) );
 	m_BonePSO.SetPixelShader( MY_SHADER_ARGS( g_pBonePS ) );
 	m_BonePSO.SetDepthStencilState( DepthStateDisabled );
@@ -327,9 +378,6 @@ void MikuModel::LoadBone()
 		GlobalPosition[i] = ParentPos + diff;
 		m_BoneAttribute[i] = XMMatrixMultiply( XMMatrixMultiply( XMMatrixMultiply( S, Z ), R ), T );
 	}
-	m_ToRootTransforms.resize( m_Bones.size() );
-
-	m_BoneConstants.Create();
 }
 
 void MikuModel::Clear()
@@ -337,7 +385,6 @@ void MikuModel::Clear()
 	m_VertexBuffer.Destroy();
 	m_IndexBuffer.Destroy();
 	m_MatConstants.Destory();
-	m_BoneConstants.Destory();
 	m_BonePSO.Destroy();
 	m_BoneIndexBuffer.Destroy();
 	m_BoneVertexBuffer.Destroy();
@@ -558,12 +605,7 @@ void MikuModel::DrawBone( GraphicsContext& gfxContext )
 	for (auto i = 0; i < numBone; i++)
 	{
 		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], m_Sub[i] );
-#if 0
-		m_BoneConstants.Update( mat );
-		gfxContext.SetDynamicConstantBufferView( 1, m_BoneConstants, { kBindVertex } );
-#else
 		gfxContext.SetDynamicConstantBufferView( 1, sizeof(mat), &mat, { kBindVertex } );
-#endif
 		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
 	}
 }

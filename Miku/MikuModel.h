@@ -12,12 +12,12 @@
 #include "Pmd.h"
 #include "KeyFrameAnimation.h"
 #include "VectorMath.h"
-
-#pragma comment(lib, "Miku.lib")
+#include "Archive.h"
 
 namespace Graphics
 {
 	using namespace Math;
+	namespace fs = boost::filesystem;
 
 	__declspec(align(16)) struct PSConstants
 	{
@@ -55,26 +55,6 @@ namespace Graphics
 	class MikuModel
 	{
 	public:
-		std::vector<InputDesc> m_InputDesc;
-		VertexBuffer m_VertexBuffer;
-		IndexBuffer m_IndexBuffer;
-		std::vector<Mesh> m_Mesh;
-		std::vector<Bone> m_Bones;
-		std::vector<Animation::MeshBone> m_MeshBone;
-		std::vector<Matrix4> m_LocalPose;
-		std::vector<Matrix4> m_Pose;
-		std::vector<Matrix4> m_InitPose;
-		std::vector<Matrix4> m_Sub;
-		std::vector<int32_t> m_BoneParent;
-		std::vector<std::vector<int32_t>> m_BoneChild;
-		std::vector<Pmd::IK> m_IKs;
-		std::vector<Pmd::Face> m_Skins;
-
-		std::unique_ptr<Vmd::VmdMotion> m_Motion;
-		std::map<std::wstring, uint16_t> m_BoneIndex;
-
-		ConstantBuffer<PSConstants> m_MatConstants;
-
 		MikuModel( bool bRightHand = true );
 		void LoadModel( const std::wstring& model );
 		void LoadMotion( const std::wstring& model );
@@ -91,13 +71,31 @@ namespace Graphics
 		void LoadPmd( const std::wstring& model, bool bRightHand );
 		void LoadVmd( const std::wstring& vmd, bool bRightHand );
 
-		bool m_bRightHand;
-		std::vector<XMMATRIX> m_BoneAttribute;
-		std::vector<XMMATRIX> m_ToRootTransforms;
+		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 
-		ConstantBuffer<XMMATRIX> m_BoneConstants;
+	public:
+		bool m_bRightHand;
+		std::vector<InputDesc> m_InputDesc;
+		std::vector<Mesh> m_Mesh;
+		std::vector<Bone> m_Bones;
+		std::vector<Animation::MeshBone> m_MeshBone;
+		std::vector<Matrix4> m_LocalPose;
+		std::vector<Matrix4> m_Pose;
+		std::vector<Matrix4> m_InitPose;
+		std::vector<Matrix4> m_Sub;
+		std::vector<int32_t> m_BoneParent;
+		std::vector<std::vector<int32_t>> m_BoneChild;
+		std::vector<Pmd::IK> m_IKs;
+		std::vector<Pmd::Face> m_Skins;
+		std::unique_ptr<Vmd::VmdMotion> m_Motion;
+		std::map<std::wstring, uint16_t> m_BoneIndex;
+
+		VertexBuffer m_VertexBuffer;
+		IndexBuffer m_IndexBuffer;
+		ConstantBuffer<PSConstants> m_MatConstants;
+
+		std::vector<XMMATRIX> m_BoneAttribute;
 		SubmeshGeometry m_BoneMesh;
-		std::vector<InputDesc> m_BoneInputDesc;
 		VertexBuffer m_BoneVertexBuffer;
 		IndexBuffer m_BoneIndexBuffer;
 		GraphicsPSO m_BonePSO;

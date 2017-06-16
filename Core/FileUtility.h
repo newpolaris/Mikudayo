@@ -9,19 +9,32 @@ namespace Utility
 {
 	using namespace std;
 
-	using StorageType = uint8_t;
+	// istream compatable
+	using StorageType = istream::char_type;
+	using bufferstream = basic_istream<StorageType, char_traits<StorageType>>;
 	using FileContainer = vector<StorageType>;
 	using ByteArray = shared_ptr<FileContainer>;
-	using bufferstream = basic_istream<StorageType, char_traits<StorageType>>;
 
 	template<typename CharT, typename TraitsT = std::char_traits<CharT> >
 	class Vectorwrapbuf : public std::basic_streambuf<CharT, TraitsT> {
 	public:
-		Vectorwrapbuf( ByteArray &vec ) {
-			setg( vec->data(), vec->data(), vec->data() + vec->size() );
+		Vectorwrapbuf( ByteArray vec ) : m_Vec(vec) 
+		{
+			setg( m_Vec->data(), m_Vec->data(), m_Vec->data() + m_Vec->size() );
 		}
+		ByteArray m_Vec;
+	};
+
+	template<typename CharT, typename TraitsT = std::char_traits<CharT> >
+	class Vectorstream : public std::basic_istream<CharT, TraitsT> {
+	public:
+		Vectorstream( ByteArray vec ) : std::istream( &m_buf ), m_buf(vec) 
+		{
+		}
+		Vectorwrapbuf<CharT, TraitsT> m_buf;
 	};
 	using ByteArrayWrapBuf = Vectorwrapbuf<StorageType>;
+	using ByteStream = Vectorstream<StorageType>;
 
 	extern ByteArray NullFile;
 

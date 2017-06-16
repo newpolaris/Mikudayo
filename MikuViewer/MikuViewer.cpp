@@ -1,4 +1,4 @@
-#include "GameCore.h"
+﻿#include "GameCore.h"
 #include "GraphicsCore.h"
 #include "PipelineState.h"
 #include "CommandContext.h"
@@ -78,9 +78,9 @@ Camera1 mCam;
 
 void MikuViewer::Startup( void )
 {
-	TextureManager::Initialize( L"Models" );
+	TextureManager::Initialize( L"Textures" );
 
-	const std::wstring modelPath = L"Models/gumi.pmd";
+	const std::wstring modelPath = L"Models/m_GUMI.zip";
 	const std::wstring motionPath = L"Models/gumi.vmd";
 	const std::wstring stagePath = L"Models/Library.pmd";
 
@@ -144,6 +144,7 @@ void MikuViewer::Cleanup( void )
 	m_Buffer.Destory();
 
 	m_Model.Clear();
+	m_Stage.Clear();
 
 	delete m_pCameraController;
 	m_pCameraController = nullptr;

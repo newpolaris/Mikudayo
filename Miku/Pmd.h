@@ -5,6 +5,10 @@
 #include <string>
 #include "FileUtility.h"
 
+//
+// The image path is decoded with the system default and shift-jis
+// to support zip released with the wrong codepage
+//
 namespace Pmd
 {
 	using DirectX::XMFLOAT2;
@@ -69,8 +73,10 @@ namespace Pmd
 		uint8_t ToonIndex;       // toon??.bmp's index
 		uint8_t EdgeFlag;        // Outline and shadow flag
 		uint32_t FaceVertexCount;
-		wstring Texture;
-		wstring Sphere;
+		string TextureRaw;       // decode system default
+		wstring Texture;         // decode shift-jis
+		string SphereRaw;        // decode system default
+		wstring Sphere;          // decode shift-jis
 		ESphereOpeation operation;
 
 		void Fill( bufferstream& is );
@@ -229,7 +235,8 @@ namespace Pmd
 		BoneDisplayNameList m_BoneDisplayNameList;
 		vector<BoneDisplayFrame> m_BoneDisplayFrames;
 		uint8_t m_bEnglishSupport;
-		vector<wstring> m_ToonTextureList;
+		vector<wstring> m_ToonTextureList;            // decode system default
+		vector<string> m_ToonTextureRawList;          // decode shift-jis
 		vector<RigidBody> m_Bodies;
 		vector<Constraint> m_Constraint;
 	};

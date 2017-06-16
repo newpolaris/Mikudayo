@@ -482,7 +482,7 @@ namespace Partio {
 	// Function ZipFileWriter
 	//#####################################################################
 	ZipFileWriter::
-		ZipFileWriter( const std::string& filename )
+		ZipFileWriter( const std::wstring& filename )
 	{
 		ostream.open( filename.c_str(), std::ios::out | std::ios::binary );
 		if (!ostream) throw std::runtime_error( "ZIP: Invalid file handle" );
@@ -506,6 +506,8 @@ namespace Partio {
 		Write_Primitive( ostream, (unsigned int)(central_end - final_position) ); // size of header
 		Write_Primitive( ostream, (unsigned int)final_position ); // offset to header
 		Write_Primitive( ostream, (unsigned short)0 ); // zip comment
+		if (ostream.is_open())
+			ostream.close();
 	}
 	//#####################################################################
 	// Function ZipFileWriter
@@ -520,11 +522,12 @@ namespace Partio {
 	// Function ZipFileReader
 	//#####################################################################
 	ZipFileReader::
-		ZipFileReader( const std::string& filename )
+		ZipFileReader( const std::wstring& filename )
 	{
 		istream.open( filename.c_str(), std::ios::in | std::ios::binary );
 		if (!istream) throw std::runtime_error( "ZIP: Invalid file handle" );
-		Find_And_Read_Central_Header();
+		if (!Find_And_Read_Central_Header())
+			throw std::runtime_error( "ZIP: Invalid zip or corrunpt" );
 	}
 	//#####################################################################
 	// Function ZipFileReader
@@ -535,6 +538,8 @@ namespace Partio {
 		std::map<std::string, ZipFileHeader*>::iterator i = filename_to_header.begin();
 		for (; i != filename_to_header.end(); ++i)
 			delete i->second;
+		if (istream.is_open())
+			istream.close();
 	}
 	//#####################################################################
 	// Function Find_And_Read_Central_Header

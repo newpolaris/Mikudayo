@@ -80,6 +80,7 @@ namespace TextureManager
 	const ManagedTexture* LoadFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadDDSFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadWISFromFile( const std::wstring& fileName, bool sRGB = false );
+	const ManagedTexture* LoadFromStream( const std::wstring& key, std::istream& stream, bool sRGB = false );
 
 	inline const ManagedTexture* LoadFromFile( const std::string& fileName, bool sRGB = false )
 	{

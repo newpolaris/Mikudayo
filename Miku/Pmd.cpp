@@ -51,18 +51,21 @@ namespace Pmd
 
 		NameBuf TextureName;
 		Read( is, TextureName );
-		std::wstring Name = sjis_to_utf( TextureName );
-		auto List = Utility::split(Name, L"[^/*]+");
+		std::string NameRaw = read_default( TextureName );
+		auto List = Utility::split(NameRaw, "[^/*]+");
 		for (auto l : List) {
-			if (std::wstring::npos != l.rfind(L".sp"))
-				Sphere = l;
+			if (std::string::npos != l.rfind(".sp"))
+				SphereRaw = l;
 			else
-				Texture = l;
+				TextureRaw = l;
 		}
-		if (std::wstring::npos != Sphere.rfind(L".spa"))
+		if (std::string::npos != SphereRaw.rfind(".spa"))
 			operation = kPlus;
 		else
 			operation = kMultiply;
+
+		Sphere = sjis_to_utf( SphereRaw );
+		Texture = sjis_to_utf( TextureRaw );
 	}
 
 	void Bone::Fill( bufferstream & is, bool bRH )
@@ -190,7 +193,7 @@ namespace Pmd
 		ReadRotation( is, AngularStiffness, bRH );
 	}
 
-	void PMD::Fill( bufferstream & is, bool bRightHand )
+	void PMD::Fill( bufferstream& is, bool bRightHand )
 	{
 		m_Header.Fill( is );
 
@@ -266,6 +269,7 @@ namespace Pmd
 			{
 				Read( is, Buf );
 				m_ToonTextureList.push_back( sjis_to_utf( Buf ) );
+				m_ToonTextureRawList.push_back( read_default( Buf ) );
 			}
 		}
 

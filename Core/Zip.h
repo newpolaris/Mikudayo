@@ -59,10 +59,23 @@ namespace Partio {
 	public:
 
 		//#####################################################################
-		ZipFileWriter( const std::string& filename );
+		ZipFileWriter( const std::wstring& filename );
 		virtual ~ZipFileWriter();
 		std::ostream* Add_File( const std::string& filename, const bool binary = true );
 		//#####################################################################
+	};
+
+	struct NocaseLess : std::binary_function<std::string, std::string, bool>
+	{
+		struct nocase_compare : public std::binary_function<unsigned char, unsigned char, bool>
+		{
+			bool operator() ( const unsigned char& c1, const unsigned char& c2 ) const {
+				return tolower( c1 ) < tolower( c2 );
+			}
+		};
+		bool operator() ( const std::string & s1, const std::string & s2 ) const {
+			return std::lexicographical_compare( s1.begin(), s1.end(), s2.begin(), s2.end(), nocase_compare() );
+		}
 	};
 
 	//#####################################################################
@@ -72,10 +85,10 @@ namespace Partio {
 	{
 		std::ifstream istream;
 	public:
-		std::map<std::string, ZipFileHeader*> filename_to_header;
+		std::map<std::string, ZipFileHeader*, NocaseLess > filename_to_header;
 
 		//#####################################################################
-		ZipFileReader( const std::string& filename );
+		ZipFileReader( const std::wstring& filename );
 		virtual ~ZipFileReader();
 		std::istream* Get_File( const std::string& filename, const bool binary = true );
 		void Get_File_List( std::vector<std::string>& filenames ) const;
