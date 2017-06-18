@@ -59,10 +59,15 @@ namespace Pmd
 			else
 				TextureRaw = l;
 		}
-		if (std::string::npos != SphereRaw.rfind(".spa"))
-			operation = kPlus;
-		else
-			operation = kMultiply;
+
+		SphereOperation = kNone;
+		if (!SphereRaw.empty())
+		{
+			if (std::string::npos != SphereRaw.rfind(".spa"))
+				SphereOperation = kPlus;
+			else
+				SphereOperation = kMultiply;
+		}
 
 		Sphere = sjis_to_utf( SphereRaw );
 		Texture = sjis_to_utf( TextureRaw );

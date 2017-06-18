@@ -105,7 +105,7 @@ void Model::Clear()
 }
 
 // Constant buffer used to send MVP matrices to the vertex shader.
-__declspec(align(16)) struct MVPConstantBuffer
+__declspec(align(16)) struct MVPConstants
 {
 	DirectX::XMFLOAT4X4 model;
 	DirectX::XMFLOAT4X4 view;
@@ -126,7 +126,7 @@ public:
 	virtual void RenderScene( void ) override;
 
 private:
-	MVPConstantBuffer m_MVPBufferData;
+	MVPConstants m_MVPBufferData;
 
 	D3D11_VIEWPORT m_MainViewport;
 	float m_JitterDelta[2];

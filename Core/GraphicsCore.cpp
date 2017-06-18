@@ -60,7 +60,7 @@ namespace
 	uint64_t s_FrameIndex = 0;
 	int64_t s_FrameStartTick = 0;
 
-	BoolVar s_EnableVSync( "Timing/VSync", false );
+	BoolVar s_EnableVSync( "Timing/VSync", true );
 	BoolVar s_LimitTo30Hz( "Timing/Limit To 30Hz", false );
 	BoolVar s_DropRandomFrames( "Timing/Drop Random Frames", false );
 }

@@ -25,8 +25,9 @@ struct VertexShaderInput
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
-	float4 pos : SV_POSITION;
-	float3 normal : Normal;
+	float4 posH : SV_POSITION;
+	float3 posV : POSITION;
+	float3 normalV : NORMAL;
 	float2 uv : TEXTURE;
 };
 
@@ -34,22 +35,22 @@ struct PixelShaderInput
 PixelShaderInput main(VertexShaderInput input)
 {
 	PixelShaderInput output;
+
+	float w0 = 1.0 - float(input.boneWeight) / 100.0f;
 	float4 pos = float4(input.pos, 1.0f);
-
-	float w0 = float(input.boneWeight) / 100.0f;
-	float w1 = (1.0f - w0);
-	float4 pos0 = w0 * mul( boneMatrix[input.boneID.x], pos );
-	float4 pos1 = w1 * mul( boneMatrix[input.boneID.y], pos );
-
-	pos = float4(pos0.xyz + pos1.xyz, 1.0f);
+	float4 pos0 = mul( boneMatrix[input.boneID.x], pos );
+	float4 pos1 = mul( boneMatrix[input.boneID.y], pos );
+	pos = float4(lerp(pos0.xyz, pos1.xyz, w0), 1.0f);
+	float3 normal0 = mul( (float3x3)boneMatrix[input.boneID.x], input.normal );
+	float3 normal1 = mul( (float3x3)boneMatrix[input.boneID.y], input.normal );
+	float3 normal = lerp( normal0, normal1, w0 );
 
 	// Transform the vertex position into projected space.
-	pos = mul(model, pos);
-	pos = mul(view, pos);
-	pos = mul(projection, pos);
-
-	output.pos = pos;
-	output.normal = mul(input.normal, (float3x3)model);
+	matrix modelview = mul( view, model );
+	float4 posV = mul( modelview, pos );
+	output.posV = posV.xyz; 
+	output.posH = mul( projection, posV );
+	output.normalV = mul( (float3x3)modelview, input.normal );
 	output.uv = input.uv;
 
 	return output;

@@ -77,7 +77,7 @@ namespace Pmd
 		wstring Texture;         // decode shift-jis
 		string SphereRaw;        // decode system default
 		wstring Sphere;          // decode shift-jis
-		ESphereOpeation operation;
+		ESphereOpeation SphereOperation;
 
 		void Fill( bufferstream& is );
 	};

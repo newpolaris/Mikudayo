@@ -95,10 +95,13 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	pmd.Fill( *is, bRightHand );
 
 	// 
-	// raw: decode with system default
+	// raw: decode with system default. 
+	//      if system default is not shift-jis it will display with corrupted charactor.
+	//      but, it will also happens when extract from zip archive. so, can find the file
 	// unicode: decode with shift-jis
 	//
-	auto LoadTexture = []( std::shared_ptr<Utility::Archive> archive, const std::string& raw, const std::wstring& unicode )
+	auto LoadTexture = []( Utility::ArchivePtr archive, std::string raw, std::wstring unicode, bool bNotNull, bool bSRGB )
+		-> D3D11_SRV_HANDLE
 	{
 		//
 		// zip format does not support unicode.
@@ -106,12 +109,20 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		//
 		auto key = archive->GetKeyName( raw );
 		auto is = archive->GetFile( key );
-		auto texture = TextureManager::LoadFromStream( key.generic_wstring(), *is, true );
+		// Try raw name
+		auto texture = TextureManager::LoadFromStream( key.generic_wstring(), *is, bSRGB );
 		auto UnicodKey = archive->GetKeyName( unicode );
+		// If not, try unicode interpreted name
 		if (!texture->IsValid())
-			texture = TextureManager::LoadFromStream( UnicodKey.generic_wstring(), *is, true );
+			texture = TextureManager::LoadFromStream( UnicodKey.generic_wstring(), *is, bSRGB );
+		// If not, try default provided texture in MMD (toon01.bmp)
+		auto toon = fs::path( "toon" ) / raw;
 		if (!texture->IsValid())
-			texture = TextureManager::LoadFromFile( "default", true );
+			texture = TextureManager::LoadFromFile( toon.generic_wstring(), bSRGB );
+		if (!texture->IsValid() && bNotNull)
+			texture = TextureManager::LoadFromFile( "default", bSRGB );
+		if (!texture->IsValid())
+			return nullptr;
 		return texture->GetSRV();
 	};
 
@@ -131,16 +142,34 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	for (auto& material : pmd.m_Materials)
 	{
 		Mesh mesh = {};
-		mesh.psConstants.Diffuse = material.Diffuse;
-		mesh.psConstants.SpecularPower = material.SpecularPower;
-		mesh.psConstants.Ambient = material.Ambient;
+
+		MaterialCB mat = {};
+		mat.Diffuse = material.Diffuse;
+		mat.SpecularPower = material.SpecularPower;
+		mat.Ambient = material.Ambient;
+
 		mesh.IndexCount = material.FaceVertexCount;
 		mesh.IndexOffset = IndexOffset;
 		IndexOffset += material.FaceVertexCount;
+
 		if (!material.Texture.empty())
-			mesh.Texture[0] = LoadTexture( archive, material.TextureRaw, material.Texture );
+			mesh.Texture[kTextureDiffuse] = LoadTexture( archive, material.TextureRaw, material.Texture, true, true );
 		if (!material.Sphere.empty())
-			mesh.Texture[1] = LoadTexture( archive, material.SphereRaw, material.Texture );
+			mesh.Texture[kTextureSphere] = LoadTexture( archive, material.SphereRaw, material.Texture, false, true );
+		if (material.ToonIndex < pmd.m_ToonTextureRawList.size())
+		{
+			auto toonRaw = pmd.m_ToonTextureRawList[material.ToonIndex];
+			auto toon = pmd.m_ToonTextureList[material.ToonIndex];
+			mesh.Texture[kTextureToon] = LoadTexture( archive, toonRaw, toon, false, true );
+		}
+		if (mesh.Texture[kTextureSphere])
+			mat.SphereOperation = material.SphereOperation;
+		if (mesh.Texture[kTextureToon])
+			mat.bUseToon = TRUE;
+
+		mesh.Material = mat;
+
+		mesh.bEdgeFlag = material.EdgeFlag > 0;
 
 		m_Mesh.push_back(mesh);
 	}
@@ -221,8 +250,6 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	}
 
 	m_IKs = pmd.m_IKs;
-
-	m_MatConstants.Create();
 }
 
 void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
@@ -384,7 +411,6 @@ void MikuModel::Clear()
 {
 	m_VertexBuffer.Destroy();
 	m_IndexBuffer.Destroy();
-	m_MatConstants.Destory();
 	m_BonePSO.Destroy();
 	m_BoneIndexBuffer.Destroy();
 	m_BoneVertexBuffer.Destroy();
@@ -573,14 +599,14 @@ void MikuModel::Draw( GraphicsContext& gfxContext )
 	auto elemByte = sizeof( decltype(m_Sub)::value_type );
 	auto numByte = elemByte * m_Sub.size();
 
+	gfxContext.SetVertexBuffer( 0, m_VertexBuffer.VertexBufferView() );
+	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
 	gfxContext.SetDynamicConstantBufferView( 1, numByte, m_Sub.data(), { kBindVertex } );
 
 	for (auto mesh: m_Mesh)
 	{
-		m_MatConstants.Update( mesh.psConstants );
-
 		gfxContext.SetDynamicDescriptors( 0, _countof( mesh.Texture ), mesh.Texture, { kBindPixel } );
-		gfxContext.SetDynamicConstantBufferView( 0, m_MatConstants, { kBindPixel } );
+		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
 		gfxContext.SetDynamicSampler( 0, SamplerLinearWrap, kBindPixel );
 		gfxContext.SetDynamicSampler( 1, SamplerLinearClamp, kBindPixel );
 		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );

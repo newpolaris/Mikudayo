@@ -7,7 +7,6 @@
 #include "GpuBuffer.h"
 #include "FileUtility.h"
 #include "CommandContext.h"
-#include "ConstantBuffer.h"
 #include "Vmd.h"
 #include "Pmd.h"
 #include "KeyFrameAnimation.h"
@@ -19,21 +18,31 @@ namespace Graphics
 	using namespace Math;
 	namespace fs = boost::filesystem;
 
-	__declspec(align(16)) struct PSConstants
+	struct MaterialCB
 	{
 		XMFLOAT4 Diffuse;
 		XMFLOAT3 Specular;
 		float SpecularPower;
 		XMFLOAT3 Ambient;
+		int SphereOperation;
+		int bUseToon;
+	};
+
+	enum ETextureType
+	{
+		kTextureDiffuse,
+		kTextureSphere,
+		kTextureToon,
+		kTextureMax
 	};
 
 	struct Mesh 
 	{
-		PSConstants psConstants;
-		uint32_t NumTexture;
-		D3D11_SRV_HANDLE Texture[2];
+		MaterialCB Material;
+		D3D11_SRV_HANDLE Texture[kTextureMax];
 		int32_t IndexOffset;
 		uint32_t IndexCount;
+		bool bEdgeFlag;
 	};
 
 	struct SubmeshGeometry
@@ -92,7 +101,6 @@ namespace Graphics
 
 		VertexBuffer m_VertexBuffer;
 		IndexBuffer m_IndexBuffer;
-		ConstantBuffer<PSConstants> m_MatConstants;
 
 		std::vector<XMMATRIX> m_BoneAttribute;
 		SubmeshGeometry m_BoneMesh;

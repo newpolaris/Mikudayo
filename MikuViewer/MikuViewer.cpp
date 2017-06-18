@@ -33,11 +33,25 @@ using namespace Math;
 const bool bRightHand = true;
 
 // Constant buffer used to send MVP matrices to the vertex shader.
-struct MVPConstantBuffer
+struct MVPConstants
 {
 	Matrix4 model;
 	Matrix4 view;
 	Matrix4 projection;
+};
+
+struct DirectionalLight
+{
+	XMFLOAT3 Color;
+	float pad;
+	XMFLOAT3 Direction; // incident, I
+};
+
+struct LightsConstants
+{
+	enum { kMaxLight = 4 };
+	DirectionalLight light[kMaxLight];
+	uint32_t NumLight;
 };
 
 class MikuViewer : public GameCore::IGameApp
@@ -58,8 +72,10 @@ private:
 	Camera m_Camera;
 	CameraController* m_pCameraController;
 
-	MVPConstantBuffer m_MVPBufferData;
-	ConstantBuffer<MVPConstantBuffer> m_Buffer;
+	MVPConstants m_MVPBufferData;
+	ConstantBuffer<MVPConstants> m_Buffer;
+	std::vector<DirectionalLight> m_Lights;
+	LightsConstants m_LightConstants;
 
 	D3D11_VIEWPORT m_MainViewport;
 	float m_JitterDelta[2];
@@ -80,12 +96,12 @@ void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
 
-	const std::wstring modelPath = L"Models/m_GUMI.zip";
-	const std::wstring motionPath = L"Models/gumi.vmd";
+	const std::wstring modelPath = L"Models/gumi3.pmd";
+	const std::wstring motionPath = L"Models/gum2.vmd";
 	const std::wstring stagePath = L"Models/Library.pmd";
 
 	m_Model.LoadModel( modelPath );
-	m_Model.LoadMotion( motionPath );
+	// m_Model.LoadMotion( motionPath );
 	m_Model.LoadBone();
 	m_Stage.LoadModel( stagePath );
 
@@ -114,8 +130,8 @@ void MikuViewer::Startup( void )
 	m_ModelPSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
 	m_ModelPSO.Finalize();
 
-	const Vector3 eye = Vector3( 0.0f, 0.0f, 50.0f );
-	const Vector3 at = Vector3( 0.0f, 0.0f, 0.0f );
+	const Vector3 eye = Vector3( -1.0f, 15.0f, 22.0f );
+	const Vector3 at = Vector3( 0.0f, 15.0f, 0.0f );
 
 	m_Camera.SetEyeAtUp( eye, at, Vector3( kYUnitVector ) );
 	m_Camera.SetZRange( 1.0f, 1000.0f );
@@ -128,12 +144,28 @@ void MikuViewer::Startup( void )
 	mCam.Zoom(20.0f);
 
 	m_Buffer.Create();
+
 	g_SceneColorBuffer.SetClearColor( Color( DirectX::Colors::CornflowerBlue ).FromSRGB() );
 #ifdef CAM1
 	g_SceneDepthBuffer.SetClearDepth( 1.0f );
 #else
 	g_SceneDepthBuffer.SetClearDepth( m_Camera.GetClearDepth() );
 #endif
+
+	// Default values in MMD. Due to RH coord z is inverted.
+	DirectionalLight mainDefault = {};
+	mainDefault.Direction = XMFLOAT3( -0.5f, -1.0f, -0.5f );
+	mainDefault.Color = XMFLOAT3( 154.f / 255, 154.f / 255, 154.f / 255 );
+
+	//
+	// In RH coord,
+	//
+	// (-1.0, -1.0,  0.0) -> shadow: -x
+	// ( 0.0, -1.0,  1.0) -> shadow: +z
+	// ( 0.0, -1.0, -1.0) -> shadow: -z 
+	// ( 0,0,  1.0, -1.0) -> shadow: none
+
+	m_Lights.push_back( mainDefault );
 }
 
 void MikuViewer::Cleanup( void )
@@ -194,8 +226,8 @@ void MikuViewer::Update( float deltaT )
 
 	m_MVPBufferData.model = Matrix4( kIdentity );
 #ifndef CAM1
-	m_MVPBufferData.view = Matrix4( kIdentity );
-	m_MVPBufferData.projection = m_Camera.GetViewProjMatrix();
+	m_MVPBufferData.view = m_Camera.GetViewMatrix();
+	m_MVPBufferData.projection = m_Camera.GetProjMatrix();
 #else
 	mCam.UpdateViewMatrix();
 	m_MVPBufferData.view = (Matrix4)mCam.View();
@@ -203,6 +235,16 @@ void MikuViewer::Update( float deltaT )
 #endif
 	
 	m_Buffer.Update(m_MVPBufferData);
+
+	m_LightConstants.NumLight = static_cast<uint32_t>(m_Lights.size());
+	ASSERT(m_Lights.size() <= LightsConstants::kMaxLight );
+	for (auto i = 0; i < m_Lights.size(); i++) 
+	{
+		DirectionalLight light;
+		light.Color = m_Lights[i].Color;
+		XMStoreFloat3( &light.Direction, m_MVPBufferData.view.Get3x3() * Vector3( m_Lights[i].Direction ) );
+		m_LightConstants.light[i] = light;
+	}
 
 	// We use viewport offsets to jitter our color samples from frame to frame (with TAA.)
 	// D3D has a design quirk with fractional offsets such that the implicit scissor
@@ -264,19 +306,14 @@ void MikuViewer::RenderScene( void )
 	gfxContext.ClearDepth( g_SceneDepthBuffer );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	gfxContext.SetPipelineState( m_ModelPSO );
-	gfxContext.SetDynamicConstantBufferView( 0, m_Buffer, { kBindVertex, kBindPixel } );
+	gfxContext.SetDynamicConstantBufferView( 0, m_Buffer, { kBindVertex } );
+	gfxContext.SetDynamicConstantBufferView( 1, sizeof(m_LightConstants), &m_LightConstants, { kBindPixel } );
 	gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 	gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-
-	gfxContext.SetVertexBuffer( 0, m_Stage.m_VertexBuffer.VertexBufferView() );
-	gfxContext.SetIndexBuffer( m_Stage.m_IndexBuffer.IndexBufferView() );
 	m_Stage.Draw( gfxContext );
-
-	gfxContext.SetVertexBuffer( 0, m_Model.m_VertexBuffer.VertexBufferView() );
-	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
 	m_Model.Draw( gfxContext );
 
-	m_Model.DrawBone( gfxContext );
+	// m_Model.DrawBone( gfxContext );
 
 	gfxContext.Flush();
 	gfxContext.Finish();
