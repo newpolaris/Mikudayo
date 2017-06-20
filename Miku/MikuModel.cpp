@@ -615,12 +615,6 @@ void MikuModel::Draw( GraphicsContext& gfxContext )
 
 void MikuModel::DrawBone( GraphicsContext& gfxContext )
 {
-	// TODO:
-	// gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-	// gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
-
-	// gfxContext.SetPipelineState( m_ModelPSO );
-	// gfxContext.SetDynamicConstantBufferView( 0, m_Buffer, { kBindVertex, kBindPixel } );
 	gfxContext.SetPipelineState( m_BonePSO );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	gfxContext.SetVertexBuffer( 0, m_BoneVertexBuffer.VertexBufferView() );

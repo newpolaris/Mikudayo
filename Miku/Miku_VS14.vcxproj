@@ -18,7 +18,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2229C8E4-2050-451D-9126-B800F35A4B79}</ProjectGuid>
     <RootNamespace>Model_VS14</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
     <ProjectName>Miku</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

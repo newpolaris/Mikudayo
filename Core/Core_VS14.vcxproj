@@ -36,6 +36,7 @@
     <ClInclude Include="FileUtility.h" />
     <ClInclude Include="GameInput.h" />
     <ClInclude Include="GraphRenderer.h" />
+    <ClInclude Include="LinearAllocator.h" />
     <ClInclude Include="LoaderHelpers.h" />
     <ClInclude Include="Mapping.h" />
     <ClInclude Include="GameCore.h" />
@@ -94,6 +95,7 @@
     <ClCompile Include="GraphicsCore.cpp" />
     <ClCompile Include="GraphRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />
+    <ClCompile Include="LinearAllocator.cpp" />
     <ClCompile Include="Math\Frustum.cpp" />
     <ClCompile Include="Math\Random.cpp" />
     <ClCompile Include="MotionBlur.cpp" />
@@ -148,7 +150,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}</ProjectGuid>
     <RootNamespace>Core</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
     <ProjectName>Core</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

@@ -77,7 +77,7 @@ void GraphicsPSO::Destroy()
 
 std::shared_ptr<PipelineState> GraphicsPSO::GetState() 
 {
-	ASSERT( m_ReadyFuture.valid(), L"Maybe not finalized yet" )
+	ASSERT( m_ReadyFuture.valid(), L"Maybe not finalized yet" );
 	m_ReadyFuture.wait();
 
 	return m_PSOState; 

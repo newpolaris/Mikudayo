@@ -14,8 +14,25 @@
 #include "pch.h"
 #include "CommandListManager.h"
 
+CommandQueue::CommandQueue(ECOMMAND_LIST_TYPE Type) :
+	m_Type(Type)
+{
+}
+
+CommandQueue::~CommandQueue()
+{
+	Shutdown();
+}
+
+void CommandQueue::Shutdown()
+{
+}
+
 CommandListManager::CommandListManager() :
-	m_Device(nullptr)
+	m_Device(nullptr),
+	m_GraphicsQueue(kCOMMAND_LIST_TYPE_DIRECT),
+	m_ComputeQueue(kCOMMAND_LIST_TYPE_COMPUTE),
+	m_CopyQueue(kCOMMAND_LIST_TYPE_COPY)
 {
 }
 

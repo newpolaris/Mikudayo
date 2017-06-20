@@ -1,7 +1,5 @@
 #pragma once
 
-#include "pch.h"
-
 using D3D11_SRV_HANDLE = ID3D11ShaderResourceView*;
 using D3D11_UAV_HANDLE = ID3D11UnorderedAccessView*;
 using D3D11_RTV_HANDLE = ID3D11RenderTargetView*;

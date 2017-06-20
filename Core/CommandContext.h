@@ -6,6 +6,7 @@
 #include "PipelineState.h"
 #include "Mapping.h"
 #include "ConstantBuffer.h"
+#include "LinearAllocator.h"
 
 class ColorBuffer;
 class DepthBuffer;
@@ -55,61 +56,28 @@ private:
 	std::mutex sm_ContextAllocationMutex;
 };
 
-struct DynAlloc
+//
+// When deferred context and umap are used in a delay, the debugging 
+// pixel shader is not possible. Because, debug button is inactive
+// with the message "the pixel shader is not running".
+// Therefore, we add an operation that maps or unmaps the constant 
+// buffer immediately before the drawing operation. 
+//
+// #define GRAPHICS_DEBUG
+
+#ifdef GRAPHICS_DEBUG
+struct ConstantBufferAllocator
 {
-	DynAlloc( D3D11_BUFFER_HANDLE handle, UINT firstConstant, UINT numConstants )
+	static LinearAllocatorPageManager sm_PageManager;
+	static void DestroyAll()
 	{
-		Handle = handle;
-		FirstConstant = firstConstant;
-		NumConstants = numConstants;
+		sm_PageManager.Destroy();
 	}
-	void* DataPtr;
-	D3D11_BUFFER_HANDLE Handle;
-	UINT FirstConstant;
-	UINT NumConstants;
+	void Create();
+	void Destroy();
+	std::vector<std::unique_ptr<LinearAllocationPage>> m_PagePool;
 };
-
-// Constant blocks must be multiples of 16 constants @ 16 bytes each
-#define DEFAULT_ALIGN 256
-
-class LinearAllocator
-{
-public:
-	const size_t InitSize = 0x800000;	// 8 MB
-
-	LinearAllocator() : m_Context(nullptr) 
-	{
-		m_PageSize = InitSize;
-	}
-
-	~LinearAllocator() { m_Context = nullptr; }
-	void Initialize( ID3D11DeviceContext3* Context ) 
-	{
-		m_Context = Context;
-	}
-	void Reset();
-
-	DynAlloc Allocate( size_t SizeInBytes, size_t Alignment = DEFAULT_ALIGN );
-
-	void CreatePage();
-
-	void Finish()
-	{
-		if (m_Buffer) 
-		{
-			m_Context->Unmap( m_Buffer.Get(), 0 );
-			m_CurOffset = 0;
-			m_AllocPointer = nullptr;
-		}
-	}
-
-	ID3D11DeviceContext3* m_Context;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_Buffer;
-	size_t m_PageSize;
-	size_t m_CurOffset;
-	uint8_t* m_AllocPointer;
-};
-
+#endif
 
 struct NonCopyable
 {
@@ -182,6 +150,11 @@ protected:
 	};
 	ConstantBuffer<InternalCBStorage> m_InternalCB;
 	LinearAllocator m_CpuLinearAllocator;
+	LinearAllocator m_GpuLinearAllocator;
+
+#ifdef GRAPHICS_DEBUG
+	ConstantBufferAllocator m_ConstantBufferAllocator;
+#endif
 };
 
 class ComputeContext : public CommandContext

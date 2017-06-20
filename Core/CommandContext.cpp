@@ -58,6 +58,8 @@ CommandContext* ContextManager::AllocateContext(ContextType Type)
 	}
 	ASSERT(ret != nullptr);
 
+	ASSERT(ret->m_Type == Type);
+
 	return ret;
 }
 
@@ -70,6 +72,10 @@ void ContextManager::FreeContext(CommandContext* UsedContext)
 
 void CommandContext::DestroyAllContexts(void)
 {
+	LinearAllocator::DestroyAll();
+#ifdef GRAPHICS_DEBUG
+	ConstantBufferAllocator::DestroyAll();
+#endif
 	g_ContextManager.DestroyAllContexts();
 }
 
@@ -85,11 +91,6 @@ CommandContext& CommandContext::Begin( ContextType Type, const std::wstring ID )
 
 uint64_t CommandContext::Flush(bool WaitForCompletion)
 {
-	m_CpuLinearAllocator.Finish();
-	ComPtr<ID3D11CommandList> CommandList;
-	m_Context->FinishCommandList( FALSE, &CommandList );
-	g_Context->ExecuteCommandList( CommandList.Get(), FALSE );
-
 	return 0;
 }
 
@@ -99,15 +100,27 @@ uint64_t CommandContext::Finish( bool WaitForCompletion )
 	//	EngineProfiling::EndBlock(this);
 
 	Flush( WaitForCompletion );
+
+	uint64_t FenceValue = 0;
+	m_CpuLinearAllocator.CleanupUsedPages(FenceValue);
+	m_GpuLinearAllocator.CleanupUsedPages(FenceValue);
+
+	ComPtr<ID3D11CommandList> CommandList;
+	m_Context->FinishCommandList( FALSE, &CommandList );
+	g_Context->ExecuteCommandList( CommandList.Get(), FALSE );
+
+
 	g_ContextManager.FreeContext( this );
 
 	return 0;
 }
 
-CommandContext::CommandContext()
+CommandContext::CommandContext() :
+	m_CpuLinearAllocator(kCpuWritable), 
+	m_GpuLinearAllocator(kGpuExclusive),
+	m_Context(nullptr),
+	m_OwningManager(nullptr)
 {
-	m_OwningManager = nullptr;
-	m_Context = nullptr;
 }
 
 void CommandContext::Reset( void )
@@ -115,26 +128,26 @@ void CommandContext::Reset( void )
 	// We only call Reset() on previously freed contexts.  The command list persists, but we must
 	// request a new allocator.
 	/*
-	ASSERT(m_CommandList != nullptr && m_CurrentAllocator == nullptr);
-	m_CurrentAllocator = g_CommandManager.GetQueue(m_Type).RequestAllocator();
-	m_CommandList->Reset(m_CurrentAllocator, nullptr);
-m_CommandList->
+		ASSERT(m_CommandList != nullptr && m_CurrentAllocator == nullptr);
+		m_CurrentAllocator = g_CommandManager.GetQueue(m_Type).RequestAllocator();
+		m_CommandList->Reset(m_CurrentAllocator, nullptr);
+		m_CurGraphicsRootSignature = nullptr;
+		m_CurGraphicsPipelineState = nullptr;
+		m_CurComputeRootSignature = nullptr;
+		m_CurComputePipelineState = nullptr;
+		m_NumBarriersToFlush = 0;
 
-	m_CurGraphicsRootSignature = nullptr;
-	m_CurGraphicsPipelineState = nullptr;
-	m_CurComputeRootSignature = nullptr;
-	m_CurComputePipelineState = nullptr;
-	m_NumBarriersToFlush = 0;
-
-	BindDescriptorHeaps();
-}*/
-	m_CpuLinearAllocator.Reset();
+		BindDescriptorHeaps();
+	*/
 }
 
 CommandContext::~CommandContext( void )
 {
 	if (m_Context != nullptr)
 		m_Context->Release();
+#ifdef GRAPHICS_DEBUG
+	m_ConstantBufferAllocator.Destroy();
+#endif
 }
 
 void CommandContext::Initialize( void )
@@ -143,6 +156,11 @@ void CommandContext::Initialize( void )
 
 	m_InternalCB.Create( L"InternalCB" );
 	m_CpuLinearAllocator.Initialize( m_Context );
+	m_GpuLinearAllocator.Initialize( m_Context );
+
+#ifdef GRAPHICS_DEBUG
+	m_ConstantBufferAllocator.Create();
+#endif
 }
 
 void CommandContext::SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle, BindList Binds )
@@ -253,85 +271,13 @@ GraphicsContext::GraphicsContext()
 	m_Type = kGraphicsContext;
 }
 
-DynAlloc LinearAllocator::Allocate( size_t SizeInBytes, size_t Alignment )
-{
-	if (!m_Buffer)
-		CreatePage();
-
-	const size_t AlignmentMask = Alignment - 1;
-
-	// Assert that it's a power of two.
-	ASSERT( (AlignmentMask & Alignment) == 0 );
-
-	// Align the allocation
-	const size_t AlignedSize = Math::AlignUpWithMask(SizeInBytes, AlignmentMask);
-
-	ASSERT( AlignedSize <= m_PageSize );
-
-	m_CurOffset = Math::AlignUp( m_CurOffset, Alignment );
-
-	ASSERT( m_CurOffset + AlignedSize <= m_PageSize );
-
-	DynAlloc ret( m_Buffer.Get(),
-		static_cast<UINT>(m_CurOffset / 16),
-		static_cast<UINT>(AlignedSize / 16) );
-	ret.DataPtr = m_AllocPointer;
-
-	m_AllocPointer += AlignedSize;
-	m_CurOffset += AlignedSize;
-
-	return ret;
-}
-
-void LinearAllocator::CreatePage()
-{
-	D3D11_BUFFER_DESC Desc;
-	Desc.ByteWidth = static_cast<UINT>(InitSize);
-	Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	Desc.MiscFlags = 0;
-	Desc.StructureByteStride = 0;
-	Desc.Usage = D3D11_USAGE_DYNAMIC;
-	Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> Buffer;
-	ASSERT_SUCCEEDED( g_Device->CreateBuffer( &Desc, nullptr, Buffer.GetAddressOf() ) );
-	m_Buffer.Swap( Buffer );
-	SetName( m_Buffer, L"LinearBuffer" );
-
-	D3D11_MAPPED_SUBRESOURCE MapData = {};
-	ASSERT_SUCCEEDED( m_Context->Map(
-		m_Buffer.Get(),
-		0,
-		D3D11_MAP_WRITE_DISCARD,
-		0,
-		&MapData ) );
-
-	m_CurOffset = 0;
-	m_AllocPointer = reinterpret_cast<uint8_t*>(MapData.pData);
-}
-
-void LinearAllocator::Reset( )
-{
-	if (!m_Buffer)
-		return;
-
-	D3D11_MAPPED_SUBRESOURCE MapData = {};
-	ASSERT_SUCCEEDED( m_Context->Map(
-		m_Buffer.Get(),
-		0,
-		D3D11_MAP_WRITE_DISCARD,
-		0,
-		&MapData ) );
-
-	m_CurOffset = 0;
-	m_AllocPointer = reinterpret_cast<uint8_t*>(MapData.pData);
-}
-
+#ifndef GRAPHICS_DEBUG
 void CommandContext::SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData, BindList Binds )
 {
 	ASSERT( BufferData != nullptr && Math::IsAligned( BufferData, 16 ) );
 
 	DynAlloc Alloc = m_CpuLinearAllocator.Allocate( BufferSize );
+	ASSERT(Alloc.DataPtr != nullptr);
 
 	memcpy(Alloc.DataPtr, BufferData, BufferSize );
 
@@ -349,6 +295,34 @@ void CommandContext::SetDynamicConstantBufferView( UINT Slot, size_t BufferSize,
 		}
 	}
 }
+#else
+void CommandContext::SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData, BindList Binds )
+{
+	ASSERT( BufferData != nullptr && Math::IsAligned( BufferData, 16 ) );
+
+	std::vector<EPipelineBind> bind(Binds);
+	auto& Page = m_ConstantBufferAllocator.m_PagePool[Slot + bind.front() * D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT];
+	Page->Map( m_Context );
+	ASSERT(Page->m_CpuVirtualAddress != nullptr);
+	memcpy(Page->m_CpuVirtualAddress, BufferData, BufferSize );
+	Page->Unmap( m_Context );
+	auto Handle = reinterpret_cast<ID3D11Buffer*>(Page->GetResource());
+
+	ID3D11Buffer* Buffers[] = { Handle };
+	for (auto Bind : Binds )
+	{
+		switch (Bind)
+		{
+		case kBindVertex:		m_Context->VSSetConstantBuffers( Slot, 1, Buffers ); break;
+		case kBindHull:			m_Context->HSSetConstantBuffers( Slot, 1, Buffers ); break;
+		case kBindDomain:		m_Context->DSSetConstantBuffers( Slot, 1, Buffers ); break;
+		case kBindGeometry:		m_Context->GSSetConstantBuffers( Slot, 1, Buffers ); break;
+		case kBindPixel:		m_Context->PSSetConstantBuffers( Slot, 1, Buffers ); break;
+		case kBindCompute:		m_Context->CSSetConstantBuffers( Slot, 1, Buffers ); break;
+		}
+	}
+}
+#endif
 
 void GraphicsContext::SetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY Topology )
 {
@@ -440,3 +414,17 @@ void GraphicsContext::SetPipelineState( GraphicsPSO& PSO )
 	m_PSOState->Bind( m_Context );
 }
 
+#ifdef GRAPHICS_DEBUG
+LinearAllocatorPageManager ConstantBufferAllocator::sm_PageManager = kCpuWritable;
+
+void ConstantBufferAllocator::Create()
+{
+	for (int i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT*6; i++)
+		m_PagePool.emplace_back( sm_PageManager.CreateNewPage( 0x10000 ) );
+}
+
+void ConstantBufferAllocator::Destroy()
+{
+	m_PagePool.clear();
+}
+#endif

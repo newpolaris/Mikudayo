@@ -96,12 +96,12 @@ void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
 
-	const std::wstring modelPath = L"Models/gumi3.pmd";
-	const std::wstring motionPath = L"Models/gum2.vmd";
+	const std::wstring modelPath = L"Models/gumi.pmd";
+	const std::wstring motionPath = L"Models/gumi.vmd";
 	const std::wstring stagePath = L"Models/Library.pmd";
 
 	m_Model.LoadModel( modelPath );
-	// m_Model.LoadMotion( motionPath );
+	m_Model.LoadMotion( motionPath );
 	m_Model.LoadBone();
 	m_Stage.LoadModel( stagePath );
 
@@ -314,7 +314,6 @@ void MikuViewer::RenderScene( void )
 	m_Model.Draw( gfxContext );
 
 	// m_Model.DrawBone( gfxContext );
-
 	gfxContext.Flush();
 	gfxContext.Finish();
 }
