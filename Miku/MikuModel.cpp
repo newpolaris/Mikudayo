@@ -31,12 +31,12 @@ const auto EpsIK = Vector3( 0.02f, 0.02f, 0.02f ); // near 1.4 degree
 namespace Pmd {
 	std::vector<InputDesc> InputDescriptor
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "BONE_ID", 0, DXGI_FORMAT_R16G16_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "EDGE_FLAT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -126,10 +126,40 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		return texture->GetSRV();
 	};
 
-	m_VertexBuffer.Create( pmd.m_Header.Name + L"_VertexBuf", 
-		static_cast<uint32_t>(pmd.m_Vertices.size()),
-		sizeof( pmd.m_Vertices[0] ),
-		pmd.m_Vertices.data() );
+	struct Attribute
+	{
+		XMFLOAT3 Normal;
+		XMFLOAT2 UV;
+		uint16_t Bone_id[2];
+		uint8_t  Bone_weight;
+		uint8_t  Edge_flat;
+	};
+
+	std::vector<Attribute> attributes( pmd.m_Vertices.size() );
+	m_Positions.resize( pmd.m_Vertices.size() );
+	for (auto i = 0; i < pmd.m_Vertices.size(); i++)
+	{
+		m_Positions[i] = pmd.m_Vertices[i].Pos;
+		attributes[i].Normal = pmd.m_Vertices[i].Normal;
+		attributes[i].UV = pmd.m_Vertices[i].UV;
+		attributes[i].Bone_id[0] = pmd.m_Vertices[i].Bone_id[0];
+		attributes[i].Bone_id[1] = pmd.m_Vertices[i].Bone_id[1];
+		attributes[i].Bone_weight = pmd.m_Vertices[i].Bone_weight;
+		attributes[i].Edge_flat = pmd.m_Vertices[i].Edge_flat;
+	}
+	m_MorphPositions = m_Positions;
+
+	m_Name = pmd.m_Header.Name;
+
+	m_AttributeBuffer.Create( m_Name + L"_AttrBuf", 
+		static_cast<uint32_t>(attributes.size()),
+		sizeof( Attribute ),
+		attributes.data() );
+
+	m_PositionBuffer.Create( m_Name + L"_PosBuf", 
+		static_cast<uint32_t>(m_Positions.size()),
+		sizeof( XMFLOAT3 ),
+		m_Positions.data() );
 
 	m_IndexBuffer.Create( pmd.m_Header.Name + L"_IndexBuf",
 		static_cast<uint32_t>(pmd.m_Indices.size()),
@@ -152,10 +182,21 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		mesh.IndexOffset = IndexOffset;
 		IndexOffset += material.FaceVertexCount;
 
-		if (!material.Texture.empty())
+		if (!material.TextureRaw.empty())
 			mesh.Texture[kTextureDiffuse] = LoadTexture( archive, material.TextureRaw, material.Texture, true, true );
-		if (!material.Sphere.empty())
-			mesh.Texture[kTextureSphere] = LoadTexture( archive, material.SphereRaw, material.Texture, false, true );
+		if (!material.SphereRaw.empty()) {
+			// 
+			// https://learnmmd.com/http:/learnmmd.com/pmd-editor-basics-sph-and-spa-files-add-sparkle/
+			//
+			// spa adds to main texture and sph multiplies.
+			// However, spa does not use sRGB because it is generally 
+			// used as a brightness image.
+			//
+			bool sRGB = true;
+			if (std::string::npos != material.SphereRaw.rfind(".spa"))
+				sRGB = false;
+			mesh.Texture[kTextureSphere] = LoadTexture( archive, material.SphereRaw, material.Texture, false, sRGB );
+		}
 		if (material.ToonIndex < pmd.m_ToonTextureRawList.size())
 		{
 			auto toonRaw = pmd.m_ToonTextureRawList[material.ToonIndex];
@@ -199,7 +240,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	{
 		auto& bone = m_Bones[i];
 		auto& parent = m_BoneParent[i];
-		auto& meshBone = m_MeshBone[i];
+		auto& meshBone = m_BoneMotions[i];
 
 		meshBone.m_ParentIndex = parent;
 		meshBone.m_Rotation = bone.Rotation;
@@ -218,7 +259,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		//
 		if (std::string::npos != bone.Name.find( L"ひざ" )) 
 		{
-			if (m_bRightHand)
+			if (!m_bRightHand)
 			{
 				meshBone.m_MinIK = XMVectorSet( -XM_PI, 0, 0, 0 );
 				meshBone.m_MaxIK = XMVectorSet( 0, 0, 0, 0 );
@@ -250,6 +291,20 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	}
 
 	m_IKs = pmd.m_IKs;
+
+	m_FaceMotions.resize( pmd.m_Faces.size() );
+	for ( auto i = 0; i < pmd.m_Faces.size(); i++ )
+	{
+		auto& skin = pmd.m_Faces[i];
+		m_SkinIndex[skin.Name] = i;
+		for (auto& vert :skin.FaceVertices)
+			m_FaceMotions[i].m_MorphVertices.push_back( { vert.Index, vert.Position } );
+
+		std::sort( m_FaceMotions[i].m_MorphVertices.begin(), m_FaceMotions[i].m_MorphVertices.end(), []( auto& a, auto& b) {
+			return a.first < b.first;
+		});
+	}
+	
 }
 
 void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
@@ -270,10 +325,10 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		if ( m_BoneIndex.count( frame.BoneName ) == 0)
 			continue;
 
-		KeyFrame key;
+		BoneKeyFrame key;
 		key.Frame = frame.Frame;
 		Vector3 relativeOffset = XMFLOAT3( frame.Translate );
-		key.Translation = relativeOffset + m_MeshBone[m_BoneIndex[frame.BoneName]].m_LocalPosition;
+		key.Translation = relativeOffset + m_BoneMotions[m_BoneIndex[frame.BoneName]].m_LocalPosition;
 		key.Rotation = Math::Quaternion( XMFLOAT4( frame.Rotation ) );
 
 		//
@@ -286,7 +341,7 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		//
 		// ... (duplicated values)
 		//
-		char* interp = reinterpret_cast<char*>(&frame.interpolation[0]);
+		char* interp = reinterpret_cast<char*>(&frame.Interpolation[0]);
 		float scale = 1.0f / 127.0f;
 
 		key.BezierCoeff[kInterpX] = Vector4( interp[0], interp[8], interp[4], interp[12] ) * scale;
@@ -294,11 +349,26 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		key.BezierCoeff[kInterpZ] = Vector4( interp[2], interp[10], interp[6], interp[14] ) * scale;
 		key.BezierCoeff[kInterpR] = Vector4( interp[3], interp[11], interp[7], interp[15] ) * scale;
 
-		m_MeshBone[m_BoneIndex[frame.BoneName]].InsertKeyFrame( key );
+		m_BoneMotions[m_BoneIndex[frame.BoneName]].InsertKeyFrame( key );
 	}
 
-	for (auto& bone : m_MeshBone )
+	for (auto& bone : m_BoneMotions )
 		bone.SortKeyFrame();
+
+	for (auto& frame : m_Motion->FaceFrames)
+	{
+		FaceKeyFrame key;
+		key.Frame = frame.Frame;
+		key.Weight = frame.Weight;
+		key.Weight = frame.Weight;
+
+		auto& motion = m_FaceMotions[m_SkinIndex[frame.FaceName]];
+		motion.m_Name = frame.FaceName;
+		motion.InsertKeyFrame( key );
+	}
+
+	for (auto& face : m_FaceMotions )
+		face.SortKeyFrame();
 }
 
 // Returns a quaternion such that q*start = dest
@@ -388,7 +458,7 @@ void MikuModel::LoadBone()
 
 	for ( auto i = 0; i < numBone; i++ )
 	{
-		auto& Bone = m_MeshBone[i];
+		auto& Bone = m_BoneMotions[i];
 		auto Pidx = Bone.m_ParentIndex;
 		Vector3 ParentPos = Vector3( kZero );
 		if (Pidx < numBone) 
@@ -409,7 +479,8 @@ void MikuModel::LoadBone()
 
 void MikuModel::Clear()
 {
-	m_VertexBuffer.Destroy();
+	m_AttributeBuffer.Destroy();
+	m_PositionBuffer.Destroy();
 	m_IndexBuffer.Destroy();
 	m_BonePSO.Destroy();
 	m_BoneIndexBuffer.Destroy();
@@ -418,7 +489,7 @@ void MikuModel::Clear()
 
 void MikuModel::UpdateChildPose( int32_t idx )
 {
-	auto numBone = m_MeshBone.size();
+	auto numBone = m_BoneMotions.size();
 	auto parentIndex = m_BoneParent[idx];
 
 	if (parentIndex < numBone)
@@ -433,7 +504,7 @@ void MikuModel::SetBoneNum( size_t numBones )
 	m_BoneParent.resize( numBones );
 	m_BoneChild.resize( numBones );
 	m_Bones.resize( numBones );
-	m_MeshBone.resize( numBones );
+	m_BoneMotions.resize( numBones );
 	m_Pose.resize( numBones );
 	m_LocalPose.resize( numBones );
 	m_InitPose.resize( numBones );
@@ -446,13 +517,13 @@ void MikuModel::Update( float deltaT )
 	kTime += deltaT;
 	float kFrameTime = kTime * 30.0f;
 
-	size_t numBone = m_MeshBone.size();
+	size_t numBone = m_BoneMotions.size();
 	for (auto i = 0; i < numBone; i++) 
-		m_MeshBone[i].Interpolate( kFrameTime );
+		m_BoneMotions[i].Interpolate( kFrameTime );
 	
 	for (auto i = 0; i < numBone; i++)
 	{
-		auto& meshBone = m_MeshBone[i];
+		auto& meshBone = m_BoneMotions[i];
 		m_LocalPose[i] = Matrix4( XMMatrixMultiply(
 			XMMatrixMultiply(
 				XMMatrixScalingFromVector( meshBone.m_Scale ),
@@ -512,56 +583,25 @@ void MikuModel::Update( float deltaT )
 				auto rot = Matrix4( DirectX::XMMatrixRotationAxis( axis, theta ) );
 				auto LocalPose = DirectX::XMMatrixMultiply( rot, m_LocalPose[childIndex] );
 
-				if (XMVector3NearEqual( m_MeshBone[childIndex].m_MinIK, MinIK, EpsIK ) &&
-					XMVector3NearEqual( m_MeshBone[childIndex].m_MaxIK, MaxIK, EpsIK ))
+				auto boneMinIK = Vector3( m_BoneMotions[childIndex].m_MinIK );
+				auto boneMaxIK = Vector3( m_BoneMotions[childIndex].m_MaxIK );
+
+				// If the internal IK value of the bone is equal to the maximum min / max value,
+				// this, there no constraint on IK. So, just use
+				if (Near( boneMinIK, MinIK, EpsIK ) && Near( boneMaxIK, MaxIK, EpsIK ))
 				{
 					m_LocalPose[childIndex] = Matrix4( LocalPose );
 				}
-				else
+				else // Constraint IK case, solve it using CCD
 				{
 					XMVECTOR scale;
 					XMVECTOR rotQuat;
 					XMVECTOR trans;
 					DirectX::XMMatrixDecompose( &scale, &rotQuat, &trans, LocalPose );
 
-					// 
-					// http://www.euclideanspace.com/maths/geometry/rotations/euler/
-					//
-					auto eulerAngles = []( Quaternion q ) {
-						XMFLOAT4 q1;
-						DirectX::XMStoreFloat4( &q1, q );
-
-						float test = q1.x*q1.y + q1.z*q1.w;
-						float heading, attitude, bank;
-						// singularity at north pole
-						if (test > 0.499) { 
-							heading = 2 * atan2( q1.x, q1.w );
-							attitude = XM_PI / 2;
-							bank = 0;
-							return Vector3( bank, heading, attitude );
-						}
-						if (test < -0.499) { // singularity at south pole
-							heading = -2 * atan2( q1.x, q1.w );
-							attitude = -XM_PI / 2;
-							bank = 0;
-							return Vector3( bank, heading, attitude );
-						}
-						float sqx = q1.x*q1.x;
-						float sqy = q1.y*q1.y;
-						float sqz = q1.z*q1.z;
-						heading = atan2( 2 * q1.y*q1.w - 2 * q1.x*q1.z, 1 - 2 * sqy - 2 * sqz );
-						attitude = asin( 2 * test );
-						bank = atan2( 2 * q1.x*q1.w - 2 * q1.y*q1.z, 1 - 2 * sqx - 2 * sqz );
-
-						return Vector3( bank, heading, attitude );
-					};
-#if 0
-					Vector3 desiredEuler = eulerAngles( Quaternion( rotQuat ) );
-#if RH
-					// TODO
-					Vector3 clampedEuler = Clamp( desiredEuler, Vector3(0.f, 0.f, 0.f), Vector3(XM_PI, 0.f, 0.f ));
-#else
-#endif
+#if 1
+					auto desiredEuler = Quaternion( rotQuat ).toEuler();
+					Vector3 clampedEuler = Clamp( desiredEuler, boneMinIK, boneMaxIK );
 					Quaternion rot = Quaternion( XMQuaternionRotationRollPitchYawFromVector( clampedEuler ) );
 #else
 					// cos(theta / 2)
@@ -585,6 +625,43 @@ void MikuModel::Update( float deltaT )
 			XMMatrixInverse( nullptr, m_InitPose[i] ), m_Pose[i] );
 		m_Sub[i] = Matrix4( mtx );
 	}
+
+	size_t numFace = m_FaceMotions.size();
+	for (auto i = 0; i < numFace; i++) 
+
+	if ( m_FaceMotions.size() > 0 )
+	{
+		auto& baseFace = m_FaceMotions[0];
+		auto skinPosition = baseFace.m_MorphVertices;
+
+		bool bUpdate = false;
+
+		for (auto i = 1; i < m_FaceMotions.size(); i++)
+		{
+			auto& motion = m_FaceMotions[i];
+			motion.Interpolate( kFrameTime );
+			if (std::fabsf( motion.m_WeightPre - motion.m_Weight ) < 0.1e-2)
+				continue;
+			bUpdate = true;
+			auto weight = motion.m_Weight;
+			for (const auto& vert : m_FaceMotions[i].m_MorphVertices)
+			{
+				skinPosition[vert.first].second.x += weight * vert.second.x;
+				skinPosition[vert.first].second.y += weight * vert.second.y;
+				skinPosition[vert.first].second.z += weight * vert.second.z;
+			}
+		}
+		if (bUpdate)
+		{
+			for (auto& vert : skinPosition)
+				m_MorphPositions[vert.first] = vert.second;
+
+			m_PositionBuffer.Create( m_Name + L"_PosBuf", 
+				static_cast<uint32_t>(m_MorphPositions.size()),
+				sizeof( XMFLOAT3 ),
+				m_MorphPositions.data() );
+		}
+	}
 }
 
 void MikuModel::UpdateBone( float deltaT )
@@ -599,7 +676,8 @@ void MikuModel::Draw( GraphicsContext& gfxContext )
 	auto elemByte = sizeof( decltype(m_Sub)::value_type );
 	auto numByte = elemByte * m_Sub.size();
 
-	gfxContext.SetVertexBuffer( 0, m_VertexBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
 	gfxContext.SetDynamicConstantBufferView( 1, numByte, m_Sub.data(), { kBindVertex } );
 

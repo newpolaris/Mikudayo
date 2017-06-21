@@ -87,7 +87,7 @@ namespace Graphics
 		std::vector<InputDesc> m_InputDesc;
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
-		std::vector<Animation::MeshBone> m_MeshBone;
+		std::vector<Animation::BoneMotion> m_BoneMotions;
 		std::vector<Matrix4> m_LocalPose;
 		std::vector<Matrix4> m_Pose;
 		std::vector<Matrix4> m_InitPose;
@@ -95,13 +95,18 @@ namespace Graphics
 		std::vector<int32_t> m_BoneParent;
 		std::vector<std::vector<int32_t>> m_BoneChild;
 		std::vector<Pmd::IK> m_IKs;
-		std::vector<Pmd::Face> m_Skins;
+		std::vector<Animation::FaceMotion> m_FaceMotions;
 		std::unique_ptr<Vmd::VmdMotion> m_Motion;
-		std::map<std::wstring, uint16_t> m_BoneIndex;
+		std::map<std::wstring, uint32_t> m_BoneIndex;
+		std::map<std::wstring, uint32_t> m_SkinIndex;
+		std::vector<XMFLOAT3> m_Positions;
+		std::vector<XMFLOAT3> m_MorphPositions;
 
-		VertexBuffer m_VertexBuffer;
+		VertexBuffer m_AttributeBuffer;
+		VertexBuffer m_PositionBuffer;
 		IndexBuffer m_IndexBuffer;
 
+		std::wstring m_Name;
 		std::vector<XMMATRIX> m_BoneAttribute;
 		SubmeshGeometry m_BoneMesh;
 		VertexBuffer m_BoneVertexBuffer;

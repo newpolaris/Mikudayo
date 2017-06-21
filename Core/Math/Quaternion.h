@@ -38,6 +38,7 @@ namespace Math
 
 		INLINE Quaternion& operator= ( Quaternion rhs ) { m_vec = rhs; return *this; }
 		INLINE Quaternion& operator*= ( Quaternion rhs ) { *this = *this * rhs; return *this; }
+		Vector3 toEuler( void ) const;
 
 	protected:
 		XMVECTOR m_vec;

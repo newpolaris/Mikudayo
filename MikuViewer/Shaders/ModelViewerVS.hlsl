@@ -12,14 +12,18 @@ cbuffer BoneConstantBuffer : register( b1 )
 }
 
 // Per-vertex data used as input to the vertex shader.
-struct VertexShaderInput
+struct AttributeInput
 {
-	float3 pos : POSITION;
 	float3 normal : NORMAL;
 	float2 uv : TEXTURE;
 	uint2 boneID : BONE_ID;
 	uint boneWeight : BONE_WEIGHT;
 	uint boneFloat : EDGE_FLAT;
+};
+
+struct PositionInput
+{
+	float3 pos : POSITION;
 };
 
 // Per-pixel color data passed through the pixel shader.
@@ -32,12 +36,12 @@ struct PixelShaderInput
 };
 
 // Simple shader to do vertex processing on the GPU.
-PixelShaderInput main(VertexShaderInput input)
+PixelShaderInput main(AttributeInput input, PositionInput position )
 {
 	PixelShaderInput output;
 
 	float w0 = 1.0 - float(input.boneWeight) / 100.0f;
-	float4 pos = float4(input.pos, 1.0f);
+	float4 pos = float4(position, 1.0f);
 	float4 pos0 = mul( boneMatrix[input.boneID.x], pos );
 	float4 pos1 = mul( boneMatrix[input.boneID.y], pos );
 	pos = float4(lerp(pos0.xyz, pos1.xyz, w0), 1.0f);

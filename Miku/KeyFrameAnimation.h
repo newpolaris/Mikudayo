@@ -19,7 +19,7 @@ namespace Animation
 	//
 	float Bezier( Vector4 C, float p );
 
-	struct KeyFrame
+	struct BoneKeyFrame
 	{
 		int Frame;
 		Vector3 Translation;
@@ -27,7 +27,7 @@ namespace Animation
 		Vector4 BezierCoeff[kInterpMax];
 	};
 
-	class MeshBone
+	class BoneMotion
 	{
 	public:
 		std::wstring m_Name; 
@@ -39,10 +39,31 @@ namespace Animation
 		// IK rotation limit
 		XMVECTOR m_MinIK;
 		XMVECTOR m_MaxIK;
+		BoneKeyFrame m_Zero;
+		std::vector<BoneKeyFrame> m_KeyFrames;
 
-		std::vector<KeyFrame> m_KeyFrames;
+		BoneMotion();
+		void InsertKeyFrame( const BoneKeyFrame& frame );
+		void SortKeyFrame();
+		void Interpolate( float t );
+	};
 
-		void InsertKeyFrame( const KeyFrame& frame );
+	struct FaceKeyFrame
+	{
+		int32_t Frame;
+		float Weight; 
+	};
+
+	class FaceMotion
+	{
+	public:
+		std::wstring m_Name; 
+		std::vector<FaceKeyFrame> m_KeyFrames;
+		std::vector<std::pair<uint32_t, XMFLOAT3>> m_MorphVertices;
+		float m_Weight, m_WeightPre;
+
+		FaceMotion();
+		void InsertKeyFrame( const FaceKeyFrame& frame );
 		void SortKeyFrame();
 		void Interpolate( float t );
 	};

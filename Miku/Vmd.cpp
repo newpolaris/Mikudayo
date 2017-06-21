@@ -5,14 +5,23 @@ namespace Vmd
 {
 	using namespace Utility;
 
-	void BoneFrame::Fill( std::istream* stream, bool bRH )
+	void BoneFrame::Fill( bufferstream& is, bool bRH )
 	{
-		char buffer[15];
-		stream->read( (char*)buffer, sizeof( char ) * 15 );
+		NameBuf buffer;
+		Read( is, buffer );
 		BoneName = sjis_to_utf( buffer );
-		stream->read( (char*)&Frame, sizeof( int ) );
-		ReadPosition( *stream, Translate, bRH );
-		ReadRotation( *stream, Rotation, bRH );
-		stream->read( (char*)interpolation, sizeof( char ) * 4 * 4 * 4 );
+		Read( is, Frame );
+		ReadPosition( is, Translate, bRH );
+		ReadRotation( is, Rotation, bRH );
+		Read( is, Interpolation );
+	}
+
+	void FaceFrame::Fill( bufferstream& is )
+	{
+		NameBuf buffer;
+		Read( is, buffer );
+		FaceName = sjis_to_utf( buffer );
+		Read( is, Frame );
+		Read( is, Weight );
 	}
 }

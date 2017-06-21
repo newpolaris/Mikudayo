@@ -47,7 +47,7 @@ struct DirectionalLight
 	XMFLOAT3 Direction; // incident, I
 };
 
-struct LightsConstants
+__declspec(align(16)) struct LightsConstants
 {
 	enum { kMaxLight = 4 };
 	DirectionalLight light[kMaxLight];

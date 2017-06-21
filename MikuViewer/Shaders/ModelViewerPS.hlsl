@@ -69,7 +69,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
 
 	float NdotH = dot( normalV, halfV );
-	float specularFactor = pow( max(NdotH, 0.0f), material.specularPower );
+	float specularFactor = pow( max(NdotH, 0.001f), material.specularPower );
 
 	float3 diffuse = material.diffuse * light[0].color;
 	float3 ambient = material.ambient;
@@ -84,7 +84,6 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
-	color = saturate(color);
 	if (bUseToon) 
 		color *= texToon.Sample( sampler0, toonCoord );
 

@@ -21,38 +21,30 @@ namespace Vmd
 {
 	using DirectX::XMFLOAT3;
 	using DirectX::XMFLOAT4;
+	using namespace Utility;
+
+	using NameBuf = char[15];
+	using MotionNameBuf = char[20];
 
 	struct BoneFrame
 	{
 	public:
 		std::wstring BoneName;
-		int Frame;
+		int32_t Frame;
 		XMFLOAT3 Translate;
 		XMFLOAT4 Rotation; // Quaternion
-		char interpolation[4][4][4];
+		char Interpolation[4][4][4];
 
-		void Fill(std::istream* stream, bool bRH );
+		void Fill( bufferstream& is, bool bRH );
 	};
 
-	/// 表情フレーム
-	class VmdFaceFrame
+	struct FaceFrame
 	{
 	public:
-		/// 表情名
-		std::wstring face_name;
-		/// 表情の重み
-		float weight;
-		/// フレーム番号
-		uint32_t frame;
-
-		void Fill(std::istream* stream)
-		{
-			char buffer[15];
-			stream->read((char*) &buffer, sizeof(char) * 15);
-			face_name = Utility::sjis_to_utf(buffer);
-			stream->read((char*) &frame, sizeof(int));
-			stream->read((char*) &weight, sizeof(float));
-		}
+		std::wstring FaceName;
+		float Weight;
+		uint32_t Frame;
+		void Fill( bufferstream& is );
 	};
 
 	/// カメラフレーム
@@ -176,26 +168,28 @@ namespace Vmd
 		std::wstring Name;
 		int Version;
 		std::vector<BoneFrame> BoneFrames;
-		std::vector<VmdFaceFrame> face_frames;
+		std::vector<FaceFrame> FaceFrames;
 		std::vector<CameraFrame> camera_frames;
 		std::vector<LightFrame> light_frames;
 		std::vector<IkFrame> ik_frames;
 
-		static std::unique_ptr<VmdMotion> LoadFromFile( char const *filename, bool bRH )
+		static std::unique_ptr<VmdMotion> LoadFromFile( char const* filename, bool bRH )
 		{
-			std::ifstream stream(filename, std::ios::binary);
-			auto result = LoadFromStream( &stream, bRH );
+			std::ifstream stream( filename, std::ios::binary );
+			auto result = LoadFromStream( stream, bRH );
 			stream.close();
 			return result;
 		}
 
-		static std::unique_ptr<VmdMotion> LoadFromStream(std::istream *stream, bool bRH )
+		static std::unique_ptr<VmdMotion> LoadFromStream( bufferstream& is, bool bRH )
 		{
-			char buffer[30];
 			auto result = std::make_unique<VmdMotion>();
 
+			auto stream = &is;
+
 			// magic and version
-			stream->read((char*) buffer, 30);
+			char buffer[30];
+			Read( is, buffer );
 			if (strncmp(buffer, "Vocaloid Motion Data", 20))
 			{
 				std::cerr << "invalid vmd file." << std::endl;
@@ -203,27 +197,24 @@ namespace Vmd
 			}
 			result->Version = std::atoi(buffer + 20);
 
-			// name
-			stream->read(buffer, 20);
-			result->Name = Utility::sjis_to_utf(buffer);
+			// Name
+			MotionNameBuf Name;
+			Read( is, Name );
+			result->Name = Utility::sjis_to_utf( Name );
 
-			// bone frames
-			int bone_frame_num;
-			stream->read((char*) &bone_frame_num, sizeof(int));
-			result->BoneFrames.resize(bone_frame_num);
-			for (int i = 0; i < bone_frame_num; i++)
-			{
-				result->BoneFrames[i].Fill( stream, bRH );
-			}
+			// Bone frames
+			int32_t BoneFrameNum;
+			Read( is, BoneFrameNum );
+			result->BoneFrames.resize( BoneFrameNum );
+			for (int i = 0; i < BoneFrameNum; i++)
+				result->BoneFrames[i].Fill( is, bRH );
 
-			// face frames
-			int face_frame_num;
-			stream->read((char*) &face_frame_num, sizeof(int));
-			result->face_frames.resize(face_frame_num);
-			for (int i = 0; i < face_frame_num; i++)
-			{
-				result->face_frames[i].Fill(stream);
-			}
+			// Face frames
+			int32_t FaceFrameNum;
+			Read( is, FaceFrameNum );
+			result->FaceFrames.resize(FaceFrameNum);
+			for (int i = 0; i < FaceFrameNum; i++)
+				result->FaceFrames[i].Fill( is );
 
 			// camera frames
 			int camera_frame_num;

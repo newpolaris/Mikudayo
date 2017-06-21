@@ -97,6 +97,7 @@
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="LinearAllocator.cpp" />
     <ClCompile Include="Math\Frustum.cpp" />
+    <ClCompile Include="Math\Quaternion.cpp" />
     <ClCompile Include="Math\Random.cpp" />
     <ClCompile Include="MotionBlur.cpp" />
     <ClCompile Include="pch.cpp">
