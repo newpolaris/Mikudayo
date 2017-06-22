@@ -99,7 +99,6 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
-      <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link />

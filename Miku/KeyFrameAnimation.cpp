@@ -53,15 +53,16 @@ float Animation::Bezier( Vector4 C, float p )
 	return 3 * s*s*t*y1 + 3 * s*t*t*y2 + t*t*t;
 }
 
-BoneMotion::BoneMotion()
+const BoneKeyFrame& ZeroFrame()
 {
-	m_Zero.Frame = 0;
-	m_Zero.Translation = Vector3(kZero);
-	m_Zero.Rotation = Quaternion(kIdentity);
+	static BoneKeyFrame zero;
+	zero.Frame = 0;
+	zero.Local = OrthogonalTransform( kIdentity );
 
 	// linear
 	for (uint8_t k = kInterpX; k <= kInterpR; k++)
-		m_Zero.BezierCoeff[k] = Vector4( 0.15748f, 0.8425f, 0.1574f, 0.8425f );
+		zero.BezierCoeff[k] = Vector4( 0.15748f, 0.8425f, 0.1574f, 0.8425f );
+	return zero;
 }
 
 void BoneMotion::InsertKeyFrame( const BoneKeyFrame& frame )
@@ -86,19 +87,17 @@ void BoneMotion::Interpolate( float t )
 
 	if (t <= first.Frame)
 	{
-		m_LocalPosition = first.Translation;
-		m_Rotation = first.Rotation;
+		m_Local = first.Local;
 	}
 	if (t >= last.Frame)
 	{
-		m_LocalPosition = last.Translation;
-		m_Rotation = last.Rotation;
+		m_Local = last.Local;
 	}
 	else
 	{
 		// VMD provide 0 frame. So, below zero check code is not nesseary.
 		int32_t prev = FindPreviousFrameIndex( m_KeyFrames, t );
-		auto& a = (prev < 0) ? m_Zero : m_KeyFrames[prev];
+		auto& a = (prev < 0) ? ZeroFrame() : m_KeyFrames[prev];
 		auto& b = m_KeyFrames[prev + 1];
 
 		float p = 1.f;
@@ -109,8 +108,8 @@ void BoneMotion::Interpolate( float t )
 		for (uint8_t k = kInterpX; k <= kInterpR; k++)
 			c[k] = Bezier( a.BezierCoeff[k], p );
 		
-		m_LocalPosition = Lerp( a.Translation, b.Translation, Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) );
-		m_Rotation = Quaternion( DirectX::XMQuaternionSlerp( a.Rotation, b.Rotation, c[kInterpR] ) );
+		m_Local.SetTranslation( Lerp( a.Local.GetTranslation(), b.Local.GetTranslation(), Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) ) );
+		m_Local.SetRotation( Slerp( a.Local.GetRotation(), b.Local.GetRotation(), c[kInterpR] ) );
 	}
 }
 

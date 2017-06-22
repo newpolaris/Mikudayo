@@ -31,6 +31,7 @@ cbuffer MaterialConstants : register(b0)
 {
 	Material material;
 	int sphereOperation;
+	int bUseTexture; 
 	int bUseToon;
 };
 
@@ -49,8 +50,6 @@ SamplerState		sampler0		: register(s0);
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-	float4 tex = texDiffuse.Sample( sampler0, input.uv );
-
 	float3 lightVecV = normalize( -light[0].dirV );
 	float3 normalV = normalize( input.normalV );
 	float intensity = dot( lightVecV, normalV ) * 0.5 + 0.5;
@@ -75,7 +74,14 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	float3 ambient = material.ambient;
 	float3 specular = specularFactor * material.specular;
 
-	float3 texColor = tex.xyz;
+	float texAlpha = 1.0;
+	float3 texColor = float3(1.0, 1.0, 1.0);
+	if (bUseTexture)
+	{
+		float4 tex = texDiffuse.Sample( sampler0, input.uv );
+		texColor = tex.xyz;
+		texAlpha = tex.w;
+	}
 
 	float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalV.xy;
 	if (sphereOperation == kSphereAdd)
@@ -87,7 +93,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	if (bUseToon) 
 		color *= texToon.Sample( sampler0, toonCoord );
 
-	float alpha = tex.a * material.alpha;
+	float alpha = texAlpha * material.alpha;
 
 	return float4(color, alpha);
 }

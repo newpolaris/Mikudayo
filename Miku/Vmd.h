@@ -31,7 +31,7 @@ namespace Vmd
 	public:
 		std::wstring BoneName;
 		int32_t Frame;
-		XMFLOAT3 Translate;
+		XMFLOAT3 Offset; // Bone location relative offset
 		XMFLOAT4 Rotation; // Quaternion
 		char Interpolation[4][4][4];
 

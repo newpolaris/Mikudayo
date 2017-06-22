@@ -18,6 +18,8 @@ namespace Graphics
 	using namespace Math;
 	namespace fs = boost::filesystem;
 
+	enum eObjectFilter { kOpaque = 0x1, kCutout = 0x2, kTransparent = 0x4, kAll = 0xF, kNone = 0x0 };
+
 	struct MaterialCB
 	{
 		XMFLOAT4 Diffuse;
@@ -25,6 +27,7 @@ namespace Graphics
 		float SpecularPower;
 		XMFLOAT3 Ambient;
 		int SphereOperation;
+		int bUseTexture;
 		int bUseToon;
 	};
 
@@ -38,6 +41,7 @@ namespace Graphics
 
 	struct Mesh 
 	{
+		bool isTransparent() const { return Material.Diffuse.w < 1.f; }
 		MaterialCB Material;
 		D3D11_SRV_HANDLE Texture[kTextureMax];
 		int32_t IndexOffset;
@@ -56,9 +60,8 @@ namespace Graphics
 	{
 		std::wstring Name; 
 		Vector3 Scale;
-		Vector3 LocalPosision;
+		Vector3 Translate;
 		Quaternion Rotation;
-		Matrix4 mtxPose;
 	};
 
 	class MikuModel
@@ -69,12 +72,12 @@ namespace Graphics
 		void LoadMotion( const std::wstring& model );
 		void LoadBone();
 		void Clear();
-		void Draw( GraphicsContext& gfxContext );
+		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter );
 		void DrawBone( GraphicsContext& gfxContext );
+		void SetBoneNum( size_t numBones );
 		void Update( float dt );
 		void UpdateBone( float dt );
 		void UpdateChildPose( int32_t idx );
-		void SetBoneNum( size_t numBones );
 
 	private:
 		void LoadPmd( const std::wstring& model, bool bRightHand );
@@ -82,25 +85,27 @@ namespace Graphics
 
 		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 
+		void UpdateIK( const Pmd::IK& ik );
+
 	public:
 		bool m_bRightHand;
 		std::vector<InputDesc> m_InputDesc;
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
-		std::vector<Animation::BoneMotion> m_BoneMotions;
-		std::vector<Matrix4> m_LocalPose;
-		std::vector<Matrix4> m_Pose;
-		std::vector<Matrix4> m_InitPose;
-		std::vector<Matrix4> m_Sub;
+		std::vector<Pmd::IK> m_IKs;
+		std::vector<OrthogonalTransform> m_LocalPose; // offset
+		std::vector<OrthogonalTransform> m_Pose; // cumulative transfrom matrix from root
+		std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
+		std::vector<Matrix4> m_SkinTransform;
 		std::vector<int32_t> m_BoneParent;
 		std::vector<std::vector<int32_t>> m_BoneChild;
-		std::vector<Pmd::IK> m_IKs;
-		std::vector<Animation::FaceMotion> m_FaceMotions;
-		std::unique_ptr<Vmd::VmdMotion> m_Motion;
 		std::map<std::wstring, uint32_t> m_BoneIndex;
-		std::map<std::wstring, uint32_t> m_SkinIndex;
-		std::vector<XMFLOAT3> m_Positions;
-		std::vector<XMFLOAT3> m_MorphPositions;
+		std::map<std::wstring, uint32_t> m_FaceIndex;
+		std::vector<Animation::BoneMotion> m_BoneMotions;
+		std::vector<Animation::FaceMotion> m_FaceMotions;
+
+		std::vector<XMFLOAT3> m_VertexPos; // original vertex position
+		std::vector<XMFLOAT3> m_VertexFacePos; // temporal vertex positions which affected by face animation
 
 		VertexBuffer m_AttributeBuffer;
 		VertexBuffer m_PositionBuffer;

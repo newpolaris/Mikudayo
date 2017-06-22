@@ -11,7 +11,7 @@ namespace Vmd
 		Read( is, buffer );
 		BoneName = sjis_to_utf( buffer );
 		Read( is, Frame );
-		ReadPosition( is, Translate, bRH );
+		ReadPosition( is, Offset, bRH );
 		ReadRotation( is, Rotation, bRH );
 		Read( is, Interpolation );
 	}

@@ -4,6 +4,7 @@
 //***************************************************************************************
 
 #include "Camera1.h"
+#include <cmath>
 
 Camera1::Camera1()
 	: mPosition(0.0f, 0.0f, 0.0f), 
@@ -91,7 +92,7 @@ float Camera1::GetFovY()const
 float Camera1::GetFovX()const
 {
 	float halfWidth = 0.5f*GetNearWindowWidth();
-	return 2.0f*atan(halfWidth / mNearZ);
+	return 2.0f * std::atan(halfWidth / mNearZ);
 }
 
 float Camera1::GetNearWindowWidth()const
@@ -130,7 +131,7 @@ void Camera1::SetLens(float fovY, float aspect, float zn, float zf)
 }
 
 void Camera1::Rate(float f) {
-	mRate += 0.1 * f;
+	mRate += 0.1f * f;
 }
 
 void Camera1::Zoom(float f) {

@@ -122,4 +122,8 @@ namespace Math
 		return Matrix4( basis, translate );
 	}
 
+	INLINE Quaternion Slerp( const Quaternion& a, const Quaternion& b, float t )
+	{
+		return Quaternion(XMQuaternionSlerp( a, b, t )); 
+	}
 }

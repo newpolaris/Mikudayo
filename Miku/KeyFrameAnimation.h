@@ -22,8 +22,7 @@ namespace Animation
 	struct BoneKeyFrame
 	{
 		int Frame;
-		Vector3 Translation;
-		Quaternion Rotation;
+		OrthogonalTransform Local; 
 		Vector4 BezierCoeff[kInterpMax];
 	};
 
@@ -31,18 +30,15 @@ namespace Animation
 	{
 	public:
 		std::wstring m_Name; 
-		Vector3 m_Scale;
-		Vector3 m_LocalPosition;
-		Quaternion m_Rotation;
+		OrthogonalTransform m_Local; 
+
 		uint32_t m_ParentIndex;
 
 		// IK rotation limit
 		XMVECTOR m_MinIK;
 		XMVECTOR m_MaxIK;
-		BoneKeyFrame m_Zero;
 		std::vector<BoneKeyFrame> m_KeyFrames;
 
-		BoneMotion();
 		void InsertKeyFrame( const BoneKeyFrame& frame );
 		void SortKeyFrame();
 		void Interpolate( float t );

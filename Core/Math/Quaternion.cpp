@@ -6,34 +6,29 @@
 using namespace Math;
 
 // 
-// http://www.euclideanspace.com/maths/geometry/rotations/euler/
+// Wikipedia
 //
 Vector3 Quaternion::toEuler( void ) const 
 {
-	XMFLOAT4 q1;
-	DirectX::XMStoreFloat4( &q1, *this );
+	XMFLOAT4 q;
+	DirectX::XMStoreFloat4( &q, *this );
+	float ysqr = q.y * q.y;
 
-	float test = q1.x*q1.y + q1.z*q1.w;
-	float heading, attitude, bank;
-	// singularity at north pole
-	if (test > 0.499) {
-		heading = 2 * atan2( q1.x, q1.w );
-		attitude = XM_PI / 2;
-		bank = 0;
-		return Vector3( bank, heading, attitude );
-	}
-	if (test < -0.499) { // singularity at south pole
-		heading = -2 * atan2( q1.x, q1.w );
-		attitude = -XM_PI / 2;
-		bank = 0;
-		return Vector3( bank, heading, attitude );
-	}
-	float sqx = q1.x*q1.x;
-	float sqy = q1.y*q1.y;
-	float sqz = q1.z*q1.z;
-	heading = atan2( 2 * q1.y*q1.w - 2 * q1.x*q1.z, 1 - 2 * sqy - 2 * sqz );
-	attitude = asin( 2 * test );
-	bank = atan2( 2 * q1.x*q1.w - 2 * q1.y*q1.z, 1 - 2 * sqx - 2 * sqz );
+	// roll (x-axis rotation)
+	float t0 = +2.0f * (q.w * q.x + q.y * q.z);
+	float t1 = +1.0f - 2.0f * (q.x * q.x + ysqr);
+	float roll = std::atan2(t0, t1);
 
-	return Vector3( bank, heading, attitude );
+	// pitch (y-axis rotation)
+	float t2 = +2.0f * (q.w * q.y - q.z * q.x);
+	t2 = t2 > 1.0f ? 1.0f : t2;
+	t2 = t2 < -1.0f ? -1.0f : t2;
+	float pitch = std::asin(t2);
+
+	// yaw (z-axis rotation)
+	float t3 = +2.0f * (q.w * q.z + q.x * q.y);
+	float t4 = +1.0f - 2.0f * (ysqr + q.z * q.z);  
+	float yaw = std::atan2(t3, t4);
+
+	return Vector3( roll, pitch, yaw );
 }

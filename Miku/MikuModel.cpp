@@ -40,6 +40,11 @@ namespace Pmd {
 	};
 }
 
+bool isConstraint(Vector3 minIK, Vector3 maxIK)
+{
+	return !(Near( minIK, MinIK, EpsIK ) && Near( maxIK, MaxIK, EpsIK ));
+}
+
 MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand ) 
 {
 }
@@ -100,7 +105,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	//      but, it will also happens when extract from zip archive. so, can find the file
 	// unicode: decode with shift-jis
 	//
-	auto LoadTexture = []( Utility::ArchivePtr archive, std::string raw, std::wstring unicode, bool bNotNull, bool bSRGB )
+	auto LoadTexture = []( Utility::ArchivePtr archive, std::string raw, std::wstring unicode, bool bSRGB )
 		-> D3D11_SRV_HANDLE
 	{
 		//
@@ -119,8 +124,6 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		auto toon = fs::path( "toon" ) / raw;
 		if (!texture->IsValid())
 			texture = TextureManager::LoadFromFile( toon.generic_wstring(), bSRGB );
-		if (!texture->IsValid() && bNotNull)
-			texture = TextureManager::LoadFromFile( "default", bSRGB );
 		if (!texture->IsValid())
 			return nullptr;
 		return texture->GetSRV();
@@ -136,10 +139,10 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	};
 
 	std::vector<Attribute> attributes( pmd.m_Vertices.size() );
-	m_Positions.resize( pmd.m_Vertices.size() );
+	m_VertexPos.resize( pmd.m_Vertices.size() );
 	for (auto i = 0; i < pmd.m_Vertices.size(); i++)
 	{
-		m_Positions[i] = pmd.m_Vertices[i].Pos;
+		m_VertexPos[i] = pmd.m_Vertices[i].Pos;
 		attributes[i].Normal = pmd.m_Vertices[i].Normal;
 		attributes[i].UV = pmd.m_Vertices[i].UV;
 		attributes[i].Bone_id[0] = pmd.m_Vertices[i].Bone_id[0];
@@ -147,7 +150,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		attributes[i].Bone_weight = pmd.m_Vertices[i].Bone_weight;
 		attributes[i].Edge_flat = pmd.m_Vertices[i].Edge_flat;
 	}
-	m_MorphPositions = m_Positions;
+	m_VertexFacePos = m_VertexPos;
 
 	m_Name = pmd.m_Header.Name;
 
@@ -157,9 +160,9 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		attributes.data() );
 
 	m_PositionBuffer.Create( m_Name + L"_PosBuf", 
-		static_cast<uint32_t>(m_Positions.size()),
+		static_cast<uint32_t>(m_VertexPos.size()),
 		sizeof( XMFLOAT3 ),
-		m_Positions.data() );
+		m_VertexPos.data() );
 
 	m_IndexBuffer.Create( pmd.m_Header.Name + L"_IndexBuf",
 		static_cast<uint32_t>(pmd.m_Indices.size()),
@@ -183,7 +186,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		IndexOffset += material.FaceVertexCount;
 
 		if (!material.TextureRaw.empty())
-			mesh.Texture[kTextureDiffuse] = LoadTexture( archive, material.TextureRaw, material.Texture, true, true );
+			mesh.Texture[kTextureDiffuse] = LoadTexture( archive, material.TextureRaw, material.Texture, true );
 		if (!material.SphereRaw.empty()) {
 			// 
 			// https://learnmmd.com/http:/learnmmd.com/pmd-editor-basics-sph-and-spa-files-add-sparkle/
@@ -195,18 +198,20 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 			bool sRGB = true;
 			if (std::string::npos != material.SphereRaw.rfind(".spa"))
 				sRGB = false;
-			mesh.Texture[kTextureSphere] = LoadTexture( archive, material.SphereRaw, material.Texture, false, sRGB );
+			mesh.Texture[kTextureSphere] = LoadTexture( archive, material.SphereRaw, material.Texture, sRGB );
 		}
 		if (material.ToonIndex < pmd.m_ToonTextureRawList.size())
 		{
 			auto toonRaw = pmd.m_ToonTextureRawList[material.ToonIndex];
 			auto toon = pmd.m_ToonTextureList[material.ToonIndex];
-			mesh.Texture[kTextureToon] = LoadTexture( archive, toonRaw, toon, false, true );
+			mesh.Texture[kTextureToon] = LoadTexture( archive, toonRaw, toon, true );
 		}
-		if (mesh.Texture[kTextureSphere])
-			mat.SphereOperation = material.SphereOperation;
 		if (mesh.Texture[kTextureToon])
 			mat.bUseToon = TRUE;
+		if (mesh.Texture[kTextureDiffuse])
+			mat.bUseTexture = TRUE;
+		if (mesh.Texture[kTextureSphere])
+			mat.SphereOperation = material.SphereOperation;
 
 		mesh.Material = mat;
 
@@ -232,10 +237,10 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		if( boneData.ParentBoneIndex < numBone )
 			parentPos = pmd.m_Bones[boneData.ParentBoneIndex].BoneHeadPosition;
 
-		m_Bones[i].LocalPosision = headPos - parentPos;
-		m_Bones[i].Scale = Vector3( 1.0f, 1.0f, 1.0f );
+		m_Bones[i].Translate = headPos - parentPos;
 	}
 
+	std::vector<OrthogonalTransform> RestPose( numBone );
 	for (auto i = 0; i < numBone; i++)
 	{
 		auto& bone = m_Bones[i];
@@ -243,9 +248,8 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		auto& meshBone = m_BoneMotions[i];
 
 		meshBone.m_ParentIndex = parent;
-		meshBone.m_Rotation = bone.Rotation;
-		meshBone.m_LocalPosition = bone.LocalPosision;
-		meshBone.m_Scale = bone.Scale;
+		meshBone.m_Local.SetRotation( bone.Rotation );
+		meshBone.m_Local.SetTranslation( bone.Translate );
 		meshBone.m_Name = bone.Name;
 		meshBone.m_MinIK = MinIK; 
 		meshBone.m_MaxIK = MaxIK;
@@ -270,19 +274,14 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 				meshBone.m_MaxIK = XMVectorSet( XM_PI, 0, 0, 0 );
 			}
 		}
-
-		m_Pose[i] = Matrix4( XMMatrixMultiply( 
-			XMMatrixMultiply(
-				XMMatrixScalingFromVector( meshBone.m_Scale ),
-				XMMatrixRotationQuaternion( meshBone.m_Rotation ) ),
-			XMMatrixTranslationFromVector( meshBone.m_LocalPosition ) ) );
-
+		RestPose[i] = meshBone.m_Local;
 		if( meshBone.m_ParentIndex < numBone )
-			m_Pose[i] = Matrix4( XMMatrixMultiply( m_Pose[i], m_Pose[meshBone.m_ParentIndex] ) );
+			RestPose[i] = RestPose[meshBone.m_ParentIndex] * RestPose[i];
 		
-		m_InitPose[i] = m_Pose[i];
-		m_Sub[i] = Matrix4( kIdentity );
+		m_SkinTransform[i] = Matrix4( kIdentity );
 	}
+	for (auto i = 0; i < numBone; i++)
+		m_toRoot[i] = ~RestPose[i];
 
 	for ( auto i = 0; i < numBone; i++ )
 	{
@@ -296,7 +295,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	for ( auto i = 0; i < pmd.m_Faces.size(); i++ )
 	{
 		auto& skin = pmd.m_Faces[i];
-		m_SkinIndex[skin.Name] = i;
+		m_FaceIndex[skin.Name] = i;
 		for (auto& vert :skin.FaceVertices)
 			m_FaceMotions[i].m_MorphVertices.push_back( { vert.Index, vert.Position } );
 
@@ -315,21 +314,21 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 	std::string vmdPath( motionPath.begin(), motionPath.end() ); 
 
 	// VMD
-	m_Motion.swap(Vmd::VmdMotion::LoadFromFile( vmdPath.c_str(), bRightHand ));
-
-	if (!m_Motion)
+	auto motion = Vmd::VmdMotion::LoadFromFile( vmdPath.c_str(), bRightHand );
+	if (!motion)
 		return;
 
-	for (auto& frame : m_Motion->BoneFrames)
+	for (auto& frame : motion->BoneFrames)
 	{
 		if ( m_BoneIndex.count( frame.BoneName ) == 0)
 			continue;
 
+		Vector3 BoneTranslate(m_BoneMotions[m_BoneIndex[frame.BoneName]].m_Local.GetTranslation());
+
 		BoneKeyFrame key;
 		key.Frame = frame.Frame;
-		Vector3 relativeOffset = XMFLOAT3( frame.Translate );
-		key.Translation = relativeOffset + m_BoneMotions[m_BoneIndex[frame.BoneName]].m_LocalPosition;
-		key.Rotation = Math::Quaternion( XMFLOAT4( frame.Rotation ) );
+		key.Local.SetTranslation( Vector3(frame.Offset) + BoneTranslate );
+		key.Local.SetRotation( Quaternion( frame.Rotation ) );
 
 		//
 		// http://harigane.at.webry.info/201103/article_1.html
@@ -355,53 +354,20 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 	for (auto& bone : m_BoneMotions )
 		bone.SortKeyFrame();
 
-	for (auto& frame : m_Motion->FaceFrames)
+	for (auto& frame : motion->FaceFrames)
 	{
 		FaceKeyFrame key;
 		key.Frame = frame.Frame;
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
 
-		auto& motion = m_FaceMotions[m_SkinIndex[frame.FaceName]];
+		auto& motion = m_FaceMotions[m_FaceIndex[frame.FaceName]];
 		motion.m_Name = frame.FaceName;
 		motion.InsertKeyFrame( key );
 	}
 
 	for (auto& face : m_FaceMotions )
 		face.SortKeyFrame();
-}
-
-// Returns a quaternion such that q*start = dest
-Quaternion RotationBetweenVectors(Vector3 start, Vector3 dest){
-	start = Normalize( start );
-	dest = Normalize( dest );
-	
-	Scalar cosTheta = Dot( start, dest );
-
-	Vector3 rotationAxis;
-	
-	if (cosTheta < -1 + 0.001f){
-		// special case when vectors in opposite directions :
-		// there is no "ideal" rotation axis
-		// So guess one; any will do as long as it's perpendicular to start
-		// This implementation favors a rotation around the Up axis,
-		// since it's often what you want to do.
-		rotationAxis = Cross( Vector3( 0.0f, 0.0f, 1.0f ), start );
-		if (LengthSquare( rotationAxis ) < 0.1f) // bad luck, they were parallel, try again!
-			rotationAxis = Cross( Vector3( 1.0f, 0.0f, 0.0f ), start );
-		
-		rotationAxis = Normalize(rotationAxis);
-		return Quaternion(rotationAxis, 180.0f);
-	}
-
-	// Implementation from Stan Melax's Game Programming Gems 1 article
-	rotationAxis = Cross( start, dest );
-
-	float s = sqrtf( (1.0f + cosTheta) * 2.f );
-	float invs = 1 / s;
-
-	rotationAxis *= Vector3(invs, invs, invs);
-	return Quaternion( Vector4( rotationAxis, s * 0.5f ) );
 }
 
 void MikuModel::LoadBone()
@@ -464,7 +430,7 @@ void MikuModel::LoadBone()
 		if (Pidx < numBone) 
 			ParentPos = GlobalPosition[Pidx];
 
-		Vector3 diff = Bone.m_LocalPosition;
+		Vector3 diff = Bone.m_Local.GetTranslation();
 		Scalar l = Length( diff );
 		XMMATRIX S = XMMatrixScaling( 0.05f, l, 0.05f );
 		Quaternion Q = RotationBetweenVectors( Vector3( 0.0f, 1.0f, 0.0f ), diff );
@@ -493,7 +459,7 @@ void MikuModel::UpdateChildPose( int32_t idx )
 	auto parentIndex = m_BoneParent[idx];
 
 	if (parentIndex < numBone)
-		m_Pose[idx] = Matrix4( XMMatrixMultiply( m_LocalPose[idx], m_Pose[parentIndex] ) );
+		m_Pose[idx] = m_Pose[parentIndex] * m_LocalPose[idx];
 
 	for (auto c : m_BoneChild[idx])
 		UpdateChildPose( c );
@@ -507,8 +473,8 @@ void MikuModel::SetBoneNum( size_t numBones )
 	m_BoneMotions.resize( numBones );
 	m_Pose.resize( numBones );
 	m_LocalPose.resize( numBones );
-	m_InitPose.resize( numBones );
-	m_Sub.resize( numBones );
+	m_toRoot.resize( numBones );
+	m_SkinTransform.resize( numBones );
 }
 
 void MikuModel::Update( float deltaT )
@@ -524,113 +490,25 @@ void MikuModel::Update( float deltaT )
 	for (auto i = 0; i < numBone; i++)
 	{
 		auto& meshBone = m_BoneMotions[i];
-		m_LocalPose[i] = Matrix4( XMMatrixMultiply(
-			XMMatrixMultiply(
-				XMMatrixScalingFromVector( meshBone.m_Scale ),
-				XMMatrixRotationQuaternion( meshBone.m_Rotation ) ),
-			XMMatrixTranslationFromVector( meshBone.m_LocalPosition ) ) );
+		m_LocalPose[i] = meshBone.m_Local;
 
 		if (meshBone.m_ParentIndex < numBone)
-			m_Pose[i] = Matrix4( XMMatrixMultiply( m_LocalPose[i], m_Pose[meshBone.m_ParentIndex] ) );
+			m_Pose[i] = m_Pose[meshBone.m_ParentIndex] * m_LocalPose[i];
 		else
 			m_Pose[i] = m_LocalPose[i];
 	}
 
-	auto GetPosition = [&]( int32_t index ) -> Vector3
-	{
-		return Vector3(m_Pose[index].GetW());
-	};
-
-	//
-	// Solve Constrainted IK
-	// Cyclic-Coordinate-Descent（CCD）
-	//
-	// http://d.hatena.ne.jp/edvakf/20111102/1320268602
-	// Game programming gems 3 Constrained Inverse Kinematics - Jason Weber
-	//
 	for (auto& ik : m_IKs)
-	{
-		// "effector"
-		const auto ikBonePos = GetPosition( ik.IkBoneIndex );
-
-		for (int n = 0; n < ik.IkNumIteration; n++)
-		{
-			// "effected" bone list in order
-			for (auto c = 0; c < ik.IkLinkBondIndexList.size(); c++)
-			{
-				auto childIndex = ik.IkLinkBondIndexList[c];
-				auto ikChildBonePos = GetPosition( childIndex );
-				auto ikTargetBonePos = GetPosition( ik.IkTargetBonIndex );
-				auto invLinkMtx = Invert( m_Pose[childIndex] );
-
-				auto ikTargetVec = Vector3( invLinkMtx * ikTargetBonePos );
-				auto ikBoneVec = Vector3( invLinkMtx * ikBonePos );
-
-				auto axis = Cross( ikTargetVec, ikBoneVec );
-				auto axisLen = Length( axis );
-				auto sinTheta = axisLen / Length(ikTargetVec) / Length(ikBoneVec);
-				if ( sinTheta < 1.0e-6f)
-					continue;
-
-				// angle to move in one iteration
-				auto maxAngle = (c + 1) * ik.IkLimitedRadian * 4;
-				auto theta = ASin( sinTheta );
-				if (Dot( ikTargetVec, ikBoneVec) < 0.f)
-					theta = XM_PI - theta;
-				if (theta > maxAngle)
-					theta = maxAngle;
-
-				auto rot = Matrix4( DirectX::XMMatrixRotationAxis( axis, theta ) );
-				auto LocalPose = DirectX::XMMatrixMultiply( rot, m_LocalPose[childIndex] );
-
-				auto boneMinIK = Vector3( m_BoneMotions[childIndex].m_MinIK );
-				auto boneMaxIK = Vector3( m_BoneMotions[childIndex].m_MaxIK );
-
-				// If the internal IK value of the bone is equal to the maximum min / max value,
-				// this, there no constraint on IK. So, just use
-				if (Near( boneMinIK, MinIK, EpsIK ) && Near( boneMaxIK, MaxIK, EpsIK ))
-				{
-					m_LocalPose[childIndex] = Matrix4( LocalPose );
-				}
-				else // Constraint IK case, solve it using CCD
-				{
-					XMVECTOR scale;
-					XMVECTOR rotQuat;
-					XMVECTOR trans;
-					DirectX::XMMatrixDecompose( &scale, &rotQuat, &trans, LocalPose );
-
-#if 1
-					auto desiredEuler = Quaternion( rotQuat ).toEuler();
-					Vector3 clampedEuler = Clamp( desiredEuler, boneMinIK, boneMaxIK );
-					Quaternion rot = Quaternion( XMQuaternionRotationRollPitchYawFromVector( clampedEuler ) );
-#else
-					// cos(theta / 2)
-					auto c = XMVectorGetW(rotQuat);
-					Quaternion rot = Quaternion( Vector4( Sqrt( 1.0f - c*c ), 0, 0, c ) );
-#endif
-					m_LocalPose[childIndex] = Matrix4( XMMatrixMultiply(
-						XMMatrixMultiply(
-							XMMatrixScalingFromVector( scale ),
-							XMMatrixRotationQuaternion( rot ) ),
-						XMMatrixTranslationFromVector( trans ) ) );
-				}
-				UpdateChildPose( childIndex );
-			}
-		}
-	}
-
+		UpdateIK( ik );
+	
 	for (auto i = 0; i < numBone; i++) 
-	{
-		XMMATRIX mtx = XMMatrixMultiply(
-			XMMatrixInverse( nullptr, m_InitPose[i] ), m_Pose[i] );
-		m_Sub[i] = Matrix4( mtx );
-	}
-
-	size_t numFace = m_FaceMotions.size();
-	for (auto i = 0; i < numFace; i++) 
+		m_SkinTransform[i] = m_Pose[i] * m_toRoot[i];
 
 	if ( m_FaceMotions.size() > 0 )
 	{
+		//
+		// http://blog.goo.ne.jp/torisu_tetosuki/e/8553151c445d261e122a3a31b0f91110
+		//
 		auto& baseFace = m_FaceMotions[0];
 		auto skinPosition = baseFace.m_MorphVertices;
 
@@ -654,12 +532,89 @@ void MikuModel::Update( float deltaT )
 		if (bUpdate)
 		{
 			for (auto& vert : skinPosition)
-				m_MorphPositions[vert.first] = vert.second;
+				m_VertexFacePos[vert.first] = vert.second;
 
 			m_PositionBuffer.Create( m_Name + L"_PosBuf", 
-				static_cast<uint32_t>(m_MorphPositions.size()),
+				static_cast<uint32_t>(m_VertexFacePos.size()),
 				sizeof( XMFLOAT3 ),
-				m_MorphPositions.data() );
+				m_VertexFacePos.data() );
+		}
+	}
+}
+
+//
+// Solve Constrainted IK
+// Cyclic-Coordinate-Descent（CCD）
+//
+// http://d.hatena.ne.jp/edvakf/20111102/1320268602
+// Game programming gems 3 Constrained Inverse Kinematics - Jason Weber
+//
+void MikuModel::UpdateIK(const Pmd::IK& ik)
+{
+	auto GetPosition = [&]( int32_t index ) -> Vector3
+	{
+		return Vector3(m_Pose[index].GetTranslation());
+	};
+
+	// "effector" (Fixed)
+	const auto ikBonePos = GetPosition( ik.IkBoneIndex );
+
+	for (int n = 0; n < ik.IkNumIteration; n++)
+	{
+		// "effected" bone list in order
+		for (auto c = 0; c < ik.IkLinkBondIndexList.size(); c++)
+		{
+			auto childIndex = ik.IkLinkBondIndexList[c];
+			auto ikTargetBonePos = GetPosition( ik.IkTargetBonIndex );
+			auto invLinkMtx = Invert( m_Pose[childIndex] );
+
+			//
+			// transform to child bone's local coordinate.
+			// note that even if pos is vector3 type, it is calcurated by affine tranform.
+			//
+			auto ikTargetVec = Vector3( invLinkMtx * ikTargetBonePos );
+			auto ikBoneVec = Vector3( invLinkMtx * ikBonePos );
+
+			auto axis = Cross( ikBoneVec, ikTargetVec );
+			auto axisLen = Length( axis );
+			auto sinTheta = axisLen / Length( ikTargetVec ) / Length( ikBoneVec );
+			if (sinTheta < 1.0e-3f)
+				continue;
+
+			// angle to move in one iteration
+			auto maxAngle = (c + 1) * ik.IkLimitedRadian * 4;
+			auto theta = ASin( sinTheta );
+			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
+				theta = XM_PI - theta;
+			if (theta > maxAngle)
+				theta = maxAngle;
+
+			auto rotBase = m_LocalPose[childIndex].GetRotation();
+			auto translate = m_LocalPose[childIndex].GetTranslation();
+
+			// To apply base coordinate system which it is base on, inverted theta direction
+			Quaternion rot( axis, -theta );
+			auto rotNext = rotBase * rot;
+
+			auto boneMinIK = Vector3( m_BoneMotions[childIndex].m_MinIK );
+			auto boneMaxIK = Vector3( m_BoneMotions[childIndex].m_MaxIK );
+
+			// Constraint IK, restrict rotation angle
+			if (isConstraint( boneMinIK, boneMaxIK ))
+			{
+				// c = cos(theta / 2)
+				auto c = XMVectorGetW( rotNext );
+				// s = sin(theta / 2)
+				auto s = Sqrt( 1.0f - c*c );
+				rotNext = Quaternion( Vector4( s, 0, 0, c ) );
+				if (!m_bRightHand)
+				{
+					auto a = -std::asin( s );
+					rotNext = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
+				}
+			}
+			m_LocalPose[childIndex] = OrthogonalTransform( rotNext, translate );
+			UpdateChildPose( childIndex );
 		}
 	}
 }
@@ -671,18 +626,22 @@ void MikuModel::UpdateBone( float deltaT )
 	float kFrameTime = kTime * 30.0f;
 }
 
-void MikuModel::Draw( GraphicsContext& gfxContext )
+void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
-	auto elemByte = sizeof( decltype(m_Sub)::value_type );
-	auto numByte = elemByte * m_Sub.size();
+	auto elemByte = sizeof( decltype(m_SkinTransform)::value_type );
+	auto numByte = elemByte * m_SkinTransform.size();
 
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
-	gfxContext.SetDynamicConstantBufferView( 1, numByte, m_Sub.data(), { kBindVertex } );
+	gfxContext.SetDynamicConstantBufferView( 1, numByte, m_SkinTransform.data(), { kBindVertex } );
 
 	for (auto mesh: m_Mesh)
 	{
+		bool bOpaque = Filter & kOpaque && !mesh.isTransparent();
+		bool bTransparent = Filter & kTransparent && mesh.isTransparent();
+		if (!bOpaque && !bTransparent) continue;
+
 		gfxContext.SetDynamicDescriptors( 0, _countof( mesh.Texture ), mesh.Texture, { kBindPixel } );
 		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
 		gfxContext.SetDynamicSampler( 0, SamplerLinearWrap, kBindPixel );
@@ -702,7 +661,7 @@ void MikuModel::DrawBone( GraphicsContext& gfxContext )
 
 	for (auto i = 0; i < numBone; i++)
 	{
-		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], m_Sub[i] );
+		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], m_SkinTransform[i] );
 		gfxContext.SetDynamicConstantBufferView( 1, sizeof(mat), &mat, { kBindVertex } );
 		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
 	}

@@ -58,3 +58,4 @@
 #include "Math/Transform.h"
 #include "Math/Matrix4.h"
 #include "Math/Functions.inl"
+#include "Math/Functions.h"

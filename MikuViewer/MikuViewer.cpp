@@ -85,7 +85,8 @@ private:
 	Graphics::MikuModel m_Stage;
 
 	GraphicsPSO m_DepthPSO; 
-	GraphicsPSO m_ModelPSO;
+	GraphicsPSO m_OpaquePSO;
+	GraphicsPSO m_BlendPSO;
 };
 
 CREATE_APPLICATION( MikuViewer )
@@ -96,8 +97,11 @@ void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
 
-	const std::wstring modelPath = L"Models/gumi.pmd";
-	const std::wstring motionPath = L"Models/gumi.vmd";
+	// const std::wstring modelPath = L"Models/gumi.pmd";
+	// const std::wstring modelPath = L"Models/Lat式ミクVer2.31_White.pmd";
+	const std::wstring modelPath = L"Models/Lat0.pmd";
+	// const std::wstring motionPath = L"Models/gumi.vmd";
+	const std::wstring motionPath = L"Models/nekomimi_lat.vmd";
 	const std::wstring stagePath = L"Models/Library.pmd";
 
 	m_Model.LoadModel( modelPath );
@@ -111,30 +115,38 @@ void MikuViewer::Startup( void )
 #else
 	m_DepthPSO.SetRasterizerState( RasterizerDefault );
 #endif
-	// m_DepthPSO.SetBlendState( BlendNoColorWrite );
+	m_DepthPSO.SetBlendState( BlendNoColorWrite );
 	m_DepthPSO.SetInputLayout( static_cast<UINT>(m_Model.m_InputDesc.size()), m_Model.m_InputDesc.data() );
 	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
-	m_ModelPSO = m_DepthPSO;
-	// m_ModelPSO.SetBlendState(BlendDisable);
-	// m_ModelPSO.SetRenderTargetFormats(1, &ColorFormat, DepthFormat);
+	m_OpaquePSO = m_DepthPSO;
+	m_OpaquePSO.SetBlendState( BlendDisable );
 #ifdef CAM1
-	m_ModelPSO.SetDepthStencilState( DepthStateTestLess );
+	m_OpaquePSO.SetDepthStencilState( DepthStateTestLess );
 #else
 	if (m_Camera.GetReverseZ())
-		m_ModelPSO.SetDepthStencilState( DepthStateReadWrite );
+		m_OpaquePSO.SetDepthStencilState( DepthStateReadWrite );
 	else
-		m_ModelPSO.SetDepthStencilState( DepthStateTestLess );
+		m_OpaquePSO.SetDepthStencilState( DepthStateTestLess );
 #endif
-	m_ModelPSO.SetVertexShader( MY_SHADER_ARGS( g_pModelViewerVS ) );
-	m_ModelPSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
-	m_ModelPSO.Finalize();
+	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pModelViewerVS ) );
+	m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
+	m_OpaquePSO.Finalize();
+
+	m_BlendPSO = m_OpaquePSO;
+#ifdef CAM1
+	m_BlendPSO.SetRasterizerState( RasterizerDefaultCW );
+#else
+	m_BlendPSO.SetRasterizerState( RasterizerDefault );
+#endif
+	m_BlendPSO.SetBlendState( BlendTraditional );
+	m_BlendPSO.Finalize();
 
 	const Vector3 eye = Vector3( -1.0f, 15.0f, 22.0f );
 	const Vector3 at = Vector3( 0.0f, 15.0f, 0.0f );
 
 	m_Camera.SetEyeAtUp( eye, at, Vector3( kYUnitVector ) );
-	m_Camera.SetZRange( 1.0f, 1000.0f );
+	m_Camera.SetZRange( 0.5f, 20000.0f );
 	m_pCameraController = new CameraController( m_Camera, Vector3( kYUnitVector ) );
 
 	XMFLOAT3 eye1(0.0, 0.0, -50);
@@ -171,7 +183,8 @@ void MikuViewer::Startup( void )
 void MikuViewer::Cleanup( void )
 {
 	m_DepthPSO.Destroy(); 
-	m_ModelPSO.Destroy();
+	m_OpaquePSO.Destroy();
+	m_BlendPSO.Destroy();
 
 	m_Buffer.Destory();
 
@@ -305,15 +318,20 @@ void MikuViewer::RenderScene( void )
 	gfxContext.ClearColor( g_SceneColorBuffer );
 	gfxContext.ClearDepth( g_SceneDepthBuffer );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	gfxContext.SetPipelineState( m_ModelPSO );
 	gfxContext.SetDynamicConstantBufferView( 0, m_Buffer, { kBindVertex } );
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(m_LightConstants), &m_LightConstants, { kBindPixel } );
 	gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 	gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-	m_Stage.Draw( gfxContext );
-	m_Model.Draw( gfxContext );
 
+	gfxContext.SetPipelineState( m_OpaquePSO );
+	m_Stage.Draw( gfxContext, kOpaque );
+	m_Model.Draw( gfxContext, kOpaque );
 	// m_Model.DrawBone( gfxContext );
+
+	gfxContext.SetPipelineState( m_BlendPSO );
+	m_Stage.Draw( gfxContext, kTransparent );
+	m_Model.Draw( gfxContext, kTransparent );
+
 	gfxContext.Flush();
 	gfxContext.Finish();
 }
