@@ -9,9 +9,9 @@
 #include "CommandContext.h"
 #include "Vmd.h"
 #include "Pmd.h"
-#include "KeyFrameAnimation.h"
 #include "VectorMath.h"
 #include "Archive.h"
+#include "KeyFrameAnimation.h"
 
 namespace Graphics
 {
@@ -76,7 +76,6 @@ namespace Graphics
 		void DrawBone( GraphicsContext& gfxContext );
 		void SetBoneNum( size_t numBones );
 		void Update( float dt );
-		void UpdateBone( float dt );
 		void UpdateChildPose( int32_t idx );
 
 	private:
@@ -100,12 +99,12 @@ namespace Graphics
 		std::vector<int32_t> m_BoneParent;
 		std::vector<std::vector<int32_t>> m_BoneChild;
 		std::map<std::wstring, uint32_t> m_BoneIndex;
-		std::map<std::wstring, uint32_t> m_FaceIndex;
+		std::map<std::wstring, uint32_t> m_MorphIndex;
 		std::vector<Animation::BoneMotion> m_BoneMotions;
-		std::vector<Animation::FaceMotion> m_FaceMotions;
+		std::vector<Animation::MorphMotion> m_MorphMotions;
 
 		std::vector<XMFLOAT3> m_VertexPos; // original vertex position
-		std::vector<XMFLOAT3> m_VertexFacePos; // temporal vertex positions which affected by face animation
+		std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
 
 		VertexBuffer m_AttributeBuffer;
 		VertexBuffer m_PositionBuffer;

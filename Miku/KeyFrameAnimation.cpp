@@ -1,9 +1,10 @@
 #include "KeyFrameAnimation.h"
+
 #include <algorithm>
+#include "Utility.h"
 
 using namespace Animation;
 using namespace Math;
-
 
 template <typename T>
 int32_t FindPreviousFrameIndex( const std::vector<T>& frames, const float t )
@@ -28,14 +29,13 @@ int32_t FindPreviousFrameIndex( const std::vector<T>& frames, const float t )
 
 //
 // http://d.hatena.ne.jp/edvakf/20111016/1318716097
-// http://zerogram.info/?p=860
 //
 float Animation::Bezier( Vector4 C, float p )
 {
 	XMFLOAT4 coeff;
 	XMStoreFloat4( &coeff, C );
 
-	const float x1 = coeff.x, x2 = coeff.y, y1 = coeff.z, y2 = coeff.w;
+	const float x1 = coeff.x, y1 = coeff.y, x2 = coeff.z, y2 = coeff.w;
 
 	auto ft = [=](float t) {
 		float s = 1.0f - t;
@@ -60,8 +60,8 @@ const BoneKeyFrame& ZeroFrame()
 	zero.Local = OrthogonalTransform( kIdentity );
 
 	// linear
-	for (uint8_t k = kInterpX; k <= kInterpR; k++)
-		zero.BezierCoeff[k] = Vector4( 0.15748f, 0.8425f, 0.1574f, 0.8425f );
+	for (uint8_t k = 0; k < 4; k++)
+		zero.BezierCoeff[k] = Vector4( 0.15748f, 0.1574f, 0.8425f, 0.8425f );
 	return zero;
 }
 
@@ -72,7 +72,7 @@ void BoneMotion::InsertKeyFrame( const BoneKeyFrame& frame )
 
 void BoneMotion::SortKeyFrame()
 {
-	std::sort( m_KeyFrames.begin(), m_KeyFrames.end(), [](const BoneKeyFrame& a, const BoneKeyFrame& b) {
+	std::sort( m_KeyFrames.begin(), m_KeyFrames.end(), [](const auto& a, const auto& b) {
 		return a.Frame < b.Frame;
 	});
 }
@@ -104,7 +104,7 @@ void BoneMotion::Interpolate( float t )
 		if (b.Frame - a.Frame > 0)
 			p = (t - a.Frame) / (b.Frame - a.Frame);
 
-		float c[kInterpMax];
+		float c[kInterpR+1];
 		for (uint8_t k = kInterpX; k <= kInterpR; k++)
 			c[k] = Bezier( a.BezierCoeff[k], p );
 		
@@ -113,7 +113,7 @@ void BoneMotion::Interpolate( float t )
 	}
 }
 
-void FaceMotion::Interpolate( float t )
+void MorphMotion::Interpolate( float t )
 {
 	if (m_KeyFrames.size() == 0)
 		return;
@@ -138,17 +138,85 @@ void FaceMotion::Interpolate( float t )
 	}
 }
 
-FaceMotion::FaceMotion() : m_Weight( 0.f ), m_WeightPre( 0.f )
+MorphMotion::MorphMotion() : m_Weight( 0.f ), m_WeightPre( 0.f )
 {
 }
 
-void FaceMotion::InsertKeyFrame( const FaceKeyFrame& frame )
+void MorphMotion::InsertKeyFrame( const MorphKeyFrame& frame )
 {
 	m_KeyFrames.push_back( frame );
 }
 
-void FaceMotion::SortKeyFrame()
+void MorphMotion::SortKeyFrame()
 {
 	std::sort( m_KeyFrames.begin(), m_KeyFrames.end(), 
 		[]( auto& a, auto& b ) { return a.Frame < b.Frame; } );
+}
+
+void CameraMotion::InsertKeyFrame( const CameraKeyFrame& frame )
+{
+	m_KeyFrames.push_back( frame );
+}
+
+void CameraMotion::SortKeyFrame()
+{
+	std::sort( m_KeyFrames.begin(), m_KeyFrames.end(), [](const auto& a, const auto& b) {
+		return a.Frame < b.Frame;
+	});
+}
+
+void CameraMotion::Interpolate( float t )
+{
+	if (m_KeyFrames.size() == 0)
+		return;
+
+	auto& first = m_KeyFrames.front();
+	auto& last = m_KeyFrames.back();
+
+	float dist;
+	Vector3 target;
+	Quaternion rot;
+
+	if (t <= first.Frame)
+	{
+		m_bPerspective = first.bPerspective;
+		m_FovY = first.FovY;
+		dist = first.Distance;
+		target = first.Target;
+		rot = first.Rotation;
+	}
+	if (t >= last.Frame)
+	{
+		m_bPerspective = last.bPerspective;
+		m_FovY = last.FovY;
+		dist = last.Distance;
+		target = last.Target;
+		rot = last.Rotation;
+	}
+	else
+	{
+		// VMD provide 0 frame. So, below zero check code is not nesseary.
+		int32_t prev = FindPreviousFrameIndex( m_KeyFrames, t );
+		ASSERT( prev >= 0 );
+		auto& a = m_KeyFrames[prev];
+		auto& b = m_KeyFrames[prev + 1];
+
+		m_bPerspective = a.bPerspective;
+
+		float p = 1.f;
+		if (b.Frame - a.Frame > 0)
+			p = (t - a.Frame) / (b.Frame - a.Frame);
+
+		float c[kInterpA+1];
+		for (uint8_t k = kInterpX; k <= kInterpA; k++)
+			c[k] = Bezier( a.BezierCoeff[k], p );
+		
+		target = Lerp( a.Target, b.Target, Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) );
+		rot = Slerp( a.Rotation, b.Rotation, c[kInterpR] );
+		dist = Lerp( a.Distance, b.Distance, c[kInterpD] );
+		m_FovY = Lerp( a.Distance, b.Distance, c[kInterpA] );
+	}
+
+	OrthogonalTransform otrans( rot, target );
+
 }

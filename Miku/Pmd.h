@@ -31,16 +31,6 @@ namespace Pmd
 		wstring NameEnglish;
 		wstring CommentEnglish;
 
-		struct File
-		{
-			// File header part
-			char FileHeader[3];	// Expect 'PMD'
-			float Version;
-			// Model header part
-			NameBuf Name;        
-			CommentBuf Comment;
-		};
-
 		void Fill( bufferstream& is );
 		void FillExpantion( bufferstream& is );
 	};
@@ -223,6 +213,9 @@ namespace Pmd
 		// PMD model is defined in left handed coordinate
 		// 'bRightHand' flag convert model to right handed coordinate
 		void Fill( bufferstream & is, bool bRightHand );
+
+		bool IsValid( void ) const { return m_IsValid; }
+		bool m_IsValid = false;
 
 		Header m_Header;
 		vector<Vertex> m_Vertices;

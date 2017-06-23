@@ -24,10 +24,6 @@
 using namespace Graphics;
 using namespace DirectX;
 
-const auto MinIK = Vector3( -XM_PI, -XM_PI, -XM_PI );
-const auto MaxIK = Vector3( XM_PI, XM_PI, XM_PI );
-const auto EpsIK = Vector3( 0.02f, 0.02f, 0.02f ); // near 1.4 degree
-
 namespace Pmd {
 	std::vector<InputDesc> InputDescriptor
 	{
@@ -38,11 +34,6 @@ namespace Pmd {
 		{ "EDGE_FLAT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-}
-
-bool isConstraint(Vector3 minIK, Vector3 maxIK)
-{
-	return !(Near( minIK, MinIK, EpsIK ) && Near( maxIK, MaxIK, EpsIK ));
 }
 
 MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand ) 
@@ -98,6 +89,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 
 	Pmd::PMD pmd;
 	pmd.Fill( *is, bRightHand );
+	ASSERT( pmd.IsValid() );
 
 	// 
 	// raw: decode with system default. 
@@ -150,7 +142,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		attributes[i].Bone_weight = pmd.m_Vertices[i].Bone_weight;
 		attributes[i].Edge_flat = pmd.m_Vertices[i].Edge_flat;
 	}
-	m_VertexFacePos = m_VertexPos;
+	m_VertexMorphedPos = m_VertexPos;
 
 	m_Name = pmd.m_Header.Name;
 
@@ -251,8 +243,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		meshBone.m_Local.SetRotation( bone.Rotation );
 		meshBone.m_Local.SetTranslation( bone.Translate );
 		meshBone.m_Name = bone.Name;
-		meshBone.m_MinIK = MinIK; 
-		meshBone.m_MaxIK = MaxIK;
+		meshBone.bLimitXAngle = false;
 
 		//
 		// In PMD Model minIK, maxIK is not manually given. 
@@ -262,18 +253,8 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		// in the following vmd motion. http://www.nicovideo.jp/watch/sm18737664 
 		//
 		if (std::string::npos != bone.Name.find( L"ひざ" )) 
-		{
-			if (!m_bRightHand)
-			{
-				meshBone.m_MinIK = XMVectorSet( -XM_PI, 0, 0, 0 );
-				meshBone.m_MaxIK = XMVectorSet( 0, 0, 0, 0 );
-			}
-			else
-			{
-				meshBone.m_MinIK = XMVectorSet( 0, 0, 0, 0 );
-				meshBone.m_MaxIK = XMVectorSet( XM_PI, 0, 0, 0 );
-			}
-		}
+			meshBone.bLimitXAngle = true;
+
 		RestPose[i] = meshBone.m_Local;
 		if( meshBone.m_ParentIndex < numBone )
 			RestPose[i] = RestPose[meshBone.m_ParentIndex] * RestPose[i];
@@ -291,19 +272,18 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 
 	m_IKs = pmd.m_IKs;
 
-	m_FaceMotions.resize( pmd.m_Faces.size() );
+	m_MorphMotions.resize( pmd.m_Faces.size() );
 	for ( auto i = 0; i < pmd.m_Faces.size(); i++ )
 	{
-		auto& skin = pmd.m_Faces[i];
-		m_FaceIndex[skin.Name] = i;
-		for (auto& vert :skin.FaceVertices)
-			m_FaceMotions[i].m_MorphVertices.push_back( { vert.Index, vert.Position } );
+		auto& morph = pmd.m_Faces[i];
+		m_MorphIndex[morph.Name] = i;
+		for (auto& vert :morph.FaceVertices)
+			m_MorphMotions[i].m_MorphVertices.push_back( { vert.Index, vert.Position } );
 
-		std::sort( m_FaceMotions[i].m_MorphVertices.begin(), m_FaceMotions[i].m_MorphVertices.end(), []( auto& a, auto& b) {
+		std::sort( m_MorphMotions[i].m_MorphVertices.begin(), m_MorphMotions[i].m_MorphVertices.end(), []( auto& a, auto& b) {
 			return a.first < b.first;
 		});
 	}
-	
 }
 
 void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
@@ -311,14 +291,13 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 	using namespace std;
 	using namespace Animation;
 	
-	std::string vmdPath( motionPath.begin(), motionPath.end() ); 
+	Utility::ByteArray ba = Utility::ReadFileSync( motionPath );
+	Utility::ByteStream bs(ba);
 
-	// VMD
-	auto motion = Vmd::VmdMotion::LoadFromFile( vmdPath.c_str(), bRightHand );
-	if (!motion)
-		return;
+	Vmd::VMD vmd;
+	vmd.Fill( bs, bRightHand );
 
-	for (auto& frame : motion->BoneFrames)
+	for (auto& frame : vmd.BoneFrames)
 	{
 		if ( m_BoneIndex.count( frame.BoneName ) == 0)
 			continue;
@@ -343,10 +322,8 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		char* interp = reinterpret_cast<char*>(&frame.Interpolation[0]);
 		float scale = 1.0f / 127.0f;
 
-		key.BezierCoeff[kInterpX] = Vector4( interp[0], interp[8], interp[4], interp[12] ) * scale;
-		key.BezierCoeff[kInterpY] = Vector4( interp[1], interp[9], interp[5], interp[13] ) * scale;
-		key.BezierCoeff[kInterpZ] = Vector4( interp[2], interp[10], interp[6], interp[14] ) * scale;
-		key.BezierCoeff[kInterpR] = Vector4( interp[3], interp[11], interp[7], interp[15] ) * scale;
+		for (auto i = 0; i < 4; i++)
+			key.BezierCoeff[i] = Vector4( interp[i], interp[i+4], interp[i+8], interp[i+12] ) * scale;
 
 		m_BoneMotions[m_BoneIndex[frame.BoneName]].InsertKeyFrame( key );
 	}
@@ -354,19 +331,19 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 	for (auto& bone : m_BoneMotions )
 		bone.SortKeyFrame();
 
-	for (auto& frame : motion->FaceFrames)
+	for (auto& frame : vmd.FaceFrames)
 	{
-		FaceKeyFrame key;
+		MorphKeyFrame key;
 		key.Frame = frame.Frame;
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
 
-		auto& motion = m_FaceMotions[m_FaceIndex[frame.FaceName]];
+		auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
 		motion.m_Name = frame.FaceName;
 		motion.InsertKeyFrame( key );
 	}
 
-	for (auto& face : m_FaceMotions )
+	for (auto& face : m_MorphMotions )
 		face.SortKeyFrame();
 }
 
@@ -504,25 +481,25 @@ void MikuModel::Update( float deltaT )
 	for (auto i = 0; i < numBone; i++) 
 		m_SkinTransform[i] = m_Pose[i] * m_toRoot[i];
 
-	if ( m_FaceMotions.size() > 0 )
+	if ( m_MorphMotions.size() > 0 )
 	{
 		//
 		// http://blog.goo.ne.jp/torisu_tetosuki/e/8553151c445d261e122a3a31b0f91110
 		//
-		auto& baseFace = m_FaceMotions[0];
+		auto& baseFace = m_MorphMotions[0];
 		auto skinPosition = baseFace.m_MorphVertices;
 
 		bool bUpdate = false;
 
-		for (auto i = 1; i < m_FaceMotions.size(); i++)
+		for (auto i = 1; i < m_MorphMotions.size(); i++)
 		{
-			auto& motion = m_FaceMotions[i];
+			auto& motion = m_MorphMotions[i];
 			motion.Interpolate( kFrameTime );
 			if (std::fabsf( motion.m_WeightPre - motion.m_Weight ) < 0.1e-2)
 				continue;
 			bUpdate = true;
 			auto weight = motion.m_Weight;
-			for (const auto& vert : m_FaceMotions[i].m_MorphVertices)
+			for (const auto& vert : m_MorphMotions[i].m_MorphVertices)
 			{
 				skinPosition[vert.first].second.x += weight * vert.second.x;
 				skinPosition[vert.first].second.y += weight * vert.second.y;
@@ -532,12 +509,12 @@ void MikuModel::Update( float deltaT )
 		if (bUpdate)
 		{
 			for (auto& vert : skinPosition)
-				m_VertexFacePos[vert.first] = vert.second;
+				m_VertexMorphedPos[vert.first] = vert.second;
 
 			m_PositionBuffer.Create( m_Name + L"_PosBuf", 
-				static_cast<uint32_t>(m_VertexFacePos.size()),
+				static_cast<uint32_t>(m_VertexMorphedPos.size()),
 				sizeof( XMFLOAT3 ),
-				m_VertexFacePos.data() );
+				m_VertexMorphedPos.data() );
 		}
 	}
 }
@@ -548,6 +525,7 @@ void MikuModel::Update( float deltaT )
 //
 // http://d.hatena.ne.jp/edvakf/20111102/1320268602
 // Game programming gems 3 Constrained Inverse Kinematics - Jason Weber
+// MMD-Agent PMDIK
 //
 void MikuModel::UpdateIK(const Pmd::IK& ik)
 {
@@ -593,37 +571,52 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 			auto translate = m_LocalPose[childIndex].GetTranslation();
 
 			// To apply base coordinate system which it is base on, inverted theta direction
-			Quaternion rot( axis, -theta );
-			auto rotNext = rotBase * rot;
-
-			auto boneMinIK = Vector3( m_BoneMotions[childIndex].m_MinIK );
-			auto boneMaxIK = Vector3( m_BoneMotions[childIndex].m_MaxIK );
+			Quaternion rotNext( axis, -theta );
+			auto rotFinish = rotBase * rotNext;
 
 			// Constraint IK, restrict rotation angle
-			if (isConstraint( boneMinIK, boneMaxIK ))
+			if (m_BoneMotions[childIndex].bLimitXAngle)
 			{
+#ifndef EXPERIMENT_IK
 				// c = cos(theta / 2)
-				auto c = XMVectorGetW( rotNext );
+				auto c = XMVectorGetW( rotFinish );
 				// s = sin(theta / 2)
 				auto s = Sqrt( 1.0f - c*c );
-				rotNext = Quaternion( Vector4( s, 0, 0, c ) );
+				rotFinish = Quaternion( Vector4( s, 0, 0, c ) );
 				if (!m_bRightHand)
 				{
 					auto a = -std::asin( s );
-					rotNext = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
+					rotFinish = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
 				}
+#else
+				/* when this is the first iteration, we force rotating to the maximum angle toward limited direction */
+				/* this will help convergence the whole IK step earlier for most of models, especially for legs */
+				if (n == 0)
+				{
+					if (theta < 0.0f)
+						theta = -theta;
+					rotFinish = rotBase * Quaternion( Vector3( 1.0f, 0.f, 0.f ), theta );
+				}
+				else
+				{
+					//
+					// Needed to stable IK result (esp. Ankle) 
+					// The value obtained from the test
+					//
+					const Scalar PMDMinRotX = 0.10f;
+					auto next = rotNext.toEuler();
+					auto base = rotBase.toEuler();
+
+					auto sum = Clamp( next.GetX() + base.GetX(), PMDMinRotX, Scalar(XM_PI) );
+					next = Vector3( sum - base.GetX(), 0.f, 0.f );
+					rotFinish = rotBase * Quaternion( next.GetX(), next.GetY(), next.GetZ() );
+				}
+#endif
 			}
-			m_LocalPose[childIndex] = OrthogonalTransform( rotNext, translate );
+			m_LocalPose[childIndex] = OrthogonalTransform( rotFinish, translate );
 			UpdateChildPose( childIndex );
 		}
 	}
-}
-
-void MikuModel::UpdateBone( float deltaT )
-{
-	static float kTime = 0.0f;
-	kTime += deltaT;
-	float kFrameTime = kTime * 30.0f;
 }
 
 void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )

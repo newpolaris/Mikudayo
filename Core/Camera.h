@@ -134,6 +134,13 @@ namespace Math
 		SetPosition(xform.GetTranslation());
 	}
 
+	inline void BaseCamera::SetTransform( const OrthogonalTransform& xform )
+	{
+		// By using these functions, we rederive an orthogonal transform.
+		m_CameraToWorld = xform;
+		m_Basis = Matrix3(m_CameraToWorld.GetRotation());
+	}
+
 	inline void BaseCamera::SetRotation( Quaternion basisRotation )
 	{
 		m_CameraToWorld.SetRotation(Normalize(basisRotation));

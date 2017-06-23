@@ -103,11 +103,13 @@ void MikuViewer::Startup( void )
 	// const std::wstring motionPath = L"Models/gumi.vmd";
 	const std::wstring motionPath = L"Models/nekomimi_lat.vmd";
 	const std::wstring stagePath = L"Models/Library.pmd";
+	const std::wstring cameraTestPath = L"Models/camera.vmd";
 
 	m_Model.LoadModel( modelPath );
-	m_Model.LoadMotion( motionPath );
+	// m_Model.LoadMotion( motionPath );
 	m_Model.LoadBone();
 	m_Stage.LoadModel( stagePath );
+	m_Stage.LoadMotion( cameraTestPath );
 
 	// Depth-only (2x rate)
 #ifdef CAM1
@@ -309,7 +311,6 @@ void MikuViewer::Update( float deltaT )
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 
 	m_Model.Update( deltaT );
-	m_Model.UpdateBone( deltaT );
 }
 
 void MikuViewer::RenderScene( void )

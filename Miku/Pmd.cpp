@@ -9,24 +9,23 @@ namespace Pmd
 
 	void Header::Fill( bufferstream & is )
 	{
-		File File;
-		Read( is, File.FileHeader );
-		Read( is, File.Version );
-		Read( is, File.Name );
-		Read( is, File.Comment );
-
-		Version = File.Version;
-		Name = sjis_to_utf( File.Name );
-		Comment = sjis_to_utf( File.Comment );
+		Read( is, Version );
+		NameBuf name;
+		Read( is, name );
+		CommentBuf comment;
+		Read( is, comment );
+		Name = sjis_to_utf( name );
+		Comment = sjis_to_utf( comment );
 	}
 
 	void Header::FillExpantion( bufferstream& is )
 	{
-		File File;
-		Read( is, File.Name );
-		Read( is, File.Comment );
-		NameEnglish = ascii_to_utf( File.Name );
-		CommentEnglish = ascii_to_utf( File.Comment );
+		NameBuf name;
+		Read( is, name );
+		CommentBuf comment;
+		Read( is, comment );
+		NameEnglish = ascii_to_utf( name );
+		CommentEnglish = ascii_to_utf( comment );
 	}
 
 	void Vertex::Fill( bufferstream & is, bool bRH )
@@ -200,6 +199,14 @@ namespace Pmd
 
 	void PMD::Fill( bufferstream& is, bool bRightHand )
 	{
+		char Magic[3];	// Expect 'Pmd'
+		Read( is, Magic );
+		if (_strnicmp( Magic, "Pmd", 3 ))
+		{
+			std::cerr << "invalid pmd file." << std::endl;
+			return;
+		}
+
 		m_Header.Fill( is );
 
 		uint32_t NumVertex = ReadInt( is );
@@ -292,5 +299,6 @@ namespace Pmd
 			for (uint32_t i = 0; i < NumConstraint; i++)
 				m_Constraint[i].Fill( is, bRightHand );
 		}
+		m_IsValid = true;
 	}
 }
