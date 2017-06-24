@@ -72,7 +72,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -92,15 +92,21 @@
   <ItemGroup>
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
+    <ClInclude Include="MikuCamera.h" />
+    <ClInclude Include="MikuCameraController.h" />
     <ClInclude Include="MikuModel.h" />
     <ClInclude Include="Pmd.h" />
+    <ClInclude Include="Motion.h" />
     <ClInclude Include="Vmd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
+    <ClCompile Include="MikuCamera.cpp" />
+    <ClCompile Include="MikuCameraController.cpp" />
     <ClCompile Include="MikuModel.cpp" />
     <ClCompile Include="Pmd.cpp" />
+    <ClCompile Include="Motion.cpp" />
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -29,6 +29,8 @@ int32_t FindPreviousFrameIndex( const std::vector<T>& frames, const float t )
 
 //
 // http://d.hatena.ne.jp/edvakf/20111016/1318716097
+// TODO: partial cache
+//       apply optimize: https://github.com/gre/bezier-easing/blob/master/src/index.js 
 //
 float Animation::Bezier( Vector4 C, float p )
 {
@@ -77,7 +79,7 @@ void BoneMotion::SortKeyFrame()
 	});
 }
 
-void BoneMotion::Interpolate( float t )
+void BoneMotion::Interpolate( float t, OrthogonalTransform & local )
 {
 	if (m_KeyFrames.size() == 0)
 		return;
@@ -87,11 +89,11 @@ void BoneMotion::Interpolate( float t )
 
 	if (t <= first.Frame)
 	{
-		m_Local = first.Local;
+		local = first.Local;
 	}
-	if (t >= last.Frame)
+	else if (t >= last.Frame)
 	{
-		m_Local = last.Local;
+		local = last.Local;
 	}
 	else
 	{
@@ -108,8 +110,8 @@ void BoneMotion::Interpolate( float t )
 		for (uint8_t k = kInterpX; k <= kInterpR; k++)
 			c[k] = Bezier( a.BezierCoeff[k], p );
 		
-		m_Local.SetTranslation( Lerp( a.Local.GetTranslation(), b.Local.GetTranslation(), Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) ) );
-		m_Local.SetRotation( Slerp( a.Local.GetRotation(), b.Local.GetRotation(), c[kInterpR] ) );
+		local.SetTranslation( Lerp( a.Local.GetTranslation(), b.Local.GetTranslation(), Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) ) );
+		local.SetRotation( Slerp( a.Local.GetRotation(), b.Local.GetRotation(), c[kInterpR] ) );
 	}
 }
 
@@ -165,33 +167,22 @@ void CameraMotion::SortKeyFrame()
 	});
 }
 
-void CameraMotion::Interpolate( float t )
+CameraFrame CameraMotion::Interpolate( float t )
 {
-	if (m_KeyFrames.size() == 0)
-		return;
+	if (m_KeyFrames.size() <= 0)
+		return CameraFrame::Default();
 
 	auto& first = m_KeyFrames.front();
 	auto& last = m_KeyFrames.back();
 
-	float dist;
-	Vector3 target;
-	Quaternion rot;
-
+	CameraFrame Data;
 	if (t <= first.Frame)
 	{
-		m_bPerspective = first.bPerspective;
-		m_FovY = first.FovY;
-		dist = first.Distance;
-		target = first.Target;
-		rot = first.Rotation;
+		Data = first.Data;
 	}
-	if (t >= last.Frame)
+	else if (t >= last.Frame)
 	{
-		m_bPerspective = last.bPerspective;
-		m_FovY = last.FovY;
-		dist = last.Distance;
-		target = last.Target;
-		rot = last.Rotation;
+		Data = last.Data;
 	}
 	else
 	{
@@ -201,7 +192,7 @@ void CameraMotion::Interpolate( float t )
 		auto& a = m_KeyFrames[prev];
 		auto& b = m_KeyFrames[prev + 1];
 
-		m_bPerspective = a.bPerspective;
+		Data.bPerspective = a.Data.bPerspective;
 
 		float p = 1.f;
 		if (b.Frame - a.Frame > 0)
@@ -211,12 +202,20 @@ void CameraMotion::Interpolate( float t )
 		for (uint8_t k = kInterpX; k <= kInterpA; k++)
 			c[k] = Bezier( a.BezierCoeff[k], p );
 		
-		target = Lerp( a.Target, b.Target, Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) );
-		rot = Slerp( a.Rotation, b.Rotation, c[kInterpR] );
-		dist = Lerp( a.Distance, b.Distance, c[kInterpD] );
-		m_FovY = Lerp( a.Distance, b.Distance, c[kInterpA] );
+		Data.Position = Lerp( a.Data.Position, b.Data.Position, Vector3( c[kInterpX], c[kInterpY], c[kInterpZ] ) );
+		Data.Rotation = Slerp( a.Data.Rotation, b.Data.Rotation, c[kInterpR] );
+		Data.Distance = Lerp( a.Data.Distance, b.Data.Distance, c[kInterpD] );
+		Data.FovY = Lerp( a.Data.FovY, b.Data.FovY, c[kInterpA] );
 	}
+	return Data;
+}
 
-	OrthogonalTransform otrans( rot, target );
-
+CameraFrame CameraFrame::Default()
+{
+	static CameraFrame frame;
+	frame.bPerspective = true;
+	frame.Distance = -45.f;
+	frame.FovY = 30.f;
+	frame.Position = Vector3( 0.f, 10.f, 0.f );
+	return frame;
 }

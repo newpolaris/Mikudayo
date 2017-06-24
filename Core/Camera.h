@@ -42,6 +42,7 @@ namespace Math
 		const Vector3 GetPosition() const { return m_CameraToWorld.GetTranslation(); }
 
 		// Accessors for reading the various matrices and frusta
+		const OrthogonalTransform& GetCameraToWorld() const { return m_CameraToWorld; }
 		const Matrix4& GetViewMatrix() const { return m_ViewMatrix; }
 		const Matrix4& GetProjMatrix() const { return m_ProjMatrix; }
 		const Matrix4& GetViewProjMatrix() const { return m_ViewProjMatrix; }
@@ -98,6 +99,7 @@ namespace Math
 		void ReverseZ( bool enable ) { m_ReverseZ = enable; UpdateProjMatrix(); }
 
 		float GetFOV() const { return m_VerticalFOV; }
+		float GetAspectRatio() const { return m_AspectRatio; }
 		float GetNearClip() const { return m_NearClip; }
 		float GetFarClip() const { return m_FarClip; }
 		float GetClearDepth() const { return m_ReverseZ ? 0.0f : 1.0f; }
@@ -127,18 +129,18 @@ namespace Math
 		m_CameraToWorld.SetTranslation( worldPos );
 	}
 
-	inline void BaseCamera::SetTransform( const AffineTransform& xform )
-	{
-		// By using these functions, we rederive an orthogonal transform.
-		SetLookDirection(-xform.GetZ(), xform.GetY());
-		SetPosition(xform.GetTranslation());
-	}
-
 	inline void BaseCamera::SetTransform( const OrthogonalTransform& xform )
 	{
 		// By using these functions, we rederive an orthogonal transform.
 		m_CameraToWorld = xform;
 		m_Basis = Matrix3(m_CameraToWorld.GetRotation());
+	}
+
+	inline void BaseCamera::SetTransform( const AffineTransform& xform )
+	{
+		// By using these functions, we rederive an orthogonal transform.
+		SetLookDirection(-xform.GetZ(), xform.GetY());
+		SetPosition(xform.GetTranslation());
 	}
 
 	inline void BaseCamera::SetRotation( Quaternion basisRotation )

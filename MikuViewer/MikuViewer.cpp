@@ -11,10 +11,11 @@
 #include "BufferManager.h"
 #include "MotionBlur.h"
 #include "DepthOfField.h"
-#include "Camera.h"
-#include "Camera1.h"
+#include "MikuCamera.h"
+#include "MikuCameraController.h"
 #include "CameraController.h"
 #include "GameInput.h"
+#include "Motion.h"
 
 #include "CompiledShaders/ModelViewerVS.h"
 #include "CompiledShaders/ModelViewerPS.h"
@@ -28,9 +29,6 @@ using namespace DirectX;
 using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
-
-// #define CAM1
-const bool bRightHand = true;
 
 // Constant buffer used to send MVP matrices to the vertex shader.
 struct MVPConstants
@@ -57,7 +55,7 @@ __declspec(align(16)) struct LightsConstants
 class MikuViewer : public GameCore::IGameApp
 {
 public:
-	MikuViewer() : m_Model( bRightHand ), m_Stage( bRightHand )
+	MikuViewer() : m_pCameraController( nullptr )
 	{
 	}
 
@@ -69,8 +67,8 @@ public:
 
 private:
 
-	Camera m_Camera;
-	CameraController* m_pCameraController;
+	MikuCamera m_Camera;
+	MikuCameraController* m_pCameraController;
 
 	MVPConstants m_MVPBufferData;
 	ConstantBuffer<MVPConstants> m_Buffer;
@@ -81,8 +79,9 @@ private:
 	float m_JitterDelta[2];
 	D3D11_RECT m_MainScissor;
 
-	Graphics::MikuModel m_Model;
+	Graphics::MikuModel m_Miku;
 	Graphics::MikuModel m_Stage;
+	Graphics::Motion m_Motion;
 
 	GraphicsPSO m_DepthPSO; 
 	GraphicsPSO m_OpaquePSO;
@@ -90,8 +89,6 @@ private:
 };
 
 CREATE_APPLICATION( MikuViewer )
-
-Camera1 mCam;
 
 void MikuViewer::Startup( void )
 {
@@ -103,68 +100,44 @@ void MikuViewer::Startup( void )
 	// const std::wstring motionPath = L"Models/gumi.vmd";
 	const std::wstring motionPath = L"Models/nekomimi_lat.vmd";
 	const std::wstring stagePath = L"Models/Library.pmd";
-	const std::wstring cameraTestPath = L"Models/camera.vmd";
+	const std::wstring cameraPath = L"Models/camera.vmd";
 
-	m_Model.LoadModel( modelPath );
-	// m_Model.LoadMotion( motionPath );
-	m_Model.LoadBone();
+	m_Miku.LoadModel( modelPath );
+	m_Miku.LoadMotion( motionPath );
+	m_Miku.LoadBone();
 	m_Stage.LoadModel( stagePath );
-	m_Stage.LoadMotion( cameraTestPath );
+	m_Motion.LoadMotion( cameraPath );
 
 	// Depth-only (2x rate)
-#ifdef CAM1
-	m_DepthPSO.SetRasterizerState( RasterizerDefaultCW );
-#else
 	m_DepthPSO.SetRasterizerState( RasterizerDefault );
-#endif
 	m_DepthPSO.SetBlendState( BlendNoColorWrite );
-	m_DepthPSO.SetInputLayout( static_cast<UINT>(m_Model.m_InputDesc.size()), m_Model.m_InputDesc.data() );
+	m_DepthPSO.SetInputLayout( static_cast<UINT>(m_Miku.m_InputDesc.size()), m_Miku.m_InputDesc.data() );
 	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
 	m_OpaquePSO = m_DepthPSO;
 	m_OpaquePSO.SetBlendState( BlendDisable );
-#ifdef CAM1
-	m_OpaquePSO.SetDepthStencilState( DepthStateTestLess );
-#else
+	
 	if (m_Camera.GetReverseZ())
 		m_OpaquePSO.SetDepthStencilState( DepthStateReadWrite );
 	else
-		m_OpaquePSO.SetDepthStencilState( DepthStateTestLess );
-#endif
+		m_OpaquePSO.SetDepthStencilState( DepthStateReadWriteLE );
+
 	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pModelViewerVS ) );
 	m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
 	m_OpaquePSO.Finalize();
 
 	m_BlendPSO = m_OpaquePSO;
-#ifdef CAM1
-	m_BlendPSO.SetRasterizerState( RasterizerDefaultCW );
-#else
 	m_BlendPSO.SetRasterizerState( RasterizerDefault );
-#endif
 	m_BlendPSO.SetBlendState( BlendTraditional );
 	m_BlendPSO.Finalize();
 
-	const Vector3 eye = Vector3( -1.0f, 15.0f, 22.0f );
-	const Vector3 at = Vector3( 0.0f, 15.0f, 0.0f );
-
-	m_Camera.SetEyeAtUp( eye, at, Vector3( kYUnitVector ) );
-	m_Camera.SetZRange( 0.5f, 20000.0f );
-	m_pCameraController = new CameraController( m_Camera, Vector3( kYUnitVector ) );
-
-	XMFLOAT3 eye1(0.0, 0.0, -50);
-	XMFLOAT3 target1(0.0, 0.0, 0.0);
-	XMFLOAT3 up1(0.f, 1.0, 0.0);
-	mCam.LookAt(eye1, target1, up1);
-	mCam.Zoom(20.0f);
+	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
+	m_pCameraController->SetMotion( &m_Motion );
 
 	m_Buffer.Create();
 
 	g_SceneColorBuffer.SetClearColor( Color( DirectX::Colors::CornflowerBlue ).FromSRGB() );
-#ifdef CAM1
-	g_SceneDepthBuffer.SetClearDepth( 1.0f );
-#else
 	g_SceneDepthBuffer.SetClearDepth( m_Camera.GetClearDepth() );
-#endif
 
 	// Default values in MMD. Due to RH coord z is inverted.
 	DirectionalLight mainDefault = {};
@@ -190,7 +163,7 @@ void MikuViewer::Cleanup( void )
 
 	m_Buffer.Destory();
 
-	m_Model.Clear();
+	m_Miku.Clear();
 	m_Stage.Clear();
 
 	delete m_pCameraController;
@@ -213,43 +186,10 @@ namespace GameCore
 
 void MikuViewer::Update( float deltaT )
 {
-	if (GetAsyncKeyState('W') & 0x8000)
-		mCam.Walk(1.0f*deltaT);
-
-	if (GetAsyncKeyState('S') & 0x8000)
-		mCam.Walk(-1.0f*deltaT);
-
-	if (GetAsyncKeyState('A') & 0x8000)
-		mCam.Strafe(-1.0f*deltaT);
-
-	if (GetAsyncKeyState('D') & 0x8000)
-		mCam.Strafe(1.0f*deltaT);
-
 	if (GameInput::IsFirstPressed(GameInput::kLShoulder))
 		DebugZoom.Decrement();
 	else if (GameInput::IsFirstPressed(GameInput::kRShoulder))
 		DebugZoom.Increment();
-
-	m_pCameraController->Update(deltaT);
-
-	auto pos = m_Camera.GetPosition();
-
-	std::wostringstream outs;
-	outs.precision( 6 );
-	outs << "POS " << pos.GetX() << L" " << pos.GetY() << L" " << pos.GetZ();
-	SetWindowText( GameCore::g_hWnd, outs.str().c_str());
-
-	m_MVPBufferData.model = Matrix4( kIdentity );
-#ifndef CAM1
-	m_MVPBufferData.view = m_Camera.GetViewMatrix();
-	m_MVPBufferData.projection = m_Camera.GetProjMatrix();
-#else
-	mCam.UpdateViewMatrix();
-	m_MVPBufferData.view = (Matrix4)mCam.View();
-	m_MVPBufferData.projection = (Matrix4)mCam.Proj();
-#endif
-	
-	m_Buffer.Update(m_MVPBufferData);
 
 	m_LightConstants.NumLight = static_cast<uint32_t>(m_Lights.size());
 	ASSERT(m_Lights.size() <= LightsConstants::kMaxLight );
@@ -310,7 +250,26 @@ void MikuViewer::Update( float deltaT )
 	m_MainScissor.right = (LONG)g_SceneColorBuffer.GetWidth();
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 
-	m_Model.Update( deltaT );
+	static float kTime = 0.0f;
+	kTime += deltaT;
+	float kFrameTime = kTime * 30.0f;
+
+	m_Miku.Update( kFrameTime );
+	m_Stage.Update( kFrameTime );
+	m_Motion.Update( kFrameTime );
+
+	m_pCameraController->Update( deltaT );
+
+	auto pos = m_Camera.GetPosition();
+	std::wostringstream outs;
+	outs.precision( 6 );
+	outs << "POS " << pos.GetX() << L" " << pos.GetY() << L" " << pos.GetZ();
+	SetWindowText( GameCore::g_hWnd, outs.str().c_str());
+
+	m_MVPBufferData.model = Matrix4( kIdentity );
+	m_MVPBufferData.view = m_Camera.GetViewMatrix();
+	m_MVPBufferData.projection = m_Camera.GetProjMatrix();
+	m_Buffer.Update(m_MVPBufferData);
 }
 
 void MikuViewer::RenderScene( void )
@@ -326,66 +285,13 @@ void MikuViewer::RenderScene( void )
 
 	gfxContext.SetPipelineState( m_OpaquePSO );
 	m_Stage.Draw( gfxContext, kOpaque );
-	m_Model.Draw( gfxContext, kOpaque );
+	m_Miku.Draw( gfxContext, kOpaque );
 	// m_Model.DrawBone( gfxContext );
 
 	gfxContext.SetPipelineState( m_BlendPSO );
 	m_Stage.Draw( gfxContext, kTransparent );
-	m_Model.Draw( gfxContext, kTransparent );
+	m_Miku.Draw( gfxContext, kTransparent );
 
 	gfxContext.Flush();
 	gfxContext.Finish();
 }
-
-POINT mLastMousePos;
-
-namespace GameCore
-{
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-	extern HWND g_hWnd;
-#else
-	extern Platform::Agile<Windows::UI::Core::CoreWindow> g_window;
-#endif
-}
-
-void OnMouseDown(WPARAM btnState, int x, int y)
-{
-	mLastMousePos.x = x;
-	mLastMousePos.y = y;
-
-	SetCapture(g_hWnd);
-}
-
-void OnMouseUp(WPARAM btnState, int x, int y)
-{
-	ReleaseCapture();
-}
-
-void OnMouseMove(WPARAM btnState, int x, int y)
-{
-	if( (btnState & MK_LBUTTON) != 0 )
-	{
-		// Make each pixel correspond to a quarter of a degree.
-		float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-		float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
-
-		mCam.Pitch(dy);
-		mCam.RotateY(dx);
-	}
-	else if( (btnState & MK_RBUTTON) != 0 )
-	{
-		// Make each pixel correspond to 0.01 unit in the scene.
-		float dx = 0.01f*static_cast<float>(x - mLastMousePos.x);
-		float dy = 0.01f*static_cast<float>(y - mLastMousePos.y);
-
-		// Update the camera radius based on input.
-		// mRadius += dx - dy;
-
-		// Restrict the radius.
-		// mRadius = MathHelper::Clamp(mRadius, 1.0f, 20000.0f);
-	}
-
-	mLastMousePos.x = x;
-	mLastMousePos.y = y;
-}
-

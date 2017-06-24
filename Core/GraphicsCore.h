@@ -83,7 +83,7 @@ namespace Graphics
 
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateDisabled;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadWrite;
-	extern D3D11_DEPTH_STENCIL_DESC DepthStateTestLess;
+	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadWriteLE;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadOnly;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadOnlyReversed;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateTestEqual;

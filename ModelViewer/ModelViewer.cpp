@@ -294,7 +294,3 @@ void ModelViewer::RenderScene( void )
 	gfxContext.Flush();
 	gfxContext.Finish();
 }
-
-void OnMouseDown(WPARAM , int, int) {}
-void OnMouseUp(WPARAM , int, int ) { }
-void OnMouseMove(WPARAM , int, int ) {}

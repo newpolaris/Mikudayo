@@ -186,7 +186,7 @@ namespace Graphics
 
 	D3D11_DEPTH_STENCIL_DESC DepthStateDisabled;
 	D3D11_DEPTH_STENCIL_DESC DepthStateReadWrite;
-	D3D11_DEPTH_STENCIL_DESC DepthStateTestLess;
+	D3D11_DEPTH_STENCIL_DESC DepthStateReadWriteLE;
 	D3D11_DEPTH_STENCIL_DESC DepthStateReadOnly;
 	D3D11_DEPTH_STENCIL_DESC DepthStateReadOnlyReversed;
 	D3D11_DEPTH_STENCIL_DESC DepthStateTestEqual;
@@ -501,8 +501,8 @@ void Graphics::Initialize( void )
 	DepthStateReadWrite.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	DepthStateReadWrite.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
 
-	DepthStateTestLess = DepthStateReadWrite;
-	DepthStateTestLess.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	DepthStateReadWriteLE = DepthStateReadWrite;
+	DepthStateReadWriteLE.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 
 	DepthStateReadOnly = DepthStateReadWrite;
 	DepthStateReadOnly.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;

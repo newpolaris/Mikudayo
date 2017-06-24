@@ -29,7 +29,7 @@ namespace Vmd
 	{
 		Read( is, Frame );
 		Read( is, Distance );
-		ReadPosition( is, Target, bRH );
+		ReadPosition( is, Position, bRH );
 		ReadRotation( is, Rotation, bRH );
 		Read( is, Interpolation );
 		Read( is, ViewAngle );

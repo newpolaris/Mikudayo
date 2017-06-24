@@ -13,10 +13,6 @@ namespace Animation
 		kInterpX = 0, kInterpY, kInterpZ, kInterpR, kInterpD, kInterpA 
 	};
 
-	//
-	// http://d.hatena.ne.jp/edvakf/20111016/1318716097
-	// http://zerogram.info/?p=860
-	//
 	float Bezier( Vector4 C, float p );
 
 	struct BoneKeyFrame
@@ -29,17 +25,12 @@ namespace Animation
 	class BoneMotion
 	{
 	public:
-		std::wstring m_Name; 
-
 		bool bLimitXAngle;
-		uint32_t m_ParentIndex;
 		std::vector<BoneKeyFrame> m_KeyFrames;
 
 		void InsertKeyFrame( const BoneKeyFrame& frame );
 		void SortKeyFrame();
-
-		OrthogonalTransform m_Local; 
-		void Interpolate( float t );
+		void Interpolate( float t, OrthogonalTransform& local );
 	};
 
 	struct MorphKeyFrame
@@ -63,14 +54,21 @@ namespace Animation
 		void Interpolate( float t );
 	};
 
+	struct CameraFrame
+	{
+		static CameraFrame Default();
+
+		bool bPerspective;
+		float FovY;
+		float Distance;
+		Vector3 Position; 
+		Quaternion Rotation;
+	};
+	
 	struct CameraKeyFrame
 	{
 		int Frame;
-		Vector3 Target;
-		Quaternion Rotation;
-		float Distance;
-		float FovY;
-		bool bPerspective;
+		CameraFrame Data;
 		Vector4 BezierCoeff[kInterpA+1];
 	};
 
@@ -81,10 +79,6 @@ namespace Animation
 
 		void InsertKeyFrame( const CameraKeyFrame& frame );
 		void SortKeyFrame();
-
-		bool m_bPerspective;
-		float m_FovY;
-		OrthogonalTransform m_CameraToWorld; 
-		void Interpolate( float t );
+		CameraFrame Interpolate( float t );
 	};
 }

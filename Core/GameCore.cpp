@@ -16,14 +16,6 @@
 #include "GameInput.h"
 #include "SystemTime.h"
 
-
-#define GET_X_LPARAM(lp)                        ((int)(short)LOWORD(lp))
-#define GET_Y_LPARAM(lp)                        ((int)(short)HIWORD(lp))
-
-extern void OnMouseDown( WPARAM btnState, int x, int y );
-extern void OnMouseUp( WPARAM btnState, int x, int y );
-extern void OnMouseMove( WPARAM btnState, int x, int y );
-
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 	#pragma comment(lib, "runtimeobject.lib")
 #else
@@ -157,20 +149,6 @@ namespace GameCore
 			case WM_DESTROY:
 				PostQuitMessage(0);
 				break;
-
-			case WM_LBUTTONDOWN:
-			case WM_MBUTTONDOWN:
-			case WM_RBUTTONDOWN:
-				OnMouseDown( wParam, GET_X_LPARAM( lParam ), GET_Y_LPARAM( lParam ) );
-				return 0;
-			case WM_LBUTTONUP:
-			case WM_MBUTTONUP:
-			case WM_RBUTTONUP:
-				OnMouseUp( wParam, GET_X_LPARAM( lParam ), GET_Y_LPARAM( lParam ) );
-				return 0;
-			case WM_MOUSEMOVE:
-				OnMouseMove( wParam, GET_X_LPARAM( lParam ), GET_Y_LPARAM( lParam ) );
-				return 0;
 
 			default:
 				return DefWindowProc( hWnd, message, wParam, lParam );

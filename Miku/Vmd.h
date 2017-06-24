@@ -51,8 +51,8 @@ namespace Vmd
 	struct CameraFrame
 	{
 		uint32_t Frame;
-		float Distance; // Position = Target + Rotation*(0,0,Distance)
-		XMFLOAT3 Target; // Target location
+		float Distance;
+		XMFLOAT3 Position; // Center of rotation
 		XMFLOAT3 Rotation; // Euler angle
 		uint8_t Interpolation[6][4];
 		uint32_t ViewAngle;

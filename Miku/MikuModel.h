@@ -59,24 +59,20 @@ namespace Graphics
 	struct Bone
 	{
 		std::wstring Name; 
-		Vector3 Scale;
 		Vector3 Translate;
-		Quaternion Rotation;
 	};
 
 	class MikuModel
 	{
 	public:
 		MikuModel( bool bRightHand = true );
-		void LoadModel( const std::wstring& model );
-		void LoadMotion( const std::wstring& model );
-		void LoadBone();
 		void Clear();
 		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter );
 		void DrawBone( GraphicsContext& gfxContext );
-		void SetBoneNum( size_t numBones );
-		void Update( float dt );
-		void UpdateChildPose( int32_t idx );
+		void LoadModel( const std::wstring& model );
+		void LoadMotion( const std::wstring& model );
+		void LoadBone();
+		void Update( float kFrameTime );
 
 	private:
 		void LoadPmd( const std::wstring& model, bool bRightHand );
@@ -84,7 +80,10 @@ namespace Graphics
 
 		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 
+		void SetBoneNum( size_t numBones );
+
 		void UpdateIK( const Pmd::IK& ik );
+		void UpdateChildPose( int32_t idx );
 
 	public:
 		bool m_bRightHand;
@@ -92,9 +91,9 @@ namespace Graphics
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
 		std::vector<Pmd::IK> m_IKs;
+		std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
 		std::vector<OrthogonalTransform> m_LocalPose; // offset
 		std::vector<OrthogonalTransform> m_Pose; // cumulative transfrom matrix from root
-		std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
 		std::vector<Matrix4> m_SkinTransform;
 		std::vector<int32_t> m_BoneParent;
 		std::vector<std::vector<int32_t>> m_BoneChild;
@@ -102,6 +101,7 @@ namespace Graphics
 		std::map<std::wstring, uint32_t> m_MorphIndex;
 		std::vector<Animation::BoneMotion> m_BoneMotions;
 		std::vector<Animation::MorphMotion> m_MorphMotions;
+		Animation::CameraMotion m_CameraMotion;
 
 		std::vector<XMFLOAT3> m_VertexPos; // original vertex position
 		std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
