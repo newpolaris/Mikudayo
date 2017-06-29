@@ -228,44 +228,15 @@ void ModelViewer::Update( float deltaT )
 	// Prepare to pass the updated model matrix to the shader
 	XMStoreFloat4x4(&m_MVPBufferData.model, XMMatrixTranspose(XMMatrixRotationY(radians)));
 
-	// We use viewport offsets to jitter our color samples from frame to frame (with TAA.)
-	// D3D has a design quirk with fractional offsets such that the implicit scissor
-	// region of a viewport is floor(TopLeftXY) and floor(TopLeftXY + WidthHeight), so
-	// having a negative fractional top left, e.g. (-0.25, -0.25) would also shift the
-	// BottomRight corner up by a whole integer.  One solution is to pad your viewport
-	// dimensions with an extra pixel.  My solution is to only use positive fractional offsets,
-	// but that means that the average sample position is +0.5, which I use when I disable
-	// temporal AA.
-	m_JitterDelta[0] = m_MainViewport.TopLeftX;
-	m_JitterDelta[1] = m_MainViewport.TopLeftY;
-
-	uint64_t FrameIndex = Graphics::GetFrameCount();
-
-	if (TemporalAA::Enable && !DepthOfField::Enable)
-	{
-		static const float Halton23[8][2] =
-		{
-			{ 0.0f / 8.0f, 0.0f / 9.0f }, { 4.0f / 8.0f, 3.0f / 9.0f },
-			{ 2.0f / 8.0f, 6.0f / 9.0f }, { 6.0f / 8.0f, 1.0f / 9.0f },
-			{ 1.0f / 8.0f, 4.0f / 9.0f }, { 5.0f / 8.0f, 7.0f / 9.0f },
-			{ 3.0f / 8.0f, 2.0f / 9.0f }, { 7.0f / 8.0f, 5.0f / 9.0f }
-		};
-
-		const float* Offset = nullptr;
-
-		Offset = Halton23[FrameIndex % 8];
-
-		m_MainViewport.TopLeftX = Offset[0];
-		m_MainViewport.TopLeftY = Offset[1];
-	}
-	else
-	{
-		m_MainViewport.TopLeftX = 0.5f;
-		m_MainViewport.TopLeftY = 0.5f;
-	}
-
-	m_JitterDelta[0] -= m_MainViewport.TopLeftX;
-	m_JitterDelta[1] -= m_MainViewport.TopLeftY;
+    // We use viewport offsets to jitter sample positions from frame to frame (for TAA.)
+    // D3D has a design quirk with fractional offsets such that the implicit scissor
+    // region of a viewport is floor(TopLeftXY) and floor(TopLeftXY + WidthHeight), so
+    // having a negative fractional top left, e.g. (-0.25, -0.25) would also shift the
+    // BottomRight corner up by a whole integer.  One solution is to pad your viewport
+    // dimensions with an extra pixel.  My solution is to only use positive fractional offsets,
+    // but that means that the average sample position is +0.5, which I use when I disable
+    // temporal AA.
+    // TemporalEffects::GetJitterOffset(m_MainViewport.TopLeftX, m_MainViewport.TopLeftY);
 
 	m_MainViewport.Width = (float)g_SceneColorBuffer.GetWidth();
 	m_MainViewport.Height = (float)g_SceneColorBuffer.GetHeight();

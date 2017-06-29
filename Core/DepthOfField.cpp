@@ -12,9 +12,8 @@
 //
 
 #include "pch.h"
-#include "DepthOfField.h"
-// #include "RootSignature.h"
 #include "PipelineState.h"
+#include "DepthOfField.h"
 #include "CommandContext.h"
 #include "BufferManager.h"
 
@@ -58,4 +57,12 @@ namespace DepthOfField
 	ComputePSO s_DoFDebugBlueCS;			// Output blue to entire tile for debugging
 
 	// IndirectArgsBuffer s_IndirectParameters;
+}
+
+void DepthOfField::Initialize( void )
+{
+}
+
+void DepthOfField::Shutdown( void )
+{
 }

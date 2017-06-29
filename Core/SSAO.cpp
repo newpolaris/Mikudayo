@@ -12,35 +12,20 @@
 //
 
 #include "pch.h"
-#include "MotionBlur.h"
-#include "Camera.h"
+#include "SSAO.h"
 #include "BufferManager.h"
 #include "GraphicsCore.h"
 #include "CommandContext.h"
-#include "PostEffects.h"
-// #include "SystemTime.h"
-
-#include "CompiledShaders/ScreenQuadVS.h"
+#include "Camera.h"
+#include "TemporalEffects.h"
 
 using namespace Graphics;
 using namespace Math;
-using namespace TemporalAA;
 
-void MotionBlur::Initialize( void )
+namespace SSAO
 {
-}
-
-void MotionBlur::Shutdown( void )
-{
-}
-
-namespace MotionBlur
-{
-	BoolVar Enable("Graphics/Motion Blur/Enable", false);
-
-	ComputePSO s_CameraMotionBlurPrePassCS[2];
-	ComputePSO s_MotionBlurPrePassCS;
-	ComputePSO s_MotionBlurFinalPassCS;
-	GraphicsPSO s_MotionBlurFinalPassPS;
-	ComputePSO s_CameraVelocityCS[2];
+    BoolVar Enable("Graphics/SSAO/Enable", true);
+    BoolVar DebugDraw("Graphics/SSAO/Debug Draw", false);
+    BoolVar AsyncCompute("Graphics/SSAO/Async Compute", false);
+    BoolVar ComputeLinearZ("Graphics/SSAO/Always Linearize Z", true);
 }

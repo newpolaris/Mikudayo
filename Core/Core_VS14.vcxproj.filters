@@ -20,6 +20,12 @@
     <Filter Include="Shaders\Present">
       <UniqueIdentifier>{f3297d21-f906-406f-8f20-8d6070532889}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\HDR">
+      <UniqueIdentifier>{4513dd73-b9ea-4a21-ae8d-7fdb7615e670}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Text">
+      <UniqueIdentifier>{8cca82df-7730-4e1d-83ac-27711d53a71b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -193,6 +199,21 @@
     <ClInclude Include="Math\Functions.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
+    <ClInclude Include="FXAA.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="PostEffects.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="TemporalEffects.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="SSAO.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuTimeManager.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -318,6 +339,21 @@
     <ClCompile Include="Math\Functions.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
+    <ClCompile Include="FXAA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PostEffects.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="TemporalEffects.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="SSAO.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuTimeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Math\Functions.inl">
@@ -328,6 +364,27 @@
     </None>
     <None Include="Shaders\ColorSpaceUtility.hlsli">
       <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\PixelPacking.hlsli">
+      <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\PixelPacking_RGBE.hlsli">
+      <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\PixelPacking_RGBM.hlsli">
+      <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\PixelPacking_Velocity.hlsli">
+      <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\PixelPacking_LUV.hlsli">
+      <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\PixelPacking_R11G11B10.hlsli">
+      <Filter>Shaders\Misc</Filter>
+    </None>
+    <None Include="Shaders\TextRS.hlsli">
+      <Filter>Shaders\Text</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -342,6 +399,30 @@
     </FxCompile>
     <FxCompile Include="Shaders\SharpeningUpsamplePS.hlsl">
       <Filter>Shaders\Present</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CopyBackPostBufferCS.hlsl">
+      <Filter>Shaders\Misc</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugLuminanceLdrCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugLuminanceLdr2CS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ApplyBloomCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ApplyBloom2CS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\TextVS.hlsl">
+      <Filter>Shaders\Text</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\TextAntialiasPS.hlsl">
+      <Filter>Shaders\Text</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\TextShadowPS.hlsl">
+      <Filter>Shaders\Text</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

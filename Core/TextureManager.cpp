@@ -305,7 +305,63 @@ namespace TextureManager
 		// This was the first time it was requested, so indicate that the caller must read the file
 		return make_pair(NewTexture, true);
 	}
-}
+
+    const Texture& GetBlackTex2D(void)
+    {
+        auto ManagedTex = FindOrLoadTexture(L"DefaultBlackTexture");
+
+        ManagedTexture* ManTex = ManagedTex.first;
+        const bool RequestsLoad = ManagedTex.second;
+
+        if (!RequestsLoad)
+        {
+            ManTex->WaitForLoad();
+            return *ManTex;
+        }
+
+        uint32_t BlackPixel = 0;
+        ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &BlackPixel);
+        return *ManTex;
+    }
+
+    const Texture& GetWhiteTex2D(void)
+    {
+        auto ManagedTex = FindOrLoadTexture(L"DefaultWhiteTexture");
+
+        ManagedTexture* ManTex = ManagedTex.first;
+        const bool RequestsLoad = ManagedTex.second;
+
+        if (!RequestsLoad)
+        {
+            ManTex->WaitForLoad();
+            return *ManTex;
+        }
+
+        uint32_t WhitePixel = 0xFFFFFFFFul;
+        ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &WhitePixel);
+        return *ManTex;
+    }
+
+    const Texture& GetMagentaTex2D(void)
+    {
+        auto ManagedTex = FindOrLoadTexture(L"DefaultMagentaTexture");
+
+        ManagedTexture* ManTex = ManagedTex.first;
+        const bool RequestsLoad = ManagedTex.second;
+
+        if (!RequestsLoad)
+        {
+            ManTex->WaitForLoad();
+            return *ManTex;
+        }
+
+        uint32_t MagentaPixel = 0x00FF00FF;
+        ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &MagentaPixel);
+        return *ManTex;
+    }
+
+} // namespace TextureManager
+
 
 void ManagedTexture::WaitForLoad( void ) const
 {
@@ -434,3 +490,4 @@ const ManagedTexture* TextureManager::LoadFromStream( const std::wstring& key, s
 
    return ManTex;
 }
+

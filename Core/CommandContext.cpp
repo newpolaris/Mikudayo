@@ -18,6 +18,8 @@
 #include "InputLayout.h"
 #include "BlendState.h"
 #include "Shader.h"
+#include "GpuBuffer.h"
+#include "EngineProfiling.h"
 
 using namespace Graphics;
 
@@ -79,14 +81,31 @@ void CommandContext::DestroyAllContexts(void)
 	g_ContextManager.DestroyAllContexts();
 }
 
+ComputeContext::ComputeContext() : CommandContext( kComputeContext )
+{
+}
+
+GraphicsContext::GraphicsContext() : CommandContext( kGraphicsContext )
+{
+}
+
 CommandContext& CommandContext::Begin( ContextType Type, const std::wstring ID )
 {
 	CommandContext* NewContext = g_ContextManager.AllocateContext( Type );
 	NewContext->SetID( ID );
-	// if (ID.length() > 0)
-	//	EngineProfiling::BeginBlock(ID, NewContext);
+	if (ID.length() > 0)
+	    EngineProfiling::BeginBlock(ID, NewContext);
 
 	return *NewContext;
+}
+
+ComputeContext& ComputeContext::Begin( const std::wstring& ID )
+{
+    ComputeContext& NewContext = g_ContextManager.AllocateContext( kComputeContext )->GetComputeContext();
+    NewContext.SetID(ID);
+	if (ID.length() > 0)
+	    EngineProfiling::BeginBlock(ID, &NewContext);
+    return NewContext;
 }
 
 uint64_t CommandContext::Flush(bool WaitForCompletion)
@@ -96,8 +115,8 @@ uint64_t CommandContext::Flush(bool WaitForCompletion)
 
 uint64_t CommandContext::Finish( bool WaitForCompletion )
 {
-	// if (m_ID.length() > 0)
-	//	EngineProfiling::EndBlock(this);
+	if (m_ID.length() > 0)
+	    EngineProfiling::EndBlock(this);
 
 	Flush( WaitForCompletion );
 
@@ -109,13 +128,13 @@ uint64_t CommandContext::Finish( bool WaitForCompletion )
 	m_Context->FinishCommandList( FALSE, &CommandList );
 	g_Context->ExecuteCommandList( CommandList.Get(), FALSE );
 
-
 	g_ContextManager.FreeContext( this );
 
 	return 0;
 }
 
-CommandContext::CommandContext() :
+CommandContext::CommandContext(ContextType Type) :
+	m_Type(Type),
 	m_CpuLinearAllocator(kCpuWritable), 
 	m_GpuLinearAllocator(kGpuExclusive),
 	m_Context(nullptr),
@@ -163,6 +182,33 @@ void CommandContext::Initialize( void )
 #endif
 }
 
+void CommandContext::BeginQuery( ID3D11Query* pQueryDisjoint )
+{
+    g_Context->Begin( pQueryDisjoint );
+}
+
+void CommandContext::EndQuery( ID3D11Query* pQueryDisjoint )
+{
+    g_Context->End( pQueryDisjoint );
+}
+
+void CommandContext::ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer )
+{
+    //
+    // TODO: Replace with fence
+    //
+    while (S_OK != Graphics::g_Context->GetData( pQueryDisjoint, pDisjoint, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT), 0)) {}
+
+    if (!pDisjoint->Disjoint)
+    {
+        for (uint32_t i = 0; i < NumQueries; i++)
+        {
+            if (S_OK != Graphics::g_Context->GetData( pQueryHeap[i], &pBuffer[i], sizeof( UINT64 ), 0 ))
+                pBuffer[i] = 0;
+        }
+    }
+}
+
 void CommandContext::SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle, BindList Binds )
 {
 	SetDynamicDescriptors( Offset, 1, &Handle, Binds );
@@ -182,6 +228,16 @@ void CommandContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11
 		case kBindCompute:		m_Context->CSSetShaderResources( Offset, Count, Handles ); break;
 		}
 	}
+}
+
+void ComputeContext::SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle )
+{
+    m_Context->CSSetShaderResources( Offset, 1, &Handle );
+}
+
+void ComputeContext::SetDynamicDescriptor( UINT Offset, const D3D11_UAV_HANDLE Handle )
+{
+    m_Context->CSSetUnorderedAccessViews( Offset, 1, &Handle, nullptr );
 }
 
 void CommandContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, 
@@ -205,6 +261,17 @@ void CommandContext::SetDynamicSamplers( UINT Offset, UINT Count,
 		case kBindCompute:		m_Context->CSSetSamplers( Offset, Count, Handles ); break;
 		}
 	}
+}
+
+
+void ComputeContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle )
+{
+	m_Context->CSSetSamplers( Offset, 1, &Handle );
+}
+
+void ComputeContext::SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[] )
+{
+	m_Context->CSSetConstantBuffers( Offset, Count, Handle );
 }
 
 void CommandContext::SetConstantBuffers( UINT Offset, UINT Count,
@@ -266,9 +333,29 @@ void CommandContext::SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W, B
 	SetConstants( 4, &Param, BindList );
 }
 
-GraphicsContext::GraphicsContext()
+void ComputeContext::SetConstants( UINT NumConstants, const void* pConstants )
 {
-	m_Type = kGraphicsContext;
+    CommandContext::SetConstants( NumConstants, pConstants, { kBindCompute } );
+}
+
+void ComputeContext::SetConstants( DWParam X )
+{
+    CommandContext::SetConstants( X, { kBindCompute } );
+}
+
+void ComputeContext::SetConstants( DWParam X, DWParam Y )
+{
+    CommandContext::SetConstants( X, Y, { kBindCompute } );
+}
+
+void ComputeContext::SetConstants( DWParam X, DWParam Y, DWParam Z )
+{
+    CommandContext::SetConstants( X, Y, Z, { kBindCompute } );
+}
+
+void ComputeContext::SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W )
+{
+    CommandContext::SetConstants( X, Y, Z, W, { kBindCompute } );
 }
 
 #ifndef GRAPHICS_DEBUG
@@ -408,6 +495,19 @@ void GraphicsContext::SetVertexBuffer( UINT Slot, const D3D11_VERTEX_BUFFER_VIEW
 	m_Context->IASetVertexBuffers( Slot, 1, &Buffer.Buffer, &Buffer.StrideInBytes, &Buffer.Offset );
 }
 
+void GraphicsContext::SetDynamicVB( UINT Slot, size_t NumVertices, size_t VertexStride, const void* VBData )
+{
+    VertexBuffer buffer;
+    buffer.Create( L"DynamicVB", (uint32_t)NumVertices, (uint32_t)VertexStride, VBData );
+    SetVertexBuffer( Slot, buffer.VertexBufferView() );
+}
+
+void ComputeContext::SetPipelineState( ComputePSO& PSO )
+{
+	m_PSOState = PSO.GetState();
+	m_PSOState->Bind( m_Context );
+}
+
 void GraphicsContext::SetPipelineState( GraphicsPSO& PSO )
 {
 	m_PSOState = PSO.GetState();
@@ -428,3 +528,4 @@ void ConstantBufferAllocator::Destroy()
 	m_PagePool.clear();
 }
 #endif
+

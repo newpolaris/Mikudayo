@@ -28,10 +28,16 @@ using Microsoft::WRL::ComPtr;
 using Graphics::g_Device;
 using namespace std;
 
+struct ComputePipelineStateDesc
+{
+public:
+    ComputePipelineStateDesc() {}
+    ShaderByteCode CS;
+};
+
 struct GraphicsPipelineStateDesc
 {
 public:
-
 	GraphicsPipelineStateDesc() : TopologyType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) {}
 
     D3D_PRIMITIVE_TOPOLOGY TopologyType;
@@ -46,9 +52,19 @@ public:
 	RasterizerDesc Rasterizer;
 };
 
+ComputePSO::ComputePSO()
+{
+	m_PSODesc = std::make_unique<ComputePipelineStateDesc>();
+}
+
 GraphicsPSO::GraphicsPSO()
 { 
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>();
+}
+
+ComputePSO::ComputePSO( const ComputePSO & PSO )
+{
+	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
 }
 
 GraphicsPSO::GraphicsPSO( const GraphicsPSO& PSO )
@@ -56,16 +72,31 @@ GraphicsPSO::GraphicsPSO( const GraphicsPSO& PSO )
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>(*PSO.m_PSODesc);
 }
 
+ComputePSO& ComputePSO::operator=( const ComputePSO& PSO )
+{
+	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
+	return *this;
+}
+
 GraphicsPSO& GraphicsPSO::operator=( const GraphicsPSO& PSO )
 {
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>(*PSO.m_PSODesc);
-
 	return *this;
+}
+
+ComputePSO::~ComputePSO()
+{
 }
 
 GraphicsPSO::~GraphicsPSO()
 {
-	Destroy();
+}
+
+void ComputePSO::Destroy()
+{
+	if (m_ReadyFuture.valid())
+		m_ReadyFuture.wait();
+	m_PSOState = nullptr;
 }
 
 void GraphicsPSO::Destroy()
@@ -75,9 +106,17 @@ void GraphicsPSO::Destroy()
 	m_PSOState = nullptr;
 }
 
-std::shared_ptr<PipelineState> GraphicsPSO::GetState() 
+std::shared_ptr<ComputePipelineState> ComputePSO::GetState()
 {
-	ASSERT( m_ReadyFuture.valid(), L"Maybe not finalized yet" );
+	ASSERT( m_ReadyFuture.valid(), L"Not Finalized Yet" );
+	m_ReadyFuture.wait();
+
+	return m_PSOState; 
+}
+
+std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState() 
+{
+	ASSERT( m_ReadyFuture.valid(), L"Not Finalized Yet" );
 	m_ReadyFuture.wait();
 
 	return m_PSOState; 
@@ -139,13 +178,18 @@ void GraphicsPSO::SetPixelShader( const std::string & Name, const void * Binary,
 	m_PSODesc->PS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
 
+void ComputePSO::SetComputeShader( const std::string & Name, const void * Binary, size_t Size )
+{
+	m_PSODesc->CS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
+}
+
 void GraphicsPSO::Finalize()
 {
-	ASSERT(!m_ReadyFuture.valid(), L"Finalized alreay");
+	ASSERT(!m_ReadyFuture.valid(), L"Already Finalized");
 
 	m_ReadyFuture = std::shared_future<void>(m_Promise.get_future());
 	auto sync = std::async(std::launch::async, [=]{
-		auto State = std::make_shared<PipelineState>();
+		auto State = std::make_shared<GraphicsPipelineState>();
 		State->TopologyType = m_PSODesc->TopologyType;
 		State->InputLayout = InputLayout::Create( m_PSODesc->InputDescList, m_PSODesc->VS );
 		State->BlendState = BlendState::Create( m_PSODesc->Blend );
@@ -153,18 +197,29 @@ void GraphicsPSO::Finalize()
 		State->RasterizerState = RasterizerState::Create( m_PSODesc->Rasterizer );
 		State->VertexShader = Shader::Create( kVertexShader, m_PSODesc->VS );
 		State->PixelShader = Shader::Create( kPixelShader, m_PSODesc->PS );
+		State->GeometryShader = Shader::Create( kGeometryShader, m_PSODesc->GS );
+		State->DomainShader = Shader::Create( kDomainShader, m_PSODesc->DS );
+		State->HullShader = Shader::Create( kDomainShader, m_PSODesc->HS );
 
 		m_PSOState.swap(State);
-
 		m_Promise.set_value();
 	});
 }
 
-ComputePSO::ComputePSO()
+void ComputePSO::Finalize()
 {
+	ASSERT(!m_ReadyFuture.valid(), L"Already Finalized");
+
+	m_ReadyFuture = std::shared_future<void>(m_Promise.get_future());
+	auto sync = std::async(std::launch::async, [=]{
+		auto State = std::make_shared<ComputePipelineState>();
+		State->ComputeShader = Shader::Create( kComputeShader, m_PSODesc->CS );
+		m_PSOState.swap(State);
+		m_Promise.set_value();
+	});
 }
 
-void PipelineState::Bind( ID3D11DeviceContext3 * Context )
+void GraphicsPipelineState::Bind( ID3D11DeviceContext3 * Context )
 {
 	if (TopologyType != D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
 		Context->IASetPrimitiveTopology( TopologyType );
@@ -186,4 +241,10 @@ void PipelineState::Bind( ID3D11DeviceContext3 * Context )
 
 	if (RasterizerState)
 		RasterizerState->Bind( Context );
+}
+
+void ComputePipelineState::Bind( ID3D11DeviceContext3 * Context )
+{
+	if (ComputeShader)
+		ComputeShader->Bind( Context );
 }

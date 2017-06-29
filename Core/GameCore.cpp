@@ -13,8 +13,11 @@
 #include "pch.h"
 #include "GameCore.h"
 #include "GraphicsCore.h"
-#include "GameInput.h"
 #include "SystemTime.h"
+#include "GameInput.h"
+#include "BufferManager.h"
+#include "CommandContext.h"
+#include "PostEffects.h"
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 	#pragma comment(lib, "runtimeobject.lib")
@@ -53,6 +56,8 @@ namespace GameCore
 
 	bool UpdateApplication( IGameApp& game )
 	{
+        EngineProfiling::Begin();
+
 		float DeltaTime = Graphics::GetFrameTime();
 
 		GameInput::Update( DeltaTime );
@@ -60,8 +65,22 @@ namespace GameCore
 		
 		game.Update( DeltaTime );
 		game.RenderScene();
+        
+        PostEffects::Render();
+
+        GraphicsContext& UiContext = GraphicsContext::Begin(L"Render UI");
+        UiContext.ClearColor(g_OverlayBuffer);
+        UiContext.SetRenderTarget(g_OverlayBuffer.GetRTV());
+        UiContext.SetViewportAndScissor(0, 0, g_OverlayBuffer.GetWidth(), g_OverlayBuffer.GetHeight());
+        game.RenderUI(UiContext);
+
+        EngineTuning::Display( UiContext, 10.0f, 40.0f, 1900.0f, 1040.0f );
+
+        UiContext.Finish();
 
 		Graphics::Present();
+
+        EngineProfiling::End();
 
 		return !game.IsDone();
 	}

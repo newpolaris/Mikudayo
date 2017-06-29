@@ -91,7 +91,7 @@ class CommandContext : NonCopyable
 	friend ContextManager;
 
 protected:
-	CommandContext();
+	CommandContext(ContextType Type);
 
 private:
 	void Reset( void );
@@ -113,28 +113,38 @@ public:
 
 	// Prepare to render by reserving a command list and command allocator
 	void Initialize( void );
-	template <typename T>
-	void SetDynamicConstantBufferView( UINT Slot, const ConstantBuffer<T>& Buffer, BindList BindList );
-	void SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData, BindList Binds );
-	void SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle, BindList Binds );
-	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[], BindList Binds );
-	void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, EPipelineBind Bind );
-	void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handle[], BindList BindList );
-	void SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[], BindList BindList );
-	void UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
-	void SetConstants( UINT NumConstants, const void* pConstants, BindList BindList );
-	void SetConstants( DWParam X, BindList BindList );
-	void SetConstants( DWParam X, DWParam Y, BindList BindList );
-	void SetConstants( DWParam X, DWParam Y, DWParam Z, BindList BindList );
-	void SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W, BindList BindList );
 
 	GraphicsContext& GetGraphicsContext() {
 		return reinterpret_cast<GraphicsContext&>(*this);
 	}
 
+    ComputeContext& GetComputeContext() {
+        return reinterpret_cast<ComputeContext&>(*this);
+    }
+
+    static void BeginQuery( ID3D11Query* pQueryDisjoint );
+    static void EndQuery( ID3D11Query* pQueryDisjoint );
+    void InsertTimeStamp( ID3D11Query* pQuery );
+    static void ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer );
 	void PIXBeginEvent(const wchar_t* label);
 	void PIXEndEvent(void);
 	void PIXSetMarker(const wchar_t* label);
+
+	void SetConstants( UINT NumConstants, const void* pConstants, BindList BindList );
+	void SetConstants( DWParam X, BindList BindList );
+	void SetConstants( DWParam X, DWParam Y, BindList BindList );
+	void SetConstants( DWParam X, DWParam Y, DWParam Z, BindList BindList );
+	void SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W, BindList BindList );
+	void SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[], BindList BindList );
+
+	template <typename T> void SetDynamicConstantBufferView( UINT Slot, const ConstantBuffer<T>& Buffer, BindList BindList );
+	void SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData, BindList Binds );
+	void SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle, BindList Binds );
+	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[], BindList Binds );
+    void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, EPipelineBind Bind );
+    void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[], BindList Binds );
+
+	void UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
 
 protected:
 	CommandListManager* m_OwningManager;
@@ -159,6 +169,33 @@ protected:
 
 class ComputeContext : public CommandContext
 {
+	friend ContextManager;
+
+protected:
+	ComputeContext();
+
+public:
+    static ComputeContext& Begin(const std::wstring& ID = L"");
+
+	void SetPipelineState( ComputePSO& PSO );
+
+	void SetConstants( UINT NumConstants, const void* pConstants );
+	void SetConstants( DWParam X );
+	void SetConstants( DWParam X, DWParam Y );
+	void SetConstants( DWParam X, DWParam Y, DWParam Z );
+	void SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W );
+	void SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[] );
+
+    void SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle );
+    void SetDynamicDescriptor( UINT Offset, const D3D11_UAV_HANDLE Handle );
+    void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle );
+
+    void Dispatch( size_t GroupCountX = 1, size_t GroupCountY = 1, size_t GroupCountZ = 1 );
+    void Dispatch1D( size_t ThreadCountX, size_t GroupSizeX = 64);
+    void Dispatch2D( size_t ThreadCountX, size_t ThreadCountY, size_t GroupSizeX = 8, size_t GroupSizeY = 8);
+    void Dispatch3D( size_t ThreadCountX, size_t ThreadCountY, size_t ThreadCountZ, size_t GroupSizeX, size_t GroupSizeY, size_t GroupSizeZ );
+
+	std::shared_ptr<ComputePipelineState> m_PSOState;
 };
 
 class GraphicsContext : public CommandContext
@@ -166,7 +203,6 @@ class GraphicsContext : public CommandContext
 	friend ContextManager;
 
 protected:
-
 	GraphicsContext();
 
 public:
@@ -176,13 +212,18 @@ public:
 		return CommandContext::Begin(ContextType::kGraphicsContext, ID).GetGraphicsContext();
 	}
 
+	void ClearColor( ColorBuffer& Target );
+	void ClearDepth( DepthBuffer& Target );
+	void ClearStencil( DepthBuffer& Target );
+	void ClearDepthAndStencil( DepthBuffer& Target );
+
+	void GenerateMips( D3D11_SRV_HANDLE SRV );
+
 	void SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTVs[] );
 	void SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTVs[], D3D11_DSV_HANDLE DSV );
 	void SetRenderTarget( D3D11_RTV_HANDLE RTV ) { SetRenderTargets( 1, &RTV ); }
 	void SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DSV );
 	void SetDepthStencilTarget( D3D11_DSV_HANDLE DSV ) { SetRenderTargets(0, nullptr, DSV); }
-
-	void GenerateMips( D3D11_SRV_HANDLE SRV );
 	void SetViewport( const D3D11_VIEWPORT& vp );
 	void SetViewport( FLOAT x, FLOAT y, FLOAT w, FLOAT h, FLOAT minDepth = 0.0f, FLOAT maxDepth = 1.0f );
 	void SetScissor( const D3D11_RECT& rect );
@@ -192,12 +233,11 @@ public:
 	void SetStencilRef( UINT StencilRef );
 	void SetBlendFactor( const Color& BlendFactor );
 	void SetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY Topology );
-	void ClearColor( ColorBuffer& Target );
-	void ClearDepth( DepthBuffer& Target );
-	void ClearStencil( DepthBuffer& Target );
-	void ClearDepthAndStencil( DepthBuffer& Target );
+
 	void SetIndexBuffer( const D3D11_INDEX_BUFFER_VIEW& Buffer );
 	void SetVertexBuffer( UINT Slot, const D3D11_VERTEX_BUFFER_VIEW& Buffer );
+    void SetDynamicVB( UINT Slot, size_t NumVertices, size_t VertexStride, const void* VBData );
+
 	void Draw( UINT VertexCount, UINT VertexStartOffset = 0 );
 	void DrawIndexed(UINT IndexCount, UINT StartIndexLocation = 0, INT BaseVertexLocation = 0);
 	void DrawInstanced(UINT VertexCountPerInstance, UINT InstanceCount,
@@ -207,11 +247,36 @@ public:
 	void DrawIndirect( GpuBuffer& ArgumentBuffer, size_t ArgumentBufferOffset = 0 );
 	void SetPipelineState( GraphicsPSO& PSO );
 
-	std::shared_ptr<PipelineState> m_PSOState;
+	std::shared_ptr<GraphicsPipelineState> m_PSOState;
 };
 
+inline void ComputeContext::Dispatch( size_t GroupCountX, size_t GroupCountY, size_t GroupCountZ )
+{
+    m_Context->Dispatch((UINT)GroupCountX, (UINT)GroupCountY, (UINT)GroupCountZ);
+}
+
+inline void ComputeContext::Dispatch1D( size_t ThreadCountX, size_t GroupSizeX )
+{
+    Dispatch( Math::DivideByMultiple(ThreadCountX, GroupSizeX), 1, 1 );
+}
+
+inline void ComputeContext::Dispatch2D( size_t ThreadCountX, size_t ThreadCountY, size_t GroupSizeX, size_t GroupSizeY )
+{
+    Dispatch(
+        Math::DivideByMultiple(ThreadCountX, GroupSizeX),
+        Math::DivideByMultiple(ThreadCountY, GroupSizeY), 1);
+}
+
+inline void ComputeContext::Dispatch3D( size_t ThreadCountX, size_t ThreadCountY, size_t ThreadCountZ, size_t GroupSizeX, size_t GroupSizeY, size_t GroupSizeZ )
+{
+    Dispatch(
+        Math::DivideByMultiple(ThreadCountX, GroupSizeX),
+        Math::DivideByMultiple(ThreadCountY, GroupSizeY),
+        Math::DivideByMultiple(ThreadCountZ, GroupSizeZ));
+}
+
 template<typename T>
-void GraphicsContext::SetDynamicConstantBufferView( UINT Slot, const ConstantBuffer<T>& Buffer, BindList BindList )
+inline void GraphicsContext::SetDynamicConstantBufferView( UINT Slot, const ConstantBuffer<T>& Buffer, BindList BindList )
 {
 	Buffer.UploadAndBind( *this, Slot, BindList );
 }
@@ -243,7 +308,12 @@ inline void CommandContext::PIXEndEvent(void)
 #endif
 }
 
-inline void CommandContext::PIXSetMarker(const wchar_t* label)
+inline void CommandContext::InsertTimeStamp( ID3D11Query* pQuery )
+{
+    m_Context->End( pQuery );
+}
+
+inline void CommandContext::PIXSetMarker( const wchar_t* label )
 {
 #if defined(RELEASE) || _MSC_VER < 1800
 	(label);

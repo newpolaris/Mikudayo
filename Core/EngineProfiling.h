@@ -20,8 +20,8 @@ class CommandContext;
 
 namespace EngineProfiling
 {
-	void Update();
-
+	void Begin();
+    void End();
 	void BeginBlock(const std::wstring& name, CommandContext* Context = nullptr);
 	void EndBlock(CommandContext* Context = nullptr);
 

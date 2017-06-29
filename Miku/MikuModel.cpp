@@ -421,7 +421,6 @@ void MikuModel::LoadBone()
 
 	for ( auto i = 0; i < numBone; i++ )
 	{
-		auto& Bone = m_BoneMotions[i];
 		auto parentIndex = m_BoneParent[i];
 		Vector3 ParentPos = Vector3( kZero );
 		if (parentIndex < numBone) 
@@ -557,9 +556,9 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 	for (int n = 0; n < ik.IkNumIteration; n++)
 	{
 		// "effected" bone list in order
-		for (auto c = 0; c < ik.IkLinkBondIndexList.size(); c++)
+		for (auto k = 0; k < ik.IkLinkBondIndexList.size(); k++)
 		{
-			auto childIndex = ik.IkLinkBondIndexList[c];
+			auto childIndex = ik.IkLinkBondIndexList[k];
 			auto ikTargetBonePos = GetPosition( ik.IkTargetBonIndex );
 			auto invLinkMtx = Invert( m_Pose[childIndex] );
 
@@ -577,7 +576,7 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 				continue;
 
 			// angle to move in one iteration
-			auto maxAngle = (c + 1) * ik.IkLimitedRadian * 4;
+			auto maxAngle = (k + 1) * ik.IkLimitedRadian * 4;
 			auto theta = ASin( sinTheta );
 			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
 				theta = XM_PI - theta;

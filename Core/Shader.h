@@ -98,13 +98,12 @@ private:
 	void FillReflection();
 
 	ShaderType m_ShaderType;
-	std::string m_Name;
+	std::wstring m_Name;
 	ShaderByteCode m_ShaderByteCode;
 
 	Microsoft::WRL::ComPtr<ID3DBlob> m_Blob;
 	Microsoft::WRL::ComPtr<ID3D11DeviceChild> m_Shader;
 
-	D3D11_SHADER_DESC m_ShaderDescription;
 	std::vector<D3D11_SIGNATURE_PARAMETER_DESC> m_InputSignatureParameters;
 	std::vector<D3D11_SIGNATURE_PARAMETER_DESC> m_OutputSignatureParameters;
 	std::vector<ConstantBufferLayout> m_BufferDescription;

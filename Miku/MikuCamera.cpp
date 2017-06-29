@@ -82,7 +82,7 @@ void MikuCamera::UpdatePerspectiveMatrix()
 	float Y = 1.0f / std::tanf( m_VerticalFOV * 0.5f );
 	float X = Y * m_AspectRatio;
 
-	float Q1, Q2, Q3;
+	float Q1, Q2;
 
 	//
 	// ReverseZ puts far plane at Z=0 and near plane at Z=1.  This is never a bad idea, and it's

@@ -29,8 +29,8 @@ int32_t FindPreviousFrameIndex( const std::vector<T>& frames, const float t )
 
 //
 // http://d.hatena.ne.jp/edvakf/20111016/1318716097
-// TODO: partial cache
-//       apply optimize: https://github.com/gre/bezier-easing/blob/master/src/index.js 
+//
+// TODO: apply partial cache, optimize (https://github.com/gre/bezier-easing/blob/master/src/index.js)
 //
 float Animation::Bezier( Vector4 C, float p )
 {

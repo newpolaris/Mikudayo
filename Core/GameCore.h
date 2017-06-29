@@ -33,9 +33,14 @@ namespace GameCore {
 
 		// Official rendering pass
 		virtual void RenderScene( void ) = 0;
+
+        // Optional UI (overlay) rendering pass.  This is LDR.  The buffer is already cleared.
+        virtual void RenderUI( class GraphicsContext& ) {};
 	};
 
-	void RunApplication( IGameApp& app, const wchar_t* className );
+    bool UpdateApplication( IGameApp & game );
+
+    void RunApplication( IGameApp& app, const wchar_t* className );
 }
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)

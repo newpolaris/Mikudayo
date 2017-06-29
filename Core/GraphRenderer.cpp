@@ -29,3 +29,7 @@ void GraphRenderer::Update( DirectX::XMFLOAT2 InputNode, GraphHandle GraphID, Gr
 void GraphRenderer::RenderGraphs( GraphicsContext & Context, GraphType Type )
 {
 }
+
+void GraphRenderer::SetSelectedIndex( uint32_t selectedIndex )
+{
+}

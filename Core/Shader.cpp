@@ -61,58 +61,50 @@ void Shader::Create( const ShaderByteCode& ByteCode )
 		case kVertexShader:
 		{
 			ComPtr<ID3D11VertexShader> Shader;
-			ASSERT_SUCCEEDED(g_Device->CreateVertexShader(
-				ByteCode.pShaderBytecode,
-				ByteCode.Length,
-				nullptr,
-				Shader.GetAddressOf()));
-			m_Shader.Swap(Shader);
-			break;
+            ASSERT_SUCCEEDED(g_Device->CreateVertexShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf())); 
+            m_Shader.Swap(Shader);
+            break;
 		}
 		case kPixelShader:
 		{
 			ComPtr<ID3D11PixelShader> Shader;
-			ASSERT_SUCCEEDED(g_Device->CreatePixelShader(
-				ByteCode.pShaderBytecode,
-				ByteCode.Length,
-				nullptr,
-				Shader.GetAddressOf()));
+			ASSERT_SUCCEEDED(g_Device->CreatePixelShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
 			m_Shader.Swap(Shader);
-			break;
+            break;
 		}
 		case kGeometryShader:
 		{
 			ComPtr<ID3D11GeometryShader> Shader;
-			ASSERT_SUCCEEDED(g_Device->CreateGeometryShader(
-				ByteCode.pShaderBytecode,
-				ByteCode.Length,
-				nullptr,
-				Shader.GetAddressOf()));
+			ASSERT_SUCCEEDED(g_Device->CreateGeometryShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
 			m_Shader.Swap(Shader);
-			break;
+            break;
 		}
+        case kDomainShader:
+        {
+			ComPtr<ID3D11GeometryShader> Shader;
+			ASSERT_SUCCEEDED(g_Device->CreateGeometryShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
+			m_Shader.Swap(Shader);
+            break;
+        }
+        case kHullShader:
+        {
+			ComPtr<ID3D11HullShader> Shader;
+			ASSERT_SUCCEEDED(g_Device->CreateHullShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
+			m_Shader.Swap(Shader);
+            break;
+        }
 		case kComputeShader:
 		{
 			ComPtr<ID3D11ComputeShader> Shader;
-			ASSERT_SUCCEEDED(g_Device->CreateComputeShader(
-				ByteCode.pShaderBytecode,
-				ByteCode.Length,
-				nullptr,
-				Shader.GetAddressOf()));
+			ASSERT_SUCCEEDED(g_Device->CreateComputeShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
 			m_Shader.Swap(Shader);
-			break;
+            break;
 		}
 	};
 
 	m_ShaderByteCode = ByteCode;
-
-	auto Name = std::string(ByteCode.Name.begin(), ByteCode.Name.end());
-#ifdef _DEBUG
-	m_Shader->SetPrivateData( WKPDID_D3DDebugObjectName, static_cast<UINT>(Name.size()), Name.c_str() );
-#else
-	(Name);
-#endif
-
+    m_Name = ByteCode.Name;
+    SetName( m_Shader, ByteCode.Name );
 	FillReflection();
 }
 
@@ -206,8 +198,17 @@ void Shader::Bind( ID3D11DeviceContext* pContext )
 		case kPixelShader:
 			pContext->PSSetShader( reinterpret_cast<ID3D11PixelShader*>(m_Shader.Get()), nullptr, 0 );
 			break;
-		case kComputeShader:
+		case kGeometryShader:
 			pContext->GSSetShader( reinterpret_cast<ID3D11GeometryShader*>(m_Shader.Get()), nullptr, 0 );
+			break;
+		case kDomainShader:
+			pContext->DSSetShader( reinterpret_cast<ID3D11DomainShader*>(m_Shader.Get()), nullptr, 0 );
+			break;
+		case kHullShader:
+			pContext->HSSetShader( reinterpret_cast<ID3D11HullShader*>(m_Shader.Get()), nullptr, 0 );
+			break;
+		case kComputeShader:
+			pContext->CSSetShader( reinterpret_cast<ID3D11ComputeShader*>(m_Shader.Get()), nullptr, 0 );
 			break;
 		}
 	}

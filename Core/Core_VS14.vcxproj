@@ -34,7 +34,9 @@
     <ClInclude Include="EngineTuning.h" />
     <ClInclude Include="EsramAllocator.h" />
     <ClInclude Include="FileUtility.h" />
+    <ClInclude Include="FXAA.h" />
     <ClInclude Include="GameInput.h" />
+    <ClInclude Include="GpuTimeManager.h" />
     <ClInclude Include="GraphRenderer.h" />
     <ClInclude Include="LinearAllocator.h" />
     <ClInclude Include="LoaderHelpers.h" />
@@ -47,9 +49,12 @@
     <ClInclude Include="InputLayout.h" />
     <ClInclude Include="Math\Functions.h" />
     <ClInclude Include="MotionBlur.h" />
+    <ClInclude Include="PostEffects.h" />
     <ClInclude Include="RasterizerState.h" />
     <ClInclude Include="SamplerManager.h" />
+    <ClInclude Include="SSAO.h" />
     <ClInclude Include="SystemTime.h" />
+    <ClInclude Include="TemporalEffects.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TextUtility.h" />
@@ -90,9 +95,11 @@
     <ClCompile Include="EngineProfiling.cpp" />
     <ClCompile Include="EngineTuning.cpp" />
     <ClCompile Include="FileUtility.cpp" />
+    <ClCompile Include="FXAA.cpp" />
     <ClCompile Include="GameCore.cpp" />
     <ClCompile Include="GameInput.cpp" />
     <ClCompile Include="GpuBuffer.cpp" />
+    <ClCompile Include="GpuTimeManager.cpp" />
     <ClCompile Include="GraphicsCore.cpp" />
     <ClCompile Include="GraphRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />
@@ -112,10 +119,13 @@
     </ClCompile>
     <ClCompile Include="PipelineState.cpp" />
     <ClCompile Include="PixelBuffer.cpp" />
+    <ClCompile Include="PostEffects.cpp" />
     <ClCompile Include="RasterizerState.cpp" />
     <ClCompile Include="SamplerManager.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="SystemTime.cpp" />
+    <ClCompile Include="TemporalEffects.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TextUtility.cpp" />
@@ -126,9 +136,26 @@
   <ItemGroup>
     <None Include="Math\Functions.inl" />
     <None Include="Shaders\ColorSpaceUtility.hlsli" />
+    <None Include="Shaders\PixelPacking.hlsli" />
+    <None Include="Shaders\PixelPacking_LUV.hlsli" />
+    <None Include="Shaders\PixelPacking_R11G11B10.hlsli" />
+    <None Include="Shaders\PixelPacking_RGBE.hlsli" />
+    <None Include="Shaders\PixelPacking_RGBM.hlsli" />
+    <None Include="Shaders\PixelPacking_Velocity.hlsli" />
     <None Include="Shaders\ShaderUtility.hlsli" />
+    <None Include="Shaders\TextRS.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\ApplyBloom2CS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\ApplyBloomCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\BufferCopyPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
@@ -139,6 +166,21 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\CopyBackPostBufferCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugLuminanceLdr2CS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugLuminanceLdrCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
@@ -148,6 +190,21 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\TextAntialiasPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\TextShadowPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\TextVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">

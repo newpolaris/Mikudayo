@@ -12,35 +12,18 @@
 //
 
 #include "pch.h"
-#include "MotionBlur.h"
-#include "Camera.h"
+#include "TemporalEffects.h"
 #include "BufferManager.h"
 #include "GraphicsCore.h"
 #include "CommandContext.h"
+#include "SystemTime.h"
 #include "PostEffects.h"
-// #include "SystemTime.h"
-
-#include "CompiledShaders/ScreenQuadVS.h"
 
 using namespace Graphics;
 using namespace Math;
-using namespace TemporalAA;
+using namespace TemporalEffects;
 
-void MotionBlur::Initialize( void )
+namespace TemporalEffects
 {
-}
-
-void MotionBlur::Shutdown( void )
-{
-}
-
-namespace MotionBlur
-{
-	BoolVar Enable("Graphics/Motion Blur/Enable", false);
-
-	ComputePSO s_CameraMotionBlurPrePassCS[2];
-	ComputePSO s_MotionBlurPrePassCS;
-	ComputePSO s_MotionBlurFinalPassCS;
-	GraphicsPSO s_MotionBlurFinalPassPS;
-	ComputePSO s_CameraVelocityCS[2];
+    BoolVar EnableTAA("Graphics/AA/TAA/Enable", false);
 }

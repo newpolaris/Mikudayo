@@ -15,6 +15,7 @@
 #include "Shader.h"
 #include "BlendState.h"
 #include "DepthStencilState.h"
+#include "RasterizerState.h"
 #include "InputLayout.h"
 #include "GraphicsCore.h"
 #include "GameCore.h"
@@ -25,8 +26,11 @@
 #include "CommandListManager.h"
 #include "TextureManager.h"
 #include "SamplerManager.h"
+#include "GpuTimeManager.h"
 #include "SystemTime.h"
-#include "RasterizerState.h"
+#include "TemporalEffects.h"
+#include "SSAO.h"
+#include "PostEffects.h"
 
 #include "CompiledShaders/ScreenQuadVS.h"
 #include "CompiledShaders/BufferCopyPS.h"
@@ -567,7 +571,14 @@ void Graphics::Initialize( void )
 
 	g_PreDisplayBuffer.Create(L"PreDisplay Buffer", g_DisplayWidth, g_DisplayHeight, 1, SwapChainFormat);
 
+    GpuTimeManager::Initialize(4096);
 	SetNativeResolution();
+    // TemporalEffects::Initialize();
+    PostEffects::Initialize();
+    // SSAO::Initialize();
+    TextRenderer::Initialize();
+    // GraphRenderer::Initialize();
+    // ParticleEffects::Initialize(kMaxNativeWidth, kMaxNativeHeight);
 }
 
 void Graphics::Terminate( void )
@@ -581,10 +592,12 @@ void Graphics::Terminate( void )
 void Graphics::Shutdown( void )
 {
 	CommandContext::DestroyAllContexts();
-
-	s_BlendUIPSO.Destroy();
+    g_CommandManager.Shutdown();
+    GpuTimeManager::Shutdown();
 	ConvertLDRToDisplayPS.Destroy();
 	SharpeningUpsamplePS.Destroy();
+
+	s_BlendUIPSO.Destroy();
 
 	Shader::DestroyAll();
 	BlendState::DestroyAll();
@@ -593,6 +606,13 @@ void Graphics::Shutdown( void )
 	InputLayout::DestroyAll();
 	DepthStencilState::DestroyAll();
 
+    DestroyRenderingBuffers();
+    // TemporalEffects::Shutdown();
+    PostEffects::Shutdown();
+    // SSAO::Shutdown();
+    TextRenderer::Shutdown();
+    // GraphRenderer::Shutdown();
+    // ParticleEffects::Shutdown();
 	TextureManager::Shutdown();
 
 	DestroyRenderingBuffers();
@@ -717,6 +737,9 @@ void Graphics::Present( void )
 
 	int64_t CurrentTick = SystemTime::GetCurrentTick();
 
+    //
+    // TODO: If it does not fit 60fps, s_FrameTime will not be set correctly. As a result, the animation is slowly displayed
+    //
 	if (s_EnableVSync)
 	{
 		// With VSync enabled, the time step between frames becomes a multiple of 16.666 ms.  We need

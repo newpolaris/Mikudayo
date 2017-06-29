@@ -49,6 +49,10 @@ namespace Graphics
 	extern IDXGISwapChain1* s_SwapChain1;
 	extern ID3D11RenderTargetView* g_RenderTargetView;
 
+    extern D3D_FEATURE_LEVEL g_D3DFeatureLevel;
+    extern bool g_bTypedUAVLoadSupport_R11G11B10_FLOAT;
+    extern bool g_bEnableHDROutput;
+
 	extern SamplerDesc SamplerLinearWrapDesc;
 	extern SamplerDesc SamplerAnisoWrapDesc;
 	extern SamplerDesc SamplerShadowDesc;

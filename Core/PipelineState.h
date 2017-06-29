@@ -30,16 +30,15 @@ class RasterizerState;
 class Shader;
 struct InputDesc;
 struct GraphicsPipelineStateDesc;
+struct ComputePipelineStateDesc;
 
-class PSO
+struct ComputePipelineState
 {
-public:
-
-	PSO() {}
-	virtual ~PSO() {}
+	std::shared_ptr<Shader> ComputeShader;
+	void Bind( ID3D11DeviceContext3* Context);
 };
 
-struct PipelineState
+struct GraphicsPipelineState
 {
     D3D_PRIMITIVE_TOPOLOGY TopologyType;
 	std::shared_ptr<InputLayout> InputLayout;
@@ -48,8 +47,22 @@ struct PipelineState
 	std::shared_ptr<RasterizerState> RasterizerState;
 	std::shared_ptr<Shader> VertexShader;
 	std::shared_ptr<Shader> PixelShader;
+	std::shared_ptr<Shader> GeometryShader;
+	std::shared_ptr<Shader> DomainShader;
+	std::shared_ptr<Shader> HullShader;
 
 	void Bind( ID3D11DeviceContext3* Context);
+};
+
+class PSO
+{
+public:
+
+	PSO() {}
+	virtual ~PSO() {}
+
+	std::promise<void> m_Promise;
+	std::shared_future<void> m_ReadyFuture;
 };
 
 class GraphicsPSO : public PSO
@@ -65,7 +78,7 @@ public:
 	virtual ~GraphicsPSO();
 	void Destroy();
 
-	std::shared_ptr<PipelineState> GraphicsPSO::GetState();
+	std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState();
 
 	void SetBlendState( const D3D11_BLEND_DESC& BlendDesc );
 	void SetRasterizerState( const D3D11_RASTERIZER_DESC& RasterizerDesc );
@@ -82,14 +95,12 @@ public:
 	void SetHullShader( const std::string& Name, const void* Binary, size_t Size );
 	void SetDomainShader( const std::string& Name, const void* Binary, size_t Size );
 
-	// Perform validation and compute a hash value for fast state block comparisons
+	// Perform validation
 	void Finalize();
 
 private:
 	std::unique_ptr<GraphicsPipelineStateDesc> m_PSODesc;
-	std::promise<void> m_Promise;
-	std::shared_future<void> m_ReadyFuture;
-	std::shared_ptr<PipelineState> m_PSOState;
+	std::shared_ptr<GraphicsPipelineState> m_PSOState;
 };
 
 class ComputePSO : public PSO
@@ -98,14 +109,18 @@ class ComputePSO : public PSO
 
 public:
 	ComputePSO();
-	virtual ~ComputePSO() {}
+	ComputePSO(const ComputePSO& PSO);
+	ComputePSO& operator=(const ComputePSO& PSO);
+    virtual ~ComputePSO();
+	void Destroy();
 
+	std::shared_ptr<ComputePipelineState> ComputePSO::GetState();
 
-	// void SetComputeShader( const ShaderByteCode& Binary ) { m_PSODesc.CS = Binary; }
-
+	void SetComputeShader( const std::string& Name, const void* Binary, size_t Size );
 	void Finalize();
 
 private:
 
-	// D3D12_COMPUTE_PIPELINE_STATE_DESC m_PSODesc;
+	std::unique_ptr<ComputePipelineStateDesc> m_PSODesc;
+	std::shared_ptr<ComputePipelineState> m_PSOState;
 };

@@ -146,7 +146,7 @@ namespace Utility
 void SIMDMemCopy( void* __restrict Dest, const void* __restrict Source, size_t NumQuadwords );
 void SIMDMemFill( void* __restrict Dest, __m128 FillVector, size_t NumQuadwords );
 
-inline void SetName( ID3D11Resource* Resource, const std::string& Name )
+inline void SetName( ID3D11DeviceChild* Resource, const std::string& Name )
 {
 #ifdef _DEBUG
 	ASSERT( Resource != nullptr );
@@ -157,13 +157,19 @@ inline void SetName( ID3D11Resource* Resource, const std::string& Name )
 #endif
 }
 
-inline void SetName( ID3D11Resource* Resource, const std::wstring& Name )
+inline void SetName( ID3D11DeviceChild* Resource, const std::wstring& Name )
 {
-	std::string str( Name.begin(), Name.end() );
-	SetName( Resource, str );
+#ifdef _DEBUG
+	ASSERT( Resource != nullptr );
+    UINT sizeInByte = static_cast<UINT>(Name.size() * sizeof(std::wstring::traits_type::char_type));
+	Resource->SetPrivateData( WKPDID_D3DDebugObjectNameW, sizeInByte, Name.c_str() );
+#else
+	(Resource);
+	(Name);
+#endif
 }
 
-inline void SetName( Microsoft::WRL::ComPtr<ID3D11Resource> Resource, const std::wstring& Name )
+inline void SetName( Microsoft::WRL::ComPtr<ID3D11DeviceChild> Resource, const std::wstring& Name )
 {
-	SetName( Resource.Get(), Name );
+    SetName( Resource.Get(), Name );
 }
