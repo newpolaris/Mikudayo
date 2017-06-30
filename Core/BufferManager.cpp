@@ -108,7 +108,7 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
 
 		g_SceneColorBuffer.Create( L"Main Color Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
 		g_VelocityBuffer.Create( L"Motion Vectors", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R16G16_FLOAT );
-		g_PostEffectsBuffer.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
+		g_PostEffectsBuffer.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
 
 		esram.PushStack();	// Render HDR image
 

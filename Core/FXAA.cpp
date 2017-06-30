@@ -4,6 +4,9 @@
 #include "BufferManager.h"
 #include "CommandContext.h"
 
+#include "CompiledShaders/FxaaVS.h"
+#include "CompiledShaders/FxaaPS.h"
+
 using namespace Graphics;
 
 namespace FXAA
@@ -20,20 +23,37 @@ namespace FXAA
     // This is for testing the performance of computing luma on the fly rather than reusing
     // the luma buffer output of tone mapping.
     BoolVar ForceOffPreComputedLuma("Graphics/AA/FXAA/Always Recompute Log-Luma", false);
+
+    GraphicsPSO FxaaPSO;
 }
 
 void FXAA::Initialize( void )
 {
+	FxaaPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+	FxaaPSO.SetVertexShader( MY_SHADER_ARGS( g_pFxaaVS ) );
+	FxaaPSO.SetPixelShader( MY_SHADER_ARGS( g_pFxaaPS ) );
+	FxaaPSO.Finalize();
 }
 
 void FXAA::Shutdown(void)
 {
+    FxaaPSO.Destroy();
 }
 
-void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
+void FXAA::Render( ComputeContext& , bool bUsePreComputedLuma )
 {
     if (ForceOffPreComputedLuma)
         bUsePreComputedLuma = false;
 
-    ColorBuffer& Target = g_bTypedUAVLoadSupport_R11G11B10_FLOAT ? g_SceneColorBuffer : g_PostEffectsBuffer;
+    GraphicsContext& Context = GraphicsContext::Begin(L"FXAA");
+    ScopedTimer _prof(L"FXAA Processing", Context);
+
+    Context.SetPipelineState( FxaaPSO );
+    Context.SetConstants( 1.0f / g_SceneColorBuffer.GetWidth(), 1.0f / g_SceneColorBuffer.GetHeight(), { kBindPixel } );
+    Context.SetDynamicSampler( 0, SamplerLinearClamp, { kBindPixel } );
+    Context.SetDynamicDescriptor( 0, g_PostEffectsBuffer.GetSRV(), { kBindPixel } );
+    Context.SetRenderTarget( g_SceneColorBuffer.GetRTV() );
+    Context.SetViewportAndScissor( 0, 0, g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight() );
+    Context.Draw(3);
+    Context.Finish();
 }

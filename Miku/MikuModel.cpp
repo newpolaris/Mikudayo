@@ -248,6 +248,9 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 			meshBone.bLimitXAngle = true;
 	}
 
+	for (auto i = 0; i < m_Bones.size(); i++)
+		m_LocalPose[i].SetTranslation( m_Bones[i].Translate );
+
 	std::vector<OrthogonalTransform> RestPose( numBone );
 	for (auto i = 0; i < numBone; i++)
 	{
@@ -291,9 +294,6 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 
 	Vmd::VMD vmd;
 	vmd.Fill( bs, bRightHand );
-
-	for (auto i = 0; i < m_Bones.size(); i++)
-		m_LocalPose[i].SetTranslation( m_Bones[i].Translate );
 
 	for (auto& frame : vmd.BoneFrames)
 	{

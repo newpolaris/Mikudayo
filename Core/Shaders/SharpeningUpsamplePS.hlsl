@@ -35,6 +35,9 @@ float3 GetColor(float2 UV)
 
 float3 main(float4 position : SV_Position, float2 uv : TexCoords0) : SV_Target0
 {
+    //
+    // Sharpening Kernel
+    //
 	float3 Color = WB * GetColor(uv) - WA * (
 		GetColor(uv + UVOffset0) + GetColor(uv - UVOffset0) +
 		GetColor(uv + UVOffset1) + GetColor(uv - UVOffset1));

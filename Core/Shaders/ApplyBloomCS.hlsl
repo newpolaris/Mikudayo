@@ -6,7 +6,7 @@ Texture2D<float3> Bloom : register(t0);
 #if SUPPORT_TYPED_UAV_LOADS
 RWTexture2D<float3> SrcColor : register(u0);
 #else
-RWTexture2D<uint> DstColor : register(u0);
+RWTexture2D<float4> DstColor : register(u0);
 Texture2D<float3> SrcColor : register(t2);
 #endif
 RWTexture2D<float> OutLuma : register(u1);
@@ -31,7 +31,8 @@ void main( uint3 DTid : SV_DispatchThreadID )
 #if SUPPORT_TYPED_UAV_LOADS
     SrcColor[DTid.xy] = ldrColor;
 #else
-    DstColor[DTid.xy] = Pack_R11G11B10_FLOAT(ldrColor);
+    float alpha = RGBToLuminance( ldrColor );
+    DstColor[DTid.xy] = float4( ldrColor, alpha );//Pack_R11G11B10_FLOAT(ldrColor);
 #endif
-    OutLuma[DTid.xy] = RGBToLogLuminance(ldrColor);
+    OutLuma[DTid.xy] = 0.f; // RGBToLogLuminance(ldrColor);
 }

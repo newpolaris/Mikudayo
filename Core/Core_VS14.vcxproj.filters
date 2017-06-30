@@ -26,6 +26,9 @@
     <Filter Include="Shaders\Text">
       <UniqueIdentifier>{8cca82df-7730-4e1d-83ac-27711d53a71b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\FXAA">
+      <UniqueIdentifier>{6c7de552-f5de-4780-b64c-2b3adb5b80fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -386,6 +389,9 @@
     <None Include="Shaders\TextRS.hlsli">
       <Filter>Shaders\Text</Filter>
     </None>
+    <None Include="Shaders\Fxaa3_11.h">
+      <Filter>Shaders\FXAA</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
@@ -423,6 +429,12 @@
     </FxCompile>
     <FxCompile Include="Shaders\TextShadowPS.hlsl">
       <Filter>Shaders\Text</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FxaaVS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FxaaPS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
