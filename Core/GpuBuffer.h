@@ -37,8 +37,8 @@ public:
 	void Create( const std::wstring& name, uint32_t NumElements, uint32_t ElementSize,
 		EsramAllocator& Allocator, const void* initialData = nullptr);
 
-	const D3D11_UAV_HANDLE& GetUAV(void) const { return m_UAV.Get(); }
-	const D3D11_SRV_HANDLE& GetSRV(void) const { return m_SRV.Get(); }
+	const D3D11_UAV_HANDLE GetUAV(void) const { return m_UAV.Get(); }
+	const D3D11_SRV_HANDLE GetSRV(void) const { return m_SRV.Get(); }
 
 	void SetBindFlag( UINT Flags ) { m_BindFlags |= Flags; }
 	void SetUsage( D3D11_USAGE Usage ) { m_Usage = Usage; }
@@ -72,23 +72,32 @@ protected:
 class ByteAddressBuffer : public GpuBuffer
 {
 public:
+    ByteAddressBuffer( void );
 	virtual void CreateDerivedViews( void ) override;
+};
+
+class IndirectArgsBuffer : public ByteAddressBuffer
+{
+public:
+    IndirectArgsBuffer( void );
 };
 
 class StructuredBuffer : public GpuBuffer
 {
 public:
-	StructuredBuffer();
+	StructuredBuffer(bool bUseCounter = true);
 	virtual void Destroy( void ) override;
 
 	virtual void CreateDerivedViews( void ) override;
 
 	ByteAddressBuffer& GetCounterBuffer( void ) { return m_CounterBuffer; }
 
-	// const D3D12_CPU_DESCRIPTOR_HANDLE& GetCounterSRV(CommandContext& Context);
-	// const D3D12_CPU_DESCRIPTOR_HANDLE& GetCounterUAV(CommandContext& Context);
+    void FillCounter(CommandContext& Context);
+	const D3D11_SRV_HANDLE GetCounterSRV();
+	const D3D11_UAV_HANDLE GetCounterUAV();
 
 private:
+    bool m_bUseCounter;
 	ByteAddressBuffer m_CounterBuffer;
 };
 
@@ -105,4 +114,14 @@ public:
 	VertexBuffer();
 	// There is no way to create SRV / UAV in vertex binding
 	virtual void CreateDerivedViews( void ) override {}
+};
+
+class TypedBuffer : public GpuBuffer
+{
+public:
+    TypedBuffer( DXGI_FORMAT Format );
+    virtual void CreateDerivedViews(void) override;
+
+protected:
+    DXGI_FORMAT m_DataFormat;
 };

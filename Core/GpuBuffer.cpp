@@ -2,7 +2,6 @@
 #include "GpuBuffer.h"
 #include "GraphicsCore.h"
 #include "CommandContext.h"
-// #include "BufferManager.h"
 
 using namespace Graphics;
 
@@ -86,13 +85,25 @@ void GpuBuffer::Destroy( void )
 {
 	m_Buffer = nullptr;
 	m_SRV = nullptr;
+	m_UAV = nullptr;
 	GpuResource::Destroy();
+}
+
+IndirectArgsBuffer::IndirectArgsBuffer( void )
+{
+	m_MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
 }
 
 void StructuredBuffer::Destroy( void )
 {
 	m_CounterBuffer.Destroy();
 	GpuBuffer::Destroy();
+}
+
+ByteAddressBuffer::ByteAddressBuffer( void )
+{
+	m_BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+    m_MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 }
 
 void ByteAddressBuffer::CreateDerivedViews( void )
@@ -125,21 +136,24 @@ IndexBuffer::IndexBuffer()
 {
 	m_Usage = D3D11_USAGE_IMMUTABLE;
 
-	m_BindFlags |= D3D11_BIND_INDEX_BUFFER | D3D11_BIND_SHADER_RESOURCE;
-	m_MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+	m_BindFlags = D3D11_BIND_INDEX_BUFFER | D3D11_BIND_SHADER_RESOURCE;
+	m_MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 }
 
 VertexBuffer::VertexBuffer()
 {
+    //
+    // TODO: dynamic update support
+    //
 	m_Usage = D3D11_USAGE_IMMUTABLE;
 	m_BindFlags = D3D11_BIND_VERTEX_BUFFER;
 }
 
-StructuredBuffer::StructuredBuffer( void ) 
+StructuredBuffer::StructuredBuffer( bool bUseCounter ) : m_bUseCounter(bUseCounter)
 {
 	m_Usage = D3D11_USAGE_DEFAULT;
 
-	m_BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+	m_BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 	m_MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 }
 
@@ -155,4 +169,65 @@ void StructuredBuffer::CreateDerivedViews( void )
 
 		ASSERT_SUCCEEDED( g_Device->CreateShaderResourceView( m_pResource.Get(), &SRVDesc, &m_SRV ) );
 	}
+
+	if (m_BindFlags & D3D11_BIND_UNORDERED_ACCESS)
+    {
+        D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
+        UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+        UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+        UAVDesc.Buffer.FirstElement = 0;
+        UAVDesc.Buffer.NumElements = m_ElementCount;
+        UAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
+
+		ASSERT_SUCCEEDED( g_Device->CreateUnorderedAccessView( m_pResource.Get(), &UAVDesc, &m_UAV ) );
+    }
+
+    m_CounterBuffer.Create( L"StructuredBuffer::Counter", 1, sizeof(uint32_t) );
+}
+
+void StructuredBuffer::FillCounter( CommandContext& Context )
+{
+    Context.CopyCounter( m_CounterBuffer, 0, *this );
+}
+
+const D3D11_SRV_HANDLE StructuredBuffer::GetCounterSRV()
+{
+    return m_CounterBuffer.GetSRV();
+}
+
+const D3D11_UAV_HANDLE StructuredBuffer::GetCounterUAV()
+{
+    return m_CounterBuffer.GetUAV();
+}
+
+TypedBuffer::TypedBuffer( DXGI_FORMAT Format ) : m_DataFormat( Format )
+{
+	m_Usage = D3D11_USAGE_DEFAULT;
+
+	m_BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+}
+
+void TypedBuffer::CreateDerivedViews(void)
+{
+	if (m_BindFlags & D3D11_BIND_SHADER_RESOURCE)
+	{
+        D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+        SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+        SRVDesc.Format = m_DataFormat;
+        SRVDesc.BufferEx.NumElements = m_ElementCount;
+        SRVDesc.BufferEx.Flags = 0;
+
+        ASSERT_SUCCEEDED( g_Device->CreateShaderResourceView(m_pResource.Get(), &SRVDesc, &m_SRV) );
+    }
+
+	if (m_BindFlags & D3D11_BIND_SHADER_RESOURCE)
+    {
+        D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
+        UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+        UAVDesc.Format = m_DataFormat;
+        UAVDesc.Buffer.NumElements = m_ElementCount;
+        UAVDesc.Buffer.Flags = 0;
+
+        ASSERT_SUCCEEDED( g_Device->CreateUnorderedAccessView( m_pResource.Get(), &UAVDesc, &m_UAV) );
+    }
 }

@@ -219,6 +219,11 @@ void TextRenderer::Initialize( void )
 void TextRenderer::Shutdown( void )
 {
     LoadedFonts.clear();
+
+    s_TextPSO[0].Destroy();
+    s_TextPSO[1].Destroy();
+    s_ShadowPSO[0].Destroy();
+    s_ShadowPSO[1].Destroy();
 }
 
 TextContext::TextContext( GraphicsContext& CmdContext, float ViewWidth, float ViewHeight )

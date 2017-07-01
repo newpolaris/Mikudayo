@@ -15,6 +15,7 @@ class GraphicsContext;
 class ComputeContext;
 class Color;
 class GpuBuffer;
+class StructuredBuffer;
 
 struct DWParam
 {
@@ -63,7 +64,7 @@ private:
 // Therefore, we add an operation that maps or unmaps the constant 
 // buffer immediately before the drawing operation. 
 //
-// #define GRAPHICS_DEBUG
+#define GRAPHICS_DEBUG
 
 #ifdef GRAPHICS_DEBUG
 struct ConstantBufferAllocator
@@ -130,6 +131,11 @@ public:
 	void PIXEndEvent(void);
 	void PIXSetMarker(const wchar_t* label);
 
+    void CopyBuffer( GpuResource& Dest, GpuResource& Src );
+    void CopyBufferRegion( GpuResource& Dest, size_t DestOffset, GpuResource& Src, size_t SrcOffset, size_t NumBytes );
+    void CopySubresource(GpuResource& Dest, UINT DestSubIndex, GpuResource& Src, UINT SrcSubIndex);
+    void CopyCounter(GpuResource& Dest, size_t DestOffset, StructuredBuffer& Src);
+
 	void SetConstants( UINT NumConstants, const void* pConstants, BindList BindList );
 	void SetConstants( DWParam X, BindList BindList );
 	void SetConstants( DWParam X, DWParam Y, BindList BindList );
@@ -186,14 +192,18 @@ public:
 	void SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W );
 	void SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[] );
 
+	void SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData );
     void SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle );
     void SetDynamicDescriptor( UINT Offset, const D3D11_UAV_HANDLE Handle );
+	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[] );
+	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_UAV_HANDLE Handles[], const UINT *pUAVInitialCounts = nullptr );
     void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle );
 
     void Dispatch( size_t GroupCountX = 1, size_t GroupCountY = 1, size_t GroupCountZ = 1 );
     void Dispatch1D( size_t ThreadCountX, size_t GroupSizeX = 64);
     void Dispatch2D( size_t ThreadCountX, size_t ThreadCountY, size_t GroupSizeX = 8, size_t GroupSizeY = 8);
     void Dispatch3D( size_t ThreadCountX, size_t ThreadCountY, size_t ThreadCountZ, size_t GroupSizeX, size_t GroupSizeY, size_t GroupSizeZ );
+    void DispatchIndirect( GpuBuffer& ArgumentBuffer, size_t ArgumentBufferOffset = 0 );
 
 	std::shared_ptr<ComputePipelineState> m_PSOState;
 };

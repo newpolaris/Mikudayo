@@ -136,7 +136,10 @@
   <ItemGroup>
     <None Include="Math\Functions.inl" />
     <None Include="Shaders\ColorSpaceUtility.hlsli" />
-    <None Include="Shaders\Fxaa3_11.h" />
+    <None Include="Shaders\FXAAPass1CS.hlsli" />
+    <None Include="Shaders\FXAAPass2CS.hlsli" />
+    <None Include="Shaders\FXAARootSignature.hlsli" />
+    <None Include="Shaders\MotionBlurRS.hlsli" />
     <None Include="Shaders\PixelPacking.hlsli" />
     <None Include="Shaders\PixelPacking_LUV.hlsli" />
     <None Include="Shaders\PixelPacking_R11G11B10.hlsli" />
@@ -144,6 +147,7 @@
     <None Include="Shaders\PixelPacking_RGBM.hlsli" />
     <None Include="Shaders\PixelPacking_Velocity.hlsli" />
     <None Include="Shaders\ShaderUtility.hlsli" />
+    <None Include="Shaders\TemporalRS.hlsli" />
     <None Include="Shaders\TextRS.hlsli" />
   </ItemGroup>
   <ItemGroup>
@@ -157,11 +161,15 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\BoundNeighborhoodCS.hlsl" />
     <FxCompile Include="Shaders\BufferCopyPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\CameraMotionBlurPrePassCS.hlsl" />
+    <FxCompile Include="Shaders\CameraMotionBlurPrePassLinearZCS.hlsl" />
+    <FxCompile Include="Shaders\CameraVelocityCS.hlsl" />
     <FxCompile Include="Shaders\ConvertLDRToDisplayPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
@@ -182,16 +190,25 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\FxaaPS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    <FxCompile Include="Shaders\FXAAPass1_Luma2_CS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass1_Luma_CS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass1_RGB2_CS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass1_RGB_CS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass2H2CS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass2HCS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass2HDebugCS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass2V2CS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass2VCS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPass2VDebugCS.hlsl" />
+    <FxCompile Include="Shaders\FXAAResolveWorkQueueCS.hlsl" />
+    <FxCompile Include="Shaders\MotionBlurFinalPassCS.hlsl" />
+    <FxCompile Include="Shaders\MotionBlurFinalPassPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\FxaaVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
+    <FxCompile Include="Shaders\MotionBlurPrePassCS.hlsl" />
+    <FxCompile Include="Shaders\ResolveTAACS.hlsl" />
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
@@ -202,6 +219,8 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\SharpenTAACS.hlsl" />
+    <FxCompile Include="Shaders\TemporalBlendCS.hlsl" />
     <FxCompile Include="Shaders\TextAntialiasPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>

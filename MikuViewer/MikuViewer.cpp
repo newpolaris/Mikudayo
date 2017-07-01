@@ -105,7 +105,7 @@ void MikuViewer::Startup( void )
 	const std::wstring cameraPath = L"Models/camera.vmd";
 
 	m_Miku.LoadModel( modelPath );
-	m_Miku.LoadMotion( motionPath );
+	// m_Miku.LoadMotion( motionPath );
 	m_Miku.LoadBone();
 	m_Stage.LoadModel( stagePath );
 	m_Motion.LoadMotion( cameraPath );
@@ -156,7 +156,12 @@ void MikuViewer::Startup( void )
 
 	m_Lights.push_back( mainDefault );
 
-	FXAA::Enable = false;
+    MotionBlur::Enable = true;
+    TemporalEffects::EnableTAA = false;
+    FXAA::Enable = true;
+    // PostEffects::EnableHDR = true;
+    // PostEffects::EnableAdaptation = true;
+    // SSAO::Enable = true;
 }
 
 void MikuViewer::Cleanup( void )
@@ -190,6 +195,8 @@ namespace GameCore
 
 void MikuViewer::Update( float deltaT )
 {
+    ScopedTimer _prof( L"Update" );
+
 	if (GameInput::IsFirstPressed(GameInput::kLShoulder))
 		DebugZoom.Decrement();
 	else if (GameInput::IsFirstPressed(GameInput::kRShoulder))
@@ -213,6 +220,7 @@ void MikuViewer::Update( float deltaT )
 	// dimensions with an extra pixel.  My solution is to only use positive fractional offsets,
 	// but that means that the average sample position is +0.5, which I use when I disable
 	// temporal AA.
+    TemporalEffects::GetJitterOffset(m_MainViewport.TopLeftX, m_MainViewport.TopLeftY);
 
 	m_MainViewport.Width = (float)g_SceneColorBuffer.GetWidth();
 	m_MainViewport.Height = (float)g_SceneColorBuffer.GetHeight();
@@ -249,6 +257,10 @@ void MikuViewer::Update( float deltaT )
 void MikuViewer::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
+
+    uint32_t FrameIndex = TemporalEffects::GetFrameIndexMod2();
+    (FrameIndex);
+
 	gfxContext.ClearColor( g_SceneColorBuffer );
 	gfxContext.ClearDepth( g_SceneDepthBuffer );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
@@ -258,14 +270,22 @@ void MikuViewer::RenderScene( void )
 	gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
 
 	gfxContext.SetPipelineState( m_OpaquePSO );
-	m_Stage.Draw( gfxContext, kOpaque );
-	m_Miku.Draw( gfxContext, kOpaque );
-	// m_Model.DrawBone( gfxContext );
+    {
+        ScopedTimer _prof( L"Opaque", gfxContext );
+        m_Stage.Draw( gfxContext, kOpaque );
+        m_Miku.Draw( gfxContext, kOpaque );
+    }
+	// m_Miku.DrawBone( gfxContext );
 
 	gfxContext.SetPipelineState( m_BlendPSO );
-	m_Stage.Draw( gfxContext, kTransparent );
-	m_Miku.Draw( gfxContext, kTransparent );
+    {
+        ScopedTimer _prof( L"Stage Transparent", gfxContext );
+        m_Stage.Draw( gfxContext, kTransparent );
+    }
+    m_Miku.Draw( gfxContext, kTransparent );
 
-	gfxContext.Flush();
+    gfxContext.SetRenderTarget( nullptr );
+    TemporalEffects::ResolveImage(gfxContext);
+
 	gfxContext.Finish();
 }

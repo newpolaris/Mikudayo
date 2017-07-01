@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Miku", "..\Miku\Miku_VS14.v
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZLib", "..\3rdParty\zlib-win64\ZLib_VS14.vcxproj", "{AE5221D1-87E2-4428-8EF9-F25909C43291}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Model", "..\Model\Model.vcxproj", "{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -83,6 +85,15 @@ Global
 		{AE5221D1-87E2-4428-8EF9-F25909C43291}.Release|x64.ActiveCfg = Release|x64
 		{AE5221D1-87E2-4428-8EF9-F25909C43291}.Release|x64.Build.0 = Release|x64
 		{AE5221D1-87E2-4428-8EF9-F25909C43291}.Release|x86.ActiveCfg = Release|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Debug|x64.ActiveCfg = Debug|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Debug|x64.Build.0 = Debug|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Debug|x86.ActiveCfg = Debug|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Profile|x64.ActiveCfg = Profile|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Profile|x64.Build.0 = Profile|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Profile|x86.ActiveCfg = Profile|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Release|x64.ActiveCfg = Release|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Release|x64.Build.0 = Release|x64
+		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

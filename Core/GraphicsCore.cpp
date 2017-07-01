@@ -245,6 +245,8 @@ void Graphics::Resize( uint32_t width, uint32_t height )
 	ComPtr<ID3D11Texture2D> BackBuffer;
 	ASSERT_SUCCEEDED(s_SwapChain1->GetBuffer(0, MY_IID_PPV_ARGS(&BackBuffer)));
 	g_DisplayPlane.CreateFromSwapChain(L"Primary SwapChain Buffer", BackBuffer);
+
+    ResizeDisplayDependentBuffers(g_NativeWidth, g_NativeHeight);
 }
 
 // Initialize the DirectX resources required to run.
@@ -573,7 +575,7 @@ void Graphics::Initialize( void )
 
     GpuTimeManager::Initialize(4096);
 	SetNativeResolution();
-    // TemporalEffects::Initialize();
+    TemporalEffects::Initialize();
     PostEffects::Initialize();
     // SSAO::Initialize();
     TextRenderer::Initialize();
@@ -607,7 +609,7 @@ void Graphics::Shutdown( void )
 	DepthStencilState::DestroyAll();
 
     DestroyRenderingBuffers();
-    // TemporalEffects::Shutdown();
+    TemporalEffects::Shutdown();
     PostEffects::Shutdown();
     // SSAO::Shutdown();
     TextRenderer::Shutdown();

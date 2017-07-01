@@ -209,6 +209,21 @@ void CommandContext::ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query
     }
 }
 
+void CommandContext::CopyBuffer( GpuResource& Dest, GpuResource& Src )
+{
+    m_Context->CopyResource( Dest.GetResource(), Src.GetResource() );
+}
+
+void CommandContext::CopyCounter( GpuResource& Dest, size_t DestOffset, StructuredBuffer& Src)
+{
+    m_Context->CopyStructureCount( (ID3D11Buffer*)Dest.GetResource(), (UINT)DestOffset, Src.GetUAV() );
+}
+
+void ComputeContext::DispatchIndirect( GpuBuffer& ArgumentBuffer, size_t ArgumentBufferOffset )
+{
+    m_Context->DispatchIndirect( (ID3D11Buffer*)ArgumentBuffer.GetResource(), (UINT)ArgumentBufferOffset );
+}
+
 void CommandContext::SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle, BindList Binds )
 {
 	SetDynamicDescriptors( Offset, 1, &Handle, Binds );
@@ -230,6 +245,11 @@ void CommandContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11
 	}
 }
 
+void ComputeContext::SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void * BufferData )
+{
+    CommandContext::SetDynamicConstantBufferView( Slot, BufferSize, BufferData, { kBindCompute } );
+}
+
 void ComputeContext::SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle )
 {
     m_Context->CSSetShaderResources( Offset, 1, &Handle );
@@ -238,6 +258,16 @@ void ComputeContext::SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE H
 void ComputeContext::SetDynamicDescriptor( UINT Offset, const D3D11_UAV_HANDLE Handle )
 {
     m_Context->CSSetUnorderedAccessViews( Offset, 1, &Handle, nullptr );
+}
+
+void ComputeContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[] )
+{
+	m_Context->CSSetShaderResources( Offset, Count, Handles );
+}
+
+void ComputeContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_UAV_HANDLE Handles[], const UINT *pUAVInitialCounts )
+{
+    m_Context->CSSetUnorderedAccessViews( Offset, Count, Handles, pUAVInitialCounts );
 }
 
 void CommandContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, 

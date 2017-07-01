@@ -29,6 +29,12 @@
     <Filter Include="Shaders\FXAA">
       <UniqueIdentifier>{6c7de552-f5de-4780-b64c-2b3adb5b80fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Temporal">
+      <UniqueIdentifier>{0554f31e-7859-43f2-9207-74ced5b1794e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\MotionBlur">
+      <UniqueIdentifier>{63a6a6ac-bfa2-40e8-a19c-6bd1fc742331}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -389,8 +395,20 @@
     <None Include="Shaders\TextRS.hlsli">
       <Filter>Shaders\Text</Filter>
     </None>
-    <None Include="Shaders\Fxaa3_11.h">
+    <None Include="Shaders\FXAARootSignature.hlsli">
       <Filter>Shaders\FXAA</Filter>
+    </None>
+    <None Include="Shaders\FXAAPass1CS.hlsli">
+      <Filter>Shaders\FXAA</Filter>
+    </None>
+    <None Include="Shaders\FXAAPass2CS.hlsli">
+      <Filter>Shaders\FXAA</Filter>
+    </None>
+    <None Include="Shaders\MotionBlurRS.hlsli">
+      <Filter>Shaders\MotionBlur</Filter>
+    </None>
+    <None Include="Shaders\TemporalRS.hlsli">
+      <Filter>Shaders\Temporal</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -430,11 +448,68 @@
     <FxCompile Include="Shaders\TextShadowPS.hlsl">
       <Filter>Shaders\Text</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\FxaaVS.hlsl">
+    <FxCompile Include="Shaders\FXAAPass2VDebugCS.hlsl">
       <Filter>Shaders\FXAA</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\FxaaPS.hlsl">
+    <FxCompile Include="Shaders\FXAAResolveWorkQueueCS.hlsl">
       <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass1_Luma_CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass1_Luma2_CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass1_RGB_CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass1_RGB2_CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2H2CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2HCS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2HDebugCS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2V2CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2VCS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ResolveTAACS.hlsl">
+      <Filter>Shaders\Temporal</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SharpenTAACS.hlsl">
+      <Filter>Shaders\Temporal</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MotionBlurFinalPassCS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MotionBlurFinalPassPS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MotionBlurPrePassCS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CameraMotionBlurPrePassLinearZCS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CameraMotionBlurPrePassCS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CameraVelocityCS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BoundNeighborhoodCS.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\TemporalBlendCS.hlsl">
+      <Filter>Shaders\Temporal</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
