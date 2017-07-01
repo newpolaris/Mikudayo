@@ -520,6 +520,12 @@ void HandleDigitalButtonPress( GameInput::DigitalInput button, float timeDelta, 
 	if (!GameInput::IsPressed(button))
 		return;
 
+    if (GameInput::IsPressed( GameInput::kKey_lshift ))
+    {
+		action();
+        return;
+    }
+
 	float durationHeld = GameInput::GetDurationPressed(button);
 
 	// Tick on the first press

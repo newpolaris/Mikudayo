@@ -92,6 +92,8 @@ private:
 
 CREATE_APPLICATION( MikuViewer )
 
+NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
+
 void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
@@ -105,7 +107,7 @@ void MikuViewer::Startup( void )
 	const std::wstring cameraPath = L"Models/camera.vmd";
 
 	m_Miku.LoadModel( modelPath );
-	// m_Miku.LoadMotion( motionPath );
+	m_Miku.LoadMotion( motionPath );
 	m_Miku.LoadBone();
 	m_Stage.LoadModel( stagePath );
 	m_Motion.LoadMotion( cameraPath );
@@ -232,13 +234,12 @@ void MikuViewer::Update( float deltaT )
 	m_MainScissor.right = (LONG)g_SceneColorBuffer.GetWidth();
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 
-	static float kTime = 0.0f;
-	kTime += deltaT;
-	float kFrameTime = kTime * 30.0f;
+    if (!EngineProfiling::IsPaused())
+        m_Frame = m_Frame + deltaT * 30.f;
 
-	m_Miku.Update( kFrameTime );
-	m_Stage.Update( kFrameTime );
-	m_Motion.Update( kFrameTime );
+	m_Miku.Update( m_Frame );
+	m_Stage.Update( m_Frame );
+	m_Motion.Update( m_Frame );
 
 	m_pCameraController->Update( deltaT );
 
