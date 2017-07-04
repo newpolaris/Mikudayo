@@ -515,22 +515,3 @@ void TextContext::DrawString( const std::string& str )
 
     _freea(stackMem);
 }
-
-void TextContext::DrawFormattedString( const wchar_t* format, ... )
-{
-    wchar_t buffer[256];
-    va_list ap;
-    va_start(ap, format);
-    vswprintf( buffer, 256, format, ap );
-    DrawString( wstring(buffer) );
-}
-
-void TextContext::DrawFormattedString( const char* format, ... )
-{
-    char buffer[256];
-    va_list ap;
-    va_start(ap, format);
-    vsprintf_s( buffer, 256, format, ap );
-    DrawString( string(buffer) );
-}
-

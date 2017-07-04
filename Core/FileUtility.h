@@ -42,6 +42,13 @@ namespace Utility
 	ByteArray ReadFileSync(const wstring& fileName);
 
 	template <typename T, typename R>
+	void Read( basic_istream<T, char_traits<T>>& is, R& t, uint32_t size)
+	{
+        ASSERT( size <= sizeof( R ), "buffer overflow" );
+		is.read( reinterpret_cast<T*>(&t), size );
+	}
+
+	template <typename T, typename R>
 	void Read( basic_istream<T, char_traits<T>>& is, R& t )
 	{
 		is.read( reinterpret_cast<T*>(&t), sizeof( R ) );
@@ -86,7 +93,7 @@ namespace Utility
 		is.read( data, sizeof( T ) * (t.size() * sizeof(R)) );
 	}
 
-	uint32_t ReadInt( bufferstream& is );
+	uint32_t ReadUint( bufferstream& is );
 	uint16_t ReadShort( bufferstream & is );
 
 	template <typename T>

@@ -25,14 +25,14 @@ namespace Utility
 		return buf;
 	}
 
-	uint32_t ReadInt( bufferstream & is )
+	uint32_t ReadUint( bufferstream& is )
 	{
 		uint32_t t;
 		Read( is, t );
 		return t;
 	}
 
-	uint16_t ReadShort( bufferstream & is )
+	uint16_t ReadShort( bufferstream& is )
 	{
 		uint16_t t;
 		Read( is, t );

@@ -136,11 +136,11 @@ public:
     void CopySubresource(GpuResource& Dest, UINT DestSubIndex, GpuResource& Src, UINT SrcSubIndex);
     void CopyCounter(GpuResource& Dest, size_t DestOffset, StructuredBuffer& Src);
 
-	void SetConstants( UINT NumConstants, const void* pConstants, BindList BindList );
-	void SetConstants( DWParam X, BindList BindList );
-	void SetConstants( DWParam X, DWParam Y, BindList BindList );
-	void SetConstants( DWParam X, DWParam Y, DWParam Z, BindList BindList );
-	void SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W, BindList BindList );
+	void SetConstants( UINT Slot, UINT NumConstants, const void* pConstants, BindList BindList );
+	void SetConstants( UINT Slot, DWParam X, BindList BindList );
+	void SetConstants( UINT Slot, DWParam X, DWParam Y, BindList BindList );
+	void SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z, BindList BindList );
+	void SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z, DWParam W, BindList BindList );
 	void SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[], BindList BindList );
 
 	template <typename T> void SetDynamicConstantBufferView( UINT Slot, const ConstantBuffer<T>& Buffer, BindList BindList );
@@ -185,11 +185,11 @@ public:
 
 	void SetPipelineState( ComputePSO& PSO );
 
-	void SetConstants( UINT NumConstants, const void* pConstants );
-	void SetConstants( DWParam X );
-	void SetConstants( DWParam X, DWParam Y );
-	void SetConstants( DWParam X, DWParam Y, DWParam Z );
-	void SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W );
+	void SetConstants( UINT Slot, UINT NumConstants, const void* pConstants );
+	void SetConstants( UINT Slot, DWParam X );
+	void SetConstants( UINT Slot, DWParam X, DWParam Y );
+	void SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z );
+	void SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z, DWParam W );
 	void SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[] );
 
 	void SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData );

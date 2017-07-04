@@ -168,7 +168,7 @@ void PostEffects::ProcessLDR( CommandContext& BaseContext )
     if (bGenerateBloom || FXAA::DebugDraw || SSAO::DebugDraw || !g_bTypedUAVLoadSupport_R11G11B10_FLOAT)
     {
         // Set constants
-        Context.SetConstants(1.0f / g_SceneColorBuffer.GetWidth(), 1.0f / g_SceneColorBuffer.GetHeight(),
+        Context.SetConstants( 0, 1.0f / g_SceneColorBuffer.GetWidth(), 1.0f / g_SceneColorBuffer.GetHeight(),
             (float)BloomStrength);
 
         // Separate out SDR result from its perceived luminance

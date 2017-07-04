@@ -334,58 +334,58 @@ void CommandContext::UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, const vo
 	m_Context->Unmap( Handle, 0 );
 }
 
-void CommandContext::SetConstants( UINT NumConstants, const void * pConstants, BindList BindList )
+void CommandContext::SetConstants( UINT Slot, UINT NumConstants, const void * pConstants, BindList BindList )
 {
 	m_InternalCB.Update(pConstants, sizeof(UINT) * NumConstants );
-	m_InternalCB.UploadAndBind( *this, 0, BindList );
+	m_InternalCB.UploadAndBind( *this, Slot, BindList );
 }
 
-void CommandContext::SetConstants( DWParam X, BindList BindList )
+void CommandContext::SetConstants( UINT Slot, DWParam X, BindList BindList )
 {
-	SetConstants( 1, &X, BindList );
+	SetConstants( Slot, 1, &X, BindList );
 }
 
-void CommandContext::SetConstants( DWParam X, DWParam Y, BindList BindList )
+void CommandContext::SetConstants( UINT Slot, DWParam X, DWParam Y, BindList BindList )
 {
 	DWParam Param[] = { X, Y };
-	SetConstants( 2, &Param, BindList );
+	SetConstants( Slot, 2, &Param, BindList );
 }
 
-void CommandContext::SetConstants( DWParam X, DWParam Y, DWParam Z, BindList BindList )
+void CommandContext::SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z, BindList BindList )
 {
 	DWParam Param[] = { X, Y, Z };
-	SetConstants( 3, &Param, BindList );
+	SetConstants( Slot, 3, &Param, BindList );
 }
 
-void CommandContext::SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W, BindList BindList )
+void CommandContext::SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z, DWParam W, BindList BindList )
 {
 	DWParam Param[] = { X, Y, Z, W };
-	SetConstants( 4, &Param, BindList );
+	SetConstants( Slot, 4, &Param, BindList );
 }
 
-void ComputeContext::SetConstants( UINT NumConstants, const void* pConstants )
+void ComputeContext::SetConstants( UINT Slot, UINT NumConstants, const void* pConstants )
 {
-    CommandContext::SetConstants( NumConstants, pConstants, { kBindCompute } );
+    CommandContext::SetConstants( Slot, NumConstants, pConstants, { kBindCompute } );
 }
 
-void ComputeContext::SetConstants( DWParam X )
+void ComputeContext::SetConstants( UINT Slot, DWParam X )
 {
-    CommandContext::SetConstants( X, { kBindCompute } );
+    CommandContext::SetConstants( Slot, X, { kBindCompute } );
 }
 
-void ComputeContext::SetConstants( DWParam X, DWParam Y )
+void ComputeContext::SetConstants( UINT Slot, DWParam X, DWParam Y )
 {
-    CommandContext::SetConstants( X, Y, { kBindCompute } );
+    CommandContext::SetConstants( Slot, X, Y, { kBindCompute } );
 }
 
-void ComputeContext::SetConstants( DWParam X, DWParam Y, DWParam Z )
+void ComputeContext::SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z )
 {
-    CommandContext::SetConstants( X, Y, Z, { kBindCompute } );
+    CommandContext::SetConstants( Slot, X, Y, Z, { kBindCompute } );
 }
 
-void ComputeContext::SetConstants( DWParam X, DWParam Y, DWParam Z, DWParam W )
+void ComputeContext::SetConstants( UINT Slot, DWParam X, DWParam Y, DWParam Z, DWParam W )
 {
-    CommandContext::SetConstants( X, Y, Z, W, { kBindCompute } );
+    CommandContext::SetConstants( Slot, X, Y, Z, W, { kBindCompute } );
 }
 
 #ifndef GRAPHICS_DEBUG
@@ -549,6 +549,7 @@ LinearAllocatorPageManager ConstantBufferAllocator::sm_PageManager = kCpuWritabl
 
 void ConstantBufferAllocator::Create()
 {
+    static_assert(kBindCompute+1 == 6, "test if total length");
 	for (int i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT*6; i++)
 		m_PagePool.emplace_back( sm_PageManager.CreateNewPage( 0x10000 ) );
 }

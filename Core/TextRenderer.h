@@ -96,8 +96,21 @@ public:
 
 	// A more powerful function which formats text like printf().  Very slow by comparison, so use it
 	// only if you're going to format text anyway.
-	void DrawFormattedString( const wchar_t* format, ... );
-	void DrawFormattedString( const char* format, ... );
+    template <typename ...Args>
+	void DrawFormattedString( const wchar_t* format, Args const & ... args ) noexcept
+    {
+        wchar_t buffer[256];
+        swprintf_s( buffer, 256, format, args ... );
+        DrawString( wstring( buffer ) );
+    }
+
+    template <typename ...Args>
+	void DrawFormattedString( const char* format, Args const & ... args ) noexcept
+    {
+        char buffer[256];
+        sprintf_s( buffer, 256, format, args ... );
+        DrawString( string( buffer ) );
+    }
 
 private:
 

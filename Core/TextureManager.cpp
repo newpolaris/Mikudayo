@@ -387,11 +387,11 @@ const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, boo
 	{
 		path.replace_extension( L".dds" );
 		const ManagedTexture* Tex = nullptr;
-		Tex = LoadDDSFromFile( fileName, sRGB );
+		Tex = LoadDDSFromFile( path.generic_wstring(), sRGB );
 		if (!Tex->IsValid())
 		{
 			path.replace_extension( L".png" );
-			Tex = LoadWISFromFile( fileName, sRGB );
+			Tex = LoadWISFromFile( path.generic_wstring(), sRGB );
 		}
 		return Tex;
 	}
@@ -458,7 +458,8 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 	if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
 		ManTex->SetToInvalidTexture();
 
-	SetName( ManTex->GetResource(), fileName );
+    if (ManTex->IsValid())
+        SetName( ManTex->GetResource(), fileName );
 
 	return ManTex;
 }

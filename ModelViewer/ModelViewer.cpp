@@ -1,3 +1,17 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+// Developed by Minigraph
+//
+// Author(s):  Alex Nankervis
+//             James Stanard
+//
+
 #include "GameCore.h"
 #include "GraphicsCore.h"
 #include "PipelineState.h"
@@ -8,6 +22,16 @@
 #include "MotionBlur.h"
 #include "DepthOfField.h"
 #include "BufferManager.h"
+#include "Camera.h"
+#include "CameraController.h"
+#include "SamplerManager.h"
+#include "Model.h"
+#include "GameInput.h"
+#include "TemporalEffects.h"
+#include "SSAO.h"
+#include "FXAA.h"
+#include "PostEffects.h"
+#include "ForwardPlusLighting.h"
 
 #include "CompiledShaders/ModelViewerVS.h"
 #include "CompiledShaders/ModelViewerPS.h"
@@ -15,102 +39,9 @@
 #include "DirectXColors.h"
 #include "ConstantBuffer.h"
 
-using namespace DirectX;
 using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
-
-class Model
-{
-public:
-	Model();
-	~Model();
-
-	bool Load();
-	void Clear();
-
-	VertexBuffer m_VertexBuffer;
-	IndexBuffer m_IndexBuffer;
-	UINT m_indexCount;
-};
-
-Model::Model()
-{
-}
-
-Model::~Model()
-{
-	Clear();
-}
-
-bool Model::Load()
-{
-	struct VertexPositionColor
-	{
-		DirectX::XMFLOAT3 pos;
-		DirectX::XMFLOAT3 color;
-	};
-
-	// Load mesh vertices. Each vertex has a position and a color.
-	static const VertexPositionColor cubeVertices[] =
-	{
-		{XMFLOAT3( -0.5f, -0.5f, -0.5f ), XMFLOAT3( 0.0f, 0.0f, 0.0f )},
-		{XMFLOAT3( -0.5f, -0.5f,  0.5f ), XMFLOAT3( 0.0f, 0.0f, 1.0f )},
-		{XMFLOAT3( -0.5f,  0.5f, -0.5f ), XMFLOAT3( 0.0f, 1.0f, 0.0f )},
-		{XMFLOAT3( -0.5f,  0.5f,  0.5f ), XMFLOAT3( 0.0f, 1.0f, 1.0f )},
-		{XMFLOAT3( 0.5f, -0.5f, -0.5f ), XMFLOAT3( 1.0f, 0.0f, 0.0f )},
-		{XMFLOAT3( 0.5f, -0.5f,  0.5f ), XMFLOAT3( 1.0f, 0.0f, 1.0f )},
-		{XMFLOAT3( 0.5f,  0.5f, -0.5f ), XMFLOAT3( 1.0f, 1.0f, 0.0f )},
-		{XMFLOAT3( 0.5f,  0.5f,  0.5f ), XMFLOAT3( 1.0f, 1.0f, 1.0f )},
-	};
-
-	m_VertexBuffer.Create( L"VertexBuffer", _countof(cubeVertices), sizeof(cubeVertices[0]), cubeVertices );
-
-	// Load mesh indices. Each trio of indices represents
-	// a triangle to be rendered on the screen.
-	// For example: 0,2,1 means that the vertices with indexes
-	// 0, 2 and 1 from the vertex buffer compose the 
-	// first triangle of this mesh.
-	static const unsigned short cubeIndices[] =
-	{
-		0,2,1, // -x
-		1,2,3,
-
-		4,5,6, // +x
-		5,7,6,
-
-		0,1,5, // -y
-		0,5,4,
-
-		2,6,7, // +y
-		2,7,3,
-
-		0,4,6, // -z
-		0,6,2,
-
-		1,3,7, // +z
-		1,7,5,
-	};
-
-	m_indexCount = _countof( cubeIndices );
-	m_IndexBuffer.Create( L"IndexBuffer", m_indexCount, sizeof(cubeIndices[0]), cubeIndices );
-
-	return true;
-}
-
-void Model::Clear()
-{
-	m_VertexBuffer.Destroy();
-	m_IndexBuffer.Destroy();
-}
-
-// Constant buffer used to send MVP matrices to the vertex shader.
-__declspec(align(16)) struct MVPConstants
-{
-	DirectX::XMFLOAT4X4 model;
-	DirectX::XMFLOAT4X4 view;
-	DirectX::XMFLOAT4X4 projection;
-};
 
 class ModelViewer : public GameCore::IGameApp
 {
@@ -126,107 +57,219 @@ public:
 	virtual void RenderScene( void ) override;
 
 private:
-	MVPConstants m_MVPBufferData;
 
-	D3D11_VIEWPORT m_MainViewport;
-	float m_JitterDelta[2];
-	D3D11_RECT m_MainScissor;
+    void RenderLightShadows(GraphicsContext& gfxContext);
 
-	Model m_Model;
+    enum eObjectFilter { kOpaque = 0x1, kCutout = 0x2, kTransparent = 0x4, kAll = 0xF, kNone = 0x0 };
+    void RenderObjects( GraphicsContext& Context, const Matrix4& ViewProjMat, eObjectFilter Filter = kAll );
+    void CreateParticleEffects();
+    Camera m_Camera;
+    std::auto_ptr<CameraController> m_CameraController;
+    Matrix4 m_ViewProjMatrix;
+    D3D11_VIEWPORT m_MainViewport;
+    D3D11_RECT m_MainScissor;
 
-	GraphicsPSO m_DepthPSO; 
-	GraphicsPSO m_ModelPSO;
+    GraphicsPSO m_DepthPSO;
+    GraphicsPSO m_CutoutDepthPSO;
+    GraphicsPSO m_ModelPSO;
+#ifdef _WAVE_OP
+    GraphicsPSO m_DepthWaveOpsPSO;
+    GraphicsPSO m_ModelWaveOpsPSO;
+#endif
+    GraphicsPSO m_CutoutModelPSO;
+    GraphicsPSO m_ShadowPSO;
+    GraphicsPSO m_CutoutShadowPSO;
+    GraphicsPSO m_WaveTileCountPSO;
+
+    D3D11_SAMPLER_HANDLE m_DefaultSampler;
+
+    D3D11_SRV_HANDLE m_ExtraTextures[6];
+    Model m_Model;
+    std::vector<bool> m_pMaterialIsCutout;
+
+    Vector3 m_SunDirection;
+    // ShadowCamera m_SunShadow;
 };
 
 CREATE_APPLICATION( ModelViewer )
 
+ExpVar m_SunLightIntensity("Application/Lighting/Sun Light Intensity", 4.0f, 0.0f, 16.0f, 0.1f);
+ExpVar m_AmbientIntensity("Application/Lighting/Ambient Intensity", 0.1f, -16.0f, 16.0f, 0.1f);
+NumVar m_SunOrientation("Application/Lighting/Sun Orientation", -0.5f, -100.0f, 100.0f, 0.1f );
+NumVar m_SunInclination("Application/Lighting/Sun Inclination", 0.75f, 0.0f, 1.0f, 0.01f );
+NumVar ShadowDimX("Application/Lighting/Shadow Dim X", 5000, 1000, 10000, 100 );
+NumVar ShadowDimY("Application/Lighting/Shadow Dim Y", 3000, 1000, 10000, 100 );
+NumVar ShadowDimZ("Application/Lighting/Shadow Dim Z", 3000, 1000, 10000, 100 );
+
+BoolVar ShowWaveTileCounts("Application/Forward+/Show Wave Tile Counts", false);
+#ifdef _WAVE_OP
+BoolVar EnableWaveOps("Application/Forward+/Enable Wave Ops", true);
+#endif
+
 void ModelViewer::Startup( void )
 {
-	const InputDesc vertElem[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
+    SamplerDesc DefaultSamplerDesc;
+    DefaultSamplerDesc.MaxAnisotropy = 8;
+    m_DefaultSampler = DefaultSamplerDesc.CreateDescriptor();
 
-	// Depth-only (2x rate)
-	m_DepthPSO.SetInputLayout( _countof( vertElem ), vertElem );
-	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+    DXGI_FORMAT ColorFormat = g_SceneColorBuffer.GetFormat();
+    DXGI_FORMAT DepthFormat = g_SceneDepthBuffer.GetFormat();
+    // DXGI_FORMAT ShadowFormat = g_ShadowBuffer.GetFormat();
 
-	m_ModelPSO = m_DepthPSO;
-	m_ModelPSO.SetDepthStencilState(DepthStateReadWrite);
-	m_ModelPSO.SetVertexShader( MY_SHADER_ARGS( g_pModelViewerVS ) );
-	m_ModelPSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
-	m_ModelPSO.Finalize();
+    InputDesc vertElem[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+    };
 
-	ASSERT(m_Model.Load());
+    // Depth-only (2x rate)
+    m_DepthPSO.SetRasterizerState(RasterizerDefault);
+    m_DepthPSO.SetBlendState(BlendNoColorWrite);
+    m_DepthPSO.SetDepthStencilState(DepthStateReadWrite);
+    m_DepthPSO.SetInputLayout(_countof(vertElem), vertElem);
+    m_DepthPSO.SetPrimitiveTopologyType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // m_DepthPSO.SetRenderTargetFormats(0, nullptr, DepthFormat);
+    // m_DepthPSO.SetVertexShader( MY_SHADER_ARGS(g_pDepthViewerVS) );
+    // m_DepthPSO.Finalize();
 
-	// Copy from microsoft uwp default project
-	float aspectRatio = (float)g_SceneColorBuffer.GetWidth() /  g_SceneColorBuffer.GetHeight();
-	float fovAngleY = 70.0f * XM_PI / 180.0f;
+    // Depth-only shading but with alpha testing
+    m_CutoutDepthPSO = m_DepthPSO;
+    // m_CutoutDepthPSO.SetPixelShader( MY_SHADER_ARGS(g_pDepthViewerPS) );
+    m_CutoutDepthPSO.SetRasterizerState(RasterizerTwoSided);
+    // m_CutoutDepthPSO.Finalize();
 
-	// This is a simple example of change that can be made when the app is in
-	// portrait or snapped view.
-	if (aspectRatio < 1.0f)
-	{
-		fovAngleY *= 2.0f;
-	}
+    // Depth-only but with a depth bias and/or render only backfaces
+    m_ShadowPSO = m_DepthPSO;
+    m_ShadowPSO.SetRasterizerState(RasterizerShadow);
+    // m_ShadowPSO.Finalize();
 
-	// Note that the OrientationTransform3D matrix is post-multiplied here
-	// in order to correctly orient the scene to match the display orientation.
-	// This post-multiplication step is required for any draw calls that are
-	// made to the swap chain render target. For draw calls to other targets,
-	// this transform should not be applied.
+    // Shadows with alpha testing
+    m_CutoutShadowPSO = m_ShadowPSO;
+    // m_CutoutShadowPSO.SetPixelShader( MY_SHADER_ARGS(g_pDepthViewerPS) );
+    m_CutoutShadowPSO.SetRasterizerState(RasterizerShadowTwoSided);
+    // m_CutoutShadowPSO.Finalize();
 
-	// This sample makes use of a right-handed coordinate system using row-major matrices.
-	XMMATRIX perspectiveMatrix = XMMatrixPerspectiveFovRH(
-		fovAngleY,
-		aspectRatio,
-		0.1f,
-		100.0f
-		);
+    // Full color pass
+    m_ModelPSO = m_DepthPSO;
+    m_ModelPSO.SetBlendState(BlendDisable);
+    m_ModelPSO.SetDepthStencilState(DepthStateReadWrite);
+    // m_ModelPSO.SetRenderTargetFormats(1, &ColorFormat, DepthFormat);
+    m_ModelPSO.SetVertexShader( MY_SHADER_ARGS(g_pModelViewerVS) );
+    m_ModelPSO.SetPixelShader( MY_SHADER_ARGS(g_pModelViewerPS) );
+    m_ModelPSO.Finalize();
 
-	XMFLOAT4X4 orientation = XMFLOAT4X4(
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
+#ifdef _WAVE_OP
+    m_DepthWaveOpsPSO = m_DepthPSO;
+    m_DepthWaveOpsPSO.SetVertexShader( MY_SHADER_ARGS(g_pDepthViewerVS_SM6) );
+    m_DepthWaveOpsPSO.Finalize();
 
-	XMMATRIX orientationMatrix = XMLoadFloat4x4(&orientation);
+    m_ModelWaveOpsPSO = m_ModelPSO;
+    m_ModelWaveOpsPSO.SetVertexShader( MY_SHADER_ARGS(g_pModelViewerVS_SM6) );
+    m_ModelWaveOpsPSO.SetPixelShader( MY_SHADER_ARGS(g_pModelViewerPS_SM6) );
+    m_ModelWaveOpsPSO.Finalize();
+#endif
 
-	XMStoreFloat4x4(
-		&m_MVPBufferData.projection,
-		XMMatrixTranspose(perspectiveMatrix * orientationMatrix)
-		);
+    m_CutoutModelPSO = m_ModelPSO;
+    m_CutoutModelPSO.SetRasterizerState(RasterizerTwoSided);
+    m_CutoutModelPSO.Finalize();
 
-	// Eye is at (0,0.7,1.5), looking at point (0,-0.1,0) with the up-vector along the y-axis.
+    // A debug shader for counting lights in a tile
+    m_WaveTileCountPSO = m_ModelPSO;
+    // m_WaveTileCountPSO.SetPixelShader(MY_SHADER_ARGS(g_pWaveTileCountPS) );
+    m_WaveTileCountPSO.Finalize();
 
-	static const XMVECTORF32 eye = { 0.0f, 0.7f, 1.5f, 0.0f };
-	static const XMVECTORF32 at = { 0.0f, -0.1f, 0.0f, 0.0f };
-	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+    Lighting::InitializeResources();
 
-	XMStoreFloat4x4(&m_MVPBufferData.view, XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)));
+    m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
+    // m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
-	g_SceneColorBuffer.SetClearColor( DirectX::Colors::CornflowerBlue );
+    TextureManager::Initialize(L"Textures/");
+    ASSERT(m_Model.Load("Models/sponza.h3d"), "Failed to load model");
+    ASSERT(m_Model.m_Header.meshCount > 0, "Model contains no meshes");
+
+    // The caller of this function can override which materials are considered cutouts
+    m_pMaterialIsCutout.resize(m_Model.m_Header.materialCount);
+    for (uint32_t i = 0; i < m_Model.m_Header.materialCount; ++i)
+    {
+        const Model::Material& mat = m_Model.m_pMaterial[i];
+        if (std::string(mat.texDiffusePath).find("thorn") != std::string::npos ||
+            std::string(mat.texDiffusePath).find("plant") != std::string::npos ||
+            std::string(mat.texDiffusePath).find("chain") != std::string::npos)
+        {
+            m_pMaterialIsCutout[i] = true;
+        }
+        else
+        {
+            m_pMaterialIsCutout[i] = false;
+        }
+    }
+
+    // CreateParticleEffects();
+
+    float modelRadius = Length(m_Model.m_Header.boundingBox.max - m_Model.m_Header.boundingBox.min) * .5f;
+    const Vector3 eye = (m_Model.m_Header.boundingBox.min + m_Model.m_Header.boundingBox.max) * .5f + Vector3(modelRadius * .5f, 0.0f, 0.0f);
+    m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
+    m_Camera.SetZRange( 1.0f, 10000.0f );
+    m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
+
+    MotionBlur::Enable = true;
+    TemporalEffects::EnableTAA = true;
+    FXAA::Enable = true;
+    // PostEffects::EnableHDR = true;
+    // PostEffects::EnableAdaptation = true;
+    SSAO::Enable = true;
+
+    Lighting::CreateRandomLights(m_Model.GetBoundingBox().min, m_Model.GetBoundingBox().max);
+
+    m_ExtraTextures[2] = Lighting::m_LightBuffer.GetSRV();
+    m_ExtraTextures[3] = Lighting::m_LightShadowArray.GetSRV();
+    m_ExtraTextures[4] = Lighting::m_LightGrid.GetSRV();
+    m_ExtraTextures[5] = Lighting::m_LightGridBitMask.GetSRV();
 }
 
 void ModelViewer::Cleanup( void )
 {
-	m_DepthPSO.Destroy(); 
-	m_ModelPSO.Destroy();
+    m_DepthPSO.Destroy();
+    m_CutoutDepthPSO.Destroy();
+    m_ModelPSO.Destroy();
+#ifdef _WAVE_OP
+    m_DepthWaveOpsPSO.Destroy();
+    m_ModelWaveOpsPSO.Destroy();
+#endif
+    m_CutoutModelPSO.Destroy();
+    m_ShadowPSO.Destroy();
+    m_CutoutShadowPSO.Destroy();
+    m_WaveTileCountPSO.Destroy();
 
 	m_Model.Clear();
+    Lighting::Shutdown();
+}
+
+namespace Graphics
+{
+    extern EnumVar DebugZoom;
 }
 
 void ModelViewer::Update( float deltaT )
 {
-	// Convert degrees to radians, then convert seconds to rotation angle
-	float radiansPerSecond = XMConvertToRadians( 45 );
-	double totalRotation = deltaT * radiansPerSecond;
-	float radians = static_cast<float>(fmod( totalRotation, XM_2PI ));
+    ScopedTimer _prof(L"Update State");
 
-	// Prepare to pass the updated model matrix to the shader
-	XMStoreFloat4x4(&m_MVPBufferData.model, XMMatrixTranspose(XMMatrixRotationY(radians)));
+    if (GameInput::IsFirstPressed(GameInput::kLShoulder))
+        DebugZoom.Decrement();
+    else if (GameInput::IsFirstPressed(GameInput::kRShoulder))
+        DebugZoom.Increment();
+
+    m_CameraController->Update(deltaT);
+    m_ViewProjMatrix = m_Camera.GetViewProjMatrix();
+
+    float costheta = cosf(m_SunOrientation);
+    float sintheta = sinf(m_SunOrientation);
+    float cosphi = cosf(m_SunInclination * 3.14159f * 0.5f);
+    float sinphi = sinf(m_SunInclination * 3.14159f * 0.5f);
+    m_SunDirection = Normalize(Vector3( costheta * cosphi, sinphi, sintheta * cosphi ));
 
     // We use viewport offsets to jitter sample positions from frame to frame (for TAA.)
     // D3D has a design quirk with fractional offsets such that the implicit scissor
@@ -236,7 +279,7 @@ void ModelViewer::Update( float deltaT )
     // dimensions with an extra pixel.  My solution is to only use positive fractional offsets,
     // but that means that the average sample position is +0.5, which I use when I disable
     // temporal AA.
-    // TemporalEffects::GetJitterOffset(m_MainViewport.TopLeftX, m_MainViewport.TopLeftY);
+    TemporalEffects::GetJitterOffset(m_MainViewport.TopLeftX, m_MainViewport.TopLeftY);
 
 	m_MainViewport.Width = (float)g_SceneColorBuffer.GetWidth();
 	m_MainViewport.Height = (float)g_SceneColorBuffer.GetHeight();
@@ -249,19 +292,134 @@ void ModelViewer::Update( float deltaT )
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 }
 
+void ModelViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewProjMat, eObjectFilter Filter )
+{
+    struct VSConstants
+    {
+        Matrix4 modelToProjection;
+        Matrix4 modelToShadow;
+        XMFLOAT3 viewerPos;
+    } vsConstants;
+    vsConstants.modelToProjection = ViewProjMat;
+    // vsConstants.modelToShadow = m_SunShadow.GetShadowMatrix();
+    XMStoreFloat3(&vsConstants.viewerPos, m_Camera.GetPosition());
+
+    gfxContext.SetDynamicConstantBufferView(0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
+
+    uint32_t materialIdx = 0xFFFFFFFFul;
+
+    uint32_t VertexStride = m_Model.m_VertexStride;
+
+    for (uint32_t meshIndex = 0; meshIndex < m_Model.m_Header.meshCount; meshIndex++)
+    {
+        const Model::Mesh& mesh = m_Model.m_pMesh[meshIndex];
+
+        uint32_t indexCount = mesh.indexCount;
+        uint32_t startIndex = mesh.indexDataByteOffset / sizeof(uint16_t);
+        uint32_t baseVertex = mesh.vertexDataByteOffset / VertexStride;
+
+        if (mesh.materialIndex != materialIdx)
+        {
+            if ( m_pMaterialIsCutout[mesh.materialIndex] && !(Filter & kCutout) ||
+                !m_pMaterialIsCutout[mesh.materialIndex] && !(Filter & kOpaque) )
+                continue;
+
+            materialIdx = mesh.materialIndex;
+            gfxContext.SetDynamicDescriptors(0, 6, m_Model.GetSRVs(materialIdx), { kBindPixel } );
+        }
+
+        gfxContext.SetConstants(1, baseVertex, materialIdx, { kBindVertex });
+
+        gfxContext.DrawIndexed(indexCount, startIndex, baseVertex);
+    }
+}
+
 void ModelViewer::RenderScene( void )
 {
-	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
-	gfxContext.ClearColor( g_SceneColorBuffer );
-	gfxContext.SetVertexBuffer( 0, m_Model.m_VertexBuffer.VertexBufferView() );
-	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
-	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	gfxContext.SetPipelineState( m_ModelPSO );
-	gfxContext.SetDynamicConstantBufferView( 0, sizeof(m_MVPBufferData), &m_MVPBufferData, { kBindVertex, kBindPixel } );
-	gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
-	D3D11_RTV_HANDLE RTVs[] = { g_SceneColorBuffer.GetRTV() };
-	gfxContext.SetRenderTargets( _countof( RTVs ), RTVs );
-	gfxContext.DrawIndexed( 36, 0, 0 );
-	gfxContext.Flush();
+    static bool s_ShowLightCounts = false;
+    if (ShowWaveTileCounts != s_ShowLightCounts)
+    {
+        static bool EnableHDR;
+        if (ShowWaveTileCounts)
+        {
+            // EnableHDR = PostEffects::EnableHDR;
+            // PostEffects::EnableHDR = false;
+        }
+        else
+        {
+            // PostEffects::EnableHDR = EnableHDR;
+        }
+        s_ShowLightCounts = ShowWaveTileCounts;
+    }
+
+    GraphicsContext& gfxContext = GraphicsContext::Begin(L"Scene Render");
+
+    __declspec(align(16)) struct
+    {
+        Vector3 sunDirection;
+        Vector3 sunLight;
+        Vector3 ambientLight;
+        float ShadowTexelSize[4];
+
+        float InvTileDim[4];
+        uint32_t TileCount[4];
+        uint32_t FirstLightIndex[4];
+    } psConstants;
+
+    psConstants.sunDirection = m_SunDirection;
+    psConstants.sunLight = Vector3(1.0f, 1.0f, 1.0f) * m_SunLightIntensity;
+    psConstants.ambientLight = Vector3(1.0f, 1.0f, 1.0f) * m_AmbientIntensity;
+    // psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
+    psConstants.InvTileDim[0] = 1.0f / Lighting::LightGridDim;
+    psConstants.InvTileDim[1] = 1.0f / Lighting::LightGridDim;
+    psConstants.TileCount[0] = Math::DivideByMultiple(g_SceneColorBuffer.GetWidth(), Lighting::LightGridDim);
+    psConstants.TileCount[1] = Math::DivideByMultiple(g_SceneColorBuffer.GetHeight(), Lighting::LightGridDim);
+    psConstants.FirstLightIndex[0] = Lighting::m_FirstConeLight;
+    psConstants.FirstLightIndex[1] = Lighting::m_FirstConeShadowedLight;
+
+    // Set the default state for command lists
+    auto pfnSetupGraphicsState = [&](void)
+    {
+        gfxContext.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        gfxContext.SetIndexBuffer(m_Model.m_IndexBuffer.IndexBufferView());
+        gfxContext.SetVertexBuffer(0, m_Model.m_VertexBuffer.VertexBufferView());
+    };
+
+    pfnSetupGraphicsState();
+
+    if (!SSAO::DebugDraw)
+    {
+        ScopedTimer _prof(L"Main Render", gfxContext);
+
+        gfxContext.ClearColor(g_SceneColorBuffer);
+        gfxContext.ClearDepth(g_SceneDepthBuffer);
+
+        pfnSetupGraphicsState();
+
+        {
+            ScopedTimer _prof(L"Render Color", gfxContext);
+
+            gfxContext.SetDynamicDescriptors(0, _countof(m_ExtraTextures), m_ExtraTextures, { kBindPixel } );
+            gfxContext.SetDynamicConstantBufferView(0, sizeof(psConstants), &psConstants, { kBindPixel } );
+#ifdef _WAVE_OP
+            gfxContext.SetPipelineState(EnableWaveOps ? m_ModelWaveOpsPSO : m_ModelPSO );
+#else
+            gfxContext.SetPipelineState(ShowWaveTileCounts ? m_WaveTileCountPSO : m_ModelPSO);
+#endif
+            D3D11_SAMPLER_HANDLE Sampler[] = { m_DefaultSampler, SamplerShadow };
+            gfxContext.SetDynamicSamplers( 0, 2, Sampler, { kBindPixel } );
+            gfxContext.SetRenderTarget(g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV());
+            gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
+
+            RenderObjects( gfxContext, m_ViewProjMatrix, kOpaque );
+
+            if (!ShowWaveTileCounts)
+            {
+                gfxContext.SetPipelineState(m_CutoutModelPSO);
+                RenderObjects( gfxContext, m_ViewProjMatrix, kCutout );
+            }
+        }
+    }
+
 	gfxContext.Finish();
 }

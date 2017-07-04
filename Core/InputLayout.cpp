@@ -25,6 +25,7 @@ std::size_t hash_value( const InputDesc & Desc )
 
 std::shared_ptr<InputLayout> InputLayout::Create( const std::vector<InputDesc>& Desc, const ShaderByteCode& Shader )
 {
+    ASSERT( Shader.pShaderBytecode != nullptr );
 	std::shared_ptr<InputLayout> Ret;
 	if (Desc.size() > 0)
 	{

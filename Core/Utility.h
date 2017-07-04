@@ -20,42 +20,38 @@ namespace Utility
 	inline void Print( const char* msg ) { printf("%s", msg); }
 	inline void Print( const wchar_t* msg ) { wprintf(L"%ws", msg); }
 
-	inline void Printf( const char* format, ... )
+    template <typename ... Args>
+	inline void Printf( const char* format, Args const & ... args ) noexcept
 	{
 		char buffer[256];
-		va_list ap;
-		va_start(ap, format);
-		vsprintf_s(buffer, 256, format, ap);
+		sprintf_s(buffer, 256, format, args ...);
 		Print(buffer);
 	}
 
-	inline void Printf( const wchar_t* format, ... )
+    template <typename ... Args>
+	inline void Printf( const wchar_t* format, Args const & ... args ) noexcept
 	{
 		wchar_t buffer[256];
-		va_list ap;
-		va_start(ap, format);
-		vswprintf(buffer, 256, format, ap);
+		swprintf(buffer, 256, format, args ...);
 		Print(buffer);
 	}
 
 #ifndef RELEASE
-	inline void PrintSubMessage( const char* format, ... )
+    template <typename ... Args>
+	inline void PrintSubMessage( const char* format, Args const & ... args ) noexcept
 	{
 		Print("--> ");
 		char buffer[256];
-		va_list ap;
-		va_start(ap, format);
-		vsprintf_s(buffer, 256, format, ap);
+		sprintf_s(buffer, 256, format, args ...);
 		Print(buffer);
 		Print("\n");
 	}
-	inline void PrintSubMessage( const wchar_t* format, ... )
+    template <typename ... Args>
+	inline void PrintSubMessage( const wchar_t* format, Args const & ... args ) noexcept
 	{
 		Print("--> ");
 		wchar_t buffer[256];
-		va_list ap;
-		va_start(ap, format);
-		vswprintf(buffer, 256, format, ap);
+		swprintf(buffer, 256, format, args ...);
 		Print(buffer);
 		Print("\n");
 	}
