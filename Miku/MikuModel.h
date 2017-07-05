@@ -69,34 +69,38 @@ namespace Graphics
 		void Clear();
 		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter );
 		void DrawBone( GraphicsContext& gfxContext );
-		void LoadModel( const std::wstring& model );
-		void LoadMotion( const std::wstring& model );
-		void LoadBone();
+        void Load();
+        void LoadBone();
+		void SetModel( const std::wstring& model );
+		void SetMotion( const std::wstring& model );
 		void Update( float kFrameTime );
 
 	private:
 		void LoadPmd( const std::wstring& model, bool bRightHand );
+		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 		void LoadVmd( const std::wstring& vmd, bool bRightHand );
 
-		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
-
 		void SetBoneNum( size_t numBones );
+        void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames ); 
 
 		void UpdateIK( const Pmd::IK& ik );
 		void UpdateChildPose( int32_t idx );
 
 	public:
 		bool m_bRightHand;
+        std::wstring m_Model;
+        std::wstring m_Motion;
 		std::vector<InputDesc> m_InputDesc;
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
 		std::vector<Pmd::IK> m_IKs;
 		std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
-		std::vector<OrthogonalTransform> m_LocalPose; // offset
+		std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
 		std::vector<OrthogonalTransform> m_Pose; // cumulative transfrom matrix from root
-		std::vector<Matrix4> m_SkinTransform;
-		std::vector<int32_t> m_BoneParent;
-		std::vector<std::vector<int32_t>> m_BoneChild;
+		std::vector<OrthogonalTransform> m_Skinning; // final skinning transform
+		std::vector<DualQuaternion> m_SkinningDual; // final skinning transform
+		std::vector<int32_t> m_BoneParent; // parent index
+		std::vector<std::vector<int32_t>> m_BoneChild; // child indices
 		std::map<std::wstring, uint32_t> m_BoneIndex;
 		std::map<std::wstring, uint32_t> m_MorphIndex;
 		std::vector<Animation::BoneMotion> m_BoneMotions;

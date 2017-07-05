@@ -209,12 +209,12 @@ namespace Pmd
 
 		m_Header.Fill( is );
 
-		uint32_t NumVertex = ReadInt( is );
+		uint32_t NumVertex = ReadUint( is );
 		m_Vertices.resize( NumVertex );
 		for (uint32_t i = 0; i < NumVertex; i++) 
 			m_Vertices[i].Fill( is, bRightHand );
 
-		uint32_t NumIndices = ReadInt( is );
+		uint32_t NumIndices = ReadUint( is );
 		m_Indices.resize( NumIndices );
 		Read( is, m_Indices );
 		if (bRightHand)
@@ -223,7 +223,7 @@ namespace Pmd
 				std::swap( m_Indices[i], m_Indices[i + 1] );
 		}
 
-		uint32_t NumMaterial = ReadInt( is );
+		uint32_t NumMaterial = ReadUint( is );
 		m_Materials.resize( NumMaterial );
 		for (uint32_t i = 0; i < NumMaterial; i++)
 			m_Materials[i].Fill( is );

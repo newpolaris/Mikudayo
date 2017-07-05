@@ -21,6 +21,8 @@
 
 #include "CompiledShaders/ModelViewerVS.h"
 #include "CompiledShaders/ModelViewerPS.h"
+#include "CompiledShaders/MikuModel_VS.h"
+#include "CompiledShaders/MikuModel_Skin_VS.h"
 
 #include "DirectXColors.h"
 #include <sstream>
@@ -88,6 +90,8 @@ private:
 	GraphicsPSO m_DepthPSO; 
 	GraphicsPSO m_OpaquePSO;
 	GraphicsPSO m_BlendPSO;
+	GraphicsPSO m_OpaqueSkinPSO;
+	GraphicsPSO m_BlendSkinPSO;
 };
 
 CREATE_APPLICATION( MikuViewer )
@@ -106,10 +110,11 @@ void MikuViewer::Startup( void )
 	const std::wstring stagePath = L"Models/Library.pmd";
 	const std::wstring cameraPath = L"Models/camera.vmd";
 
-	m_Miku.LoadModel( modelPath );
-	m_Miku.LoadMotion( motionPath );
-	m_Miku.LoadBone();
-	m_Stage.LoadModel( stagePath );
+	m_Miku.SetModel( modelPath );
+	m_Miku.SetMotion( motionPath );
+	m_Miku.Load();
+	m_Stage.SetModel( stagePath );
+    m_Stage.Load();
 	m_Motion.LoadMotion( cameraPath );
 
 	// Depth-only (2x rate)
@@ -126,7 +131,7 @@ void MikuViewer::Startup( void )
 	else
 		m_OpaquePSO.SetDepthStencilState( DepthStateReadWriteLE );
 
-	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pModelViewerVS ) );
+	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModel_VS) );
 	m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
 	m_OpaquePSO.Finalize();
 
@@ -134,6 +139,14 @@ void MikuViewer::Startup( void )
 	m_BlendPSO.SetRasterizerState( RasterizerDefault );
 	m_BlendPSO.SetBlendState( BlendTraditional );
 	m_BlendPSO.Finalize();
+
+    m_OpaqueSkinPSO = m_OpaquePSO;
+	m_OpaqueSkinPSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModel_Skin_VS) );
+	m_OpaqueSkinPSO.Finalize();
+
+    m_BlendSkinPSO = m_BlendPSO;
+	m_BlendSkinPSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModel_Skin_VS) );
+	m_BlendSkinPSO.Finalize();
 
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pCameraController->SetMotion( &m_Motion );
@@ -171,6 +184,8 @@ void MikuViewer::Cleanup( void )
 	m_DepthPSO.Destroy(); 
 	m_OpaquePSO.Destroy();
 	m_BlendPSO.Destroy();
+	m_OpaqueSkinPSO.Destroy();
+	m_BlendSkinPSO.Destroy();
 
 	m_Buffer.Destory();
 
@@ -270,19 +285,14 @@ void MikuViewer::RenderScene( void )
 	gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 	gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
 
-	gfxContext.SetPipelineState( m_OpaquePSO );
-    {
-        ScopedTimer _prof( L"Opaque", gfxContext );
-        m_Stage.Draw( gfxContext, kOpaque );
-        m_Miku.Draw( gfxContext, kOpaque );
-    }
-	// m_Miku.DrawBone( gfxContext );
+    gfxContext.SetPipelineState( m_OpaqueSkinPSO );
+    m_Stage.Draw( gfxContext, kOpaque );
+    m_Stage.DrawBone( gfxContext );
+    m_Miku.Draw( gfxContext, kOpaque );
+	m_Miku.DrawBone( gfxContext );
 
-	gfxContext.SetPipelineState( m_BlendPSO );
-    {
-        ScopedTimer _prof( L"Stage Transparent", gfxContext );
-        m_Stage.Draw( gfxContext, kTransparent );
-    }
+	gfxContext.SetPipelineState( m_BlendSkinPSO );
+    m_Stage.Draw( gfxContext, kTransparent );
     m_Miku.Draw( gfxContext, kTransparent );
 
     gfxContext.SetRenderTarget( nullptr );

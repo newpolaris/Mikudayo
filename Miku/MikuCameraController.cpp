@@ -5,28 +5,33 @@
 
 using namespace GameCore;
 
-Matrix3 GetBasis( Vector3 forward, Vector3 up )
+namespace GameCore
 {
-	// Given, but ensure normalization
-	Scalar forwardLenSq = LengthSquare(forward);
-	forward = Select(forward * RecipSqrt(forwardLenSq), -Vector3(kZUnitVector), forwardLenSq < Scalar(0.000001f));
+    const char* CameraLabels[] = { "CameraMMD", "Camera3D", "CameraMotion" };
+    EnumVar CameraMode("Application/Camera Mode", 3, 3, CameraLabels);
 
-	// Deduce a valid, orthogonal right vector
+    Matrix3 GetBasis( Vector3 forward, Vector3 up )
+    {
+        // Given, but ensure normalization
+        Scalar forwardLenSq = LengthSquare(forward);
+        forward = Select(forward * RecipSqrt(forwardLenSq), -Vector3(kZUnitVector), forwardLenSq < Scalar(0.000001f));
 
-	Vector3 right = Cross(forward, up); // forward = -look
-	Scalar rightLenSq = LengthSquare(right);
-	right = Select(right * RecipSqrt(rightLenSq), Quaternion(Vector3(kYUnitVector), -XM_PIDIV2) * forward, rightLenSq < Scalar(0.000001f));
+        // Deduce a valid, orthogonal right vector
 
-	// Compute actual up vector
-	up = Cross(right, forward); // forward = -look
+        Vector3 right = Cross(forward, up); // forward = -look
+        Scalar rightLenSq = LengthSquare(right);
+        right = Select(right * RecipSqrt(rightLenSq), Quaternion(Vector3(kYUnitVector), -XM_PIDIV2) * forward, rightLenSq < Scalar(0.000001f));
 
-	// Finish constructing basis
-	return Matrix3(right, up, -forward); // -forward = look
+        // Compute actual up vector
+        up = Cross(right, forward); // forward = -look
+
+        // Finish constructing basis
+        return Matrix3(right, up, -forward); // -forward = look
+    }
 }
 
-
 MikuCameraController::MikuCameraController( MikuCamera& camera, Vector3 worldUp ) :
-	m_TargetCamera( camera ), m_kCameraMode( kCamera3D ), m_pMotion( nullptr )
+	m_TargetCamera( camera ), m_pMotion( nullptr )
 {
 	m_WorldUp = Normalize(worldUp);
 	m_WorldNorth = Normalize(Cross(m_WorldUp, Vector3(kXUnitVector)));
@@ -63,20 +68,21 @@ namespace Graphics
 
 void MikuCameraController::Update( float deltaTime )
 {
-	if (m_kCameraMode == kCameraMotion)
+    auto mode = ECameraMode((int)CameraMode);
+	if (mode == kCameraMotion)
 	{
 		if (m_pMotion)
 			m_pMotion->Animate( m_TargetCamera );
 	}
 	else
 	{
-		UpdateFromInput( m_kCameraMode, deltaTime );
+		UpdateFromInput( mode, deltaTime );
 	}
 	m_TargetCamera.UpdateViewMatrix();
 	m_TargetCamera.Update();
 }
 
-void MikuCameraController::UpdateFromInput( CameraMode kCameraMode, float deltaTime )
+void MikuCameraController::UpdateFromInput( ECameraMode kCameraMode, float deltaTime )
 {
 	(deltaTime);
 

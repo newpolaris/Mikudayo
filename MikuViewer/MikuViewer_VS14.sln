@@ -25,6 +25,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZLib", "..\3rdParty\zlib-wi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Model", "..\Model\Model.vcxproj", "{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "..\Test\Test.vcxproj", "{2FAF436B-3938-48FB-BCAD-0FA32665A247}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2229C8E4-2050-451D-9126-B800F35A4B79} = {2229C8E4-2050-451D-9126-B800F35A4B79}
+		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6} = {AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -94,6 +100,15 @@ Global
 		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Release|x64.ActiveCfg = Release|x64
 		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Release|x64.Build.0 = Release|x64
 		{5FFDFABA-2581-46BF-9B8D-B06C0E98B316}.Release|x86.ActiveCfg = Release|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Debug|x64.ActiveCfg = Debug|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Debug|x64.Build.0 = Debug|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Debug|x86.ActiveCfg = Debug|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Profile|x64.ActiveCfg = Profile|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Profile|x64.Build.0 = Profile|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Profile|x86.ActiveCfg = Profile|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Release|x64.ActiveCfg = Release|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Release|x64.Build.0 = Release|x64
+		{2FAF436B-3938-48FB-BCAD-0FA32665A247}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

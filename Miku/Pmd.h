@@ -6,8 +6,10 @@
 #include "FileUtility.h"
 
 //
-// The image path is decoded with the system default and shift-jis
-// to support zip released with the wrong codepage
+// Resource path is decoded with both system-default and shift-jis
+// to support zip extracted with the wrong codepage.
+//
+// string TextureRaw, wstring Texture
 //
 namespace Pmd
 {

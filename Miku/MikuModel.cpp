@@ -20,6 +20,8 @@
 using namespace Graphics;
 using namespace DirectX;
 
+BoolVar s_EnableDrawBone("Application/Draw Bone", false);
+
 namespace Pmd {
 	std::vector<InputDesc> InputDescriptor
 	{
@@ -36,14 +38,25 @@ MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand )
 {
 }
 
-void MikuModel::LoadModel( const std::wstring& model )
+void MikuModel::Load()
 {
-	LoadPmd( model, m_bRightHand );
+    if (!m_Model.empty())
+        LoadPmd( m_Model, m_bRightHand );
+
+	if (!m_Motion.empty())
+        LoadVmd( m_Motion, m_bRightHand );
+
+    LoadBone();
 }
 
-void MikuModel::LoadMotion( const std::wstring& model )
+void MikuModel::SetModel( const std::wstring& model )
 {
-	LoadVmd( model, m_bRightHand );
+    m_Model = model;
+}
+
+void MikuModel::SetMotion( const std::wstring& motion )
+{
+    m_Motion = motion;
 }
 
 void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
@@ -208,65 +221,32 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		m_Mesh.push_back(mesh);
 	}
 
-	size_t numBone = pmd.m_Bones.size();
-	SetBoneNum( numBone );
-	for (auto i = 0; i < numBone; i++) 
+	size_t numBones = pmd.m_Bones.size();
+	SetBoneNum( numBones );
+	for (auto i = 0; i < numBones; i++) 
 	{
 		auto& boneData = pmd.m_Bones[i];
 
 		m_Bones[i].Name = boneData.Name;
 		m_BoneParent[i] = boneData.ParentBoneIndex;
-		if (boneData.ParentBoneIndex < numBone)
+		if (boneData.ParentBoneIndex < numBones)
 			m_BoneChild[boneData.ParentBoneIndex].push_back( i );
 
 		Vector3 headPos = boneData.BoneHeadPosition;
 		auto parentPos = Vector3( 0.0f, 0.0f, 0.0f );
 
-		if( boneData.ParentBoneIndex < numBone )
+		if( boneData.ParentBoneIndex < numBones )
 			parentPos = pmd.m_Bones[boneData.ParentBoneIndex].BoneHeadPosition;
 
 		m_Bones[i].Translate = headPos - parentPos;
 
 		m_BoneIndex[boneData.Name] = i;
 	}
-
-	for (auto i = 0; i < numBone; i++)
-	{
-		auto& bone = m_Bones[i];
-		auto& meshBone = m_BoneMotions[i];
-
-		meshBone.bLimitXAngle = false;
-
-		//
-		// In PMD Model minIK, maxIK is not manually given. 
-		// But, bone name that contains 'knee'('ひざ') has constraint
-		// that can move only in x axis and outer angle (just like human knee)
-		// If this constraint is not given, knee goes forward just like 
-		// the following vmd motion. http://www.nicovideo.jp/watch/sm18737664 
-		//
-		if (std::string::npos != bone.Name.find( L"ひざ" )) 
-			meshBone.bLimitXAngle = true;
-	}
-
-	for (auto i = 0; i < m_Bones.size(); i++)
-		m_LocalPose[i].SetTranslation( m_Bones[i].Translate );
-
-	std::vector<OrthogonalTransform> RestPose( numBone );
-	for (auto i = 0; i < numBone; i++)
-	{
-		auto& bone = m_Bones[i];
-		auto& parent = m_BoneParent[i];
-
-		RestPose[i].SetTranslation( bone.Translate );
-		if( parent < numBone )
-			RestPose[i] = RestPose[parent] * RestPose[i];
-	}
-
-	for (auto i = 0; i < numBone; i++)
-		m_toRoot[i] = ~RestPose[i];
-
-	for (auto i = 0; i < numBone; i++)
-		m_SkinTransform[i] = Matrix4( kIdentity );
+    
+    m_Skinning.resize( numBones );
+    m_SkinningDual.resize( numBones );
+    for ( auto i = 0; i < numBones; i++)
+        m_SkinningDual[i] = OrthogonalTransform();
 
 	m_IKs = pmd.m_IKs;
 
@@ -275,7 +255,8 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	{
 		auto& morph = pmd.m_Faces[i];
 		m_MorphIndex[morph.Name] = i;
-		for (auto& vert :morph.FaceVertices)
+        m_MorphMotions[i].m_MorphVertices.reserve( morph.FaceVertices.size() );
+		for (auto& vert : morph.FaceVertices)
 			m_MorphMotions[i].m_MorphVertices.push_back( { vert.Index, vert.Position } );
 
 		std::sort( m_MorphMotions[i].m_MorphVertices.begin(), m_MorphMotions[i].m_MorphVertices.end(), []( auto& a, auto& b) {
@@ -295,39 +276,7 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 	Vmd::VMD vmd;
 	vmd.Fill( bs, bRightHand );
 
-	for (auto& frame : vmd.BoneFrames)
-	{
-		if ( m_BoneIndex.count( frame.BoneName ) == 0)
-			continue;
-
-		Vector3 BoneTranslate(m_Bones[m_BoneIndex[frame.BoneName]].Translate);
-
-		BoneKeyFrame key;
-		key.Frame = frame.Frame;
-		key.Local.SetTranslation( Vector3(frame.Offset) + BoneTranslate );
-		key.Local.SetRotation( Quaternion( frame.Rotation ) );
-
-		//
-		// http://harigane.at.webry.info/201103/article_1.html
-		// 
-		// X_x1, Y_x1, Z_x1, R_x1, 
-		// X_y1, Y_y1, Z_y1, R_y1,
-		// X_x2, Y_x2, Z_x2, R_x2,
-		// X_y2, Y_y2, Z_y2, R_y2,
-		//
-		// ... (duplicated values)
-		//
-		char* interp = reinterpret_cast<char*>(&frame.Interpolation[0]);
-		float scale = 1.0f / 127.0f;
-
-		for (auto i = 0; i < 4; i++)
-			key.BezierCoeff[i] = Vector4( interp[i], interp[i+4], interp[i+8], interp[i+12] ) * scale;
-
-		m_BoneMotions[m_BoneIndex[frame.BoneName]].InsertKeyFrame( key );
-	}
-
-	for (auto& bone : m_BoneMotions )
-		bone.SortKeyFrame();
+    LoadBoneMotion( vmd.BoneFrames );
 
 	for (auto& frame : vmd.FaceFrames)
 	{
@@ -365,6 +314,97 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 
 		m_CameraMotion.InsertKeyFrame( keyFrame );
 	}
+}
+
+void MikuModel::SetBoneNum( size_t numBones )
+{
+	m_BoneParent.resize( numBones );
+	m_BoneChild.resize( numBones );
+	m_Bones.resize( numBones );
+}
+
+void MikuModel::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
+{
+    if (frames.size() <= 0) 
+        return;
+
+    int32_t numBones = static_cast<int32_t>(m_Bones.size());
+
+    m_BoneMotions.resize( numBones );
+    m_Pose.resize( numBones );
+    m_LocalPose.resize( numBones );
+    m_toRoot.resize( numBones );
+    m_Skinning.resize( numBones );
+    m_SkinningDual.resize( numBones );
+
+    for (auto i = 0; i < numBones; i++)
+    {
+        auto& bone = m_Bones[i];
+        auto& meshBone = m_BoneMotions[i];
+
+        meshBone.bLimitXAngle = false;
+
+        //
+        // In PMD Model minIK, maxIK is not manually given. 
+        // But, bone name that contains 'knee'('ひざ') has constraint
+        // that can move only in x axis and outer angle (just like human knee)
+        // If this constraint is not given, knee goes forward just like 
+        // the following vmd motion. http://www.nicovideo.jp/watch/sm18737664 
+        //
+        if (std::string::npos != bone.Name.find( L"ひざ" ))
+            meshBone.bLimitXAngle = true;
+    }
+
+    for (auto i = 0; i < m_Bones.size(); i++)
+        m_LocalPose[i].SetTranslation( m_Bones[i].Translate );
+
+    std::vector<OrthogonalTransform> RestPose( numBones );
+    for (auto i = 0; i < numBones; i++)
+    {
+        auto& bone = m_Bones[i];
+        auto& parent = m_BoneParent[i];
+
+        RestPose[i].SetTranslation( bone.Translate );
+        if (parent < numBones)
+            RestPose[i] = RestPose[parent] * RestPose[i];
+    }
+
+    for (auto i = 0; i < numBones; i++)
+        m_toRoot[i] = ~RestPose[i];
+
+	for (auto& frame : frames)
+	{
+		if ( m_BoneIndex.count( frame.BoneName ) == 0)
+			continue;
+
+		Vector3 BoneTranslate(m_Bones[m_BoneIndex[frame.BoneName]].Translate);
+
+		Animation::BoneKeyFrame key;
+		key.Frame = frame.Frame;
+		key.Local.SetTranslation( Vector3(frame.Offset) + BoneTranslate );
+		key.Local.SetRotation( Quaternion( frame.Rotation ) );
+
+		//
+		// http://harigane.at.webry.info/201103/article_1.html
+		// 
+		// X_x1, Y_x1, Z_x1, R_x1, 
+		// X_y1, Y_y1, Z_y1, R_y1,
+		// X_x2, Y_x2, Z_x2, R_x2,
+		// X_y2, Y_y2, Z_y2, R_y2,
+		//
+		// ... (duplicated values)
+		//
+		auto interp = reinterpret_cast<const char*>(&frame.Interpolation[0]);
+		float scale = 1.0f / 127.0f;
+
+		for (auto i = 0; i < 4; i++)
+			key.BezierCoeff[i] = Vector4( interp[i], interp[i+4], interp[i+8], interp[i+12] ) * scale;
+
+		m_BoneMotions[m_BoneIndex[frame.BoneName]].InsertKeyFrame( key );
+	}
+
+	for (auto& bone : m_BoneMotions )
+		bone.SortKeyFrame();
 }
 
 void MikuModel::LoadBone()
@@ -447,6 +487,7 @@ void MikuModel::Clear()
 	m_BonePSO.Destroy();
 	m_BoneIndexBuffer.Destroy();
 	m_BoneVertexBuffer.Destroy();
+
 }
 
 void MikuModel::UpdateChildPose( int32_t idx )
@@ -461,31 +502,19 @@ void MikuModel::UpdateChildPose( int32_t idx )
 		UpdateChildPose( c );
 }
 
-void MikuModel::SetBoneNum( size_t numBones )
-{
-	m_BoneParent.resize( numBones );
-	m_BoneChild.resize( numBones );
-	m_Bones.resize( numBones );
-	m_BoneMotions.resize( numBones );
-	m_Pose.resize( numBones );
-	m_LocalPose.resize( numBones );
-	m_toRoot.resize( numBones );
-	m_SkinTransform.resize( numBones );
-}
-
 void MikuModel::Update( float kFrameTime )
 {
 	if (m_BoneMotions.size() > 0)
 	{
-		size_t numBone = m_BoneMotions.size();
-		for (auto i = 0; i < numBone; i++) 
+		size_t numBones = m_BoneMotions.size();
+		for (auto i = 0; i < numBones; i++) 
 			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
 		
-		for (auto i = 0; i < numBone; i++)
+		for (auto i = 0; i < numBones; i++)
 		{
 			auto parentIndex = m_BoneParent[i];
 
-			if (parentIndex < numBone)
+			if (parentIndex < numBones)
 				m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
 			else
 				m_Pose[i] = m_LocalPose[i];
@@ -494,11 +523,14 @@ void MikuModel::Update( float kFrameTime )
 		for (auto& ik : m_IKs)
 			UpdateIK( ik );
 
-		for (auto i = 0; i < numBone; i++)
-			m_SkinTransform[i] = m_Pose[i] * m_toRoot[i];
+		for (auto i = 0; i < numBones; i++) 
+			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+
+		for (auto i = 0; i < numBones; i++) 
+            m_SkinningDual[i] = m_Skinning[i];
 	}
 	
-	if ( m_MorphMotions.size() > 0 )
+    if (m_MorphMotions.size() > 0)
 	{
 		//
 		// http://blog.goo.ne.jp/torisu_tetosuki/e/8553151c445d261e122a3a31b0f91110
@@ -640,13 +672,12 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 
 void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
-	auto elemByte = sizeof( decltype(m_SkinTransform)::value_type );
-	auto numByte = elemByte * m_SkinTransform.size();
-
+    auto elemByte = sizeof( decltype(m_SkinningDual)::value_type );
+    auto numByte = elemByte * m_SkinningDual.size();
+    gfxContext.SetDynamicConstantBufferView( 1, numByte, m_SkinningDual.data(), { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
-	gfxContext.SetDynamicConstantBufferView( 1, numByte, m_SkinTransform.data(), { kBindVertex } );
 
 	for (auto mesh: m_Mesh)
 	{
@@ -664,16 +695,18 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 
 void MikuModel::DrawBone( GraphicsContext& gfxContext )
 {
+    if (!s_EnableDrawBone) return;
+    
 	gfxContext.SetPipelineState( m_BonePSO );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	gfxContext.SetVertexBuffer( 0, m_BoneVertexBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_BoneIndexBuffer.IndexBufferView() );
 
-	auto numBone = m_BoneAttribute.size();
+	auto numBones = m_BoneAttribute.size();
 
-	for (auto i = 0; i < numBone; i++)
+	for (auto i = 0; i < numBones; i++)
 	{
-		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], m_SkinTransform[i] );
+		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], Matrix4(m_Skinning[i]) );
 		gfxContext.SetDynamicConstantBufferView( 1, sizeof(mat), &mat, { kBindVertex } );
 		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
 	}

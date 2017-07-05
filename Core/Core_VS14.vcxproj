@@ -47,6 +47,7 @@
     <ClInclude Include="GraphicsCore.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="InputLayout.h" />
+    <ClInclude Include="Math\DualQuaternion.h" />
     <ClInclude Include="Math\Functions.h" />
     <ClInclude Include="MotionBlur.h" />
     <ClInclude Include="PostEffects.h" />
@@ -104,6 +105,7 @@
     <ClCompile Include="GraphRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="LinearAllocator.cpp" />
+    <ClCompile Include="Math\DualQuaternion.cpp" />
     <ClCompile Include="Math\Frustum.cpp" />
     <ClCompile Include="Math\Functions.cpp" />
     <ClCompile Include="Math\Quaternion.cpp" />

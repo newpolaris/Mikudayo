@@ -67,11 +67,15 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
       <SDLCheck>true</SDLCheck>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -80,6 +84,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -94,6 +100,7 @@
     <ClInclude Include="MikuModel.h" />
     <ClInclude Include="Pmd.h" />
     <ClInclude Include="Motion.h" />
+    <ClInclude Include="Pmx.h" />
     <ClInclude Include="Vmd.h" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +111,7 @@
     <ClCompile Include="MikuModel.cpp" />
     <ClCompile Include="Pmd.cpp" />
     <ClCompile Include="Motion.cpp" />
+    <ClCompile Include="Pmx.cpp" />
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
