@@ -399,7 +399,8 @@ const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, boo
 
 void ManagedTexture::SetToInvalidTexture( void )
 {
-	// m_hCpuDescriptorHandle = TextureManager::GetMagentaTex2D().GetSRV();
+    auto& Magenta = TextureManager::GetMagentaTex2D();
+	m_SRV = const_cast<Texture&>(Magenta).GetSharedResource();
 	m_IsValid = false;
 }
 
@@ -457,9 +458,8 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 
 	if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
 		ManTex->SetToInvalidTexture();
-
-    if (ManTex->IsValid())
-        SetName( ManTex->GetResource(), fileName );
+   else
+	   SetName( ManTex->GetResource(), fileName );
 
 	return ManTex;
 }

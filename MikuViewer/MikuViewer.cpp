@@ -69,6 +69,8 @@ public:
 	virtual void Update( float deltaT ) override;
 	virtual void RenderScene( void ) override;
 
+    void RenderUI( GraphicsContext& Context ) override;
+
 private:
 
 	MikuCamera m_Camera;
@@ -258,12 +260,6 @@ void MikuViewer::Update( float deltaT )
 
 	m_pCameraController->Update( deltaT );
 
-	auto pos = m_Camera.GetPosition();
-	std::wostringstream outs;
-	outs.precision( 6 );
-	outs << "POS " << pos.GetX() << L" " << pos.GetY() << L" " << pos.GetZ();
-	SetWindowText( GameCore::g_hWnd, outs.str().c_str());
-
 	m_MVPBufferData.model = Matrix4( kIdentity );
 	m_MVPBufferData.view = m_Camera.GetViewMatrix();
 	m_MVPBufferData.projection = m_Camera.GetProjMatrix();
@@ -287,7 +283,7 @@ void MikuViewer::RenderScene( void )
 
     gfxContext.SetPipelineState( m_OpaqueSkinPSO );
     m_Stage.Draw( gfxContext, kOpaque );
-    m_Stage.DrawBone( gfxContext );
+	m_Stage.DrawBone( gfxContext );
     m_Miku.Draw( gfxContext, kOpaque );
 	m_Miku.DrawBone( gfxContext );
 
@@ -300,3 +296,17 @@ void MikuViewer::RenderScene( void )
 
 	gfxContext.Finish();
 }
+
+void MikuViewer::RenderUI( GraphicsContext& Context )
+{
+	auto pos = m_Camera.GetPosition();
+	auto x = (float)g_SceneColorBuffer.GetWidth() - 400.f;
+    float px = pos.GetX(), py = pos.GetY(), pz = pos.GetZ();
+
+	TextContext Text(Context);
+	Text.Begin();
+	Text.ResetCursor( x, 10.f );
+    Text.DrawFormattedString( "Position: (%.1f, %.1f, %.1f)\n", px, py, pz );
+	Text.End();
+}
+

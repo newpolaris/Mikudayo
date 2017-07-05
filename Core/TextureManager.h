@@ -41,6 +41,7 @@ public:
 	}
 
 	const D3D11_SRV_HANDLE GetSRV() const { return m_SRV.Get(); }
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetSharedResource() { return m_SRV; }
 
 	bool operator!() { return m_SRV == nullptr; }
 

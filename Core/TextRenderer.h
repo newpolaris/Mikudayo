@@ -101,7 +101,7 @@ public:
     {
         wchar_t buffer[256];
         swprintf_s( buffer, 256, format, args ... );
-        DrawString( wstring( buffer ) );
+        DrawString( std::wstring( buffer ) );
     }
 
     template <typename ...Args>
@@ -109,7 +109,7 @@ public:
     {
         char buffer[256];
         sprintf_s( buffer, 256, format, args ... );
-        DrawString( string( buffer ) );
+        DrawString( std::string( buffer ) );
     }
 
 private:

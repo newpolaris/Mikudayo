@@ -103,7 +103,9 @@ namespace Graphics
 		std::vector<std::vector<int32_t>> m_BoneChild; // child indices
 		std::map<std::wstring, uint32_t> m_BoneIndex;
 		std::map<std::wstring, uint32_t> m_MorphIndex;
+        std::vector<Vector3> m_MorphDelta; // tempolar space to store morphed position delta
 		std::vector<Animation::BoneMotion> m_BoneMotions;
+        enum { kMorphBase = 0 };
 		std::vector<Animation::MorphMotion> m_MorphMotions;
 		Animation::CameraMotion m_CameraMotion;
 

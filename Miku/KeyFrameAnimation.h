@@ -44,7 +44,8 @@ namespace Animation
 	public:
 		std::wstring m_Name; 
 		std::vector<MorphKeyFrame> m_KeyFrames;
-		std::vector<std::pair<uint32_t, XMFLOAT3>> m_MorphVertices;
+		std::vector<uint32_t> m_MorphIndices;
+		std::vector<Vector3> m_MorphVertices;
 
 		MorphMotion();
 		void InsertKeyFrame( const MorphKeyFrame& frame );

@@ -441,7 +441,11 @@ namespace EngineProfiling
     void End( void )
     {
         GpuTimeManager::End();
-        NestedTimingTree::UpdateTimes();
+		//
+        // TODO: Remove while
+		//
+        if (DrawProfiler)
+            NestedTimingTree::UpdateTimes();
     }
 
     void BeginBlock(const wstring& name, CommandContext* Context)

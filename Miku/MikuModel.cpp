@@ -255,14 +255,19 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	{
 		auto& morph = pmd.m_Faces[i];
 		m_MorphIndex[morph.Name] = i;
-        m_MorphMotions[i].m_MorphVertices.reserve( morph.FaceVertices.size() );
-		for (auto& vert : morph.FaceVertices)
-			m_MorphMotions[i].m_MorphVertices.push_back( { vert.Index, vert.Position } );
+        auto numVertices = morph.FaceVertices.size();
 
-		std::sort( m_MorphMotions[i].m_MorphVertices.begin(), m_MorphMotions[i].m_MorphVertices.end(), []( auto& a, auto& b) {
-			return a.first < b.first;
-		});
+        auto& motion = m_MorphMotions[i];
+        motion.m_MorphVertices.reserve( numVertices );
+        motion.m_MorphVertices.reserve( numVertices );
+		for (auto& vert : morph.FaceVertices)
+        {
+			motion.m_MorphIndices.push_back( vert.Index );
+			motion.m_MorphVertices.push_back( vert.Position );
+        }
 	}
+    if (m_MorphMotions.size() > 0)
+        m_MorphDelta.resize( m_MorphMotions[kMorphBase].m_MorphIndices.size() );
 }
 
 void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
@@ -285,6 +290,7 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
 
+        ASSERT(m_MorphIndex.count(frame.FaceName) > 0);
 		auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
 		motion.m_Name = frame.FaceName;
 		motion.InsertKeyFrame( key );
@@ -535,12 +541,11 @@ void MikuModel::Update( float kFrameTime )
 		//
 		// http://blog.goo.ne.jp/torisu_tetosuki/e/8553151c445d261e122a3a31b0f91110
 		//
-		auto& baseFace = m_MorphMotions[0];
-		auto skinPosition = baseFace.m_MorphVertices;
+        auto elemByte = sizeof( decltype(m_MorphDelta)::value_type );
+        memset( m_MorphDelta.data(), 0, elemByte*m_MorphDelta.size() );
 
 		bool bUpdate = false;
-
-		for (auto i = 1; i < m_MorphMotions.size(); i++)
+		for (auto i = kMorphBase+1; i < m_MorphMotions.size(); i++)
 		{
 			auto& motion = m_MorphMotions[i];
 			motion.Interpolate( kFrameTime );
@@ -548,17 +553,20 @@ void MikuModel::Update( float kFrameTime )
 				continue;
 			bUpdate = true;
 			auto weight = motion.m_Weight;
-			for (const auto& vert : m_MorphMotions[i].m_MorphVertices)
+			for (auto k = 0; k < motion.m_MorphVertices.size(); k++)
 			{
-				skinPosition[vert.first].second.x += weight * vert.second.x;
-				skinPosition[vert.first].second.y += weight * vert.second.y;
-				skinPosition[vert.first].second.z += weight * vert.second.z;
+                auto idx = motion.m_MorphIndices[k];
+				m_MorphDelta[idx] += weight * motion.m_MorphVertices[k];
 			}
 		}
 		if (bUpdate)
 		{
-			for (auto& vert : skinPosition)
-				m_VertexMorphedPos[vert.first] = vert.second;
+            auto& baseFace = m_MorphMotions[kMorphBase];
+			for (auto i = 0; i < m_MorphDelta.size(); i++)
+                m_MorphDelta[i] += baseFace.m_MorphVertices[i];
+
+			for (auto i = 0; i < m_MorphDelta.size(); i++)
+				XMStoreFloat3( &m_VertexMorphedPos[baseFace.m_MorphIndices[i]], m_MorphDelta[i]);
 
 			m_PositionBuffer.Create( m_Name + L"_PosBuf", 
 				static_cast<uint32_t>(m_VertexMorphedPos.size()),
