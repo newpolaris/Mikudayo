@@ -66,16 +66,18 @@ namespace Graphics
 	{
 	public:
 		MikuModel( bool bRightHand = true );
+		~MikuModel();
 		void Clear();
 		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter );
 		void DrawBone( GraphicsContext& gfxContext );
         void Load();
-        void LoadBone();
 		void SetModel( const std::wstring& model );
 		void SetMotion( const std::wstring& model );
+        void SetPosition( Vector3 postion );
 		void Update( float kFrameTime );
 
 	private:
+        void LoadBone();
 		void LoadPmd( const std::wstring& model, bool bRightHand );
 		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 		void LoadVmd( const std::wstring& vmd, bool bRightHand );
@@ -90,7 +92,6 @@ namespace Graphics
 		bool m_bRightHand;
         std::wstring m_Model;
         std::wstring m_Motion;
-		std::vector<InputDesc> m_InputDesc;
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
 		std::vector<Pmd::IK> m_IKs;
@@ -116,6 +117,7 @@ namespace Graphics
 		VertexBuffer m_PositionBuffer;
 		IndexBuffer m_IndexBuffer;
 
+        Matrix4 m_ModelTrnasform;
 		std::wstring m_Name;
 		std::vector<XMMATRIX> m_BoneAttribute;
 		SubmeshGeometry m_BoneMesh;
@@ -123,4 +125,9 @@ namespace Graphics
 		IndexBuffer m_BoneIndexBuffer;
 		GraphicsPSO m_BonePSO;
 	};
+
+    inline void MikuModel::SetPosition( Vector3 postion )
+    {
+        m_ModelTrnasform = Matrix4::MakeTranslate(postion);
+    }
 }

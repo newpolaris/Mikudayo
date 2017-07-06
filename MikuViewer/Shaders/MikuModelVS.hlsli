@@ -1,14 +1,18 @@
 // A constant buffer that stores the three basic column-major matrices for composing geometry.
 cbuffer VSConstants : register(b0)
 {
-	matrix model;
 	matrix view;
 	matrix projection;
 };
 
-cbuffer SkinDualQuat : register( b1 )
+cbuffer SkinDualQuat : register(b1)
 {
 	float4 boneDualQuat[256][2];
+}
+
+cbuffer Model : register(b2)
+{
+	matrix model;
 }
 
 // Per-vertex data used as input to the vertex shader.

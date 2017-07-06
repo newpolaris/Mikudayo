@@ -22,20 +22,13 @@ using namespace DirectX;
 
 BoolVar s_EnableDrawBone("Application/Draw Bone", false);
 
-namespace Pmd {
-	std::vector<InputDesc> InputDescriptor
-	{
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_ID", 0, DXGI_FORMAT_R16G16_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "EDGE_FLAT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-}
-
 MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand ) 
 {
+}
+
+MikuModel::~MikuModel()
+{
+    Clear();
 }
 
 void MikuModel::Load()
@@ -112,19 +105,31 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		//
 		// zip format does not support unicode.
 		// So, it is convenient to use unified ecoding, system default
-		//
+        //
+        std::vector<char> buf;
+		// Try raw name
 		auto key = archive->GetKeyName( raw );
 		auto is = archive->GetFile( key );
-		// Try raw name
+        if (!is) 
+        {
+            // If not, try unicode interpreted name
+            key = archive->GetKeyName( unicode );
+            is = archive->GetFile( key );
+        }
+        if (!is) {
+           std::ostringstream ss;
+           ss << is->rdbuf();
+           const std::string& s = ss.str();
+           std::vector<char> buf(s.begin(), s.end());
+        }
 		auto texture = TextureManager::LoadFromStream( key.generic_wstring(), *is, bSRGB );
-		auto UnicodKey = archive->GetKeyName( unicode );
-		// If not, try unicode interpreted name
+
 		if (!texture->IsValid())
-			texture = TextureManager::LoadFromStream( UnicodKey.generic_wstring(), *is, bSRGB );
-		// If not, try default provided texture in MMD (toon01.bmp)
-		auto toon = fs::path( "toon" ) / raw;
-		if (!texture->IsValid())
-			texture = TextureManager::LoadFromFile( toon.generic_wstring(), bSRGB );
+        {
+            // If not, try default provided texture in MMD (toon01.bmp)
+            auto toon = fs::path( "toon" ) / raw;
+            texture = TextureManager::LoadFromFile( toon.generic_wstring(), bSRGB );
+        }
 		if (!texture->IsValid())
 			return nullptr;
 		return texture->GetSRV();
@@ -169,8 +174,6 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 		static_cast<uint32_t>(pmd.m_Indices.size()),
 		sizeof( pmd.m_Indices[0] ),
 		pmd.m_Indices.data() );
-
-	m_InputDesc = Pmd::InputDescriptor;
 
 	uint32_t IndexOffset = 0;
 	for (auto& material : pmd.m_Materials)
@@ -280,6 +283,7 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 
 	Vmd::VMD vmd;
 	vmd.Fill( bs, bRightHand );
+	ASSERT( vmd.IsValid() );
 
     LoadBoneMotion( vmd.BoneFrames );
 
@@ -290,10 +294,13 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
 
-        ASSERT(m_MorphIndex.count(frame.FaceName) > 0);
-		auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
-		motion.m_Name = frame.FaceName;
-		motion.InsertKeyFrame( key );
+        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: " + m_Model);
+        if (m_MorphIndex.count(frame.FaceName) > 0)
+        {
+            auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
+            motion.m_Name = frame.FaceName;
+            motion.InsertKeyFrame( key );
+        }
 	}
 
 	for (auto& face : m_MorphMotions )
@@ -493,7 +500,6 @@ void MikuModel::Clear()
 	m_BonePSO.Destroy();
 	m_BoneIndexBuffer.Destroy();
 	m_BoneVertexBuffer.Destroy();
-
 }
 
 void MikuModel::UpdateChildPose( int32_t idx )
@@ -683,6 +689,7 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
     auto elemByte = sizeof( decltype(m_SkinningDual)::value_type );
     auto numByte = elemByte * m_SkinningDual.size();
     gfxContext.SetDynamicConstantBufferView( 1, numByte, m_SkinningDual.data(), { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTrnasform), &m_ModelTrnasform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
@@ -716,6 +723,7 @@ void MikuModel::DrawBone( GraphicsContext& gfxContext )
 	{
 		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], Matrix4(m_Skinning[i]) );
 		gfxContext.SetDynamicConstantBufferView( 1, sizeof(mat), &mat, { kBindVertex } );
+        gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTrnasform), &m_ModelTrnasform, { kBindVertex } );
 		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
 	}
 }

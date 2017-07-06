@@ -36,6 +36,8 @@ std::unique_ptr<std::istream> Utility::RelativeFile::GetFile( fs::path name )
 	{
 		auto relativePath = m_Path / name;
 		fileBuffer = Utility::ReadFileSync( relativePath.generic_wstring() );
+        if (fileBuffer == NullFile)
+            return nullptr;
 	}
 	return std::make_unique<Utility::ByteStream>( fileBuffer );
 }

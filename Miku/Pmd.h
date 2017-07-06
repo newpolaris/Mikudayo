@@ -212,12 +212,14 @@ namespace Pmd
 	class PMD
 	{
 	public:
+        PMD() : m_IsValid(false) {}
+
 		// PMD model is defined in left handed coordinate
 		// 'bRightHand' flag convert model to right handed coordinate
 		void Fill( bufferstream & is, bool bRightHand );
 
 		bool IsValid( void ) const { return m_IsValid; }
-		bool m_IsValid = false;
+		bool m_IsValid;
 
 		Header m_Header;
 		vector<Vertex> m_Vertices;

@@ -34,12 +34,23 @@ using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
 
+namespace Pmd {
+	std::vector<InputDesc> InputDescriptor
+	{
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_ID", 0, DXGI_FORMAT_R16G16_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "EDGE_FLAT", 0, DXGI_FORMAT_R8_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+}
+
 // Constant buffer used to send MVP matrices to the vertex shader.
-struct MVPConstants
+struct CameraConstants
 {
-	Matrix4 model;
-	Matrix4 view;
-	Matrix4 projection;
+	Matrix4 View;
+	Matrix4 Projection;
 };
 
 struct DirectionalLight
@@ -76,8 +87,8 @@ private:
 	MikuCamera m_Camera;
 	MikuCameraController* m_pCameraController;
 
-	MVPConstants m_MVPBufferData;
-	ConstantBuffer<MVPConstants> m_Buffer;
+	CameraConstants m_CameraData;
+	ConstantBuffer<CameraConstants> m_Buffer;
 	std::vector<DirectionalLight> m_Lights;
 	LightsConstants m_LightConstants;
 
@@ -85,8 +96,7 @@ private:
 	float m_JitterDelta[2];
 	D3D11_RECT m_MainScissor;
 
-	Graphics::MikuModel m_Miku;
-	Graphics::MikuModel m_Stage;
+    std::vector<std::shared_ptr<Graphics::MikuModel>> m_Models;
 	Graphics::Motion m_Motion;
 
 	GraphicsPSO m_DepthPSO; 
@@ -104,25 +114,40 @@ void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
 
-	// const std::wstring modelPath = L"Models/gumi.pmd";
-	// const std::wstring modelPath = L"Models/Lat式ミクVer2.31_White.pmd";
-	const std::wstring modelPath = L"Models/Lat0.pmd";
-	// const std::wstring motionPath = L"Models/gumi.vmd";
-	const std::wstring motionPath = L"Models/nekomimi_lat.vmd";
-	const std::wstring stagePath = L"Models/Library.pmd";
+    struct ModelInit
+    {
+        std::wstring Model;
+        std::wstring Motion;
+        XMFLOAT3 Position;
+    };
+
+    auto motionPath = L"Models/nekomimi_lat.vmd";
 	const std::wstring cameraPath = L"Models/camera.vmd";
 
-	m_Miku.SetModel( modelPath );
-	m_Miku.SetMotion( motionPath );
-	m_Miku.Load();
-	m_Stage.SetModel( stagePath );
-    m_Stage.Load();
+    std::vector<ModelInit> list = {
+        { L"Models/gumi.pmd", motionPath, XMFLOAT3( 10.f, 0.f, 0.f ) },
+        { L"Models/Lat0.pmd", motionPath, XMFLOAT3( -10.f, 0.f, 0.f ) },
+        { L"Models/Lat式ミクVer2.31_White.pmd", motionPath, XMFLOAT3( -11.f, 10.f, -19.f ) },
+        { L"Models/Lat式ミクVer2.31_Normal.pmd", motionPath, XMFLOAT3( 0.f, 0.f, 10.f ) },
+        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) }
+    };
+
+    for (auto l : list)
+    {
+        auto model = std::make_shared<Graphics::MikuModel>();
+        model->SetModel( l.Model );
+        model->SetMotion( l.Motion );
+        model->SetPosition( l.Position );
+        model->Load();
+        m_Models.push_back( model );
+    }
+
 	m_Motion.LoadMotion( cameraPath );
 
 	// Depth-only (2x rate)
 	m_DepthPSO.SetRasterizerState( RasterizerDefault );
 	m_DepthPSO.SetBlendState( BlendNoColorWrite );
-	m_DepthPSO.SetInputLayout( static_cast<UINT>(m_Miku.m_InputDesc.size()), m_Miku.m_InputDesc.data() );
+	m_DepthPSO.SetInputLayout( static_cast<UINT>(Pmd::InputDescriptor.size()), Pmd::InputDescriptor.data() );
 	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
 	m_OpaquePSO = m_DepthPSO;
@@ -190,9 +215,7 @@ void MikuViewer::Cleanup( void )
 	m_BlendSkinPSO.Destroy();
 
 	m_Buffer.Destory();
-
-	m_Miku.Clear();
-	m_Stage.Clear();
+    m_Models.clear();
 
 	delete m_pCameraController;
 	m_pCameraController = nullptr;
@@ -227,7 +250,7 @@ void MikuViewer::Update( float deltaT )
 	{
 		DirectionalLight light;
 		light.Color = m_Lights[i].Color;
-		XMStoreFloat3( &light.Direction, m_MVPBufferData.view.Get3x3() * Vector3( m_Lights[i].Direction ) );
+		XMStoreFloat3( &light.Direction, m_CameraData.View.Get3x3() * Vector3( m_Lights[i].Direction ) );
 		m_LightConstants.light[i] = light;
 	}
 
@@ -254,16 +277,15 @@ void MikuViewer::Update( float deltaT )
     if (!EngineProfiling::IsPaused())
         m_Frame = m_Frame + deltaT * 30.f;
 
-	m_Miku.Update( m_Frame );
-	m_Stage.Update( m_Frame );
+    for (auto& model : m_Models)
+        model->Update( m_Frame );
 	m_Motion.Update( m_Frame );
 
 	m_pCameraController->Update( deltaT );
 
-	m_MVPBufferData.model = Matrix4( kIdentity );
-	m_MVPBufferData.view = m_Camera.GetViewMatrix();
-	m_MVPBufferData.projection = m_Camera.GetProjMatrix();
-	m_Buffer.Update(m_MVPBufferData);
+	m_CameraData.View = m_Camera.GetViewMatrix();
+	m_CameraData.Projection = m_Camera.GetProjMatrix();
+	m_Buffer.Update(m_CameraData);
 }
 
 void MikuViewer::RenderScene( void )
@@ -281,15 +303,14 @@ void MikuViewer::RenderScene( void )
 	gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 	gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
 
-    gfxContext.SetPipelineState( m_OpaqueSkinPSO );
-    m_Stage.Draw( gfxContext, kOpaque );
-	m_Stage.DrawBone( gfxContext );
-    m_Miku.Draw( gfxContext, kOpaque );
-	m_Miku.DrawBone( gfxContext );
-
-	gfxContext.SetPipelineState( m_BlendSkinPSO );
-    m_Stage.Draw( gfxContext, kTransparent );
-    m_Miku.Draw( gfxContext, kTransparent );
+    for (auto& model : m_Models)
+    {
+        gfxContext.SetPipelineState( m_OpaqueSkinPSO );
+        model->Draw( gfxContext, kOpaque );
+        model->DrawBone( gfxContext );
+        gfxContext.SetPipelineState( m_BlendSkinPSO );
+        model->Draw( gfxContext, kTransparent  );
+    }
 
     gfxContext.SetRenderTarget( nullptr );
     TemporalEffects::ResolveImage(gfxContext);

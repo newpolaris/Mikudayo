@@ -68,6 +68,8 @@ namespace Vmd
 
 	void VMD::Fill( bufferstream & is, bool bRH )
 	{
+        m_IsValid = false;
+
 		// magic and version
 		NameBuf Magic;
 		Read( is, Magic );
@@ -131,5 +133,7 @@ namespace Vmd
 
 		if (is.peek() != std::ios::traits_type::eof())
 			std::cerr << "vmd stream has unknown data." << std::endl;
+
+        m_IsValid = true;
 	}
 }

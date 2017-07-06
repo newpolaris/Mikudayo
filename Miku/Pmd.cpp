@@ -197,7 +197,7 @@ namespace Pmd
 		ReadRotation( is, AngularStiffness, bRH );
 	}
 
-	void PMD::Fill( bufferstream& is, bool bRightHand )
+    void PMD::Fill( bufferstream& is, bool bRightHand )
 	{
 		char Magic[3];	// Expect 'Pmd'
 		Read( is, Magic );

@@ -105,7 +105,10 @@ namespace Vmd
 		std::vector<SelfShadowFrame> SelfShadowFrames;
 		std::vector<IkFrame> IKFrames;
 
+        VMD() : m_IsValid(false) {}
 		void Fill( bufferstream& is, bool bRH );
+        bool IsValid() const { return m_IsValid; }
+        bool m_IsValid;
 	};
 }
 
