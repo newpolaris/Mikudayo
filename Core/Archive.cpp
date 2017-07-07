@@ -2,6 +2,9 @@
 #include "Archive.h"
 #include "FileUtility.h"
 
+#include <mutex>
+#include <sstream>
+
 using namespace Utility;
 
 namespace Utility 
@@ -29,17 +32,19 @@ fs::path RelativeFile::GetKeyName( fs::path name ) const
 	return m_Path / name;
 }
 
-std::unique_ptr<std::istream> Utility::RelativeFile::GetFile( fs::path name )
+bool RelativeFile::IsExist( fs::path name ) const
 {
-	auto fileBuffer = Utility::ReadFileSync( name.generic_wstring() );
-	if (fileBuffer->size() == 0)
-	{
-		auto relativePath = m_Path / name;
-		fileBuffer = Utility::ReadFileSync( relativePath.generic_wstring() );
-        if (fileBuffer == NullFile)
-            return nullptr;
-	}
-	return std::make_unique<Utility::ByteStream>( fileBuffer );
+    return boost::filesystem::exists( GetKeyName(name) );
+}
+
+Utility::ByteArray RelativeFile::GetFile( fs::path name )
+{
+	return Utility::ReadFileSync( GetKeyName(name).generic_wstring() );
+}
+
+bool ZipArchive::IsExist( fs::path name ) const
+{
+    return m_ZipReader.IsExist( GetKeyName(name).generic_string() );
 }
 
 //
@@ -54,7 +59,16 @@ fs::path ZipArchive::GetKeyName( fs::path name ) const
 	return root;
 }
 
-std::unique_ptr<std::istream> ZipArchive::GetFile( fs::path name )
+Utility::ByteArray ZipArchive::GetFile( fs::path name )
 {
-	return std::unique_ptr<std::istream>( m_ZipReader.Get_File( name.generic_string() ) );
+    static std::mutex s_ZipIterMutex;
+
+    // Patio use file stream as shared
+    lock_guard<mutex> CS( s_ZipIterMutex );
+    auto stream = std::unique_ptr<std::istream>( m_ZipReader.Get_File( GetKeyName(name).generic_string() ) );
+
+    std::ostringstream ss;
+    ss << stream->rdbuf();
+    const std::string& s = ss.str();
+    return std::make_shared<FileContainer>( s.begin(), s.end() );
 }

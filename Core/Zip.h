@@ -91,6 +91,7 @@ namespace Partio {
 		ZipFileReader( const std::wstring& filename );
 		virtual ~ZipFileReader();
 		std::istream* Get_File( const std::string& filename, const bool binary = true );
+        bool IsExist( const std::string& filename ) const;
 		void Get_File_List( std::vector<std::string>& filenames ) const;
 	private:
 		bool Find_And_Read_Central_Header();

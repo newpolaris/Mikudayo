@@ -19,7 +19,7 @@ class GpuResource
 public:
 	GpuResource() { }
 
-	void Destroy()
+	virtual void Destroy()
 	{
 		ASSERT(m_pResource.Reset() == 0);
 		m_pResource = nullptr;

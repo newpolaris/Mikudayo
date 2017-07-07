@@ -6,6 +6,8 @@
 #include <Zip.h>
 #include <boost/filesystem.hpp>
 
+#include "FileUtility.h"
+
 namespace Utility 
 {
 	namespace fs = boost::filesystem;
@@ -28,8 +30,9 @@ namespace Utility
 	{
 	public:
 		virtual EArchiveType GetType() = 0;
+        virtual bool IsExist( fs::path name ) const = 0;
 		virtual fs::path GetKeyName( fs::path name ) const = 0;
-		virtual std::unique_ptr<std::istream> GetFile( fs::path name ) = 0;
+		virtual Utility::ByteArray GetFile( fs::path name ) = 0;
 	};
 
 	class RelativeFile : public Archive
@@ -41,8 +44,9 @@ namespace Utility
 		}
 
 		virtual EArchiveType GetType() override { return kArchiveZip; }
+        virtual bool IsExist( fs::path name ) const override;
 		virtual fs::path GetKeyName( fs::path name ) const override;
-		virtual std::unique_ptr<std::istream> GetFile( fs::path name ) override;
+		virtual Utility::ByteArray GetFile( fs::path name ) override;
 		fs::path m_Path;
 	};
 
@@ -56,8 +60,9 @@ namespace Utility
 		}
 
 		virtual EArchiveType GetType() override { return kArchiveZip; }
+        virtual bool IsExist( fs::path name ) const override;
 		virtual fs::path GetKeyName( fs::path name ) const override;
-		virtual std::unique_ptr<std::istream> GetFile( fs::path name ) override;
+		virtual Utility::ByteArray GetFile( fs::path name ) override;
 
 		std::vector<std::string> GetFileList() const
 		{

@@ -57,12 +57,16 @@ struct GraphicsPipelineState
 class PSO
 {
 public:
+    enum ELoadingState : uint8_t {
+        kStateUnloaded,
+        kStateLoading,
+        kStateLoaded,
+    };
 
-	PSO() {}
+	PSO() : m_LoadingState(kStateUnloaded) {}
 	virtual ~PSO() {}
 
-	std::promise<void> m_Promise;
-	std::shared_future<void> m_ReadyFuture;
+    std::atomic<ELoadingState> m_LoadingState;
 };
 
 class GraphicsPSO : public PSO

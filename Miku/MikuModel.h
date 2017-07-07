@@ -13,6 +13,8 @@
 #include "Archive.h"
 #include "KeyFrameAnimation.h"
 
+class ManagedTexture;
+
 namespace Graphics
 {
 	using namespace Math;
@@ -20,7 +22,7 @@ namespace Graphics
 
 	enum eObjectFilter { kOpaque = 0x1, kCutout = 0x2, kTransparent = 0x4, kAll = 0xF, kNone = 0x0 };
 
-	struct MaterialCB
+	__declspec(align(16)) struct MaterialCB
 	{
 		XMFLOAT4 Diffuse;
 		XMFLOAT3 Specular;
@@ -42,10 +44,12 @@ namespace Graphics
 	struct Mesh 
 	{
 		bool isTransparent() const { return Material.Diffuse.w < 1.f; }
+        bool LoadTexture( GraphicsContext& gfxContext );
+
 		MaterialCB Material;
-		D3D11_SRV_HANDLE Texture[kTextureMax];
-		int32_t IndexOffset;
+        const ManagedTexture* Texture[kTextureMax];		int32_t IndexOffset;
 		uint32_t IndexCount;
+		
 		bool bEdgeFlag;
 	};
 
@@ -90,8 +94,8 @@ namespace Graphics
 
 	public:
 		bool m_bRightHand;
-        std::wstring m_Model;
-        std::wstring m_Motion;
+        std::wstring m_ModelPath;
+        std::wstring m_MotionPath;
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
 		std::vector<Pmd::IK> m_IKs;

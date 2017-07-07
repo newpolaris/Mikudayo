@@ -22,7 +22,6 @@
 #include "InputLayout.h"
 #include <map>
 #include <thread>
-#include <mutex>
 
 using Microsoft::WRL::ComPtr;
 using Graphics::g_Device;
@@ -94,30 +93,32 @@ GraphicsPSO::~GraphicsPSO()
 
 void ComputePSO::Destroy()
 {
-	if (m_ReadyFuture.valid())
-		m_ReadyFuture.wait();
+    while (m_LoadingState == kStateLoading)
+        std::this_thread::yield();
 	m_PSOState = nullptr;
 }
 
 void GraphicsPSO::Destroy()
 {
-	if (m_ReadyFuture.valid())
-		m_ReadyFuture.wait();
+    while (m_LoadingState == kStateLoading)
+        std::this_thread::yield();
 	m_PSOState = nullptr;
 }
 
 std::shared_ptr<ComputePipelineState> ComputePSO::GetState()
 {
-	ASSERT( m_ReadyFuture.valid(), L"Not Finalized Yet" );
-	m_ReadyFuture.wait();
+	ASSERT( m_LoadingState != kStateUnloaded, L"Not Finalized Yet" );
+    while (m_LoadingState == kStateLoading)
+        std::this_thread::yield();
 
 	return m_PSOState; 
 }
 
 std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState() 
 {
-	ASSERT( m_ReadyFuture.valid(), L"Not Finalized Yet" );
-	m_ReadyFuture.wait();
+	ASSERT( m_LoadingState != kStateUnloaded, L"Not Finalized Yet" );
+    while (m_LoadingState == kStateLoading)
+        std::this_thread::yield();
 
 	return m_PSOState; 
 }
@@ -185,9 +186,9 @@ void ComputePSO::SetComputeShader( const std::string & Name, const void * Binary
 
 void GraphicsPSO::Finalize()
 {
-	ASSERT(!m_ReadyFuture.valid(), L"Already Finalized");
+	ASSERT(m_LoadingState != kStateLoaded, L"Already Finalized");
 
-	m_ReadyFuture = std::shared_future<void>(m_Promise.get_future());
+    m_LoadingState.store( kStateLoading );
 	auto sync = std::async(std::launch::async, [=]{
 		auto State = std::make_shared<GraphicsPipelineState>();
 		State->TopologyType = m_PSODesc->TopologyType;
@@ -202,20 +203,20 @@ void GraphicsPSO::Finalize()
 		State->HullShader = Shader::Create( kDomainShader, m_PSODesc->HS );
 
 		m_PSOState.swap(State);
-		m_Promise.set_value();
+        m_LoadingState.store( kStateLoaded );
 	});
 }
 
 void ComputePSO::Finalize()
 {
-	ASSERT(!m_ReadyFuture.valid(), L"Already Finalized");
+	ASSERT(m_LoadingState != kStateLoaded, L"Already Finalized");
 
-	m_ReadyFuture = std::shared_future<void>(m_Promise.get_future());
+    m_LoadingState.store( kStateLoading );
 	auto sync = std::async(std::launch::async, [=]{
 		auto State = std::make_shared<ComputePipelineState>();
 		State->ComputeShader = Shader::Create( kComputeShader, m_PSODesc->CS );
 		m_PSOState.swap(State);
-		m_Promise.set_value();
+        m_LoadingState.store( kStateLoaded );
 	});
 }
 

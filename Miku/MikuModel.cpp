@@ -33,23 +33,23 @@ MikuModel::~MikuModel()
 
 void MikuModel::Load()
 {
-    if (!m_Model.empty())
-        LoadPmd( m_Model, m_bRightHand );
+    if (!m_ModelPath.empty())
+        LoadPmd( m_ModelPath, m_bRightHand );
 
-	if (!m_Motion.empty())
-        LoadVmd( m_Motion, m_bRightHand );
+	if (!m_MotionPath.empty())
+        LoadVmd( m_MotionPath, m_bRightHand );
 
     LoadBone();
 }
 
 void MikuModel::SetModel( const std::wstring& model )
 {
-    m_Model = model;
+    m_ModelPath = model;
 }
 
 void MikuModel::SetMotion( const std::wstring& motion )
 {
-    m_Motion = motion;
+    m_MotionPath = motion;
 }
 
 void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
@@ -75,8 +75,10 @@ void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
 			}
 		}
 		ASSERT( !pmdname.empty() );
-		LoadPmd( archive, pmdname, bRightHand );
-
+        Path name;
+        for (auto it = ++pmdname.begin(); it != pmdname.end(); ++it)
+            name /= *it;
+		LoadPmd( archive, name, bRightHand );
 	}
 	else
 	{
@@ -85,12 +87,13 @@ void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
 	}
 }
 
-void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand )
+void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRightHand )
 {
-	auto is = archive->GetFile( pmdPath );
+	auto ba = archive->GetFile( pmdKey );
+    Utility::ByteStream bs( ba );
 
 	Pmd::PMD pmd;
-	pmd.Fill( *is, bRightHand );
+	pmd.Fill( bs, bRightHand );
 	ASSERT( pmd.IsValid() );
 
 	// 
@@ -100,39 +103,35 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 	// unicode: decode with shift-jis
 	//
 	auto LoadTexture = []( Utility::ArchivePtr archive, std::string raw, std::wstring unicode, bool bSRGB )
-		-> D3D11_SRV_HANDLE
+		-> const ManagedTexture*
 	{
 		//
 		// zip format does not support unicode.
 		// So, it is convenient to use unified ecoding, system default
         //
-        std::vector<char> buf;
-		// Try raw name
-		auto key = archive->GetKeyName( raw );
-		auto is = archive->GetFile( key );
-        if (!is) 
-        {
-            // If not, try unicode interpreted name
-            key = archive->GetKeyName( unicode );
-            is = archive->GetFile( key );
-        }
-        if (!is) {
-           std::ostringstream ss;
-           ss << is->rdbuf();
-           const std::string& s = ss.str();
-           std::vector<char> buf(s.begin(), s.end());
-        }
-		auto texture = TextureManager::LoadFromStream( key.generic_wstring(), *is, bSRGB );
+        const ManagedTexture* texture = nullptr;
 
-		if (!texture->IsValid())
+		// Try raw name
+        fs::path name = raw;
+        bool bExist = archive->IsExist( raw );
+        // If not, try unicode interpreted name
+        if (!bExist)
+        {
+            name = unicode;
+            bExist = archive->IsExist( unicode );
+        }
+        if (bExist)
+        {
+            auto ia = archive->GetFile( name );
+            texture = TextureManager::LoadFromMemory( archive->GetKeyName(name).generic_wstring(), ia, bSRGB );
+        }
+        else
         {
             // If not, try default provided texture in MMD (toon01.bmp)
             auto toon = fs::path( "toon" ) / raw;
             texture = TextureManager::LoadFromFile( toon.generic_wstring(), bSRGB );
         }
-		if (!texture->IsValid())
-			return nullptr;
-		return texture->GetSRV();
+		return texture;
 	};
 
 	struct Attribute
@@ -218,7 +217,6 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRi
 			mat.SphereOperation = material.SphereOperation;
 
 		mesh.Material = mat;
-
 		mesh.bEdgeFlag = material.EdgeFlag > 0;
 
 		m_Mesh.push_back(mesh);
@@ -294,7 +292,7 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
 
-        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: " + m_Model);
+        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: " + m_ModelPath);
         if (m_MorphIndex.count(frame.FaceName) > 0)
         {
             auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
@@ -700,7 +698,9 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 		bool bTransparent = Filter & kTransparent && mesh.isTransparent();
 		if (!bOpaque && !bTransparent) continue;
 
-		gfxContext.SetDynamicDescriptors( 0, _countof( mesh.Texture ), mesh.Texture, { kBindPixel } );
+        if (mesh.LoadTexture( gfxContext ))
+            continue;
+
 		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
 		gfxContext.SetDynamicSampler( 0, SamplerLinearWrap, kBindPixel );
 		gfxContext.SetDynamicSampler( 1, SamplerLinearClamp, kBindPixel );
@@ -726,4 +726,16 @@ void MikuModel::DrawBone( GraphicsContext& gfxContext )
         gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTrnasform), &m_ModelTrnasform, { kBindVertex } );
 		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
 	}
+}
+
+bool Mesh::LoadTexture( GraphicsContext& gfxContext )
+{
+    D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
+    for (auto i = 0; i < _countof( Texture ); i++) 
+    {
+        if (Texture[i] == nullptr) continue;
+        SRV[i] = Texture[i]->GetSRV();
+    }
+    gfxContext.SetDynamicDescriptors( 0, _countof(SRV), SRV, { kBindPixel } );
+    return false;
 }

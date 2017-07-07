@@ -19,6 +19,7 @@
 #include "Mapping.h"
 #include "Utility.h"
 #include "TextUtility.h"
+#include "FileUtility.h"
 
 class Texture : public GpuResource
 {
@@ -34,14 +35,13 @@ public:
 	bool CreateWICFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB = false );
 	bool CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB = false );
 
-	void Destroy()
+	virtual void Destroy() override
 	{
 		GpuResource::Destroy();
 		m_SRV = nullptr;
 	}
 
-	const D3D11_SRV_HANDLE GetSRV() const { return m_SRV.Get(); }
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetSharedResource() { return m_SRV; }
+	virtual const D3D11_SRV_HANDLE GetSRV() const { return m_SRV.Get(); }
 
 	bool operator!() { return m_SRV == nullptr; }
 
@@ -53,22 +53,28 @@ protected:
 class ManagedTexture : public Texture
 {
 public:
-	ManagedTexture( const std::wstring& FileName ) : m_MapKey(FileName), m_IsValid(true) {}
+	ManagedTexture( const std::wstring& FileName ) : m_MapKey(FileName), m_IsValid(true), m_bLoaded(false) {}
 
 	void operator= ( const Texture& Texture );
-	void Destroy() {
-		// Wait until GenerateMips is completed
+	virtual void Destroy() override {
 		WaitForLoad();
 		Texture::Destroy();
 	}
-
+	virtual const D3D11_SRV_HANDLE GetSRV() const override {
+        return m_SRV.Get(); 
+    }
 	void WaitForLoad( void ) const;
 	void Unload(void);
-
+	bool IsValid(void) const { 
+		WaitForLoad();
+        return m_IsValid; 
+    }
 	void SetToInvalidTexture(void);
-	bool IsValid(void) const { return m_IsValid; }
+    void SetLoadFinish();
 
 private:
+
+    std::atomic_bool m_bLoaded; 
 	std::wstring m_MapKey;		// For deleting from the map later
 	bool m_IsValid;
 };
@@ -82,6 +88,8 @@ namespace TextureManager
 	const ManagedTexture* LoadDDSFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadWISFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadFromStream( const std::wstring& key, std::istream& stream, bool sRGB = false );
+    const ManagedTexture* LoadFromMemory( const std::wstring & key, size_t size, void * data, bool sRGB );
+    const ManagedTexture* LoadFromMemory( const std::wstring& key, Utility::ByteArray ba, bool sRGB );
 
 	inline const ManagedTexture* LoadFromFile( const std::string& fileName, bool sRGB = false )
 	{

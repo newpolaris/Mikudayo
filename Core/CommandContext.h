@@ -90,6 +90,7 @@ struct NonCopyable
 class CommandContext : NonCopyable
 {
 	friend ContextManager;
+    friend Texture;
 
 protected:
 	CommandContext(ContextType Type);
@@ -133,8 +134,8 @@ public:
 
     void CopyBuffer( GpuResource& Dest, GpuResource& Src );
     void CopyBufferRegion( GpuResource& Dest, size_t DestOffset, GpuResource& Src, size_t SrcOffset, size_t NumBytes );
-    void CopySubresource(GpuResource& Dest, UINT DestSubIndex, GpuResource& Src, UINT SrcSubIndex);
-    void CopyCounter(GpuResource& Dest, size_t DestOffset, StructuredBuffer& Src);
+    void CopySubresource( GpuResource& Dest, UINT DestSubIndex, GpuResource& Src, UINT SrcSubIndex );
+    void CopyCounter( GpuResource& Dest, size_t DestOffset, StructuredBuffer& Src );
 
 	void SetConstants( UINT Slot, UINT NumConstants, const void* pConstants, BindList BindList );
 	void SetConstants( UINT Slot, DWParam X, BindList BindList );
@@ -154,7 +155,7 @@ public:
 
 protected:
 	CommandListManager* m_OwningManager;
-	ID3D11DeviceContext3* m_Context;
+	ID3D11DeviceContext3* m_CommandList;
 
 	std::wstring m_ID;
 	void SetID(const std::wstring& ID) { m_ID = ID; }
@@ -171,6 +172,8 @@ protected:
 #ifdef GRAPHICS_DEBUG
 	ConstantBufferAllocator m_ConstantBufferAllocator;
 #endif
+
+	std::mutex sm_ContextMutex;
 };
 
 class ComputeContext : public CommandContext
@@ -262,7 +265,7 @@ public:
 
 inline void ComputeContext::Dispatch( size_t GroupCountX, size_t GroupCountY, size_t GroupCountZ )
 {
-    m_Context->Dispatch((UINT)GroupCountX, (UINT)GroupCountY, (UINT)GroupCountZ);
+    m_CommandList->Dispatch((UINT)GroupCountX, (UINT)GroupCountY, (UINT)GroupCountZ);
 }
 
 inline void ComputeContext::Dispatch1D( size_t ThreadCountX, size_t GroupSizeX )
@@ -307,7 +310,7 @@ inline void CommandContext::PIXBeginEvent(const wchar_t* label)
 #if defined(RELEASE) && !defined(_PIX_H_)
 	(label);
 #else
-	::PIXBeginEvent(m_Context, 0, label);
+	::PIXBeginEvent(m_CommandList, 0, label);
 #endif
 }
 
@@ -320,7 +323,7 @@ inline void CommandContext::PIXEndEvent(void)
 
 inline void CommandContext::InsertTimeStamp( ID3D11Query* pQuery )
 {
-    m_Context->End( pQuery );
+    m_CommandList->End( pQuery );
 }
 
 inline void CommandContext::PIXSetMarker( const wchar_t* label )
@@ -328,22 +331,22 @@ inline void CommandContext::PIXSetMarker( const wchar_t* label )
 #if defined(RELEASE) || _MSC_VER < 1800
 	(label);
 #else
-	::PIXSetMarker(m_Context, 0, label);
+	::PIXSetMarker(m_CommandList, 0, label);
 #endif
 }
 
 inline void GraphicsContext::Draw( UINT VertexCount, UINT VertexStartOffset )
 {
-	m_Context->Draw( VertexCount, VertexStartOffset );
+	m_CommandList->Draw( VertexCount, VertexStartOffset );
 }
 
 inline void GraphicsContext::DrawIndexed( UINT IndexCount, UINT StartIndexLocation , INT BaseVertexLocation )
 {
-	m_Context->DrawIndexed( IndexCount, StartIndexLocation, BaseVertexLocation );
+	m_CommandList->DrawIndexed( IndexCount, StartIndexLocation, BaseVertexLocation );
 }
 
 inline void GraphicsContext::DrawInstanced( UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation )
 {
-	m_Context->DrawInstanced( VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation );
+	m_CommandList->DrawInstanced( VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation );
 }
 

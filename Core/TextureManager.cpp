@@ -224,22 +224,15 @@ void Texture::Create( size_t Width, size_t Height, DXGI_FORMAT Format, const voi
 bool Texture::CreateWICFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
 {
 	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_DEFAULT;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV;
-	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx( Graphics::g_Device,
+    GraphicsContext& gfxContext = GraphicsContext::Begin( L"MipMap" );
+	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx( 
+        Graphics::g_Device,
+        gfxContext.m_CommandList,
 		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT, 
 		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, 
 		0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag, 
-		m_pResource.GetAddressOf(), SRV.GetAddressOf());
-	
-	if (SUCCEEDED(hr))
-	{
-		GraphicsContext& gfxContext = GraphicsContext::Begin( L"MipMap" );
-		gfxContext.GenerateMips( SRV.Get() );
-		gfxContext.Finish();
-
-		// WaitForLoad is depends on m_SRV member variable
-		m_SRV.Swap(SRV);
-	}
+		m_pResource.GetAddressOf(), m_SRV.GetAddressOf());
+    gfxContext.Finish();
 	return SUCCEEDED(hr);
 }
 
@@ -258,7 +251,6 @@ bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, boo
 		// gfxContext.GenerateMips( SRV.Get() );
 		// gfxContext.Finish();
 
-		// WaitForLoad is depends on m_SRV member variable
 		m_SRV.Swap(SRV);
 	}
 	return SUCCEEDED(hr);
@@ -321,6 +313,7 @@ namespace TextureManager
 
         uint32_t BlackPixel = 0;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &BlackPixel);
+        ManTex->SetLoadFinish();
         return *ManTex;
     }
 
@@ -339,10 +332,11 @@ namespace TextureManager
 
         uint32_t WhitePixel = 0xFFFFFFFFul;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &WhitePixel);
+        ManTex->SetLoadFinish();
         return *ManTex;
     }
 
-    const Texture& GetMagentaTex2D(void)
+    const ManagedTexture& GetMagentaTex2D(void)
     {
         auto ManagedTex = FindOrLoadTexture(L"DefaultMagentaTexture");
 
@@ -357,15 +351,21 @@ namespace TextureManager
 
         uint32_t MagentaPixel = 0x00FF00FF;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &MagentaPixel);
+        ManTex->SetLoadFinish();
         return *ManTex;
     }
 
 } // namespace TextureManager
 
 
+void ManagedTexture::SetLoadFinish()
+{
+    m_bLoaded.store( true );
+}
+
 void ManagedTexture::WaitForLoad( void ) const
 {
-	while (m_SRV == nullptr && m_IsValid)
+	while (!m_bLoaded)
 		this_thread::yield();
 }
 
@@ -387,20 +387,18 @@ const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, boo
 	{
 		path.replace_extension( L".dds" );
 		const ManagedTexture* Tex = nullptr;
-		Tex = LoadDDSFromFile( path.generic_wstring(), sRGB );
-		if (!Tex->IsValid())
-		{
-			path.replace_extension( L".png" );
+        auto t = fs::current_path();
+        if (fs::exists(path) || fs::exists(s_RootPath / path))
+            Tex = LoadDDSFromFile( path.generic_wstring(), sRGB );
+        else
 			Tex = LoadWISFromFile( path.generic_wstring(), sRGB );
-		}
 		return Tex;
 	}
 }
 
 void ManagedTexture::SetToInvalidTexture( void )
 {
-    auto& Magenta = TextureManager::GetMagentaTex2D();
-	m_SRV = const_cast<Texture&>(Magenta).GetSharedResource();
+	m_SRV = TextureManager::GetMagentaTex2D().m_SRV;
 	m_IsValid = false;
 }
 
@@ -417,20 +415,23 @@ const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	Utility::ByteArray ba = Utility::ReadFileSync( fileName );
-	if (ba->size() == 0)
-	{
-		fs::path path( s_RootPath );
-		path /= fileName;
+	auto sync = std::async(std::launch::async, [=]{
+        Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+        if (ba->size() == 0)
+        {
+            fs::path path( s_RootPath );
+            path /= fileName;
 
-		ba = Utility::ReadFileSync( path.generic_wstring() );
-	}
+            ba = Utility::ReadFileSync( path.generic_wstring() );
+        }
 
-	if (ba->size() == 0 || !ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ))
-		ManTex->SetToInvalidTexture();
-	else
-		SetName( ManTex->GetResource(), fileName );
+        if (ba->size() == 0 || !ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ))
+            ManTex->SetToInvalidTexture();
+        else
+            SetName( ManTex->GetResource(), fileName );
 
+        ManTex->SetLoadFinish();
+    });
 	return ManTex;
 }
 
@@ -447,19 +448,23 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	Utility::ByteArray ba = Utility::ReadFileSync( fileName );
-	if (ba->size() == 0)
-	{
-		fs::path path( s_RootPath );
-		path /= fileName;
+	auto sync = std::async(std::launch::async, [=]{
+        Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+        if (ba->size() == 0)
+        {
+            fs::path path( s_RootPath );
+            path /= fileName;
 
-		ba = Utility::ReadFileSync( path.generic_wstring() );
-	}
+            ba = Utility::ReadFileSync( path.generic_wstring() );
+        }
 
-	if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
-		ManTex->SetToInvalidTexture();
-   else
-	   SetName( ManTex->GetResource(), fileName );
+        if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
+            ManTex->SetToInvalidTexture();
+       else
+           SetName( ManTex->GetResource(), fileName );
+
+        ManTex->SetLoadFinish();
+    });
 
 	return ManTex;
 }
@@ -477,18 +482,71 @@ const ManagedTexture* TextureManager::LoadFromStream( const std::wstring& key, s
 		return ManTex;
 	}
 
-   std::ostringstream ss;
-   ss << stream.rdbuf();
-   const std::string& s = ss.str();
-   std::vector<char> buf(s.begin(), s.end());
+    std::ostringstream ss;
+    ss << stream.rdbuf();
+    const std::string& s = ss.str();
+    std::vector<char> buf( s.begin(), s.end() );
 
-   if (buf.size() == 0 ||
-	   !(ManTex->CreateDDSFromMemory( buf.data(), buf.size(), sRGB ) ||
-		   ManTex->CreateWICFromMemory( buf.data(), buf.size(), sRGB )))
-	   ManTex->SetToInvalidTexture();
-   else
-	   SetName( ManTex->GetResource(), key );
+    auto sync = std::async( std::launch::async, [cbuf = std::move(buf), sRGB, ManTex, key] {
+        if (cbuf.size() == 0 ||
+            !(ManTex->CreateDDSFromMemory( cbuf.data(), cbuf.size(), sRGB ) ||
+                ManTex->CreateWICFromMemory( cbuf.data(), cbuf.size(), sRGB )))
+            ManTex->SetToInvalidTexture();
+        else
+            SetName( ManTex->GetResource(), key );
 
-   return ManTex;
+        ManTex->SetLoadFinish();
+    } );
+    return ManTex;
 }
 
+const ManagedTexture* TextureManager::LoadFromMemory( const std::wstring& key, Utility::ByteArray ba, bool sRGB )
+{
+	auto ManagedTex = FindOrLoadTexture( key );
+
+	ManagedTexture* ManTex = ManagedTex.first;
+	const bool RequestsLoad = ManagedTex.second;
+
+	if (!RequestsLoad)
+	{
+		ManTex->WaitForLoad();
+		return ManTex;
+	}
+
+    auto sync = std::async( std::launch::async, [=] {
+        if (ba->size() == 0 ||
+            !(ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ) ||
+                ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB )))
+            ManTex->SetToInvalidTexture();
+        else
+            SetName( ManTex->GetResource(), key );
+        ManTex->SetLoadFinish();
+    });
+    return ManTex;
+}
+
+const ManagedTexture* TextureManager::LoadFromMemory( const std::wstring& key, size_t size, void* data, bool sRGB )
+{
+	auto ManagedTex = FindOrLoadTexture( key );
+
+	ManagedTexture* ManTex = ManagedTex.first;
+	const bool RequestsLoad = ManagedTex.second;
+
+	if (!RequestsLoad)
+	{
+		ManTex->WaitForLoad();
+		return ManTex;
+	}
+
+    std::vector<char> buf( (char*)data, (char*)data + size );
+    auto sync = std::async( std::launch::async, [cbuf = std::move(buf), sRGB, ManTex, key, size] {
+        if (size == 0 ||
+            !(ManTex->CreateDDSFromMemory( cbuf.data(), size, sRGB ) ||
+                ManTex->CreateWICFromMemory( cbuf.data(), size, sRGB )))
+            ManTex->SetToInvalidTexture();
+        else
+            SetName( ManTex->GetResource(), key );
+        ManTex->SetLoadFinish();
+    });
+    return ManTex;
+}

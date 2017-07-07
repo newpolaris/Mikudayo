@@ -604,6 +604,11 @@ namespace Partio {
 		}
 		return 0;
 	}
+    bool ZipFileReader::IsExist( const std::string & filename ) const
+    {
+		auto i = filename_to_header.find( filename );
+		return i != filename_to_header.end();
+    }
 	//#####################################################################
 	// Function Get_File_List
 	//#####################################################################
