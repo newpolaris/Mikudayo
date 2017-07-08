@@ -351,9 +351,6 @@
     <ClCompile Include="Math\Functions.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
-    <ClCompile Include="FXAA.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PostEffects.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
@@ -368,6 +365,9 @@
     </ClCompile>
     <ClCompile Include="Math\DualQuaternion.cpp">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="FXAA.cpp">
+      <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

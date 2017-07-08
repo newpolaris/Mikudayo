@@ -313,7 +313,6 @@ namespace TextureManager
 
         uint32_t BlackPixel = 0;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &BlackPixel);
-        ManTex->SetLoadFinish();
         return *ManTex;
     }
 
@@ -332,7 +331,6 @@ namespace TextureManager
 
         uint32_t WhitePixel = 0xFFFFFFFFul;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &WhitePixel);
-        ManTex->SetLoadFinish();
         return *ManTex;
     }
 
@@ -351,22 +349,33 @@ namespace TextureManager
 
         uint32_t MagentaPixel = 0x00FF00FF;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &MagentaPixel);
-        ManTex->SetLoadFinish();
         return *ManTex;
     }
 
 } // namespace TextureManager
 
-
-void ManagedTexture::SetLoadFinish()
+ManagedTexture::~ManagedTexture()
 {
-    m_bLoaded.store( true );
+    if (m_LoadThread.joinable()) 
+        m_LoadThread.join();
+    if (m_Future.valid())
+        m_Future.get();
+}
+
+void ManagedTexture::SetTask( Task&& task )
+{
+    m_Future = task.get_future();
+    std::thread thread( std::forward<Task>(task) );
+    m_LoadThread.swap(thread);
 }
 
 void ManagedTexture::WaitForLoad( void ) const
 {
-	while (!m_bLoaded)
-		this_thread::yield();
+    auto pointer = const_cast<ManagedTexture*>(this);
+    if (m_LoadThread.joinable()) 
+        pointer->m_LoadThread.join();
+    if (m_Future.valid())
+        pointer->m_Future.get();
 }
 
 const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, bool sRGB )
@@ -415,7 +424,8 @@ const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	auto sync = std::async(std::launch::async, [=]{
+    ManagedTexture::Task task( [=]
+    {
         Utility::ByteArray ba = Utility::ReadFileSync( fileName );
         if (ba->size() == 0)
         {
@@ -429,10 +439,9 @@ const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, 
             ManTex->SetToInvalidTexture();
         else
             SetName( ManTex->GetResource(), fileName );
-
-        ManTex->SetLoadFinish();
     });
-	return ManTex;
+    ManTex->SetTask( std::move( task ));
+    return ManTex;
 }
 
 const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, bool sRGB )
@@ -448,7 +457,8 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 		return ManTex;
 	}
 
-	auto sync = std::async(std::launch::async, [=]{
+    ManagedTexture::Task task( [=]
+    {
         Utility::ByteArray ba = Utility::ReadFileSync( fileName );
         if (ba->size() == 0)
         {
@@ -460,11 +470,10 @@ const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, 
 
         if (ba->size() == 0 || !ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ))
             ManTex->SetToInvalidTexture();
-       else
-           SetName( ManTex->GetResource(), fileName );
-
-        ManTex->SetLoadFinish();
+        else
+            SetName( ManTex->GetResource(), fileName );
     });
+    ManTex->SetTask( std::move(task) );
 
 	return ManTex;
 }
@@ -487,16 +496,16 @@ const ManagedTexture* TextureManager::LoadFromStream( const std::wstring& key, s
     const std::string& s = ss.str();
     std::vector<char> buf( s.begin(), s.end() );
 
-    auto sync = std::async( std::launch::async, [cbuf = std::move(buf), sRGB, ManTex, key] {
+    ManagedTexture::Task task( [cbuf = std::move(buf), sRGB, ManTex, key] 
+    {
         if (cbuf.size() == 0 ||
             !(ManTex->CreateDDSFromMemory( cbuf.data(), cbuf.size(), sRGB ) ||
                 ManTex->CreateWICFromMemory( cbuf.data(), cbuf.size(), sRGB )))
             ManTex->SetToInvalidTexture();
         else
             SetName( ManTex->GetResource(), key );
-
-        ManTex->SetLoadFinish();
-    } );
+    });
+    ManTex->SetTask( std::move(task) );
     return ManTex;
 }
 
@@ -513,15 +522,17 @@ const ManagedTexture* TextureManager::LoadFromMemory( const std::wstring& key, U
 		return ManTex;
 	}
 
-    auto sync = std::async( std::launch::async, [=] {
+    ManagedTexture::Task task( [=]
+    {
         if (ba->size() == 0 ||
             !(ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ) ||
                 ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB )))
             ManTex->SetToInvalidTexture();
         else
             SetName( ManTex->GetResource(), key );
-        ManTex->SetLoadFinish();
-    });
+    } );
+    ManTex->SetTask( std::move(task) );
+
     return ManTex;
 }
 
@@ -539,14 +550,16 @@ const ManagedTexture* TextureManager::LoadFromMemory( const std::wstring& key, s
 	}
 
     std::vector<char> buf( (char*)data, (char*)data + size );
-    auto sync = std::async( std::launch::async, [cbuf = std::move(buf), sRGB, ManTex, key, size] {
+
+    ManagedTexture::Task task( [cbuf = std::move(buf), sRGB, ManTex, key, size]
+    {
         if (size == 0 ||
             !(ManTex->CreateDDSFromMemory( cbuf.data(), size, sRGB ) ||
                 ManTex->CreateWICFromMemory( cbuf.data(), size, sRGB )))
             ManTex->SetToInvalidTexture();
         else
             SetName( ManTex->GetResource(), key );
-        ManTex->SetLoadFinish();
     });
+    ManTex->SetTask( std::move(task) );
     return ManTex;
 }

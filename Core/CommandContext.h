@@ -172,8 +172,6 @@ protected:
 #ifdef GRAPHICS_DEBUG
 	ConstantBufferAllocator m_ConstantBufferAllocator;
 #endif
-
-	std::mutex sm_ContextMutex;
 };
 
 class ComputeContext : public CommandContext

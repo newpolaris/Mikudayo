@@ -53,8 +53,9 @@ protected:
 class ManagedTexture : public Texture
 {
 public:
-	ManagedTexture( const std::wstring& FileName ) : m_MapKey(FileName), m_IsValid(true), m_bLoaded(false) {}
-
+    using Task = std::packaged_task<void(void)>;
+	ManagedTexture( const std::wstring& FileName ) : m_MapKey(FileName), m_IsValid(true) {}
+    virtual ~ManagedTexture();
 	void operator= ( const Texture& Texture );
 	virtual void Destroy() override {
 		WaitForLoad();
@@ -63,18 +64,19 @@ public:
 	virtual const D3D11_SRV_HANDLE GetSRV() const override {
         return m_SRV.Get(); 
     }
+    void SetTask( Task&& task );
 	void WaitForLoad( void ) const;
-	void Unload(void);
-	bool IsValid(void) const { 
+    void Unload( void );
+    bool IsValid( void ) const {
 		WaitForLoad();
         return m_IsValid; 
     }
-	void SetToInvalidTexture(void);
-    void SetLoadFinish();
+    void SetToInvalidTexture( void );
 
 private:
 
-    std::atomic_bool m_bLoaded; 
+    std::thread m_LoadThread;
+    std::future<void> m_Future;
 	std::wstring m_MapKey;		// For deleting from the map later
 	bool m_IsValid;
 };

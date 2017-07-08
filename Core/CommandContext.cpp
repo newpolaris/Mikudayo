@@ -120,17 +120,19 @@ uint64_t CommandContext::Finish( bool WaitForCompletion )
 
 	Flush( WaitForCompletion );
 
-	uint64_t FenceValue = 0;
-	m_CpuLinearAllocator.CleanupUsedPages(FenceValue);
-	m_GpuLinearAllocator.CleanupUsedPages(FenceValue);
-
 	ComPtr<ID3D11CommandList> CommandList;
 	m_CommandList->FinishCommandList( FALSE, &CommandList );
 
     {
-        std::lock_guard<std::mutex> LockGuard(sm_ContextMutex);
+        static std::mutex s_ContextMutex;
+        std::lock_guard<std::mutex> LockGuard(s_ContextMutex);
         g_Context->ExecuteCommandList( CommandList.Get(), FALSE );
     }
+
+	uint64_t FenceValue = 0;
+	m_CpuLinearAllocator.CleanupUsedPages(FenceValue);
+	m_GpuLinearAllocator.CleanupUsedPages(FenceValue);
+
 	g_ContextManager.FreeContext( this );
 
 	return 0;
