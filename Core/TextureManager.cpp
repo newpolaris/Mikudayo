@@ -224,7 +224,7 @@ void Texture::Create( size_t Width, size_t Height, DXGI_FORMAT Format, const voi
 bool Texture::CreateWICFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
 {
 	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_DEFAULT;
-    GraphicsContext& gfxContext = GraphicsContext::Begin( L"MipMap" );
+    GraphicsContext& gfxContext = GraphicsContext::Begin();
 	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx( 
         Graphics::g_Device,
         gfxContext.m_CommandList,

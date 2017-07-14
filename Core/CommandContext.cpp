@@ -95,17 +95,13 @@ CommandContext& CommandContext::Begin( ContextType Type, const std::wstring ID )
 	NewContext->SetID( ID );
 	if (ID.length() > 0)
 	    EngineProfiling::BeginBlock(ID, NewContext);
-
 	return *NewContext;
 }
 
 ComputeContext& ComputeContext::Begin( const std::wstring& ID )
 {
-    ComputeContext& NewContext = g_ContextManager.AllocateContext( kComputeContext )->GetComputeContext();
-    NewContext.SetID(ID);
-	if (ID.length() > 0)
-	    EngineProfiling::BeginBlock(ID, &NewContext);
-    return NewContext;
+    CommandContext& NewContext = CommandContext::Begin( kComputeContext, ID );
+    return NewContext.GetComputeContext();
 }
 
 uint64_t CommandContext::Flush(bool WaitForCompletion)
@@ -176,7 +172,12 @@ CommandContext::~CommandContext( void )
 
 void CommandContext::Initialize( void )
 {
-	g_Device->CreateDeferredContext3( 0, &m_CommandList );
+    ComPtr<ID3D11DeviceContext> context;
+	g_Device->CreateDeferredContext( 0, &context );
+
+    ComPtr<ID3D11_CONTEXT> pContext;
+    SUCCEEDED( context.As( &pContext) );
+    m_CommandList = pContext.Detach();
 
 	m_InternalCB.Create( L"InternalCB" );
 	m_CpuLinearAllocator.Initialize( m_CommandList );
@@ -199,10 +200,7 @@ void CommandContext::EndQuery( ID3D11Query* pQueryDisjoint )
 
 void CommandContext::ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer )
 {
-    //
-    // TODO: Replace with fence
-    //
-    while (S_OK != Graphics::g_Context->GetData( pQueryDisjoint, pDisjoint, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT), 0)) {}
+    while (S_OK != Graphics::g_Context->GetData( pQueryDisjoint, pDisjoint, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT),  D3D11_ASYNC_GETDATA_DONOTFLUSH)) {}
 
     if (!pDisjoint->Disjoint)
     {

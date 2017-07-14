@@ -53,8 +53,8 @@ public:
 	LinearAllocationPage( Microsoft::WRL::ComPtr<ID3D11Buffer> resource );
 	~LinearAllocationPage() {}
 
-	void Map( ID3D11DeviceContext3* pContext );
-	void Unmap( ID3D11DeviceContext3* pContext );
+	void Map( ID3D11_CONTEXT* pContext );
+	void Unmap( ID3D11_CONTEXT* pContext );
 
 	void* m_CpuVirtualAddress;
 };
@@ -84,11 +84,11 @@ public:
 	LinearAllocationPage* CreateNewPage( size_t PageSize = 0 );
 
 	// Discarded pages will get recycled.  This is for fixed size pages.
-	void DiscardPages( uint64_t FenceID, ID3D11DeviceContext3* Context, const std::vector<LinearAllocationPage*>& Pages );
+	void DiscardPages( uint64_t FenceID, ID3D11_CONTEXT* Context, const std::vector<LinearAllocationPage*>& Pages );
 
 	// Freed pages will be destroyed once their fence has passed.  This is for single-use,
 	// "large" pages.
-	void FreeLargePages( uint64_t FenceID, ID3D11DeviceContext3* Context, const std::vector<LinearAllocationPage*>& Pages );
+	void FreeLargePages( uint64_t FenceID, ID3D11_CONTEXT* Context, const std::vector<LinearAllocationPage*>& Pages );
 
 	void Destroy( void ) { m_PagePool.clear(); }
 
@@ -116,7 +116,7 @@ public:
 
 	~LinearAllocator() { m_Context = nullptr; }
 
-	void Initialize( ID3D11DeviceContext3* Context ) 
+	void Initialize( ID3D11_CONTEXT* Context ) 
 	{
 		m_Context = Context;
 	}
@@ -137,7 +137,7 @@ private:
 
 	static LinearAllocatorPageManager sm_PageManager[2];
 
-	ID3D11DeviceContext3* m_Context;
+	ID3D11_CONTEXT* m_Context;
 
 	LinearAllocatorType m_AllocationType;
 	size_t m_PageSize;

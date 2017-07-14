@@ -24,7 +24,7 @@
 #if _MSC_VER >= 1800
 	// To enable PIX which are blobked by defined d3d11_2_h
 	#include <d3d11_2.h>
-	#include <pix.h>
+    #include <pix.h>
 #endif
 
 #include <dxgi1_4.h>

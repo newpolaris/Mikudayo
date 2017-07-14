@@ -1,5 +1,15 @@
 #pragma once
 
+// Crash. nvidia driver 384.76
+// #if defined(NTDDI_WIN10_RS2) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
+#if 0
+using ID3D11_DEVICE = ID3D11Device5;
+using ID3D11_CONTEXT = ID3D11DeviceContext4;
+#else
+using ID3D11_DEVICE = ID3D11Device3;
+using ID3D11_CONTEXT = ID3D11DeviceContext3;
+#endif
+
 using D3D11_SRV_HANDLE = ID3D11ShaderResourceView*;
 using D3D11_UAV_HANDLE = ID3D11UnorderedAccessView*;
 using D3D11_RTV_HANDLE = ID3D11RenderTargetView*;

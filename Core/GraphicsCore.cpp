@@ -169,7 +169,7 @@ namespace Graphics
 		InitializeRenderingBuffers( NativeWidth, NativeHeight );
 	}
 
-	ID3D11Device3* g_Device = nullptr;
+	ID3D11_DEVICE* g_Device = nullptr;
 
 	CommandListManager g_CommandManager;
 	ContextManager g_ContextManager;
@@ -179,7 +179,7 @@ namespace Graphics
 	ColorBuffer g_DisplayPlane;
 
 	IDXGISwapChain1* s_SwapChain1 = nullptr;
-	ID3D11DeviceContext3* g_Context = nullptr;
+	ID3D11_CONTEXT* g_Context = nullptr;
 
 	SamplerDesc SamplerLinearWrapDesc;
 	SamplerDesc SamplerAnisoWrapDesc;
@@ -339,13 +339,13 @@ void Graphics::Initialize( void )
 		}
 
 		if (MaxSize > 0) {
-			ComPtr<ID3D11Device3> pDevice3;
-			SUCCEEDED(pDevice.As(&pDevice3));
-			g_Device = pDevice3.Detach();
+			ComPtr<ID3D11_DEVICE> device;
+			SUCCEEDED(pDevice.As(&device));
+			g_Device = device.Detach();
 
-			ComPtr<ID3D11DeviceContext3> pContext3;
-			SUCCEEDED( pContext.As( &pContext3 ) );
-			g_Context = pContext3.Detach();
+			ComPtr<ID3D11_CONTEXT> context;
+			SUCCEEDED( pContext.As( &context ) );
+			g_Context = context.Detach();
 		}
 	}
 
@@ -369,13 +369,13 @@ void Graphics::Initialize( void )
 			&g_D3DFeatureLevel,
 			pContext.ReleaseAndGetAddressOf() ) );
 
-		ComPtr<ID3D11Device3> pDevice3;
-		SUCCEEDED( pDevice.As( &pDevice3 ) );
-		g_Device = pDevice3.Detach();
+		ComPtr<ID3D11_DEVICE> device;
+		SUCCEEDED( pDevice.As( &device ) );
+		g_Device = device.Detach();
 
-		ComPtr<ID3D11DeviceContext3> pContext3;
-		SUCCEEDED( pContext.As( &pContext3 ) );
-		g_Context = pContext3.Detach();
+		ComPtr<ID3D11_CONTEXT> context;
+		SUCCEEDED( pContext.As( &context ) );
+		g_Context = context.Detach();
 	}
 
 #ifndef RELEASE
@@ -471,6 +471,29 @@ void Graphics::Initialize( void )
 #else
 	ASSERT_SUCCEEDED(dxgiFactory->CreateSwapChainForCoreWindow(g_CommandManager.GetCommandQueue(), (IUnknown*)GameCore::g_window.Get(), &swapChainDesc, nullptr, &s_SwapChain1));
 #endif
+
+#if CONDITIONALLY_ENABLE_HDR_OUTPUT && defined(NTDDI_WIN10_RS2) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
+    {
+        IDXGISwapChain4* swapChain = (IDXGISwapChain4*)s_SwapChain1;
+        ComPtr<IDXGIOutput> output;
+        ComPtr<IDXGIOutput6> output6;
+        DXGI_OUTPUT_DESC1 outputDesc;
+        UINT colorSpaceSupport;
+
+        // Query support for ST.2084 on the display and set the color space accordingly
+        if (SUCCEEDED(swapChain->GetContainingOutput(&output)) &&
+            SUCCEEDED(output.As(&output6)) &&
+            SUCCEEDED(output6->GetDesc1(&outputDesc)) &&
+            outputDesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 &&
+            SUCCEEDED(swapChain->CheckColorSpaceSupport(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020, &colorSpaceSupport)) &&
+            (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) &&
+            SUCCEEDED(swapChain->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
+        {
+            g_bEnableHDROutput = true;
+        }
+    }
+#endif
+
 
 	ComPtr<ID3D11Texture2D1> BackBuffer;
 	ASSERT_SUCCEEDED(s_SwapChain1->GetBuffer(0, MY_IID_PPV_ARGS(&BackBuffer)));
@@ -620,7 +643,7 @@ void Graphics::Initialize( void )
 
 	g_PreDisplayBuffer.Create(L"PreDisplay Buffer", g_DisplayWidth, g_DisplayHeight, 1, SwapChainFormat);
 
-    GpuTimeManager::Initialize(4096);
+    GpuTimeManager::Initialize(1024);
 	SetNativeResolution();
     TemporalEffects::Initialize();
     PostEffects::Initialize();

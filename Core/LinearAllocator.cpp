@@ -53,7 +53,7 @@ LinearAllocationPage* LinearAllocatorPageManager::RequestPage()
 	return PagePtr;
 }
 
-void LinearAllocatorPageManager::DiscardPages( uint64_t FenceValue, ID3D11DeviceContext3* Context, const vector<LinearAllocationPage*>& UsedPages )
+void LinearAllocatorPageManager::DiscardPages( uint64_t FenceValue, ID3D11_CONTEXT* Context, const vector<LinearAllocationPage*>& UsedPages )
 {
 	lock_guard<mutex> LockGuard(m_Mutex);
 	for (auto page : UsedPages) 
@@ -63,7 +63,7 @@ void LinearAllocatorPageManager::DiscardPages( uint64_t FenceValue, ID3D11Device
 	}
 }
 
-void LinearAllocatorPageManager::FreeLargePages( uint64_t FenceValue, ID3D11DeviceContext3* Context, const vector<LinearAllocationPage*>& LargePages )
+void LinearAllocatorPageManager::FreeLargePages( uint64_t FenceValue, ID3D11_CONTEXT* Context, const vector<LinearAllocationPage*>& LargePages )
 {
 	lock_guard<mutex> LockGuard(m_Mutex);
 
@@ -186,7 +186,7 @@ LinearAllocationPage::LinearAllocationPage( Microsoft::WRL::ComPtr<ID3D11Buffer>
 	m_pResource.Swap( resource );
 }
 
-void LinearAllocationPage::Map( ID3D11DeviceContext3* pContext )
+void LinearAllocationPage::Map( ID3D11_CONTEXT* pContext )
 {
 	D3D11_MAPPED_SUBRESOURCE MapData = {};
 	ASSERT_SUCCEEDED( pContext->Map(
@@ -198,7 +198,7 @@ void LinearAllocationPage::Map( ID3D11DeviceContext3* pContext )
 	m_CpuVirtualAddress = MapData.pData;
 }
 
-void LinearAllocationPage::Unmap( ID3D11DeviceContext3* pContext )
+void LinearAllocationPage::Unmap( ID3D11_CONTEXT* pContext )
 {
 	pContext->Unmap( GetResource(), 0 );
 	m_CpuVirtualAddress = nullptr;

@@ -328,6 +328,8 @@ namespace GameCore
             {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
+                if (msg.message == WM_QUIT)
+                    break;
             }
             if (msg.message == WM_QUIT)
                 break;

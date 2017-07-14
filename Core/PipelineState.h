@@ -35,7 +35,7 @@ struct ComputePipelineStateDesc;
 struct ComputePipelineState
 {
 	std::shared_ptr<Shader> ComputeShader;
-	void Bind( ID3D11DeviceContext3* Context);
+	void Bind( ID3D11DeviceContext* Context);
 };
 
 struct GraphicsPipelineState
@@ -51,7 +51,7 @@ struct GraphicsPipelineState
 	std::shared_ptr<Shader> DomainShader;
 	std::shared_ptr<Shader> HullShader;
 
-	void Bind( ID3D11DeviceContext3* Context);
+	void Bind( ID3D11DeviceContext* Context);
 };
 
 class PSO

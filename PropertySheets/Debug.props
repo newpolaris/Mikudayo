@@ -21,7 +21,7 @@
     </Link>
     <FxCompile>
       <EnableDebuggingInformation>true</EnableDebuggingInformation>
-      <DisableOptimizations>false</DisableOptimizations>
+      <DisableOptimizations>true</DisableOptimizations>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

@@ -220,7 +220,7 @@ void ComputePSO::Finalize()
 	});
 }
 
-void GraphicsPipelineState::Bind( ID3D11DeviceContext3 * Context )
+void GraphicsPipelineState::Bind( ID3D11DeviceContext* Context )
 {
 	if (TopologyType != D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
 		Context->IASetPrimitiveTopology( TopologyType );
@@ -244,7 +244,7 @@ void GraphicsPipelineState::Bind( ID3D11DeviceContext3 * Context )
 		RasterizerState->Bind( Context );
 }
 
-void ComputePipelineState::Bind( ID3D11DeviceContext3 * Context )
+void ComputePipelineState::Bind( ID3D11DeviceContext * Context )
 {
 	if (ComputeShader)
 		ComputeShader->Bind( Context );

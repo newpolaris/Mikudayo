@@ -99,10 +99,6 @@ void GpuTimeManager::End( void )
 
 void GpuTimeManager::ResolveTimes(void)
 {
-    //
-    // Dx11 use while loop to wait until data
-    //
-    // Graphics::g_CommandManager.WaitForFence(sm_Fence);
     CommandContext::ResolveTimeStamps(sm_DisjointQuery, sm_QueryHeap.data(), sm_NumTimers * 2, &sm_Disjoint, sm_TimeStampBuffer.data());
 
     sm_GpuTickDelta = 1.0 / static_cast<double>(sm_Disjoint.Frequency);
