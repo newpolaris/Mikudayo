@@ -72,6 +72,8 @@ void ContextManager::FreeContext(CommandContext* UsedContext)
 	sm_AvailableContexts[UsedContext->m_Type].push(UsedContext);
 }
 
+std::mutex CommandContext::sm_ContextMutex;
+
 void CommandContext::DestroyAllContexts(void)
 {
 	LinearAllocator::DestroyAll();
@@ -120,8 +122,7 @@ uint64_t CommandContext::Finish( bool WaitForCompletion )
 	m_CommandList->FinishCommandList( FALSE, &CommandList );
 
     {
-        static std::mutex s_ContextMutex;
-        std::lock_guard<std::mutex> LockGuard(s_ContextMutex);
+        std::lock_guard<std::mutex> LockGuard(sm_ContextMutex);
         g_Context->ExecuteCommandList( CommandList.Get(), FALSE );
     }
 
@@ -188,28 +189,46 @@ void CommandContext::Initialize( void )
 #endif
 }
 
+static bool TimestampQueryInFlight = true;
+
 void CommandContext::BeginQuery( ID3D11Query* pQueryDisjoint )
 {
+    if (!TimestampQueryInFlight) return;
+    std::lock_guard<std::mutex> LockGuard( sm_ContextMutex );
     g_Context->Begin( pQueryDisjoint );
 }
 
 void CommandContext::EndQuery( ID3D11Query* pQueryDisjoint )
 {
+    if (!TimestampQueryInFlight) return;
+    TimestampQueryInFlight = false;
+
+    std::lock_guard<std::mutex> LockGuard( sm_ContextMutex );
     g_Context->End( pQueryDisjoint );
 }
 
-void CommandContext::ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer )
+bool CommandContext::ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer )
 {
-    while (S_OK != Graphics::g_Context->GetData( pQueryDisjoint, pDisjoint, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT),  D3D11_ASYNC_GETDATA_DONOTFLUSH)) {}
+    std::lock_guard<std::mutex> LockGuard( sm_ContextMutex );
 
+    if (S_OK != g_Context->GetData( pQueryDisjoint, pDisjoint, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT), D3D11_ASYNC_GETDATA_DONOTFLUSH))
+        return false;
+    TimestampQueryInFlight = true;
     if (!pDisjoint->Disjoint)
     {
         for (uint32_t i = 0; i < NumQueries; i++)
         {
-            if (S_OK != Graphics::g_Context->GetData( pQueryHeap[i], &pBuffer[i], sizeof( UINT64 ), 0 ))
+            if (S_OK != g_Context->GetData( pQueryHeap[i], &pBuffer[i], sizeof( UINT64 ), D3D11_ASYNC_GETDATA_DONOTFLUSH))
                 pBuffer[i] = 0;
         }
     }
+    return true;
+}
+
+void CommandContext::InsertTimeStamp( ID3D11Query* pQuery )
+{
+    if (!TimestampQueryInFlight) return;
+    m_CommandList->End( pQuery );
 }
 
 void CommandContext::CopyBuffer( GpuResource& Dest, GpuResource& Src )

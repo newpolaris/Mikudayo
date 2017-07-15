@@ -97,9 +97,10 @@ void GpuTimeManager::End( void )
     sm_Fence = Context.Finish();
 }
 
-void GpuTimeManager::ResolveTimes(void)
+bool GpuTimeManager::ResolveTimes(void)
 {
-    CommandContext::ResolveTimeStamps(sm_DisjointQuery, sm_QueryHeap.data(), sm_NumTimers * 2, &sm_Disjoint, sm_TimeStampBuffer.data());
+    if (!CommandContext::ResolveTimeStamps(sm_DisjointQuery, sm_QueryHeap.data(), sm_NumTimers * 2, &sm_Disjoint, sm_TimeStampBuffer.data()))
+        return false;
 
     sm_GpuTickDelta = 1.0 / static_cast<double>(sm_Disjoint.Frequency);
 
@@ -112,6 +113,7 @@ void GpuTimeManager::ResolveTimes(void)
         sm_ValidTimeStart = 0ull;
         sm_ValidTimeEnd = 0ull;
     }
+    return true;
 }
 
 float GpuTimeManager::GetTime(uint32_t TimerIdx)

@@ -126,8 +126,8 @@ public:
 
     static void BeginQuery( ID3D11Query* pQueryDisjoint );
     static void EndQuery( ID3D11Query* pQueryDisjoint );
+    static bool ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer );
     void InsertTimeStamp( ID3D11Query* pQuery );
-    static void ResolveTimeStamps( ID3D11Query* pQueryDisjoint, ID3D11Query** pQueryHeap, uint32_t NumQueries, D3D11_QUERY_DATA_TIMESTAMP_DISJOINT* pDisjoint, uint64_t* pBuffer );
 	void PIXBeginEvent(const wchar_t* label);
 	void PIXEndEvent(void);
 	void PIXSetMarker(const wchar_t* label);
@@ -172,6 +172,8 @@ protected:
 #ifdef GRAPHICS_DEBUG
 	ConstantBufferAllocator m_ConstantBufferAllocator;
 #endif
+
+    static std::mutex sm_ContextMutex;
 };
 
 class ComputeContext : public CommandContext
@@ -322,11 +324,6 @@ inline void CommandContext::PIXEndEvent(void)
 #if !defined(RELEASE) && !defined(_PIX_H_)
 	::PIXEndEvent(m_CommandList);
 #endif
-}
-
-inline void CommandContext::InsertTimeStamp( ID3D11Query* pQuery )
-{
-    m_CommandList->End( pQuery );
 }
 
 inline void CommandContext::PIXSetMarker( const wchar_t* label )

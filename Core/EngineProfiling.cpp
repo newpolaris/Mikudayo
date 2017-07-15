@@ -345,7 +345,9 @@ public:
     {
         uint32_t FrameIndex = (uint32_t)Graphics::GetFrameCount();
 
-        GpuTimeManager::ResolveTimes();
+        if (!GpuTimeManager::ResolveTimes())
+            return;
+
         sm_RootScope.GatherTimes(FrameIndex);
         s_FrameDelta.RecordStat(FrameIndex, GpuTimeManager::GetTime(0));
 

@@ -31,7 +31,7 @@ namespace GpuTimeManager
 
     void Begin(void);
     void End(void);
-    void ResolveTimes( void );
+    bool ResolveTimes( void );
 
     // Returns the time in milliseconds between start and stop queries
     float GetTime(uint32_t TimerIdx);
