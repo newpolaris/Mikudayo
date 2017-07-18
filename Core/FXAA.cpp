@@ -29,10 +29,14 @@
 #include "CompiledShaders/FXAAPass2HDebugCS.h"
 #include "CompiledShaders/FXAAPass2VDebugCS.h"
 
+#include "CompiledShaders/ScreenQuadVS.h"
+#include "CompiledShaders/FXAAPS.h"
+
 using namespace Graphics;
 
 namespace FXAA
 {
+    // Compute Shader
     ComputePSO Pass1HdrCS;
     ComputePSO Pass1LdrCS;
     ComputePSO ResolveWorkCS;
@@ -42,11 +46,16 @@ namespace FXAA
     ComputePSO Pass2VDebugCS;
     IndirectArgsBuffer IndirectParameters;
 
-    BoolVar Enable("Graphics/AA/FXAA/Enable", true);
+    // Pixel Shader
+    GraphicsPSO FXAAPS;
+
+    BoolVar Enable("Graphics/AA/FXAA/Enable", false);
     BoolVar DebugDraw("Graphics/AA/FXAA/Debug", false);
+    BoolVar ForceCS("Graphics/AA/FXAA/ForceCS", false);
 
     // With a properly encoded luma buffer, [0.25 = "low", 0.2 = "medium", 0.15 = "high", 0.1 = "ultra"]
-    NumVar ContrastThreshold("Graphics/AA/FXAA/Contrast Threshold", 0.175f, 0.05f, 0.5f, 0.025f);
+    NumVar ContrastThreshold("Graphics/AA/FXAA/Contrast Threshold", 0.166f, 0.05f, 0.5f, 0.025f);
+    NumVar ContrastThresholdMin("Graphics/AA/FXAA/Contrast Threshold Min", 0.0833f, 0.05f, 0.5f, 0.025f);
 
     // Controls how much to blur isolated pixels that have little-to-no edge length.
     NumVar SubpixelRemoval("Graphics/AA/FXAA/Subpixel Removal", 0.50f, 0.0f, 1.0f, 0.25f);
@@ -83,6 +92,11 @@ void FXAA::Initialize( void )
 
     __declspec(align(16)) const uint32_t initArgs[6] = { 0, 1, 1, 0, 1, 1 };
     IndirectParameters.Create(L"FXAA Indirect Parameters", 2, sizeof(uint32_t) * _countof(initArgs), initArgs);
+
+	FXAAPS.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+	FXAAPS.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
+	FXAAPS.SetPixelShader( MY_SHADER_ARGS( g_pFXAAPS ) );
+	FXAAPS.Finalize();
 }
 
 void FXAA::Shutdown(void)
@@ -96,9 +110,19 @@ void FXAA::Shutdown(void)
     Pass2VDebugCS.Destroy();
 
     IndirectParameters.Destroy();
+
+	FXAAPS.Destroy();
 }
 
 void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
+{
+    if (g_bTypedUAVLoadSupport_R11G11B10_FLOAT || ForceCS)
+        RenderCS( Context, bUsePreComputedLuma );
+    else
+        RenderPS( Context, bUsePreComputedLuma );
+}
+
+void FXAA::RenderCS( ComputeContext& Context, bool bUsePreComputedLuma )
 {
     ScopedTimer _prof(L"FXAA", Context);
 
@@ -107,7 +131,8 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
 
     ColorBuffer& Target = g_bTypedUAVLoadSupport_R11G11B10_FLOAT ? g_SceneColorBuffer : g_PostEffectsBuffer;
 
-    Context.SetConstants( 0, 1.0f / Target.GetWidth(), 1.0f / Target.GetHeight(), (float)ContrastThreshold, (float)SubpixelRemoval );
+	float Constants[] = { 1.0f / Target.GetWidth(), 1.0f / Target.GetHeight(), (float)ContrastThreshold, (float)ContrastThresholdMin, (float)SubpixelRemoval };
+    Context.SetConstants( 0, _countof(Constants), Constants);
 
     {
         ScopedTimer _prof2(L"Pass 1", Context);
@@ -170,18 +195,12 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
 
         Context.Dispatch(1, 1, 1);
 
-        // Context.TransitionResource(IndirectParameters, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        // Context.TransitionResource(g_FXAAWorkQueueH, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        Context.SetDynamicDescriptor(0, Target.GetUAV());
         Context.SetDynamicDescriptor(1, D3D11_UAV_HANDLE(nullptr));
         Context.SetDynamicDescriptor(2, D3D11_UAV_HANDLE(nullptr));
         Context.SetDynamicDescriptor(3, D3D11_UAV_HANDLE(nullptr));
+        Context.SetDynamicDescriptor(4, D3D11_UAV_HANDLE(nullptr));
 
-        // Context.TransitionResource(g_FXAAColorQueueH, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        // Context.TransitionResource(g_FXAAWorkQueueV, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        // Context.TransitionResource(g_FXAAColorQueueV, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        // Context.TransitionResource(Target, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-        Context.SetDynamicDescriptor(0, Target.GetUAV());
         Context.SetDynamicDescriptor(0, g_LumaBuffer.GetSRV());
         Context.SetDynamicDescriptor(1, g_FXAAWorkQueueH.GetSRV());
         Context.SetDynamicDescriptor(2, g_FXAAColorQueueH.GetSRV());
@@ -201,4 +220,28 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
         Context.SetPipelineState(DebugDraw ? Pass2VDebugCS : Pass2VCS);
         Context.DispatchIndirect(IndirectParameters, 12);
     }
+}
+
+void FXAA::RenderPS( ComputeContext& Compute, bool bUsePreComputedLuma )
+{
+    ASSERT( bUsePreComputedLuma, "Not supported yet" );
+
+    Compute.SetDynamicDescriptor( 0, D3D11_UAV_HANDLE( nullptr ) );
+    Compute.SetDynamicDescriptor( 1, D3D11_UAV_HANDLE( nullptr ) );
+    Compute.SetDynamicDescriptor( 2, D3D11_SRV_HANDLE( nullptr ) );
+
+    ScopedTimer _prof(L"FXAA", Compute);
+
+    ColorBuffer& Target = g_SceneColorBuffer;
+
+    GraphicsContext& Context = Compute.GetGraphicsContext();
+    Context.SetPipelineState( FXAAPS );
+	float Constants[] = { 1.0f / Target.GetWidth(), 1.0f / Target.GetHeight(), (float)ContrastThreshold, (float)ContrastThresholdMin, (float)SubpixelRemoval };
+    Context.SetConstants( 0, _countof(Constants), Constants, { kBindPixel } );
+    Context.SetDynamicSampler( 0, SamplerLinearClamp, { kBindPixel } );
+    Context.SetDynamicDescriptor( 0, g_PostEffectsBufferTyped.GetSRV(), { kBindPixel } );
+    Context.SetDynamicDescriptor( 1, g_LumaBuffer.GetSRV(), { kBindPixel } );
+    Context.SetRenderTarget( g_SceneColorBuffer.GetRTV() );
+    Context.SetViewportAndScissor( 0, 0, g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight() );
+    Context.Draw(3);
 }

@@ -140,6 +140,7 @@
     <None Include="Shaders\ColorSpaceUtility.hlsli" />
     <None Include="Shaders\FXAAPass1CS.hlsli" />
     <None Include="Shaders\FXAAPass2CS.hlsli" />
+    <None Include="Shaders\FXAAPS.hlsli" />
     <None Include="Shaders\FXAARootSignature.hlsli" />
     <None Include="Shaders\MotionBlurRS.hlsli" />
     <None Include="Shaders\PixelPacking.hlsli" />
@@ -157,6 +158,14 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\ApplyBloom3CS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\ApplyBloomCS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
@@ -202,6 +211,11 @@
     <FxCompile Include="Shaders\FXAAPass2V2CS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass2VCS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass2VDebugCS.hlsl" />
+    <FxCompile Include="Shaders\FXAAPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\FXAAResolveWorkQueueCS.hlsl" />
     <FxCompile Include="Shaders\MotionBlurFinalPassCS.hlsl" />
     <FxCompile Include="Shaders\MotionBlurFinalPassPS.hlsl">
@@ -320,5 +334,5 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-   </ImportGroup>
+  </ImportGroup>
 </Project>

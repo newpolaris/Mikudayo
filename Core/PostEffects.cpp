@@ -26,6 +26,7 @@
 
 #include "CompiledShaders/ApplyBloomCS.h"
 #include "CompiledShaders/ApplyBloom2CS.h"
+#include "CompiledShaders/ApplyBloom3CS.h"
 #include "CompiledShaders/DebugLuminanceLdrCS.h"
 #include "CompiledShaders/DebugLuminanceLdr2CS.h"
 #include "CompiledShaders/CopyBackPostBufferCS.h"
@@ -61,7 +62,6 @@ namespace PostEffects
     NumVar AdaptationRate("Graphics/HDR/Adaptation Rate", 0.05f, 0.01f, 1.0f, 0.01f);
     ExpVar Exposure("Graphics/HDR/Exposure", 2.0f, -8.0f, 8.0f, 0.25f);
     BoolVar DrawHistogram("Graphics/HDR/Draw Histogram", false);
-
     BoolVar BloomEnable("Graphics/Bloom/Enable", true);
     NumVar BloomThreshold("Graphics/Bloom/Threshold", 4.0f, 0.0f, 8.0f, 0.1f);		// The threshold luminance above which a pixel will start to bloom
     NumVar BloomStrength("Graphics/Bloom/Strength", 0.1f, 0.0f, 2.0f, 0.05f);		// A modulator controlling how much bloom is added back into the image
@@ -71,6 +71,7 @@ namespace PostEffects
     ComputePSO ToneMapCS;
     ComputePSO ToneMapHDRCS;
     ComputePSO ApplyBloomCS;
+    ComputePSO ApplyBloomFxaaPS_CS;
     ComputePSO DebugLuminanceHdrCS;
     ComputePSO DebugLuminanceLdrCS;
     ComputePSO GenerateHistogramCS;
@@ -116,6 +117,7 @@ void PostEffects::Initialize( void )
         CreatePSO( DebugLuminanceLdrCS, g_pDebugLuminanceLdrCS );
     }
 
+    CreatePSO( ApplyBloomFxaaPS_CS, g_pApplyBloom3CS );
     CreatePSO( CopyBackPostBufferCS, g_pCopyBackPostBufferCS );
 }
 
@@ -124,6 +126,7 @@ void PostEffects::Shutdown( void )
     ToneMapCS.Destroy();
     ToneMapHDRCS.Destroy();
     ApplyBloomCS.Destroy();
+    ApplyBloomFxaaPS_CS.Destroy();
     DebugLuminanceHdrCS.Destroy();
     DebugLuminanceLdrCS.Destroy();
     GenerateHistogramCS.Destroy();
@@ -167,6 +170,8 @@ void PostEffects::ProcessLDR( CommandContext& BaseContext )
 
     if (bGenerateBloom || FXAA::DebugDraw || SSAO::DebugDraw || !g_bTypedUAVLoadSupport_R11G11B10_FLOAT)
     {
+        ComputePSO& BloomCS = (!g_bTypedUAVLoadSupport_R11G11B10_FLOAT && !FXAA::ForceCS) ? ApplyBloomFxaaPS_CS : ApplyBloomCS;
+
         // Set constants
         Context.SetConstants( 0, 1.0f / g_SceneColorBuffer.GetWidth(), 1.0f / g_SceneColorBuffer.GetHeight(),
             (float)BloomStrength);
@@ -176,7 +181,8 @@ void PostEffects::ProcessLDR( CommandContext& BaseContext )
             Context.SetDynamicDescriptor(0, g_SceneColorBuffer.GetUAV());
         else
         {
-            Context.SetDynamicDescriptor(0, g_PostEffectsBuffer.GetUAV());
+            ColorBuffer& Target = FXAA::ForceCS ? g_PostEffectsBuffer : g_PostEffectsBufferTyped;
+            Context.SetDynamicDescriptor(0, Target.GetUAV());
             Context.SetDynamicDescriptor(2, g_SceneColorBuffer.GetSRV());
         }
         Context.SetDynamicDescriptor(1, g_LumaBuffer.GetUAV());
@@ -185,7 +191,7 @@ void PostEffects::ProcessLDR( CommandContext& BaseContext )
         Context.SetDynamicDescriptor(0, bGenerateBloom ? g_aBloomUAV1[1].GetSRV() : TextureManager::GetBlackTex2D().GetSRV());
 
         Context.SetDynamicSampler( 0, SamplerLinearClamp );
-        Context.SetPipelineState(FXAA::DebugDraw ? DebugLuminanceLdrCS : ApplyBloomCS);
+        Context.SetPipelineState(FXAA::DebugDraw ? DebugLuminanceLdrCS : BloomCS);
         Context.Dispatch2D(g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight());
     }
 }
@@ -214,13 +220,7 @@ void PostEffects::Render( void )
     if (FXAA::Enable)
         FXAA::Render(Context, bGeneratedLumaBuffer);
 
-    // In the case where we've been doing post processing in a separate buffer, we need to copy it
-    // back to the original buffer.  It is possible to skip this step if the next shader knows to
-    // do the manual format decode from UINT, but there are several code paths that need to be
-    // changed, and some of them rely on texture filtering, which won't work with UINT.  Since this
-    // is only to support legacy hardware and a single buffer copy isn't that big of a deal, this
-    // is the most economical solution.
-    if (!g_bTypedUAVLoadSupport_R11G11B10_FLOAT)
+    if (!g_bTypedUAVLoadSupport_R11G11B10_FLOAT && FXAA::ForceCS)
         CopyBackPostBuffer(Context);
 
     Context.Finish();

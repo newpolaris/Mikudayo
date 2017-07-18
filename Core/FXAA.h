@@ -21,11 +21,14 @@ class ComputeContext;
 namespace FXAA
 {
     extern BoolVar Enable;
-    extern NumVar ContrastThreshold;	// Default = 0.20
+    extern BoolVar ForceCS;
+    extern NumVar ContrastThreshold;	// Default = 0.166
+    extern NumVar ContrastThresholdMin;	// Default = 0.0833
     extern NumVar SubpixelRemoval;		// Default = 0.75
 
     void Initialize( void );
     void Shutdown( void );
     void Render( ComputeContext& Context, bool bUsePreComputedLuma );
-
+    void RenderCS( ComputeContext& Context, bool bUsePreComputedLuma );
+    void RenderPS( ComputeContext& Context, bool bUsePreComputedLuma );
 } // namespace FXAA

@@ -23,6 +23,7 @@ namespace Graphics
     DepthBuffer g_SceneDepthBuffer;
     ColorBuffer g_SceneColorBuffer;
     ColorBuffer g_PostEffectsBuffer;
+    ColorBuffer g_PostEffectsBufferTyped;
     ColorBuffer g_VelocityBuffer;
     ColorBuffer g_OverlayBuffer;
     ColorBuffer g_HorizontalBuffer;
@@ -110,6 +111,7 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
         g_SceneColorBuffer.Create( L"Main Color Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
         g_VelocityBuffer.Create( L"Motion Vectors", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
         g_PostEffectsBuffer.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
+        g_PostEffectsBufferTyped.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT );
 
         esram.PushStack();	// Render HDR image
 
@@ -242,6 +244,7 @@ void Graphics::DestroyRenderingBuffers()
     g_OverlayBuffer.Destroy();
     g_HorizontalBuffer.Destroy();
     g_PostEffectsBuffer.Destroy();
+    g_PostEffectsBufferTyped.Destroy();
 
     // g_ShadowBuffer.Destroy();
 
