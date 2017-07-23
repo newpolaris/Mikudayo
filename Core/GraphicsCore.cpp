@@ -512,6 +512,7 @@ void Graphics::Initialize( void )
 	SamplerShadowDescGE.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
 	SamplerShadowGE = SamplerShadowDescGE.CreateDescriptor();
 
+    SamplerShadowDescLE = SamplerShadowDescGE;
 	SamplerShadowDescLE.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 	SamplerShadowLE = SamplerShadowDescLE.CreateDescriptor();
 
@@ -556,8 +557,9 @@ void Graphics::Initialize( void )
 	// Shadows need their own rasterizer state so we can reverse the winding of faces
 	RasterizerShadow = RasterizerDefault;
 	RasterizerShadow.CullMode = D3D11_CULL_FRONT;  // Hacked here rather than fixing the content
-	RasterizerShadow.SlopeScaledDepthBias = 0;//-1.5f;
-	RasterizerShadow.DepthBias = 0;//-100;
+	RasterizerShadow.SlopeScaledDepthBias = -1.1f;
+	RasterizerShadow.DepthBias = -100;
+	RasterizerDefault.DepthClipEnable = FALSE;
 
 	RasterizerShadowTwoSided = RasterizerShadow;
 	RasterizerShadowTwoSided.CullMode = D3D11_CULL_NONE;

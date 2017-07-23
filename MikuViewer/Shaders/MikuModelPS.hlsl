@@ -45,7 +45,6 @@ Texture2D<float3>	texToon          : register(t3);
 SamplerState		sampler0		 : register(s0);
 SamplerState		sampler1		 : register(s1);
 SamplerComparisonState samplerShadow : register(s2);
-// SamplerState		samplerShadow	 : register(s2);
 
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET

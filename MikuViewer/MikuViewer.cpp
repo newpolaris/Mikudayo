@@ -183,13 +183,11 @@ void MikuViewer::Startup( void )
 	m_Motion.LoadMotion( cameraPath );
 
     D3D11_DEPTH_STENCIL_DESC& DepthReadWrite = m_Camera.GetReverseZ() ? DepthStateReadWrite : DepthStateReadWriteLE;
-    if (!m_Camera.GetReverseZ())
+    float Sign = m_Camera.GetReverseZ() ? -1.f : 1.f;
+    for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
     {
-        for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
-        {
-            Desc->SlopeScaledDepthBias = -Desc->SlopeScaledDepthBias;
-            Desc->DepthBias = -Desc->DepthBias;
-        }
+        Desc->SlopeScaledDepthBias = Sign * 0.0f;
+        Desc->DepthBias = static_cast<INT>(Sign * 0);
     }
 
 	// Depth-only (2x rate)
@@ -376,7 +374,6 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 {
     ScopedTimer _prof( L"Render Shadow Map", gfxContext );
 
-            // const Vector3 &direction = m_scene->lightRef()->direction(), &eye = -direction * 100, &center = direction * 100;
     // m_SunShadow.UpdateMatrix( m_Camera.GetForwardVec(), m_Camera.GetPosition(), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
     // m_SunShadow.UpdateMatrix( m_SunDirection, -m_SunDirection * 200, Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
     m_SunShadow.UpdateMatrix( m_SunDirection, Vector3(0, 0, 0), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
