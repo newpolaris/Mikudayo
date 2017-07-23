@@ -6,28 +6,30 @@
 #include "InputLayout.h"
 #include "ColorBuffer.h"
 #include "DepthBuffer.h"
+#include "ShadowBuffer.h"
 #include "ConstantBuffer.h"
 #include "TemporalEffects.h"
 #include "TextureManager.h"
 #include "BufferManager.h"
 #include "MotionBlur.h"
 #include "DepthOfField.h"
+#include "ShadowCamera.h"
 #include "MikuCamera.h"
 #include "MikuCameraController.h"
 #include "CameraController.h"
 #include "GameInput.h"
 #include "Motion.h"
 #include "FXAA.h"
-
-#include "CompiledShaders/ModelViewerVS.h"
-#include "CompiledShaders/ModelViewerPS.h"
-#include "CompiledShaders/MikuModel_VS.h"
-#include "CompiledShaders/MikuModel_Skin_VS.h"
-
-#include "DirectXColors.h"
-#include <sstream>
-
+#include "DebugHelper.h"
 #include "MikuModel.h"
+#include "GroundPlane.h"
+
+#include "CompiledShaders/MikuModelVS.h"
+#include "CompiledShaders/MikuModelPS.h"
+#include "CompiledShaders/DepthViewerVS.h"
+#include "CompiledShaders/DepthViewerPS.h"
+#include "CompiledShaders/GroundPlaneVS.h"
+#include "CompiledShaders/GroundPlanePS.h"
 
 using namespace DirectX;
 using namespace GameCore;
@@ -46,33 +48,33 @@ namespace Pmd {
 	};
 }
 
-// Constant buffer used to send MVP matrices to the vertex shader.
-struct CameraConstants
+namespace Lighting
 {
-	Matrix4 View;
-	Matrix4 Projection;
-};
+    enum { kMaxLights = 4 };
+    enum { kShadowDim = 512 };
+    ColorBuffer m_LightShadowArray;
+    ShadowBuffer m_LightShadowTempBuffer;
 
-struct DirectionalLight
-{
-	XMFLOAT3 Color;
-	float pad;
-	XMFLOAT3 Direction; // incident, I
-};
+    void Initialize();
+    void Shutdown();
+}
 
-__declspec(align(16)) struct LightsConstants
+void Lighting::Initialize( void )
 {
-	enum { kMaxLight = 4 };
-	DirectionalLight light[kMaxLight];
-	uint32_t NumLight;
-};
+    m_LightShadowArray.CreateArray(L"m_LightShadowArray", kShadowDim, kShadowDim, kMaxLights, DXGI_FORMAT_R16_UNORM);
+    m_LightShadowTempBuffer.Create(L"m_LightShadowTempBuffer", kShadowDim, kShadowDim);
+}
+
+void Lighting::Shutdown( void )
+{
+    m_LightShadowArray.Destroy();
+    m_LightShadowTempBuffer.Destroy();
+}
 
 class MikuViewer : public GameCore::IGameApp
 {
 public:
-	MikuViewer() : m_pCameraController( nullptr )
-	{
-	}
+    MikuViewer();
 
 	virtual void Startup( void ) override;
 	virtual void Cleanup( void ) override;
@@ -84,31 +86,63 @@ public:
 
 private:
 
+    void RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewProjMat, eObjectFilter Filter );
+    void RenderObjects( GraphicsContext& gfxContext, const Matrix4 & ViewMat, const Matrix4 & ProjMat, eObjectFilter Filter );
+    void RenderLightShadows(GraphicsContext& gfxContext);
+    void RenderShadowMap(GraphicsContext& gfxContext);
+
 	MikuCamera m_Camera;
 	MikuCameraController* m_pCameraController;
 
-	CameraConstants m_CameraData;
-	ConstantBuffer<CameraConstants> m_Buffer;
-	std::vector<DirectionalLight> m_Lights;
-	LightsConstants m_LightConstants;
+    Matrix4 m_ViewMatrix;
+    Matrix4 m_ProjMatrix;
 
 	D3D11_VIEWPORT m_MainViewport;
 	float m_JitterDelta[2];
 	D3D11_RECT m_MainScissor;
 
-    std::vector<std::shared_ptr<Graphics::MikuModel>> m_Models;
+    Vector3 m_SunDirection;
+    Vector3 m_SunColor;
+    ShadowCamera m_SunShadow;
+    D3D11_SAMPLER_HANDLE m_SamplerShadow;
+
+    std::vector<std::shared_ptr<Graphics::IRenderObject>> m_Models;
 	Graphics::Motion m_Motion;
 
 	GraphicsPSO m_DepthPSO; 
+    GraphicsPSO m_CutoutDepthPSO;
+    GraphicsPSO m_ShadowPSO;
+    GraphicsPSO m_CutoutShadowPSO;
 	GraphicsPSO m_OpaquePSO;
 	GraphicsPSO m_BlendPSO;
-	GraphicsPSO m_OpaqueSkinPSO;
-	GraphicsPSO m_BlendSkinPSO;
+	GraphicsPSO m_GroundPlanePSO;
 };
 
 CREATE_APPLICATION( MikuViewer )
 
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
+ExpVar m_SunLightIntensity("Application/Lighting/Sun Light Intensity", 4.0f, 0.0f, 16.0f, 0.1f);
+ExpVar m_AmbientIntensity("Application/Lighting/Ambient Intensity", 0.1f, -16.0f, 16.0f, 0.1f);
+NumVar m_ShadowDimX("Application/Lighting/Shadow Dim X", 100, 10, 1000, 10 );
+NumVar m_ShadowDimY("Application/Lighting/Shadow Dim Y", 100, 10, 1000, 10 );
+NumVar m_ShadowDimZ("Application/Lighting/Shadow Dim Z", 100, 10, 1000, 10 );
+// Default values in MMD. Due to RH coord, z is inverted.
+NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
+
+BoolVar ShowWaveTileCounts("Application/Forward+/Show Wave Tile Counts", false);
+#ifdef _WAVE_OP
+BoolVar EnableWaveOps("Application/Forward+/Enable Wave Ops", true);
+#endif
+
+MikuViewer::MikuViewer() : m_pCameraController( nullptr )
+{
+    // g_ShadowBuffer.SetDepthFormat( DXGI_FORMAT_D32_FLOAT );
+}
 
 void MikuViewer::Startup( void )
 {
@@ -122,14 +156,14 @@ void MikuViewer::Startup( void )
     };
 
     auto motionPath = L"Models/nekomimi_lat.vmd";
-	const std::wstring cameraPath = L"Models/camera.vmd";
-
     std::vector<ModelInit> list = {
-        { L"Models/gumi.pmd", motionPath, XMFLOAT3( 10.f, 0.f, 0.f ) },
         { L"Models/Lat0.pmd", motionPath, XMFLOAT3( -10.f, 0.f, 0.f ) },
+#ifndef _DEBUG
+        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
+        { L"Models/m_GUMI.zip", motionPath, XMFLOAT3( 10.f, 0.f, 0.f ) },
         { L"Models/Lat式ミクVer2.31_White.pmd", motionPath, XMFLOAT3( -11.f, 10.f, -19.f ) },
         { L"Models/Lat式ミクVer2.31_Normal.pmd", motionPath, XMFLOAT3( 0.f, 0.f, 10.f ) },
-        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) }
+#endif
     };
 
     for (auto l : list)
@@ -141,25 +175,60 @@ void MikuViewer::Startup( void )
         model->Load();
         m_Models.push_back( model );
     }
+#ifdef _DEBUG
+    m_Models.emplace_back( std::make_shared<Graphics::GroundPlane>() );
+#endif
 
+	const std::wstring cameraPath = L"Models/camera.vmd";
 	m_Motion.LoadMotion( cameraPath );
+
+    D3D11_DEPTH_STENCIL_DESC& DepthReadWrite = m_Camera.GetReverseZ() ? DepthStateReadWrite : DepthStateReadWriteLE;
+    if (!m_Camera.GetReverseZ())
+    {
+        for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
+        {
+            Desc->SlopeScaledDepthBias = -Desc->SlopeScaledDepthBias;
+            Desc->DepthBias = -Desc->DepthBias;
+        }
+    }
 
 	// Depth-only (2x rate)
 	m_DepthPSO.SetRasterizerState( RasterizerDefault );
 	m_DepthPSO.SetBlendState( BlendNoColorWrite );
 	m_DepthPSO.SetInputLayout( static_cast<UINT>(Pmd::InputDescriptor.size()), Pmd::InputDescriptor.data() );
 	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+    m_DepthPSO.SetDepthStencilState( DepthReadWrite );
+    m_DepthPSO.SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
+    m_DepthPSO.Finalize();
+
+    // Depth-only shading but with alpha testing
+    m_CutoutDepthPSO = m_DepthPSO;
+    m_CutoutDepthPSO.SetPixelShader( MY_SHADER_ARGS( g_pDepthViewerPS ) );
+    m_CutoutDepthPSO.SetRasterizerState(RasterizerTwoSided);
+    m_CutoutDepthPSO.Finalize();
+
+    // Depth-only but with a depth bias and/or render only backfaces
+    m_ShadowPSO = m_DepthPSO;
+    m_ShadowPSO.SetRasterizerState( RasterizerShadow );
+    m_ShadowPSO.Finalize();
+
+    // Shadows with alpha testing
+    m_CutoutShadowPSO = m_ShadowPSO;
+    m_CutoutShadowPSO.SetPixelShader( MY_SHADER_ARGS( g_pDepthViewerPS ) );
+    m_CutoutShadowPSO.SetRasterizerState(RasterizerShadowTwoSided);
+    m_CutoutShadowPSO.Finalize();
+
+	m_GroundPlanePSO = m_DepthPSO;
+	m_GroundPlanePSO.SetInputLayout( static_cast<UINT>(Graphics::GroundPlanInputDesc.size()), Graphics::GroundPlanInputDesc.data() );
+	m_GroundPlanePSO.SetBlendState( BlendDisable );
+	m_GroundPlanePSO.SetVertexShader( MY_SHADER_ARGS( g_pGroundPlaneVS) );
+	m_GroundPlanePSO.SetPixelShader( MY_SHADER_ARGS( g_pGroundPlanePS ) );
+	m_GroundPlanePSO.Finalize();
 
 	m_OpaquePSO = m_DepthPSO;
 	m_OpaquePSO.SetBlendState( BlendDisable );
-	
-	if (m_Camera.GetReverseZ())
-		m_OpaquePSO.SetDepthStencilState( DepthStateReadWrite );
-	else
-		m_OpaquePSO.SetDepthStencilState( DepthStateReadWriteLE );
-
-	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModel_VS) );
-	m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pModelViewerPS ) );
+	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModelVS ) );
+	m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pMikuModelPS ) );
 	m_OpaquePSO.Finalize();
 
 	m_BlendPSO = m_OpaquePSO;
@@ -167,36 +236,15 @@ void MikuViewer::Startup( void )
 	m_BlendPSO.SetBlendState( BlendTraditional );
 	m_BlendPSO.Finalize();
 
-    m_OpaqueSkinPSO = m_OpaquePSO;
-	m_OpaqueSkinPSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModel_Skin_VS) );
-	m_OpaqueSkinPSO.Finalize();
-
-    m_BlendSkinPSO = m_BlendPSO;
-	m_BlendSkinPSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModel_Skin_VS) );
-	m_BlendSkinPSO.Finalize();
-
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pCameraController->SetMotion( &m_Motion );
 
-	m_Buffer.Create();
-
-	g_SceneColorBuffer.SetClearColor( Color( DirectX::Colors::CornflowerBlue ).FromSRGB() );
 	g_SceneDepthBuffer.SetClearDepth( m_Camera.GetClearDepth() );
+	g_ShadowBuffer.SetClearDepth( m_Camera.GetClearDepth() );
 
-	// Default values in MMD. Due to RH coord z is inverted.
-	DirectionalLight mainDefault = {};
-	mainDefault.Direction = XMFLOAT3( -0.5f, -1.0f, -0.5f );
-	mainDefault.Color = XMFLOAT3( 154.f / 255, 154.f / 255, 154.f / 255 );
+    m_SamplerShadow = m_Camera.GetReverseZ() ? SamplerShadowGE : SamplerShadowLE;
 
-	//
-	// In RH coord,
-	//
-	// (-1.0, -1.0,  0.0) -> shadow: -x
-	// ( 0.0, -1.0,  1.0) -> shadow: +z
-	// ( 0.0, -1.0, -1.0) -> shadow: -z 
-	// ( 0,0,  1.0, -1.0) -> shadow: none
-
-	m_Lights.push_back( mainDefault );
+    using namespace Lighting;
 
     MotionBlur::Enable = true;
     TemporalEffects::EnableTAA = false;
@@ -209,12 +257,12 @@ void MikuViewer::Startup( void )
 void MikuViewer::Cleanup( void )
 {
 	m_DepthPSO.Destroy(); 
+    m_CutoutDepthPSO.Destroy();
+    m_ShadowPSO.Destroy();
+    m_CutoutShadowPSO.Destroy();
 	m_OpaquePSO.Destroy();
 	m_BlendPSO.Destroy();
-	m_OpaqueSkinPSO.Destroy();
-	m_BlendSkinPSO.Destroy();
-
-	m_Buffer.Destory();
+    m_GroundPlanePSO.Destroy();
     m_Models.clear();
 
 	delete m_pCameraController;
@@ -237,22 +285,14 @@ namespace GameCore
 
 void MikuViewer::Update( float deltaT )
 {
+    using namespace Lighting;
+
     ScopedTimer _prof( L"Update" );
 
 	if (GameInput::IsFirstPressed(GameInput::kLShoulder))
 		DebugZoom.Decrement();
 	else if (GameInput::IsFirstPressed(GameInput::kRShoulder))
 		DebugZoom.Increment();
-
-	m_LightConstants.NumLight = static_cast<uint32_t>(m_Lights.size());
-	ASSERT(m_Lights.size() <= LightsConstants::kMaxLight );
-	for (auto i = 0; i < m_Lights.size(); i++) 
-	{
-		DirectionalLight light;
-		light.Color = m_Lights[i].Color;
-		XMStoreFloat3( &light.Direction, m_CameraData.View.Get3x3() * Vector3( m_Lights[i].Direction ) );
-		m_LightConstants.light[i] = light;
-	}
 
 	// We use viewport offsets to jitter our color samples from frame to frame (with TAA.)
 	// D3D has a design quirk with fractional offsets such that the implicit scissor
@@ -283,36 +323,116 @@ void MikuViewer::Update( float deltaT )
 
 	m_pCameraController->Update( deltaT );
 
-	m_CameraData.View = m_Camera.GetViewMatrix();
-	m_CameraData.Projection = m_Camera.GetProjMatrix();
-	m_Buffer.Update(m_CameraData);
+	m_ViewMatrix = m_Camera.GetViewMatrix();
+	m_ProjMatrix = m_Camera.GetProjMatrix();
+
+    m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
+    m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
+}
+
+void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewMat, const Matrix4& ProjMat, eObjectFilter Filter )
+{
+    struct VSConstants
+    {
+        Matrix4 view;
+        Matrix4 projection;
+        Matrix4 shadow;
+    } vsConstants;
+    vsConstants.view = ViewMat;
+    vsConstants.projection = ProjMat; 
+    vsConstants.shadow = m_SunShadow.GetShadowMatrix();
+	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
+
+    for (auto& model : m_Models)
+        model->Draw( gfxContext, Filter );
+}
+
+void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewProjMat, eObjectFilter Filter )
+{
+    RenderObjects( gfxContext, ViewProjMat, Matrix4(kIdentity), Filter );
+}
+
+void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
+{
+    using namespace Lighting;
+
+    ScopedTimer _prof(L"RenderLightShadows", gfxContext);
+
+    static uint32_t LightIndex = 0;
+
+    m_LightShadowTempBuffer.BeginRendering(gfxContext);
+    {
+        gfxContext.SetPipelineState(m_ShadowPSO);
+        gfxContext.SetPipelineState(m_CutoutShadowPSO);
+    }
+    m_LightShadowTempBuffer.EndRendering(gfxContext);
+
+    // gfxContext.CopySubresource(m_LightShadowArray, LightIndex, m_LightShadowTempBuffer, 0);
+
+    ++LightIndex;
+}
+
+void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
+{
+    ScopedTimer _prof( L"Render Shadow Map", gfxContext );
+
+            // const Vector3 &direction = m_scene->lightRef()->direction(), &eye = -direction * 100, &center = direction * 100;
+    // m_SunShadow.UpdateMatrix( m_Camera.GetForwardVec(), m_Camera.GetPosition(), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
+    // m_SunShadow.UpdateMatrix( m_SunDirection, -m_SunDirection * 200, Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
+    m_SunShadow.UpdateMatrix( m_SunDirection, Vector3(0, 0, 0), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
+        (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16 );
+
+    g_ShadowBuffer.BeginRendering( gfxContext );
+    gfxContext.SetPipelineState( m_ShadowPSO );
+    RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kOpaque );
+    RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kTransparent );
+    g_ShadowBuffer.EndRendering( gfxContext );
 }
 
 void MikuViewer::RenderScene( void )
 {
+    using namespace Lighting;
+
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
 
     uint32_t FrameIndex = TemporalEffects::GetFrameIndexMod2();
     (FrameIndex);
 
-	gfxContext.ClearColor( g_SceneColorBuffer );
-	gfxContext.ClearDepth( g_SceneDepthBuffer );
-	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	gfxContext.SetDynamicConstantBufferView( 0, m_Buffer, { kBindVertex } );
-	gfxContext.SetDynamicConstantBufferView( 1, sizeof(m_LightConstants), &m_LightConstants, { kBindPixel } );
-	gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
-	gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-
-    for (auto& model : m_Models)
+    struct 
     {
-        gfxContext.SetPipelineState( m_OpaqueSkinPSO );
-        model->Draw( gfxContext, kOpaque );
-        model->DrawBone( gfxContext );
-        gfxContext.SetPipelineState( m_BlendSkinPSO );
-        model->Draw( gfxContext, kTransparent  );
-    }
+        Vector3 LightDirection;
+        Vector3 LightColor;
+        float ShadowTexelSize[4];
+    } psConstants;
 
-    gfxContext.SetRenderTarget( nullptr );
+    psConstants.LightDirection = m_ViewMatrix.Get3x3() * m_SunDirection;
+    psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
+    psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
+    psConstants.ShadowTexelSize[1] = 1.0f / g_ShadowBuffer.GetHeight();
+	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
+
+    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, m_SamplerShadow };
+    gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
+
+    // RenderLightShadows(gfxContext);
+    RenderShadowMap(gfxContext);
+
+    gfxContext.ClearColor( g_SceneColorBuffer );
+    gfxContext.ClearDepth( g_SceneDepthBuffer );
+    {
+        ScopedTimer _prof( L"Render Color", gfxContext );
+        gfxContext.SetDynamicDescriptor( 0, g_ShadowBuffer.GetSRV(), { kBindPixel } );
+        gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
+        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetPipelineState( m_OpaquePSO );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOpaque );
+        gfxContext.SetPipelineState( m_BlendPSO );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kTransparent );
+        gfxContext.SetPipelineState( m_GroundPlanePSO );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kGroundPlane );
+        Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
+        gfxContext.SetRenderTarget( nullptr );
+    }
     TemporalEffects::ResolveImage(gfxContext);
 
 	gfxContext.Finish();
@@ -330,4 +450,3 @@ void MikuViewer::RenderUI( GraphicsContext& Context )
     Text.DrawFormattedString( "Position: (%.1f, %.1f, %.1f)\n", px, py, pz );
 	Text.End();
 }
-

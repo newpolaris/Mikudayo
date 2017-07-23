@@ -45,6 +45,12 @@
     <ClInclude Include="Pmx.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="IRenderObject.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GroundPlane.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KeyFrameAnimation.cpp">
@@ -72,6 +78,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Pmx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GroundPlane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

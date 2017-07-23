@@ -12,6 +12,7 @@
 #include "VectorMath.h"
 #include "Archive.h"
 #include "KeyFrameAnimation.h"
+#include "IRenderObject.h"
 
 class ManagedTexture;
 
@@ -19,8 +20,6 @@ namespace Graphics
 {
 	using namespace Math;
 	namespace fs = boost::filesystem;
-
-	enum eObjectFilter { kOpaque = 0x1, kCutout = 0x2, kTransparent = 0x4, kAll = 0xF, kNone = 0x0 };
 
 	__declspec(align(16)) struct MaterialCB
 	{
@@ -66,28 +65,30 @@ namespace Graphics
 		Vector3 Translate;
 	};
 
-	class MikuModel
+	class MikuModel : public IRenderObject
 	{
 	public:
+
 		MikuModel( bool bRightHand = true );
 		~MikuModel();
+
 		void Clear();
-		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter );
-		void DrawBone( GraphicsContext& gfxContext );
+		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter ) override;
         void Load();
 		void SetModel( const std::wstring& model );
 		void SetMotion( const std::wstring& model );
         void SetPosition( Vector3 postion );
-		void Update( float kFrameTime );
+		void Update( float kFrameTime ) override;
 
 	private:
+
+		void DrawBone( GraphicsContext& gfxContext );
         void LoadBone();
 		void LoadPmd( const std::wstring& model, bool bRightHand );
 		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 		void LoadVmd( const std::wstring& vmd, bool bRightHand );
-
-		void SetBoneNum( size_t numBones );
         void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames ); 
+		void SetBoneNum( size_t numBones );
 
 		void UpdateIK( const Pmd::IK& ik );
 		void UpdateChildPose( int32_t idx );

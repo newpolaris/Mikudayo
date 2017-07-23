@@ -30,14 +30,27 @@
 #include "TemporalEffects.h"
 #include "SSAO.h"
 #include "FXAA.h"
+#include "ShadowCamera.h"
 #include "PostEffects.h"
 #include "ForwardPlusLighting.h"
+#include "DebugHelper.h"
 
+// To enable wave intrinsics, uncomment this macro and #define DXIL in Core/GraphcisCore.cpp.
+// Run CompileSM6Test.bat to compile the relevant shaders with DXC.
+//#define _WAVE_OP
+
+#include "CompiledShaders/DepthViewerVS.h"
+#include "CompiledShaders/DepthViewerPS.h"
 #include "CompiledShaders/ModelViewerVS.h"
 #include "CompiledShaders/ModelViewerPS.h"
+#ifdef _WAVE_OP
+#include "CompiledShaders/DepthViewerVS_SM6.h"
+#include "CompiledShaders/ModelViewerVS_SM6.h"
+#include "CompiledShaders/ModelViewerPS_SM6.h"
+#endif
+// #include "CompiledShaders/WaveTileCountPS.h"
 
 #include "DirectXColors.h"
-#include "ConstantBuffer.h"
 
 using namespace GameCore;
 using namespace Graphics;
@@ -88,7 +101,7 @@ private:
     std::vector<bool> m_pMaterialIsCutout;
 
     Vector3 m_SunDirection;
-    // ShadowCamera m_SunShadow;
+    ShadowCamera m_SunShadow;
 };
 
 CREATE_APPLICATION( ModelViewer )
@@ -97,9 +110,10 @@ ExpVar m_SunLightIntensity("Application/Lighting/Sun Light Intensity", 4.0f, 0.0
 ExpVar m_AmbientIntensity("Application/Lighting/Ambient Intensity", 0.1f, -16.0f, 16.0f, 0.1f);
 NumVar m_SunOrientation("Application/Lighting/Sun Orientation", -0.5f, -100.0f, 100.0f, 0.1f );
 NumVar m_SunInclination("Application/Lighting/Sun Inclination", 0.75f, 0.0f, 1.0f, 0.01f );
-NumVar ShadowDimX("Application/Lighting/Shadow Dim X", 5000, 1000, 10000, 100 );
-NumVar ShadowDimY("Application/Lighting/Shadow Dim Y", 3000, 1000, 10000, 100 );
-NumVar ShadowDimZ("Application/Lighting/Shadow Dim Z", 3000, 1000, 10000, 100 );
+NumVar m_ShadowDimX("Application/Lighting/Shadow Dim X", 5000, 1000, 10000, 100 );
+NumVar m_ShadowDimY("Application/Lighting/Shadow Dim Y", 3000, 1000, 10000, 100 );
+NumVar m_ShadowDimZ("Application/Lighting/Shadow Dim Z", 3000, 1000, 10000, 100 );
+NumVar m_ShadowPosY("Application/Lighting/Shadow Pos Y", -500, -5000, 5000, 50 );
 
 BoolVar ShowWaveTileCounts("Application/Forward+/Show Wave Tile Counts", false);
 #ifdef _WAVE_OP
@@ -111,10 +125,6 @@ void ModelViewer::Startup( void )
     SamplerDesc DefaultSamplerDesc;
     DefaultSamplerDesc.MaxAnisotropy = 8;
     m_DefaultSampler = DefaultSamplerDesc.CreateDescriptor();
-
-    DXGI_FORMAT ColorFormat = g_SceneColorBuffer.GetFormat();
-    DXGI_FORMAT DepthFormat = g_SceneDepthBuffer.GetFormat();
-    // DXGI_FORMAT ShadowFormat = g_ShadowBuffer.GetFormat();
 
     InputDesc vertElem[] =
     {
@@ -131,32 +141,30 @@ void ModelViewer::Startup( void )
     m_DepthPSO.SetDepthStencilState(DepthStateReadWrite);
     m_DepthPSO.SetInputLayout(_countof(vertElem), vertElem);
     m_DepthPSO.SetPrimitiveTopologyType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // m_DepthPSO.SetRenderTargetFormats(0, nullptr, DepthFormat);
-    // m_DepthPSO.SetVertexShader( MY_SHADER_ARGS(g_pDepthViewerVS) );
-    // m_DepthPSO.Finalize();
+    m_DepthPSO.SetVertexShader( MY_SHADER_ARGS(g_pDepthViewerVS) );
+    m_DepthPSO.Finalize();
 
     // Depth-only shading but with alpha testing
     m_CutoutDepthPSO = m_DepthPSO;
-    // m_CutoutDepthPSO.SetPixelShader( MY_SHADER_ARGS(g_pDepthViewerPS) );
+    m_CutoutDepthPSO.SetPixelShader( MY_SHADER_ARGS(g_pDepthViewerPS) );
     m_CutoutDepthPSO.SetRasterizerState(RasterizerTwoSided);
-    // m_CutoutDepthPSO.Finalize();
+    m_CutoutDepthPSO.Finalize();
 
     // Depth-only but with a depth bias and/or render only backfaces
     m_ShadowPSO = m_DepthPSO;
     m_ShadowPSO.SetRasterizerState(RasterizerShadow);
-    // m_ShadowPSO.Finalize();
+    m_ShadowPSO.Finalize();
 
     // Shadows with alpha testing
     m_CutoutShadowPSO = m_ShadowPSO;
-    // m_CutoutShadowPSO.SetPixelShader( MY_SHADER_ARGS(g_pDepthViewerPS) );
+    m_CutoutShadowPSO.SetPixelShader( MY_SHADER_ARGS(g_pDepthViewerPS) );
     m_CutoutShadowPSO.SetRasterizerState(RasterizerShadowTwoSided);
-    // m_CutoutShadowPSO.Finalize();
+    m_CutoutShadowPSO.Finalize();
 
     // Full color pass
     m_ModelPSO = m_DepthPSO;
     m_ModelPSO.SetBlendState(BlendDisable);
     m_ModelPSO.SetDepthStencilState(DepthStateReadWrite);
-    // m_ModelPSO.SetRenderTargetFormats(1, &ColorFormat, DepthFormat);
     m_ModelPSO.SetVertexShader( MY_SHADER_ARGS(g_pModelViewerVS) );
     m_ModelPSO.SetPixelShader( MY_SHADER_ARGS(g_pModelViewerPS) );
     m_ModelPSO.Finalize();
@@ -184,7 +192,7 @@ void ModelViewer::Startup( void )
     Lighting::InitializeResources();
 
     m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
-    // m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
+    m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
     TextureManager::Initialize(L"Textures/");
     ASSERT(m_Model.Load("Models/sponza.h3d"), "Failed to load model");
@@ -301,7 +309,7 @@ void ModelViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& Vie
         XMFLOAT3 viewerPos;
     } vsConstants;
     vsConstants.modelToProjection = ViewProjMat;
-    // vsConstants.modelToShadow = m_SunShadow.GetShadowMatrix();
+    vsConstants.modelToShadow = m_SunShadow.GetShadowMatrix();
     XMStoreFloat3(&vsConstants.viewerPos, m_Camera.GetPosition());
 
     gfxContext.SetDynamicConstantBufferView(0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
@@ -369,13 +377,16 @@ void ModelViewer::RenderScene( void )
     psConstants.sunDirection = m_SunDirection;
     psConstants.sunLight = Vector3(1.0f, 1.0f, 1.0f) * m_SunLightIntensity;
     psConstants.ambientLight = Vector3(1.0f, 1.0f, 1.0f) * m_AmbientIntensity;
-    // psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
+    psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
     psConstants.InvTileDim[0] = 1.0f / Lighting::LightGridDim;
     psConstants.InvTileDim[1] = 1.0f / Lighting::LightGridDim;
     psConstants.TileCount[0] = Math::DivideByMultiple(g_SceneColorBuffer.GetWidth(), Lighting::LightGridDim);
     psConstants.TileCount[1] = Math::DivideByMultiple(g_SceneColorBuffer.GetHeight(), Lighting::LightGridDim);
     psConstants.FirstLightIndex[0] = Lighting::m_FirstConeLight;
     psConstants.FirstLightIndex[1] = Lighting::m_FirstConeShadowedLight;
+
+    D3D11_SAMPLER_HANDLE Sampler[] = { m_DefaultSampler, SamplerShadowGE };
+    gfxContext.SetDynamicSamplers( 0, 2, Sampler, { kBindPixel } );
 
     // Set the default state for command lists
     auto pfnSetupGraphicsState = [&](void)
@@ -397,6 +408,20 @@ void ModelViewer::RenderScene( void )
         pfnSetupGraphicsState();
 
         {
+            ScopedTimer _prof(L"Render Shadow Map", gfxContext);
+
+            m_SunShadow.UpdateMatrix(-m_SunDirection, Vector3(0, m_ShadowPosY, 0), Vector3(m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ),
+                (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
+
+            g_ShadowBuffer.BeginRendering(gfxContext);
+            gfxContext.SetPipelineState(m_ShadowPSO);
+            RenderObjects(gfxContext, m_SunShadow.GetViewProjMatrix(), kOpaque);
+            gfxContext.SetPipelineState(m_CutoutShadowPSO);
+            RenderObjects(gfxContext, m_SunShadow.GetViewProjMatrix(), kCutout);
+            g_ShadowBuffer.EndRendering(gfxContext);
+        }
+
+        {
             ScopedTimer _prof(L"Render Color", gfxContext);
 
             gfxContext.SetDynamicDescriptors(0, _countof(m_ExtraTextures), m_ExtraTextures, { kBindPixel } );
@@ -406,13 +431,13 @@ void ModelViewer::RenderScene( void )
 #else
             gfxContext.SetPipelineState(ShowWaveTileCounts ? m_WaveTileCountPSO : m_ModelPSO);
 #endif
-            D3D11_SAMPLER_HANDLE Sampler[] = { m_DefaultSampler, SamplerShadow };
-            gfxContext.SetDynamicSamplers( 0, 2, Sampler, { kBindPixel } );
             gfxContext.SetRenderTarget(g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV());
             gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
 
             RenderObjects( gfxContext, m_ViewProjMatrix, kOpaque );
-
+#ifdef _DEBUG
+            Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
+#endif
             if (!ShowWaveTileCounts)
             {
                 gfxContext.SetPipelineState(m_CutoutModelPSO);

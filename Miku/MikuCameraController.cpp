@@ -8,7 +8,7 @@ using namespace GameCore;
 namespace GameCore
 {
     const char* CameraLabels[] = { "CameraMMD", "Camera3D", "CameraMotion" };
-    EnumVar CameraMode("Application/Camera Mode", 3, 3, CameraLabels);
+    EnumVar CameraMode("Application/Camera Mode", 1, 3, CameraLabels);
 
     Matrix3 GetBasis( Vector3 forward, Vector3 up )
     {

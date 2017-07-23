@@ -59,7 +59,7 @@ namespace Lighting
     uint32_t m_FirstConeLight;
     uint32_t m_FirstConeShadowedLight;
 
-    enum {shadowDim = 512};
+    enum {kShadowDim = 512};
     ColorBuffer m_LightShadowArray;
     // ShadowBuffer m_LightShadowTempBuffer;
     Matrix4 m_LightShadowMatrix[MaxLights];
@@ -229,7 +229,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     uint32_t lightGridBitMaskSizeBytes = lightGridCells * 4 * 4;
     m_LightGridBitMask.Create(L"m_LightGridBitMask", lightGridBitMaskSizeBytes, 1, nullptr);
 
-    m_LightShadowArray.CreateArray(L"m_LightShadowArray", shadowDim, shadowDim, MaxLights, DXGI_FORMAT_R16_UNORM);
+    m_LightShadowArray.CreateArray(L"m_LightShadowArray", kShadowDim, kShadowDim, MaxLights, DXGI_FORMAT_R16_UNORM);
     // m_LightShadowTempBuffer.Create(L"m_LightShadowTempBuffer", shadowDim, shadowDim);
 }
 

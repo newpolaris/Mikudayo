@@ -94,6 +94,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="GroundPlane.h" />
+    <ClInclude Include="IRenderObject.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="MikuCamera.h" />
     <ClInclude Include="MikuCameraController.h" />
@@ -105,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="GroundPlane.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="MikuCamera.cpp" />
     <ClCompile Include="MikuCameraController.cpp" />

@@ -23,18 +23,30 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\ModelViewerPS.hlsl">
+    <FxCompile Include="Shaders\DepthViewerVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\MikuModel_VS.hlsl">
+    <FxCompile Include="Shaders\DepthViewerPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\MikuModel_Skin_VS.hlsl">
+    <FxCompile Include="Shaders\MikuModelVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\GroundPlanePS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\GroundPlaneVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuModelPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\MikuModelVS.hlsli">
+    <None Include="Shaders\Skinning.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\Shadow.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

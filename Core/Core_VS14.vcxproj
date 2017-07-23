@@ -26,6 +26,7 @@
     <ClInclude Include="CommandListManager.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="dds.h" />
+    <ClInclude Include="DebugHelper.h" />
     <ClInclude Include="DepthBuffer.h" />
     <ClInclude Include="DepthOfField.h" />
     <ClInclude Include="DepthStencilState.h" />
@@ -53,6 +54,8 @@
     <ClInclude Include="PostEffects.h" />
     <ClInclude Include="RasterizerState.h" />
     <ClInclude Include="SamplerManager.h" />
+    <ClInclude Include="ShadowBuffer.h" />
+    <ClInclude Include="ShadowCamera.h" />
     <ClInclude Include="SSAO.h" />
     <ClInclude Include="SystemTime.h" />
     <ClInclude Include="TemporalEffects.h" />
@@ -89,6 +92,7 @@
     <ClCompile Include="CommandContext.cpp" />
     <ClCompile Include="CommandListManager.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DebugHelper.cpp" />
     <ClCompile Include="DepthBuffer.cpp" />
     <ClCompile Include="DepthOfField.cpp" />
     <ClCompile Include="DepthStencilState.cpp" />
@@ -125,6 +129,8 @@
     <ClCompile Include="RasterizerState.cpp" />
     <ClCompile Include="SamplerManager.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShadowBuffer.cpp" />
+    <ClCompile Include="ShadowCamera.cpp" />
     <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="SystemTime.cpp" />
     <ClCompile Include="TemporalEffects.cpp" />
@@ -200,6 +206,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugTexturePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\FXAAPass1_Luma2_CS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass1_Luma_CS.hlsl" />

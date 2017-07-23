@@ -32,7 +32,7 @@
 #include "SystemTime.h"
 #include "TemporalEffects.h"
 #include "SSAO.h"
-#include "PostEffects.h"
+#include "DebugHelper.h"
 
 
 // This macro determines whether to detect if there is an HDR display and enable HDR10 output.
@@ -183,7 +183,8 @@ namespace Graphics
 
 	SamplerDesc SamplerLinearWrapDesc;
 	SamplerDesc SamplerAnisoWrapDesc;
-	SamplerDesc SamplerShadowDesc;
+	SamplerDesc SamplerShadowDescGE;
+	SamplerDesc SamplerShadowDescLE;
 	SamplerDesc SamplerLinearClampDesc;
 	SamplerDesc SamplerVolumeWrapDesc;
 	SamplerDesc SamplerPointClampDesc;
@@ -192,7 +193,8 @@ namespace Graphics
 
 	D3D11_SAMPLER_HANDLE SamplerLinearWrap;
 	D3D11_SAMPLER_HANDLE SamplerAnisoWrap;
-	D3D11_SAMPLER_HANDLE SamplerShadow;
+	D3D11_SAMPLER_HANDLE SamplerShadowGE;
+	D3D11_SAMPLER_HANDLE SamplerShadowLE;
 	D3D11_SAMPLER_HANDLE SamplerLinearClamp;
 	D3D11_SAMPLER_HANDLE SamplerVolumeWrap;
 	D3D11_SAMPLER_HANDLE SamplerPointClamp;
@@ -505,10 +507,13 @@ void Graphics::Initialize( void )
 	SamplerAnisoWrapDesc.MaxAnisotropy = 4;
 	SamplerAnisoWrap = SamplerAnisoWrapDesc.CreateDescriptor();
 
-	SamplerShadowDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-	SamplerShadowDesc.ComparisonFunc = D3D11_COMPARISON_GREATER_EQUAL;
-	SamplerShadowDesc.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
-	SamplerShadow = SamplerShadowDesc.CreateDescriptor();
+	SamplerShadowDescGE.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	SamplerShadowDescGE.ComparisonFunc = D3D11_COMPARISON_GREATER_EQUAL;
+	SamplerShadowDescGE.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
+	SamplerShadowGE = SamplerShadowDescGE.CreateDescriptor();
+
+	SamplerShadowDescLE.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+	SamplerShadowLE = SamplerShadowDescLE.CreateDescriptor();
 
 	SamplerLinearClampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	SamplerLinearClampDesc.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
@@ -550,9 +555,9 @@ void Graphics::Initialize( void )
 
 	// Shadows need their own rasterizer state so we can reverse the winding of faces
 	RasterizerShadow = RasterizerDefault;
-	//RasterizerShadow.CullMode = D3D12_CULL_FRONT;  // Hacked here rather than fixing the content
-	RasterizerShadow.SlopeScaledDepthBias = -1.5f;
-	RasterizerShadow.DepthBias = -100;
+	RasterizerShadow.CullMode = D3D11_CULL_FRONT;  // Hacked here rather than fixing the content
+	RasterizerShadow.SlopeScaledDepthBias = 0;//-1.5f;
+	RasterizerShadow.DepthBias = 0;//-100;
 
 	RasterizerShadowTwoSided = RasterizerShadow;
 	RasterizerShadowTwoSided.CullMode = D3D11_CULL_NONE;
@@ -651,6 +656,7 @@ void Graphics::Initialize( void )
     TextRenderer::Initialize();
     // GraphRenderer::Initialize();
     // ParticleEffects::Initialize(kMaxNativeWidth, kMaxNativeHeight);
+    Utility::Initialize();
 }
 
 void Graphics::Terminate( void )
@@ -681,6 +687,7 @@ void Graphics::Shutdown( void )
     DestroyRenderingBuffers();
     TemporalEffects::Shutdown();
     PostEffects::Shutdown();
+    Utility::Shutdown();
     // SSAO::Shutdown();
     TextRenderer::Shutdown();
     // GraphRenderer::Shutdown();

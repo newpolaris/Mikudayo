@@ -22,6 +22,12 @@ using namespace DirectX;
 
 BoolVar s_EnableDrawBone("Application/Draw Bone", false);
 
+template <typename T>
+size_t GetVectorSize(const std::vector<T>& vec)
+{
+    return sizeof(T) * vec.size();
+}
+
 MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand ) 
 {
 }
@@ -684,9 +690,17 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 
 void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
-    auto elemByte = sizeof( decltype(m_SkinningDual)::value_type );
-    auto numByte = elemByte * m_SkinningDual.size();
-    gfxContext.SetDynamicConstantBufferView( 1, numByte, m_SkinningDual.data(), { kBindVertex } );
+#define SKINNING_LBS
+#ifdef SKINNING_LBS
+    std::vector<Matrix4> SkinData;
+    SkinData.reserve( m_Skinning.size() );
+    for (auto& orth : m_Skinning)
+        SkinData.emplace_back( orth );
+#else // SKINNING_DLB
+    auto& SkinData = m_SkinningDual;
+#endif
+    auto numByte = GetVectorSize(SkinData);
+    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
     gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTrnasform), &m_ModelTrnasform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
@@ -702,10 +716,11 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
             continue;
 
 		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
-		gfxContext.SetDynamicSampler( 0, SamplerLinearWrap, kBindPixel );
-		gfxContext.SetDynamicSampler( 1, SamplerLinearClamp, kBindPixel );
 		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
 	}
+
+    if (Filter & kOpaque)
+        DrawBone( gfxContext );
 }
 
 void MikuModel::DrawBone( GraphicsContext& gfxContext )
@@ -736,6 +751,6 @@ bool Mesh::LoadTexture( GraphicsContext& gfxContext )
         if (Texture[i] == nullptr) continue;
         SRV[i] = Texture[i]->GetSRV();
     }
-    gfxContext.SetDynamicDescriptors( 0, _countof(SRV), SRV, { kBindPixel } );
+    gfxContext.SetDynamicDescriptors( 1, _countof(SRV), SRV, { kBindPixel } );
     return false;
 }

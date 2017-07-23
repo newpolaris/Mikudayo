@@ -226,6 +226,15 @@
     <ClInclude Include="Math\DualQuaternion.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
+    <ClInclude Include="ShadowCamera.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowBuffer.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugHelper.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -368,6 +377,15 @@
     </ClCompile>
     <ClCompile Include="FXAA.cpp">
       <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugHelper.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -525,6 +543,9 @@
     </FxCompile>
     <FxCompile Include="Shaders\ApplyBloom3CS.hlsl">
       <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugTexturePS.hlsl">
+      <Filter>Shaders\Misc</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

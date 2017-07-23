@@ -27,8 +27,8 @@ public:
 	const D3D11_DSV_HANDLE& GetDSV_DepthReadOnly() const { return m_hDSV[1]; }
 	const D3D11_DSV_HANDLE& GetDSV_StencilReadOnly() const { return m_hDSV[2]; }
 	const D3D11_DSV_HANDLE& GetDSV_ReadOnly() const { return m_hDSV[3]; }
-	const D3D11_SRV_HANDLE& GetDepthSRV() const { return m_hDepthSRV.Get(); }
-	const D3D11_SRV_HANDLE& GetStencilSRV() const { return m_hStencilSRV.Get(); }
+	const D3D11_SRV_HANDLE  GetDepthSRV() const { return m_hDepthSRV.Get(); }
+	const D3D11_SRV_HANDLE  GetStencilSRV() const { return m_hStencilSRV.Get(); }
 
 	float GetClearDepth() const { return m_ClearDepth; }
 	uint8_t GetClearStencil() const { return m_ClearStencil; }

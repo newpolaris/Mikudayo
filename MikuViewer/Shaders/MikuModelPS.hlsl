@@ -1,8 +1,11 @@
+#include "Shadow.hlsli"
+
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
 	float4 posH : SV_POSITION;
-	float3 posV : POSITION;
+	float3 posV : POSITION0;
+    float4 shadowPosH : POSITION1;
 	float3 normalV : NORMAL;
 	float2 uv : TEXTURE;
 };
@@ -14,13 +17,6 @@ struct Material
 	float3 specular;
 	float specularPower;
 	float3 ambient;
-};
-
-struct DirectionalLight
-{
-	float3 color;
-	float pad;
-	float3 dirV; // light incident direction I
 };
 
 static const int kSphereNone = 0;
@@ -35,22 +31,26 @@ cbuffer MaterialConstants : register(b0)
 	int bUseToon;
 };
 
-static const int maxLight = 4;
 cbuffer PassConstants : register(b1)
 {
-	DirectionalLight light[maxLight];
-	uint numLight;
+    float3 SunDirection; // V
+    float3 SunColor;
+    float4 ShadowTexelSize;
 }
 
-Texture2D<float4>	texDiffuse		: register(t0);
-Texture2D<float3>	texSphere		: register(t1);
-Texture2D<float3>	texToon         : register(t2);
-SamplerState		sampler0		: register(s0);
+Texture2D<float>	texShadow        : register(t0);
+Texture2D<float4>	texDiffuse		 : register(t1);
+Texture2D<float3>	texSphere		 : register(t2);
+Texture2D<float3>	texToon          : register(t3);
+SamplerState		sampler0		 : register(s0);
+SamplerState		sampler1		 : register(s1);
+SamplerComparisonState samplerShadow : register(s2);
+// SamplerState		samplerShadow	 : register(s2);
 
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-	float3 lightVecV = normalize( -light[0].dirV );
+	float3 lightVecV = normalize( -SunDirection );
 	float3 normalV = normalize( input.normalV );
 	float intensity = dot( lightVecV, normalV ) * 0.5 + 0.5;
 	//
@@ -61,16 +61,15 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	//
 	// http://trackdancer.deviantart.com/art/MMD-PMD-Tutorial-Toon-Shaders-Primer-394445914
 	// 
-	float2 toonCoord = float2( 0.5, 1.0 - intensity );
+	float2 toonCoord = float2(0.5, 1.0 - intensity);
 
 	float3 toEyeV = -input.posV;
 	float3 halfV = normalize( toEyeV + lightVecV );
 
-
 	float NdotH = dot( normalV, halfV );
 	float specularFactor = pow( max(NdotH, 0.001f), material.specularPower );
 
-	float3 diffuse = material.diffuse * light[0].color;
+	float3 diffuse = material.diffuse * SunColor;
 	float3 ambient = material.ambient;
 	float3 specular = specularFactor * material.specular;
 
@@ -90,10 +89,24 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
+    ShadowTex tex = { samplerShadow, texShadow, ShadowTexelSize };
+	float shadow = GetShadow(tex, input.shadowPosH);
 	if (bUseToon) 
-		color *= texToon.Sample( sampler0, toonCoord );
+    {
+        if (shadow < 1.0)
+        {
+            color *= texToon.Sample( sampler0, float2(0, 0.55) ) * shadow;
+        }
+        else
+        {
+            color *= texToon.Sample( sampler0, toonCoord );
+        }
+    }
+    else
+    {
+        color *= shadow;
+    }
 
 	float alpha = texAlpha * material.alpha;
-
 	return float4(color, alpha);
 }
