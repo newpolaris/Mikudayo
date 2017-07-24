@@ -18,7 +18,7 @@ SamplerComparisonState samplerShadow : register(s2);
 
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-    ShadowTex tex = { samplerShadow, texShadow, ShadowTexelSize, input.posH };
+    ShadowTex tex = { samplerShadow, texShadow, ShadowTexelSize, input.posH.xyz };
 	float shadow = GetShadow(tex, input.shadowPosH);
     return float4(shadow.xxx, 1.0f);
 }

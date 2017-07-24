@@ -162,6 +162,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\Shadow.hlsli" />
     <None Include="Shaders\Skinning.hlsli" />
   </ItemGroup>
