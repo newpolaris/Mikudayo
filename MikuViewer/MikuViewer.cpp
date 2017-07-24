@@ -186,7 +186,7 @@ void MikuViewer::Startup( void )
     float Sign = m_Camera.GetReverseZ() ? -1.f : 1.f;
     for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
     {
-        Desc->SlopeScaledDepthBias = Sign * 0.0f;
+        Desc->SlopeScaledDepthBias = Sign * 2.0f;
         Desc->DepthBias = static_cast<INT>(Sign * 0);
     }
 
