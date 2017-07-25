@@ -1,5 +1,3 @@
-#include "Shadow.hlsli"
-
 struct PixelShaderInput
 {
 	float4 posH : SV_POSITION;
@@ -16,9 +14,11 @@ cbuffer PassConstants : register(b1)
 Texture2D<float>	texShadow        : register(t0);
 SamplerComparisonState samplerShadow : register(s2);
 
+#include "Shadow.hlsli"
+
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-    ShadowTex tex = { samplerShadow, texShadow, ShadowTexelSize, input.posH.xyz };
+    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0 };
 	float shadow = GetShadow(tex, input.shadowPosH);
     return float4(shadow.xxx, 1.0f);
 }

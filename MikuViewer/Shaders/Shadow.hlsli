@@ -1,6 +1,13 @@
+//
 // Poisson disk kerenl width
+//
 #define PoissonKernel_ 5
 #include "PCFKernels.hlsli"
+
+//
+// 2, 3, 5, 7
+//
+#define FilterSize_ 7
 
 // Shadow filter method list
 #define ShadowModeSingle_ 0
@@ -8,16 +15,16 @@
 #define ShadowModePoisson_ 2
 #define ShadowModePoissonRotated_ 3
 #define ShadowModePoissonStratified_ 4
+#define ShadowModeOptimizedPCF_ 5
 
 // Shadow filter method
-#define ShadowMode_ ShadowModePoissonDiskStratified
+#define ShadowMode_ ShadowModeOptimizedPCF_
 
 struct ShadowTex
 {
-    SamplerComparisonState smpl;
-    texture2D<float> tex;
     float4 ShadowTexelSize;
     float3 Position;
+    float Bias;
 };
 
 //
@@ -50,7 +57,7 @@ float RandomAngle(float3 seed, float freq)
 //
 float SampleSingle( ShadowTex Input, float3 ShadowPos )
 {
-    return Input.tex.SampleCmpLevelZero( Input.smpl, ShadowPos.xy, ShadowPos.z );
+    return texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy, ShadowPos.z );
 }
 
 //
@@ -58,27 +65,24 @@ float SampleSingle( ShadowTex Input, float3 ShadowPos )
 //
 // Uses code from "MiniEngine"
 //
-float SampleWeight( ShadowTex Input, float3 ShadowPos )
+float SampleWeighted( ShadowTex Input, float3 ShadowPos )
 {
     const float Dilation = 2.0;
-
-    texture2D<float> texShadow = Input.tex;
-    SamplerComparisonState shadowSampler = Input.smpl;
 
     float d1 = Dilation * Input.ShadowTexelSize.x * 0.125;
     float d2 = Dilation * Input.ShadowTexelSize.x * 0.875;
     float d3 = Dilation * Input.ShadowTexelSize.x * 0.625;
     float d4 = Dilation * Input.ShadowTexelSize.x * 0.375;
     return 0.1 * (
-        2.0 * texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy, ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(-d2, d1), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(-d1, -d2), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(d2, -d1), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(d1, d2), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(-d4, d3), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(-d3, -d4), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(d4, -d3), ShadowPos.z ) +
-        texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + float2(d3, d4), ShadowPos.z ) );
+        2.0 * texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy, ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(-d2, d1), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(-d1, -d2), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(d2, -d1), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(d1, d2), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(-d4, d3), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(-d3, -d4), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(d4, -d3), ShadowPos.z ) +
+        texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + float2(d3, d4), ShadowPos.z ) );
 }
 
 //
@@ -86,13 +90,11 @@ float SampleWeight( ShadowTex Input, float3 ShadowPos )
 //
 float SamplePoissonDisk( ShadowTex Input, float3 ShadowPos )
 {
-    texture2D<float> texShadow = Input.tex;
-    SamplerComparisonState shadowSampler = Input.smpl;
     float2 Texel = Input.ShadowTexelSize.xx;
 
     float Result = 0.0;
     for (int i = 0; i < kPoissonSample; i++)
-        if (texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + PoissonDisk[i] * Texel, ShadowPos.z ))
+        if (texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + PoissonDisk[i] * Texel, ShadowPos.z ))
             Result += 1.0;
     return Result / kPoissonSample;
 }
@@ -106,10 +108,7 @@ float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
 {
     const float PCFRadius = 1.5;
     const float Freq = 15;
-
-    texture2D<float> texShadow = Input.tex;
-    SamplerComparisonState shadowSampler = Input.smpl;
-    float2 Texel = Input.ShadowTexelSize.xy;
+    const float2 Texel = Input.ShadowTexelSize.xy;
 
     float Result = 0.0;
     float theta = RandomAngle( Input.Position.xyz, Freq );
@@ -122,7 +121,7 @@ float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
     for (int i = 0; i < kPoissonSample; i++)
     {
         float2 Pos = ShadowPos.xy + mul(PoissonDisk[i], Rotation)*Texel*PCFRadius;
-        if (texShadow.SampleCmpLevelZero( shadowSampler, Pos, ShadowPos.z ))
+        if (texShadow.SampleCmpLevelZero( samplerShadow, Pos, ShadowPos.z ))
             Result += 1.0;
     }
     return Result / kPoissonSample;
@@ -135,40 +134,204 @@ float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
 //
 float ShadowModePoissonDiskStratified( ShadowTex Input, float3 ShadowPos )
 {
-    texture2D<float> texShadow = Input.tex;
-    SamplerComparisonState shadowSampler = Input.smpl;
     float2 Texel = Input.ShadowTexelSize.xy;
 
     float Result = 0.0;
     uint Num = kPoissonSample/2;
     for (uint i = 0; i < Num; i++) {
         uint index = uint(kPoissonSample*Random( Input.Position.xyz, i )) % kPoissonSample;
-        Result += texShadow.SampleCmpLevelZero( shadowSampler, ShadowPos.xy + PoissonDisk[index]*Texel, ShadowPos.z );
+        Result += texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + PoissonDisk[index]*Texel, ShadowPos.z );
     }
     return Result / Num; 
 }
 
-float GetShadow( ShadowTex Input, float4 ShadowPos )
+//-------------------------------------------------------------------------------------------------
+// Helper function for SampleShadowMapOptimizedPCF
+//-------------------------------------------------------------------------------------------------
+float SampleShadowMap(float2 base_uv, float u, float v, float2 shadowMapSizeInv,
+                      uint cascadeIdx, float depth, float2 receiverPlaneDepthBias) 
+{
+
+    float2 uv = base_uv + float2(u, v) * shadowMapSizeInv;
+
+    #if UsePlaneDepthBias_
+        float z = depth + dot(float2(u, v) * shadowMapSizeInv, receiverPlaneDepthBias);
+    #else
+        float z = depth;
+    #endif
+    return texShadow.SampleCmpLevelZero(samplerShadow, uv, z);
+}
+
+//
+// The method used in The Witness
+//
+// Uses code from "https://github.com/TheRealMJP/Shadows"
+//
+float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx ) 
+{
+    float2 shadowMapSize;
+    float numSlices;
+    texShadow.GetDimensions(0, shadowMapSize.x, shadowMapSize.y, numSlices);
+
+    float lightDepth = ShadowPos.z;
+    const float bias = Input.Bias;
+
+    #if UsePlaneDepthBias_
+        float2 texelSize = 1.0f / shadowMapSize;
+
+        float2 receiverPlaneDepthBias = ComputeReceiverPlaneDepthBias(shadowPosDX, shadowPosDY);
+
+        // Static depth biasing to make up for incorrect fractional sampling on the shadow map grid
+        float fractionalSamplingError = 2 * dot(float2(1.0f, 1.0f) * texelSize, abs(receiverPlaneDepthBias));
+        lightDepth -= min(fractionalSamplingError, 0.01f);
+    #else
+        float2 receiverPlaneDepthBias;
+        lightDepth -= bias;
+    #endif
+
+    float2 uv = ShadowPos.xy * shadowMapSize; // 1 unit - 1 texel
+    float2 shadowMapSizeInv = 1.0 / shadowMapSize;
+
+    float2 base_uv;
+    base_uv.x = floor(uv.x + 0.5);
+    base_uv.y = floor(uv.y + 0.5);
+
+    float s = (uv.x + 0.5 - base_uv.x);
+    float t = (uv.y + 0.5 - base_uv.y);
+
+    base_uv -= float2(0.5, 0.5);
+    base_uv *= shadowMapSizeInv;
+
+    float sum = 0;
+
+    #if FilterSize_ == 2
+        return texShadow.SampleCmpLevelZero(samplerShadow, ShadowPos.xy, lightDepth);
+    #elif FilterSize_ == 3
+
+        float uw0 = (3 - 2 * s);
+        float uw1 = (1 + 2 * s);
+
+        float u0 = (2 - s) / uw0 - 1;
+        float u1 = s / uw1 + 1;
+
+        float vw0 = (3 - 2 * t);
+        float vw1 = (1 + 2 * t);
+
+        float v0 = (2 - t) / vw0 - 1;
+        float v1 = t / vw1 + 1;
+
+        sum += uw0 * vw0 * SampleShadowMap(base_uv, u0, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw0 * SampleShadowMap(base_uv, u1, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw1 * SampleShadowMap(base_uv, u0, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw1 * SampleShadowMap(base_uv, u1, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        return sum * 1.0f / 16;
+
+    #elif FilterSize_ == 5
+
+        float uw0 = (4 - 3 * s);
+        float uw1 = 7;
+        float uw2 = (1 + 3 * s);
+
+        float u0 = (3 - 2 * s) / uw0 - 2;
+        float u1 = (3 + s) / uw1;
+        float u2 = s / uw2 + 2;
+
+        float vw0 = (4 - 3 * t);
+        float vw1 = 7;
+        float vw2 = (1 + 3 * t);
+
+        float v0 = (3 - 2 * t) / vw0 - 2;
+        float v1 = (3 + t) / vw1;
+        float v2 = t / vw2 + 2;
+
+        sum += uw0 * vw0 * SampleShadowMap(base_uv, u0, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw0 * SampleShadowMap(base_uv, u1, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw0 * SampleShadowMap(base_uv, u2, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        sum += uw0 * vw1 * SampleShadowMap(base_uv, u0, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw1 * SampleShadowMap(base_uv, u1, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw1 * SampleShadowMap(base_uv, u2, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        sum += uw0 * vw2 * SampleShadowMap(base_uv, u0, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw2 * SampleShadowMap(base_uv, u1, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw2 * SampleShadowMap(base_uv, u2, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        return sum * 1.0f / 144;
+
+    #else // FilterSize_ == 7
+
+        float uw0 = (5 * s - 6);
+        float uw1 = (11 * s - 28);
+        float uw2 = -(11 * s + 17);
+        float uw3 = -(5 * s + 1);
+
+        float u0 = (4 * s - 5) / uw0 - 3;
+        float u1 = (4 * s - 16) / uw1 - 1;
+        float u2 = -(7 * s + 5) / uw2 + 1;
+        float u3 = -s / uw3 + 3;
+
+        float vw0 = (5 * t - 6);
+        float vw1 = (11 * t - 28);
+        float vw2 = -(11 * t + 17);
+        float vw3 = -(5 * t + 1);
+
+        float v0 = (4 * t - 5) / vw0 - 3;
+        float v1 = (4 * t - 16) / vw1 - 1;
+        float v2 = -(7 * t + 5) / vw2 + 1;
+        float v3 = -t / vw3 + 3;
+
+        sum += uw0 * vw0 * SampleShadowMap(base_uv, u0, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw0 * SampleShadowMap(base_uv, u1, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw0 * SampleShadowMap(base_uv, u2, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw0 * SampleShadowMap(base_uv, u3, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        sum += uw0 * vw1 * SampleShadowMap(base_uv, u0, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw1 * SampleShadowMap(base_uv, u1, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw1 * SampleShadowMap(base_uv, u2, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw1 * SampleShadowMap(base_uv, u3, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        sum += uw0 * vw2 * SampleShadowMap(base_uv, u0, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw2 * SampleShadowMap(base_uv, u1, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw2 * SampleShadowMap(base_uv, u2, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw2 * SampleShadowMap(base_uv, u3, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        sum += uw0 * vw3 * SampleShadowMap(base_uv, u0, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw3 * SampleShadowMap(base_uv, u1, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw3 * SampleShadowMap(base_uv, u2, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw3 * SampleShadowMap(base_uv, u3, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+
+        return sum * 1.0f / 2704;
+
+    #endif
+}
+
+float GetShadow( ShadowTex Input, float4 ShadowPosH )
 {
     // Complete projection by doing division by w.
-    ShadowPos.xyz /= ShadowPos.w;
+    float3 ShadowPos = ShadowPosH.xyz / ShadowPosH.w;
+
+    float3 shadowPosDX = ddx_fine(ShadowPos);
+    float3 shadowPosDY = ddy_fine(ShadowPos);
 
     float2 TransTexCoord = ShadowPos.xy;
     float Result = 1.f;
     if (!any(saturate(TransTexCoord) != TransTexCoord)) {
 
 #if ShadowMode_ == ShadowModeSingle_
-        Result = SampleSingle( Input, ShadowPos.xyz );
+        Result = SampleSingle( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModeWeighted_
-        Result = SampleWeighted( Input, ShadowPos.xyz );
+        Result = SampleWeighted( ShadowPos );
 #elif ShadowMode_ == ShadowModePoisson_
-        Result = SamplePoissonDisk( Input, ShadowPos.xyz );
+        Result = SamplePoissonDisk( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModePoissonRotated_
-        Result = SamplePoissonDiskRotated( Input, ShadowPos.xyz );
-#else // if ShadowMode_ == ShadowModePoissonStratified_
-        Result = ShadowModePoissonDiskStratified( Input, ShadowPos.xyz );
+        Result = SamplePoissonDiskRotated( Input, ShadowPos );
+#elif ShadowMode_ == ShadowModeOptimizedPCF_
+        Result = SampleShadowMapOptimizedPCF( Input, ShadowPos, shadowPosDX, shadowPosDY, 0 ); 
+#elif ShadowMode_ == ShadowModePoissonStratified_
+        Result = ShadowModePoissonDiskStratified( Input, ShadowPos );
 #endif
     }
-    return Result * 0.5 + 0.5;
+    return Result * Result * 0.5 + 0.5;
 }
 

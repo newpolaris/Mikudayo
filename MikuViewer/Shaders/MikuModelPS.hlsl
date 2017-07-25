@@ -1,5 +1,3 @@
-#include "Shadow.hlsli"
-
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
@@ -46,6 +44,8 @@ SamplerState		sampler0		 : register(s0);
 SamplerState		sampler1		 : register(s1);
 SamplerComparisonState samplerShadow : register(s2);
 
+#include "Shadow.hlsli"
+
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
 {
@@ -88,7 +88,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
-    ShadowTex tex = { samplerShadow, texShadow, ShadowTexelSize, input.posV };
+    ShadowTex tex = { ShadowTexelSize, input.posV, 0 };
 	float shadow = GetShadow(tex, input.shadowPosH);
 	if (bUseToon) 
             color *= texToon.Sample( sampler0, toonCoord );
