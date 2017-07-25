@@ -88,11 +88,29 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
-    ShadowTex tex = { ShadowTexelSize, input.posV, 0 };
+    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0 };
 	float shadow = GetShadow(tex, input.shadowPosH);
+#if 0
 	if (bUseToon) 
-            color *= texToon.Sample( sampler0, toonCoord );
+        color *= texToon.Sample( sampler0, toonCoord );
     color *= shadow;
+#else
+	if (bUseToon) 
+    {
+        if (shadow < 1.00)
+        {
+            color *= texToon.Sample( sampler0, float2(0.0, 0.55) ) * shadow;
+        }
+        else
+        {
+            color *= texToon.Sample( sampler0, toonCoord ) * shadow;
+        }
+    }
+    else
+    {
+        color *= shadow;
+    }
+#endif
 
 	float alpha = texAlpha * material.alpha;
 	return float4(color, alpha);

@@ -52,13 +52,14 @@ namespace Math
 		const Frustum& GetViewSpaceFrustum() const { return m_FrustumVS; }
 		const Frustum& GetWorldSpaceFrustum() const { return m_FrustumWS; }
 
+        static Matrix4 PerspectiveMatrix( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ );
+        static Matrix4 OrthogonalMatrix( float W, float H, float NearClip, float FarClip, bool bReverseZ );
+
 	protected:
 
 		BaseCamera() : m_CameraToWorld(kIdentity), m_Basis(kIdentity), m_ReverseZ( true ) {}
 
 		void SetProjMatrix( const Matrix4& ProjMat ) { m_ProjMatrix = ProjMat; }
-        Matrix4 PerspectiveMatrix( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ );
-        Matrix4 OrthogonalMatrix( float W, float H, float NearClip, float FarClip, bool bReverseZ );
 
 		OrthogonalTransform m_CameraToWorld;
 

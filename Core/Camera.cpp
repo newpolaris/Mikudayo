@@ -92,7 +92,7 @@ Matrix4 BaseCamera::OrthogonalMatrix( float W, float H, float NearClip, float Fa
 	auto Y = 2 / H;
 
 	float Q1, Q2;
-	if (m_ReverseZ)
+	if (bReverseZ)
 	{
 		Q1 = 1 / (FarClip - NearClip);
 		Q2 = Q1 * FarClip;

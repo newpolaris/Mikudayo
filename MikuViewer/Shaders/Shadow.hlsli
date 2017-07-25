@@ -1,13 +1,14 @@
 //
 // Poisson disk kerenl width
 //
-#define PoissonKernel_ 5
-#include "PCFKernels.hlsli"
+#define PoissonKernel_ 4
 
 //
 // 2, 3, 5, 7
 //
 #define FilterSize_ 7
+
+#include "PCFKernels.hlsli"
 
 // Shadow filter method list
 #define ShadowModeSingle_ 0
@@ -15,10 +16,11 @@
 #define ShadowModePoisson_ 2
 #define ShadowModePoissonRotated_ 3
 #define ShadowModePoissonStratified_ 4
-#define ShadowModeOptimizedPCF_ 5
+#define ShadowModeOptimizedGaussinPCF_ 5
+#define ShadowModeFixedSizePCF_ 6
 
 // Shadow filter method
-#define ShadowMode_ ShadowModeOptimizedPCF_
+#define ShadowMode_ ShadowModePoisson_
 
 struct ShadowTex
 {
@@ -61,7 +63,7 @@ float SampleSingle( ShadowTex Input, float3 ShadowPos )
 }
 
 //
-// Poisson Disk sampling with no weight
+// 3 tap sized sampling method with total 9 sampling point
 //
 // Uses code from "MiniEngine"
 //
@@ -106,8 +108,9 @@ float SamplePoissonDisk( ShadowTex Input, float3 ShadowPos )
 //
 float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
 {
-    const float PCFRadius = 1.5;
+    const float PCFRadius = 1.1;
     const float Freq = 15;
+    const float SampleDivFactor = 1.0;
     const float2 Texel = Input.ShadowTexelSize.xy;
 
     float Result = 0.0;
@@ -118,13 +121,14 @@ float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
         float2( C, -S ),
         float2( S,  C ));
 
-    for (int i = 0; i < kPoissonSample; i++)
+    uint Num = kPoissonSample/SampleDivFactor;
+    for (uint i = 0; i < Num; i++)
     {
         float2 Pos = ShadowPos.xy + mul(PoissonDisk[i], Rotation)*Texel*PCFRadius;
         if (texShadow.SampleCmpLevelZero( samplerShadow, Pos, ShadowPos.z ))
             Result += 1.0;
     }
-    return Result / kPoissonSample;
+    return Result / Num;
 }
 
 //
@@ -137,7 +141,7 @@ float ShadowModePoissonDiskStratified( ShadowTex Input, float3 ShadowPos )
     float2 Texel = Input.ShadowTexelSize.xy;
 
     float Result = 0.0;
-    uint Num = kPoissonSample/2;
+    uint Num = PoissonKernel_;
     for (uint i = 0; i < Num; i++) {
         uint index = uint(kPoissonSample*Random( Input.Position.xyz, i )) % kPoissonSample;
         Result += texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + PoissonDisk[index]*Texel, ShadowPos.z );
@@ -145,17 +149,17 @@ float ShadowModePoissonDiskStratified( ShadowTex Input, float3 ShadowPos )
     return Result / Num; 
 }
 
-//-------------------------------------------------------------------------------------------------
-// Helper function for SampleShadowMapOptimizedPCF
-//-------------------------------------------------------------------------------------------------
-float SampleShadowMap(float2 base_uv, float u, float v, float2 shadowMapSizeInv,
+//
+// Helper function for SampletexShadowOptimizedGaussinPCF
+//
+float SampletexShadow(float2 base_uv, float u, float v, float2 texShadowSizeInv,
                       uint cascadeIdx, float depth, float2 receiverPlaneDepthBias) 
 {
 
-    float2 uv = base_uv + float2(u, v) * shadowMapSizeInv;
+    float2 uv = base_uv + float2(u, v) * texShadowSizeInv;
 
     #if UsePlaneDepthBias_
-        float z = depth + dot(float2(u, v) * shadowMapSizeInv, receiverPlaneDepthBias);
+        float z = depth + dot(float2(u, v) * texShadowSizeInv, receiverPlaneDepthBias);
     #else
         float z = depth;
     #endif
@@ -165,19 +169,22 @@ float SampleShadowMap(float2 base_uv, float u, float v, float2 shadowMapSizeInv,
 //
 // The method used in The Witness
 //
-// Uses code from "https://github.com/TheRealMJP/Shadows"
+// Optimized with linear filtering use same idea as 'Fast gaussion blur with linear filtering'
+// But, to apply in PS shader it use x,y bilinear filtering
 //
-float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx ) 
+// Uses code from "https://github.com/TheRealMJP/Shadows" by MJP
+//
+float SampletexShadowOptimizedGaussinPCF( ShadowTex Input, float3 ShadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx ) 
 {
-    float2 shadowMapSize;
+    float2 texShadowSize;
     float numSlices;
-    texShadow.GetDimensions(0, shadowMapSize.x, shadowMapSize.y, numSlices);
+    texShadow.GetDimensions(0, texShadowSize.x, texShadowSize.y, numSlices);
 
     float lightDepth = ShadowPos.z;
     const float bias = Input.Bias;
 
     #if UsePlaneDepthBias_
-        float2 texelSize = 1.0f / shadowMapSize;
+        float2 texelSize = 1.0f / texShadowSize;
 
         float2 receiverPlaneDepthBias = ComputeReceiverPlaneDepthBias(shadowPosDX, shadowPosDY);
 
@@ -189,8 +196,8 @@ float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 sha
         lightDepth -= bias;
     #endif
 
-    float2 uv = ShadowPos.xy * shadowMapSize; // 1 unit - 1 texel
-    float2 shadowMapSizeInv = 1.0 / shadowMapSize;
+    float2 uv = ShadowPos.xy * texShadowSize; // 1 unit - 1 texel
+    float2 texShadowSizeInv = 1.0 / texShadowSize;
 
     float2 base_uv;
     base_uv.x = floor(uv.x + 0.5);
@@ -200,7 +207,7 @@ float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 sha
     float t = (uv.y + 0.5 - base_uv.y);
 
     base_uv -= float2(0.5, 0.5);
-    base_uv *= shadowMapSizeInv;
+    base_uv *= texShadowSizeInv;
 
     float sum = 0;
 
@@ -220,10 +227,10 @@ float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 sha
         float v0 = (2 - t) / vw0 - 1;
         float v1 = t / vw1 + 1;
 
-        sum += uw0 * vw0 * SampleShadowMap(base_uv, u0, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw0 * SampleShadowMap(base_uv, u1, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw0 * vw1 * SampleShadowMap(base_uv, u0, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw1 * SampleShadowMap(base_uv, u1, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw0 * SampletexShadow(base_uv, u0, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw0 * SampletexShadow(base_uv, u1, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw1 * SampletexShadow(base_uv, u0, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw1 * SampletexShadow(base_uv, u1, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
         return sum * 1.0f / 16;
 
@@ -245,17 +252,17 @@ float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 sha
         float v1 = (3 + t) / vw1;
         float v2 = t / vw2 + 2;
 
-        sum += uw0 * vw0 * SampleShadowMap(base_uv, u0, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw0 * SampleShadowMap(base_uv, u1, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw0 * SampleShadowMap(base_uv, u2, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw0 * SampletexShadow(base_uv, u0, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw0 * SampletexShadow(base_uv, u1, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw0 * SampletexShadow(base_uv, u2, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
-        sum += uw0 * vw1 * SampleShadowMap(base_uv, u0, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw1 * SampleShadowMap(base_uv, u1, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw1 * SampleShadowMap(base_uv, u2, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw1 * SampletexShadow(base_uv, u0, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw1 * SampletexShadow(base_uv, u1, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw1 * SampletexShadow(base_uv, u2, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
-        sum += uw0 * vw2 * SampleShadowMap(base_uv, u0, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw2 * SampleShadowMap(base_uv, u1, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw2 * SampleShadowMap(base_uv, u2, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw2 * SampletexShadow(base_uv, u0, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw2 * SampletexShadow(base_uv, u1, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw2 * SampletexShadow(base_uv, u2, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
         return sum * 1.0f / 144;
 
@@ -281,30 +288,199 @@ float SampleShadowMapOptimizedPCF( ShadowTex Input, float3 ShadowPos, float3 sha
         float v2 = -(7 * t + 5) / vw2 + 1;
         float v3 = -t / vw3 + 3;
 
-        sum += uw0 * vw0 * SampleShadowMap(base_uv, u0, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw0 * SampleShadowMap(base_uv, u1, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw0 * SampleShadowMap(base_uv, u2, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw3 * vw0 * SampleShadowMap(base_uv, u3, v0, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw0 * SampletexShadow(base_uv, u0, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw0 * SampletexShadow(base_uv, u1, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw0 * SampletexShadow(base_uv, u2, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw0 * SampletexShadow(base_uv, u3, v0, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
-        sum += uw0 * vw1 * SampleShadowMap(base_uv, u0, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw1 * SampleShadowMap(base_uv, u1, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw1 * SampleShadowMap(base_uv, u2, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw3 * vw1 * SampleShadowMap(base_uv, u3, v1, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw1 * SampletexShadow(base_uv, u0, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw1 * SampletexShadow(base_uv, u1, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw1 * SampletexShadow(base_uv, u2, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw1 * SampletexShadow(base_uv, u3, v1, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
-        sum += uw0 * vw2 * SampleShadowMap(base_uv, u0, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw2 * SampleShadowMap(base_uv, u1, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw2 * SampleShadowMap(base_uv, u2, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw3 * vw2 * SampleShadowMap(base_uv, u3, v2, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw2 * SampletexShadow(base_uv, u0, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw2 * SampletexShadow(base_uv, u1, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw2 * SampletexShadow(base_uv, u2, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw2 * SampletexShadow(base_uv, u3, v2, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
-        sum += uw0 * vw3 * SampleShadowMap(base_uv, u0, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw1 * vw3 * SampleShadowMap(base_uv, u1, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw2 * vw3 * SampleShadowMap(base_uv, u2, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
-        sum += uw3 * vw3 * SampleShadowMap(base_uv, u3, v3, shadowMapSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw0 * vw3 * SampletexShadow(base_uv, u0, v3, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw1 * vw3 * SampletexShadow(base_uv, u1, v3, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw2 * vw3 * SampletexShadow(base_uv, u2, v3, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
+        sum += uw3 * vw3 * SampletexShadow(base_uv, u3, v3, texShadowSizeInv, cascadeIdx, lightDepth, receiverPlaneDepthBias);
 
         return sum * 1.0f / 2704;
 
     #endif
 }
+
+//
+// Samples the shadow map with a fixed-size PCF kernel optimized with GatherCmp. 
+//
+// Uses code from "Fast Conventional Shadow Filtering" by Holger Gruen, in GPU Pro.
+//
+float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx) 
+{
+    float2 texShadowSize;
+    float numSlices;
+    texShadow.GetDimensions(0, texShadowSize.x, texShadowSize.y, numSlices);
+
+    float lightDepth = shadowPos.z;
+
+    const float bias = Input.Bias;
+
+    #if UsePlaneDepthBias_
+        float2 texelSize = 1.0f / texShadowSize;
+
+        float2 receiverPlaneDepthBias = ComputeReceiverPlaneDepthBias(shadowPosDX, shadowPosDY);
+
+        // Static depth biasing to make up for incorrect fractional sampling on the shadow map grid
+        float fractionalSamplingError = dot(float2(1.0f, 1.0f) * texelSize, abs(receiverPlaneDepthBias));
+        lightDepth -= min(fractionalSamplingError, 0.01f);
+    #else
+        lightDepth -= bias;
+    #endif
+
+    #if FilterSize_ == 2
+        return texShadow.SampleCmpLevelZero(samplerShadow, float3(shadowPos.xy, cascadeIdx), lightDepth);
+    #else
+        const int FS_2 = FilterSize_ / 2;
+
+        float2 tc = shadowPos.xy;
+
+        float4 s = 0.0f;
+        float2 stc = (texShadowSize * tc.xy) + float2(0.5f, 0.5f);
+        float2 tcs = floor(stc);
+        float2 fc;
+        int row;
+        int col;
+        float w = 0.0f;
+        float4 v1[FS_2 + 1];
+        float2 v0[FS_2 + 1];
+
+        fc.xy = stc - tcs;
+        tc.xy = tcs / texShadowSize;
+
+        for(row = 0; row < FilterSize_; ++row)
+            for(col = 0; col < FilterSize_; ++col)
+                w += W[row][col];
+
+        // -- loop over the rows
+        [unroll]
+        for(row = -FS_2; row <= FS_2; row += 2)
+        {
+            [unroll]
+            for(col = -FS_2; col <= FS_2; col += 2)
+            {
+                float value = W[row + FS_2][col + FS_2];
+
+                if(col > -FS_2)
+                    value += W[row + FS_2][col + FS_2 - 1];
+
+                if(col < FS_2)
+                    value += W[row + FS_2][col + FS_2 + 1];
+
+                if(row > -FS_2) {
+                    value += W[row + FS_2 - 1][col + FS_2];
+
+                    if(col < FS_2)
+                        value += W[row + FS_2 - 1][col + FS_2 + 1];
+
+                    if(col > -FS_2)
+                        value += W[row + FS_2 - 1][col + FS_2 - 1];
+                }
+
+                if(value != 0.0f)
+                {
+                    float sampleDepth = lightDepth;
+
+                    #if UsePlaneDepthBias_
+                        // Compute offset and apply planar depth bias
+                        float2 offset = float2(col, row) * texelSize;
+                        sampleDepth += dot(offset, receiverPlaneDepthBias);
+                    #endif
+
+                    v1[(col + FS_2) / 2] = texShadow.GatherCmp(samplerShadow, tc.xy,
+                                                                 sampleDepth, int2(col, row));
+                }
+                else
+                    v1[(col + FS_2) / 2] = 0.0f;
+
+                if(col == -FS_2)
+                {
+                    s.x += (1.0f - fc.y) * (v1[0].w * (W[row + FS_2][col + FS_2]
+                                         - W[row + FS_2][col + FS_2] * fc.x)
+                                         + v1[0].z * (fc.x * (W[row + FS_2][col + FS_2]
+                                         - W[row + FS_2][col + FS_2 + 1.0f])
+                                         + W[row + FS_2][col + FS_2 + 1]));
+                    s.y += fc.y * (v1[0].x * (W[row + FS_2][col + FS_2]
+                                         - W[row + FS_2][col + FS_2] * fc.x)
+                                         + v1[0].y * (fc.x * (W[row + FS_2][col + FS_2]
+                                         - W[row + FS_2][col + FS_2 + 1])
+                                         +  W[row + FS_2][col + FS_2 + 1]));
+                    if(row > -FS_2)
+                    {
+                        s.z += (1.0f - fc.y) * (v0[0].x * (W[row + FS_2 - 1][col + FS_2]
+                                               - W[row + FS_2 - 1][col + FS_2] * fc.x)
+                                               + v0[0].y * (fc.x * (W[row + FS_2 - 1][col + FS_2]
+                                               - W[row + FS_2 - 1][col + FS_2 + 1])
+                                               + W[row + FS_2 - 1][col + FS_2 + 1]));
+                        s.w += fc.y * (v1[0].w * (W[row + FS_2 - 1][col + FS_2]
+                                            - W[row + FS_2 - 1][col + FS_2] * fc.x)
+                                            + v1[0].z * (fc.x * (W[row + FS_2 - 1][col + FS_2]
+                                            - W[row + FS_2 - 1][col + FS_2 + 1])
+                                            + W[row + FS_2 - 1][col + FS_2 + 1]));
+                    }
+                }
+                else if(col == FS_2)
+                {
+                    s.x += (1 - fc.y) * (v1[FS_2].w * (fc.x * (W[row + FS_2][col + FS_2 - 1]
+                                         - W[row + FS_2][col + FS_2]) + W[row + FS_2][col + FS_2])
+                                         + v1[FS_2].z * fc.x * W[row + FS_2][col + FS_2]);
+                    s.y += fc.y * (v1[FS_2].x * (fc.x * (W[row + FS_2][col + FS_2 - 1]
+                                         - W[row + FS_2][col + FS_2] ) + W[row + FS_2][col + FS_2])
+                                         + v1[FS_2].y * fc.x * W[row + FS_2][col + FS_2]);
+                    if(row > -FS_2) {
+                        s.z += (1 - fc.y) * (v0[FS_2].x * (fc.x * (W[row + FS_2 - 1][col + FS_2 - 1]
+                                            - W[row + FS_2 - 1][col + FS_2])
+                                            + W[row + FS_2 - 1][col + FS_2])
+                                            + v0[FS_2].y * fc.x * W[row + FS_2 - 1][col + FS_2]);
+                        s.w += fc.y * (v1[FS_2].w * (fc.x * (W[row + FS_2 - 1][col + FS_2 - 1]
+                                            - W[row + FS_2 - 1][col + FS_2])
+                                            + W[row + FS_2 - 1][col + FS_2])
+                                            + v1[FS_2].z * fc.x * W[row + FS_2 - 1][col + FS_2]);
+                    }
+                }
+                else
+                {
+                    s.x += (1 - fc.y) * (v1[(col + FS_2) / 2].w * (fc.x * (W[row + FS_2][col + FS_2 - 1]
+                                        - W[row + FS_2][col + FS_2 + 0] ) + W[row + FS_2][col + FS_2 + 0])
+                                        + v1[(col + FS_2) / 2].z * (fc.x * (W[row + FS_2][col + FS_2 - 0]
+                                        - W[row + FS_2][col + FS_2 + 1]) + W[row + FS_2][col + FS_2 + 1]));
+                    s.y += fc.y * (v1[(col + FS_2) / 2].x * (fc.x * (W[row + FS_2][col + FS_2-1]
+                                        - W[row + FS_2][col + FS_2 + 0]) + W[row + FS_2][col + FS_2 + 0])
+                                        + v1[(col + FS_2) / 2].y * (fc.x * (W[row + FS_2][col + FS_2 - 0]
+                                        - W[row + FS_2][col + FS_2 + 1]) + W[row + FS_2][col + FS_2 + 1]));
+                    if(row > -FS_2) {
+                        s.z += (1 - fc.y) * (v0[(col + FS_2) / 2].x * (fc.x * (W[row + FS_2 - 1][col + FS_2 - 1]
+                                                - W[row + FS_2 - 1][col + FS_2 + 0]) + W[row + FS_2 - 1][col + FS_2 + 0])
+                                                + v0[(col + FS_2) / 2].y * (fc.x * (W[row + FS_2 - 1][col + FS_2 - 0]
+                                                - W[row + FS_2 - 1][col + FS_2 + 1]) + W[row + FS_2 - 1][col + FS_2 + 1]));
+                        s.w += fc.y * (v1[(col + FS_2) / 2].w * (fc.x * (W[row + FS_2 - 1][col + FS_2 - 1]
+                                                - W[row + FS_2 - 1][col + FS_2 + 0]) + W[row + FS_2 - 1][col + FS_2 + 0])
+                                                + v1[(col + FS_2) / 2].z * (fc.x * (W[row + FS_2 - 1][col + FS_2 - 0]
+                                                - W[row + FS_2 - 1][col + FS_2 + 1]) + W[row + FS_2 - 1][col + FS_2 + 1]));
+                    }
+                }
+
+                if(row != FS_2)
+                    v0[(col + FS_2) / 2] = v1[(col + FS_2) / 2].xy;
+            }
+        }
+
+        return dot(s, 1.0f) / w;
+    #endif
+}
+
 
 float GetShadow( ShadowTex Input, float4 ShadowPosH )
 {
@@ -321,15 +497,19 @@ float GetShadow( ShadowTex Input, float4 ShadowPosH )
 #if ShadowMode_ == ShadowModeSingle_
         Result = SampleSingle( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModeWeighted_
-        Result = SampleWeighted( ShadowPos );
+        Result = SampleWeighted( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModePoisson_
         Result = SamplePoissonDisk( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModePoissonRotated_
         Result = SamplePoissonDiskRotated( Input, ShadowPos );
-#elif ShadowMode_ == ShadowModeOptimizedPCF_
-        Result = SampleShadowMapOptimizedPCF( Input, ShadowPos, shadowPosDX, shadowPosDY, 0 ); 
+#elif ShadowMode_ == ShadowModeOptimizedGaussinPCF_
+        Result = SampletexShadowOptimizedGaussinPCF( Input, ShadowPos, shadowPosDX, shadowPosDY, 0 ); 
 #elif ShadowMode_ == ShadowModePoissonStratified_
         Result = ShadowModePoissonDiskStratified( Input, ShadowPos );
+#elif ShadowMode_ == ShadowModeFixedSizePCF_
+        Result = SampleShadowMapFixedSizePCF( Input, ShadowPos, shadowPosDX, shadowPosDY, 0 );
+#elif ShadowMode_ == ShadowModeGridPCF_
+        Result = SampleShadowMapGridPCF( shadowPosition, shadowPosDX, shadowPosDY, cascadeIdx );
 #endif
     }
     return Result * Result * 0.5 + 0.5;
