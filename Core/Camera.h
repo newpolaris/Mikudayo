@@ -40,11 +40,12 @@ namespace Math
 		const Vector3 GetUpVec() const { return m_Basis.GetY(); }
 		const Vector3 GetForwardVec() const { return -m_Basis.GetZ(); }
 		const Vector3 GetPosition() const { return m_CameraToWorld.GetTranslation(); }
-		const float GetClearDepth() const { return m_ReverseZ ? 0.0f : 1.0f; }
-		const bool GetReverseZ() const { return m_ReverseZ; }
+		static float GetClearDepth() { return m_ReverseZ ? 0.0f : 1.0f; }
+		static bool GetReverseZ() { return m_ReverseZ; }
 
 		// Accessors for reading the various matrices and frusta
 		const OrthogonalTransform& GetCameraToWorld() const { return m_CameraToWorld; }
+        const Matrix4& GetClipToWorld() const { return m_ClipToWorld; }
 		const Matrix4& GetViewMatrix() const { return m_ViewMatrix; }
 		const Matrix4& GetProjMatrix() const { return m_ProjMatrix; }
 		const Matrix4& GetViewProjMatrix() const { return m_ViewProjMatrix; }
@@ -57,11 +58,14 @@ namespace Math
 
 	protected:
 
-		BaseCamera() : m_CameraToWorld(kIdentity), m_Basis(kIdentity), m_ReverseZ( true ) {}
+		BaseCamera() : m_CameraToWorld(kIdentity), m_Basis(kIdentity) {}
 
 		void SetProjMatrix( const Matrix4& ProjMat ) { m_ProjMatrix = ProjMat; }
 
 		OrthogonalTransform m_CameraToWorld;
+
+		// Redundant data cached for faster lookups. Invert(m_ViewProjMatrix)
+        Matrix4 m_ClipToWorld;
 
 		// Redundant data cached for faster lookups.
 		Matrix3 m_Basis;
@@ -89,7 +93,7 @@ namespace Math
 		Frustum m_FrustumVS;		// View-space view frustum
 		Frustum m_FrustumWS;		// World-space view frustum
 
-		bool m_ReverseZ;				// Invert near and far clip distances so that Z=0 is the far plane
+		static const bool m_ReverseZ;		// Invert near and far clip distances so that Z=0 is the far plane
 	};
 
 	class Camera : public BaseCamera

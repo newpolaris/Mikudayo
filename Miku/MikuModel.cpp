@@ -690,6 +690,12 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 
 void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
+    if (Filter & kBone)
+    {
+        DrawBone( gfxContext );
+        return;
+    }
+
 #define SKINNING_LBS
 #ifdef SKINNING_LBS
     std::vector<Matrix4> SkinData;
@@ -701,7 +707,7 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 #endif
     auto numByte = GetVectorSize(SkinData);
     gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
-    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTrnasform), &m_ModelTrnasform, { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
@@ -718,9 +724,6 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
 		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
 	}
-
-    if (Filter & kOpaque)
-        DrawBone( gfxContext );
 }
 
 void MikuModel::DrawBone( GraphicsContext& gfxContext )
@@ -736,9 +739,8 @@ void MikuModel::DrawBone( GraphicsContext& gfxContext )
 
 	for (auto i = 0; i < numBones; i++)
 	{
-		XMMATRIX mat = XMMatrixMultiply( m_BoneAttribute[i], Matrix4(m_Skinning[i]) );
+		XMMATRIX mat = m_ModelTransform * Matrix4(m_Skinning[i]) * Matrix4(m_BoneAttribute[i]);
 		gfxContext.SetDynamicConstantBufferView( 1, sizeof(mat), &mat, { kBindVertex } );
-        gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTrnasform), &m_ModelTrnasform, { kBindVertex } );
 		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
 	}
 }

@@ -1,3 +1,10 @@
+#define CSM 1
+#ifdef CSM
+static const uint MaxSplit = 4;
+#else
+static const uint MaxSplit = 1;
+#endif
+
 //
 // Poisson disk kerenl width
 //
@@ -6,7 +13,7 @@
 //
 // 2, 3, 5, 7
 //
-#define FilterSize_ 7
+#define FilterSize_ 2
 
 #include "PCFKernels.hlsli"
 
@@ -20,13 +27,17 @@
 #define ShadowModeFixedSizePCF_ 6
 
 // Shadow filter method
-#define ShadowMode_ ShadowModePoisson_
+#define ShadowMode_ ShadowModeSingle_
 
 struct ShadowTex
 {
     float4 ShadowTexelSize;
     float3 Position;
     float Bias;
+    texture2D<float> ShadowMap;
+    texture2D<float> texShadow[MaxSplit];
+
+    SamplerComparisonState ShadowSampler;
 };
 
 //
@@ -57,9 +68,11 @@ float RandomAngle(float3 seed, float freq)
 //
 // Single test
 //
-float SampleSingle( ShadowTex Input, float3 ShadowPos )
+float SampleSingle( ShadowTex Input, float3 ShadowPos, uint cascadeIdx )
 {
-    return texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy, ShadowPos.z );
+    texture2D<float> texShadow = Input.ShadowMap;
+
+    return texShadow.SampleCmpLevelZero( Input.ShadowSampler, ShadowPos.xy, ShadowPos.z );
 }
 
 //
@@ -69,6 +82,9 @@ float SampleSingle( ShadowTex Input, float3 ShadowPos )
 //
 float SampleWeighted( ShadowTex Input, float3 ShadowPos )
 {
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
+
     const float Dilation = 2.0;
 
     float d1 = Dilation * Input.ShadowTexelSize.x * 0.125;
@@ -92,7 +108,9 @@ float SampleWeighted( ShadowTex Input, float3 ShadowPos )
 //
 float SamplePoissonDisk( ShadowTex Input, float3 ShadowPos )
 {
-    float2 Texel = Input.ShadowTexelSize.xx;
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
+    float2 Texel = Input.ShadowTexelSize.xy;
 
     float Result = 0.0;
     for (int i = 0; i < kPoissonSample; i++)
@@ -108,6 +126,9 @@ float SamplePoissonDisk( ShadowTex Input, float3 ShadowPos )
 //
 float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
 {
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
+
     const float PCFRadius = 1.1;
     const float Freq = 15;
     const float SampleDivFactor = 1.0;
@@ -138,6 +159,8 @@ float SamplePoissonDiskRotated( ShadowTex Input, float3 ShadowPos )
 //
 float ShadowModePoissonDiskStratified( ShadowTex Input, float3 ShadowPos )
 {
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
     float2 Texel = Input.ShadowTexelSize.xy;
 
     float Result = 0.0;
@@ -152,9 +175,11 @@ float ShadowModePoissonDiskStratified( ShadowTex Input, float3 ShadowPos )
 //
 // Helper function for SampletexShadowOptimizedGaussinPCF
 //
-float SampletexShadow(float2 base_uv, float u, float v, float2 texShadowSizeInv,
-                      uint cascadeIdx, float depth, float2 receiverPlaneDepthBias) 
+float SampletexShadow( ShadowTex Input, float2 base_uv, float u, float v, float2 texShadowSizeInv,
+                      uint cascadeIdx, float depth, float2 receiverPlaneDepthBias )
 {
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
 
     float2 uv = base_uv + float2(u, v) * texShadowSizeInv;
 
@@ -176,6 +201,9 @@ float SampletexShadow(float2 base_uv, float u, float v, float2 texShadowSizeInv,
 //
 float SampletexShadowOptimizedGaussinPCF( ShadowTex Input, float3 ShadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx ) 
 {
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
+
     float2 texShadowSize;
     float numSlices;
     texShadow.GetDimensions(0, texShadowSize.x, texShadowSize.y, numSlices);
@@ -318,8 +346,13 @@ float SampletexShadowOptimizedGaussinPCF( ShadowTex Input, float3 ShadowPos, flo
 //
 // Uses code from "Fast Conventional Shadow Filtering" by Holger Gruen, in GPU Pro.
 //
+// (Shader compilation time increases significantly)
+//
 float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx) 
 {
+    texture2D<float> texShadow = Input.ShadowMap;
+    SamplerComparisonState samplerShadow = Input.ShadowSampler;
+
     float2 texShadowSize;
     float numSlices;
     texShadow.GetDimensions(0, texShadowSize.x, texShadowSize.y, numSlices);
@@ -341,7 +374,7 @@ float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shad
     #endif
 
     #if FilterSize_ == 2
-        return texShadow.SampleCmpLevelZero(samplerShadow, float3(shadowPos.xy, cascadeIdx), lightDepth);
+        return texShadow.SampleCmpLevelZero(samplerShadow, float2(shadowPos.xy), lightDepth);
     #else
         const int FS_2 = FilterSize_ / 2;
 
@@ -481,37 +514,46 @@ float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shad
     #endif
 }
 
-
-float GetShadow( ShadowTex Input, float4 ShadowPosH )
+float GetShadow( ShadowTex Input, float4 ShadowPosH[MaxSplit] )
 {
-    // Complete projection by doing division by w.
-    float3 ShadowPos = ShadowPosH.xyz / ShadowPosH.w;
-
-    float3 shadowPosDX = ddx_fine(ShadowPos);
-    float3 shadowPosDY = ddy_fine(ShadowPos);
-
-    float2 TransTexCoord = ShadowPos.xy;
     float Result = 1.f;
-    if (!any(saturate(TransTexCoord) != TransTexCoord)) {
+	uint cascadeIdx = MaxSplit;
+
+    [unroll]
+    for ( uint i = 0; i < MaxSplit; i++ )
+    {
+        // Complete projection by doing division by w.
+        float3 ShadowPos = ShadowPosH[i].xyz / ShadowPosH[i].w;
+
+        float2 TransTexCoord = ShadowPos.xy;
+        if (!any( saturate( TransTexCoord ) != TransTexCoord ))
+        {
+            Input.ShadowMap = Input.texShadow[i];
+            float3 shadowPosDX = ddx_fine( ShadowPos );
+            float3 shadowPosDY = ddy_fine( ShadowPos );
 
 #if ShadowMode_ == ShadowModeSingle_
-        Result = SampleSingle( Input, ShadowPos );
+            Result = SampleSingle( Input, ShadowPos, 0 );
 #elif ShadowMode_ == ShadowModeWeighted_
-        Result = SampleWeighted( Input, ShadowPos );
+            Result = SampleWeighted( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModePoisson_
-        Result = SamplePoissonDisk( Input, ShadowPos );
+            Result = SamplePoissonDisk( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModePoissonRotated_
-        Result = SamplePoissonDiskRotated( Input, ShadowPos );
+            Result = SamplePoissonDiskRotated( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModeOptimizedGaussinPCF_
-        Result = SampletexShadowOptimizedGaussinPCF( Input, ShadowPos, shadowPosDX, shadowPosDY, 0 ); 
+            Result = SampletexShadowOptimizedGaussinPCF( Input, ShadowPos, shadowPosDX, shadowPosDY, cascadeIdx );
 #elif ShadowMode_ == ShadowModePoissonStratified_
-        Result = ShadowModePoissonDiskStratified( Input, ShadowPos );
+            Result = ShadowModePoissonDiskStratified( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModeFixedSizePCF_
-        Result = SampleShadowMapFixedSizePCF( Input, ShadowPos, shadowPosDX, shadowPosDY, 0 );
+            Result = SampleShadowMapFixedSizePCF( Input, ShadowPos, shadowPosDX, shadowPosDY, cascadeIdx );
 #elif ShadowMode_ == ShadowModeGridPCF_
-        Result = SampleShadowMapGridPCF( shadowPosition, shadowPosDX, shadowPosDY, cascadeIdx );
+            Result = SampleShadowMapGridPCF( shadowPosition, shadowPosDX, shadowPosDY, cascadeIdx );
 #endif
+
+            break;
+        }
     }
+
     return Result * Result * 0.5 + 0.5;
 }
 

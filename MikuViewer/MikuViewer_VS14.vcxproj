@@ -117,6 +117,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MikuViewer.cpp" />
+    <ClCompile Include="Shadow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DepthViewerPS.hlsl">
@@ -165,6 +166,9 @@
     <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\Shadow.hlsli" />
     <None Include="Shaders\Skinning.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Shadow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

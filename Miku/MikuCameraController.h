@@ -17,7 +17,7 @@ namespace GameCore
 {
 	using namespace Math;
 
-	enum ECameraMode { kCameraMMD, kCamera3D, kCameraMotion };
+	enum ECameraMove { kCameraMoveMMD, kCameraMove3D, kCameraMoveMotion };
 	class MikuCameraController
 	{
 	public:
@@ -27,16 +27,18 @@ namespace GameCore
 		void SlowRotation( bool enable ) { m_FineRotation = enable; }
 		void EnableMomentum( bool enable ) { m_Momentum = enable; }
 		void SetMotion( Graphics::Motion* motion ) { m_pMotion = motion; }
+        void HandOverControl( MikuCamera* SconedCamera ) { m_pSceondCamera = SconedCamera; }
 
 	private:
 		void ApplyMomentum( float& oldValue, float& newValue, float deltaTime );
-		void UpdateFromInput( ECameraMode kCameraMode, float deltaTime );
+		void UpdateFromInput( MikuCamera* TargetCamera, ECameraMove kCameraMode, float deltaTime );
 
 		Graphics::Motion* m_pMotion;
 		Vector3 m_WorldUp;
 		Vector3 m_WorldNorth;
 		Vector3 m_WorldEast;
-		MikuCamera& m_TargetCamera;
+		MikuCamera& m_MainCamera;
+        MikuCamera* m_pSceondCamera;
 		float m_HorizontalLookSensitivity;
 		float m_VerticalLookSensitivity;
 		float m_MoveSpeed;

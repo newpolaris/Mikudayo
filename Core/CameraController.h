@@ -18,7 +18,7 @@
 
 namespace Math
 {
-	class Camera;
+	class BaseCamera;
 }
 
 namespace GameCore
@@ -29,7 +29,7 @@ namespace GameCore
 	{
 	public:
 		// Assumes worldUp is not the X basis vector
-		CameraController( Camera& camera, Vector3 worldUp );
+		CameraController( BaseCamera& camera, Vector3 worldUp );
 
 		void Update( float dt );
 
@@ -46,7 +46,7 @@ namespace GameCore
 		Vector3 m_WorldUp;
 		Vector3 m_WorldNorth;
 		Vector3 m_WorldEast;
-		Camera& m_TargetCamera;
+		BaseCamera& m_TargetCamera;
 		float m_HorizontalLookSensitivity;
 		float m_VerticalLookSensitivity;
 		float m_MoveSpeed;

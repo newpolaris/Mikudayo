@@ -23,6 +23,7 @@
 #include "DebugHelper.h"
 #include "MikuModel.h"
 #include "GroundPlane.h"
+#include "Shadow.h"
 
 #include "CompiledShaders/MikuModelVS.h"
 #include "CompiledShaders/MikuModelPS.h"
@@ -71,6 +72,8 @@ void Lighting::Shutdown( void )
     m_LightShadowTempBuffer.Destroy();
 }
 
+using FrustumCorner = std::array<Vector3, 8>;
+
 class MikuViewer : public GameCore::IGameApp
 {
 public:
@@ -90,8 +93,10 @@ private:
     void RenderObjects( GraphicsContext& gfxContext, const Matrix4 & ViewMat, const Matrix4 & ProjMat, eObjectFilter Filter );
     void RenderLightShadows(GraphicsContext& gfxContext);
     void RenderShadowMap(GraphicsContext& gfxContext);
+    MikuCamera* SelectedCamera();
 
 	MikuCamera m_Camera;
+    MikuCamera m_SecondCamera;
 	MikuCameraController* m_pCameraController;
 
     Matrix4 m_ViewMatrix;
@@ -116,16 +121,37 @@ private:
 	GraphicsPSO m_OpaquePSO;
 	GraphicsPSO m_BlendPSO;
 	GraphicsPSO m_GroundPlanePSO;
+
+    std::vector<ShadowBuffer> g_Shadow;
+    std::vector<Matrix4> m_SplitProjections;
+    std::vector<FrustumCorner> m_SplitViewFrustum;
 };
 
 CREATE_APPLICATION( MikuViewer )
 
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
+
+enum { kCameraMain, kCameraVirtual };
+const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
+EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
+BoolVar m_bDebugTexture("Application/Camera/Debug Texture", true);
+BoolVar m_bViewSplit("Application/Camera/View Split", false);
+BoolVar m_bShadowSplit("Application/Camera/Shadow Split", false);
+BoolVar m_bFixDepth("Application/Camera/Fix Depth", false);
+
 ExpVar m_SunLightIntensity("Application/Lighting/Sun Light Intensity", 4.0f, 0.0f, 16.0f, 0.1f);
 ExpVar m_AmbientIntensity("Application/Lighting/Ambient Intensity", 0.1f, -16.0f, 16.0f, 0.1f);
 NumVar m_ShadowDimX("Application/Lighting/Shadow Dim X", 100, 10, 1000, 10 );
 NumVar m_ShadowDimY("Application/Lighting/Shadow Dim Y", 100, 10, 1000, 10 );
 NumVar m_ShadowDimZ("Application/Lighting/Shadow Dim Z", 100, 10, 1000, 10 );
+
+#define CSM 1
+#ifdef CSM
+BoolVar m_CascadedShadow("Application/Lighting/CascadedShadow", true);
+#else
+BoolVar m_CascadedShadow("Application/Lighting/CascadedShadow", false);
+#endif
+
 // Default values in MMD. Due to RH coord, z is inverted.
 NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
@@ -182,8 +208,8 @@ void MikuViewer::Startup( void )
 	const std::wstring cameraPath = L"Models/camera.vmd";
 	m_Motion.LoadMotion( cameraPath );
 
-    D3D11_DEPTH_STENCIL_DESC& DepthReadWrite = m_Camera.GetReverseZ() ? DepthStateReadWrite : DepthStateReadWriteLE;
-    float Sign = m_Camera.GetReverseZ() ? -1.f : 1.f;
+    D3D11_DEPTH_STENCIL_DESC& DepthReadWrite = Camera::GetReverseZ() ? DepthStateReadWrite : DepthStateReadWriteLE;
+    float Sign = Camera::GetReverseZ() ? -1.f : 1.f;
     for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
     {
         Desc->SlopeScaledDepthBias = Sign * 2.0f;
@@ -237,10 +263,10 @@ void MikuViewer::Startup( void )
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pCameraController->SetMotion( &m_Motion );
 
-	g_SceneDepthBuffer.SetClearDepth( m_Camera.GetClearDepth() );
-	g_ShadowBuffer.SetClearDepth( m_Camera.GetClearDepth() );
+	g_SceneDepthBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
+	g_ShadowBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
 
-    m_SamplerShadow = m_Camera.GetReverseZ() ? SamplerShadowGE : SamplerShadowLE;
+    m_SamplerShadow = Camera::GetReverseZ() ? SamplerShadowGE : SamplerShadowLE;
 
     using namespace Lighting;
 
@@ -250,6 +276,15 @@ void MikuViewer::Startup( void )
     // PostEffects::EnableHDR = true;
     // PostEffects::EnableAdaptation = true;
     // SSAO::Enable = true;
+
+    g_Shadow.resize( 4 );
+    for (auto i = 0; i < g_Shadow.size(); i++)
+    {
+        g_Shadow[i].Create( L"Shadow" + std::to_wstring(i), 1024, 1024 );
+        g_Shadow[i].SetClearDepth( BaseCamera::GetClearDepth() );
+    }
+    m_SplitProjections.resize( 4 );
+    m_SplitViewFrustum.resize( 4 );
 }
 
 void MikuViewer::Cleanup( void )
@@ -262,6 +297,10 @@ void MikuViewer::Cleanup( void )
 	m_BlendPSO.Destroy();
     m_GroundPlanePSO.Destroy();
     m_Models.clear();
+
+    for (auto shadow : g_Shadow)
+        ; // shadow.Destroy();
+    g_Shadow.clear();
 
 	delete m_pCameraController;
 	m_pCameraController = nullptr;
@@ -279,6 +318,14 @@ namespace GameCore
 #else
 	extern Platform::Agile<Windows::UI::Core::CoreWindow> g_window;
 #endif
+}
+
+MikuCamera* MikuViewer::SelectedCamera()
+{
+    if (m_CameraType == kCameraVirtual)
+        return &m_SecondCamera;
+    else
+        return &m_Camera;
 }
 
 void MikuViewer::Update( float deltaT )
@@ -319,10 +366,11 @@ void MikuViewer::Update( float deltaT )
         model->Update( m_Frame );
 	m_Motion.Update( m_Frame );
 
+    m_pCameraController->HandOverControl( SelectedCamera() );
 	m_pCameraController->Update( deltaT );
 
-	m_ViewMatrix = m_Camera.GetViewMatrix();
-	m_ProjMatrix = m_Camera.GetProjMatrix();
+	m_ViewMatrix = SelectedCamera()->GetViewMatrix();
+	m_ProjMatrix = SelectedCamera()->GetProjMatrix();
 
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
@@ -334,11 +382,23 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
     {
         Matrix4 view;
         Matrix4 projection;
+#ifdef CSM
+        Matrix4 shadow[4];
+#else
         Matrix4 shadow;
+#endif
     } vsConstants;
     vsConstants.view = ViewMat;
     vsConstants.projection = ProjMat; 
+
+#ifdef CSM
+    auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
+    for (int i = 0; i < 4; i++)
+        vsConstants.shadow[i] = T * m_SplitProjections[i] * m_SunShadow.GetViewMatrix();
+#else
     vsConstants.shadow = m_SunShadow.GetShadowMatrix();
+#endif
+
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
 
     for (auto& model : m_Models)
@@ -370,20 +430,145 @@ void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
     ++LightIndex;
 }
 
+//
+// Returns 8 clipspace frustum corners
+//
+std::vector<Vector3> GetClipCorners( float Near, float Far )
+{
+    float Left = -1.f, Right = 1.f, Bottom = -1.f, Top = 1.f;
+    return {
+        Vector3( Left, Bottom, Near ),	// Near lower left
+        Vector3( Left, Top, Near ),	    // Near upper left
+        Vector3( Right, Bottom, Near ),	// Near lower right
+        Vector3( Right, Top, Near ),	// Near upper right
+        Vector3( Left, Bottom, Far ),	// Far lower left
+        Vector3( Left, Top, Far ),	    // Far upper left
+        Vector3( Right, Bottom, Far ),	// Far lower right
+        Vector3( Right, Top, Far ),	    // Far upper right
+    };
+}
+
+class BoundingBox
+{
+public:
+    BoundingBox(Vector3 MinVec, Vector3 MaxVec) 
+    {
+        m_Center = 0.5f * (MaxVec + MinVec);
+        m_Extent = 0.5f * (MaxVec - MinVec);
+    }
+
+    std::array<Vector3, 8> GetCorners( void ) const;
+
+    Vector3 m_Center;
+    Vector3 m_Extent;
+};
+
+std::array<Vector3, 8> BoundingBox::GetCorners( void ) const
+{
+    const auto x = m_Extent.GetX(), y = m_Extent.GetY(), z = m_Extent.GetZ();
+    const auto cx = m_Center.GetX(), cy = m_Center.GetY(), cz = m_Center.GetZ();
+
+    // kNearLowerLeft, kNearUpperLeft, kNearLowerRight, kNearUpperRight,
+    // kFarLowerLeft, kFarUpperLeft, kFarLowerRight, kFarUpperRight
+    return {
+        Vector3( cx - x, cy - y, cz + z ),
+        Vector3( cx - x, cy + y, cz + z ),
+        Vector3( cx + x, cy - y, cz + z ),
+        Vector3( cx + x, cy + y, cz + z ),
+
+        Vector3( cx - x, cy - y, cz - z ),
+        Vector3( cx - x, cy + y, cz - z ),
+        Vector3( cx + x, cy - y, cz - z ),
+        Vector3( cx + x, cy + y, cz - z )
+    };
+}
+
 void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 {
     ScopedTimer _prof( L"Render Shadow Map", gfxContext );
 
     // m_SunShadow.UpdateMatrix( m_Camera.GetForwardVec(), m_Camera.GetPosition(), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
     // m_SunShadow.UpdateMatrix( m_SunDirection, -m_SunDirection * 200, Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
-    m_SunShadow.UpdateMatrix( m_SunDirection, Vector3(0, 0, 0), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
+    m_SunShadow.UpdateMatrix( m_SunDirection, Vector3( 0, 0, 0 ), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
         (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16 );
 
-    g_ShadowBuffer.BeginRendering( gfxContext );
-    gfxContext.SetPipelineState( m_ShadowPSO );
-    RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kOpaque );
-    RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kTransparent );
-    g_ShadowBuffer.EndRendering( gfxContext );
+    if (m_CascadedShadow)
+    {
+        const Matrix4& Proj = m_Camera.GetProjMatrix();
+
+        std::vector<float> ViewSpaceDepth = { -1.0f, -30.f, -80.f, -150.f, -300.f };
+        std::vector<float> ClipSpaceDepth( ViewSpaceDepth.size() );
+        std::transform(ViewSpaceDepth.begin(), ViewSpaceDepth.end(), ClipSpaceDepth.begin(), 
+            [&Proj]( float d ) {
+            Vector4 c = Proj * Vector4( 0.f, 0.f, d, 1.f );
+            if (c.GetW() < 0.0001f)
+                return Scalar(0.f);
+            return c.GetZ() / c.GetW();
+        });
+
+        const Matrix4& ClipToWorld = m_Camera.GetClipToWorld();
+        for (auto i = 0; i + 1 < ClipSpaceDepth.size(); i++)
+        {
+            // Get clip-space frustum corners for near and far, transform into shadow view space
+            auto ClipCorners = GetClipCorners( ClipSpaceDepth[i], ClipSpaceDepth[i + 1] );
+            std::transform( ClipCorners.begin(), ClipCorners.end(), m_SplitViewFrustum[i].begin(),
+                [&ClipToWorld]( Vector3 v ) {
+                Vector4 vt = ClipToWorld * Vector4(v, 1.f);
+                return Vector3(vt);
+            } );
+        }
+
+        auto& ShadowView = m_SunShadow.GetViewMatrix();
+        for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
+        {
+            auto& WorldCorner = m_SplitViewFrustum[i];
+            FrustumCorner Corner;
+            std::transform( WorldCorner.begin(), WorldCorner.end(), Corner.begin(),
+                [&ShadowView]( Vector3 v ) {
+                return Vector3(ShadowView * Vector4(v, 1.f));
+            } );
+            // Find maximum boundary
+            Vector3 MinVec = Corner.front(), MaxVec = Corner.front();
+            for (auto& v : Corner)
+            {
+                MinVec = Min( v, MinVec );
+                MaxVec = Max( v, MaxVec );
+            }
+
+            BoundingBox box(MinVec, MaxVec);
+            auto points = box.GetCorners();
+
+            float MinZ = MinVec.GetZ(), MaxZ = MaxVec.GetZ();
+            if (m_bFixDepth)
+                MinZ = -50.f, MaxZ = 50.f;
+
+            Matrix4 SplitProj = Matrix4( XMMatrixOrthographicOffCenterRH(
+                MinVec.GetX(), MaxVec.GetX(),
+                MinVec.GetY(), MaxVec.GetY(),
+                MinZ, MaxZ ) );
+
+            Frustum frustum( SplitProj );
+            
+            m_SplitProjections[i] = SplitProj;
+        }
+
+        for (auto i = 0; i < m_SplitProjections.size(); i++)
+        {
+            g_Shadow[i].BeginRendering( gfxContext );
+            gfxContext.SetPipelineState( m_ShadowPSO );
+            RenderObjects( gfxContext, m_SplitProjections[i] * ShadowView, kOpaque );
+            RenderObjects( gfxContext, m_SplitProjections[i] * ShadowView, kTransparent );
+            g_Shadow[i].EndRendering( gfxContext );
+        }
+    }
+    else
+    {
+        g_ShadowBuffer.BeginRendering( gfxContext );
+        gfxContext.SetPipelineState( m_ShadowPSO );
+        RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kOpaque );
+        RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kTransparent );
+        g_ShadowBuffer.EndRendering( gfxContext );
+    }
 }
 
 void MikuViewer::RenderScene( void )
@@ -402,7 +587,7 @@ void MikuViewer::RenderScene( void )
         float ShadowTexelSize[4];
     } psConstants;
 
-    psConstants.LightDirection = m_ViewMatrix.Get3x3() * m_SunDirection;
+    psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
     psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
     psConstants.ShadowTexelSize[1] = 1.0f / g_ShadowBuffer.GetHeight();
@@ -418,18 +603,76 @@ void MikuViewer::RenderScene( void )
     gfxContext.ClearDepth( g_SceneDepthBuffer );
     {
         ScopedTimer _prof( L"Render Color", gfxContext );
-        gfxContext.SetDynamicDescriptor( 0, g_ShadowBuffer.GetSRV(), { kBindPixel } );
+#ifdef CSM
+        D3D11_SRV_HANDLE Ptr[] = { g_Shadow[0].GetSRV(), g_Shadow[1].GetSRV(), g_Shadow[2].GetSRV(), g_Shadow[3].GetSRV() };
+        gfxContext.SetDynamicDescriptors( 4, 4, Ptr, { kBindPixel } );
+#else
+        gfxContext.SetDynamicDescriptor( 4, g_ShadowBuffer.GetSRV(), { kBindPixel } );
+#endif
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_OpaquePSO );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOpaque );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kBone );
         gfxContext.SetPipelineState( m_BlendPSO );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kTransparent );
         gfxContext.SetPipelineState( m_GroundPlanePSO );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kGroundPlane );
-        Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
-        gfxContext.SetRenderTarget( nullptr );
     }
+    {
+        ScopedTimer _prof( L"Render Frustum", gfxContext );
+
+        const std::vector<Color> SplitColor = 
+        {
+            Color(1.f, 0.f, 0.f, 0.36f),
+            Color(0.f, 1.f, 0.f, 0.36f),
+            Color(0.f, 0.f, 1.f, 0.36f),
+            Color(1.f, 1.f, 0.f, 0.36f)
+        };
+
+        auto WorldToClip = m_ProjMatrix * m_ViewMatrix;
+        if (m_CascadedShadow)
+        {
+            if (m_bShadowSplit)
+            {
+                for (auto i = 0; i < m_SplitProjections.size(); i++)
+                {
+                    Frustum FrustumVS( m_SplitProjections[i] );
+                    Frustum FrustumWS = m_SunShadow.GetCameraToWorld() * FrustumVS;
+                    Utility::DebugCube( gfxContext, WorldToClip, FrustumWS.GetFrustumCorners().data(), SplitColor[i] );
+                }
+            }
+            if (m_bViewSplit)
+            {
+                for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
+                    Utility::DebugCube( gfxContext, WorldToClip, m_SplitViewFrustum[i].data(), SplitColor[i] );
+            }
+        }
+
+        Matrix4 FixDepth( kIdentity );
+        FixDepth.SetZ( Vector4(kZero) );
+        FixDepth.SetW( Vector4(0.f, 0.f, 0.0f, 1.f) );
+        auto& WorldFrustum = m_SunShadow.GetWorldSpaceFrustum();
+        auto Corners = WorldFrustum.GetFrustumCorners();
+        Utility::DebugCube( gfxContext, FixDepth * WorldToClip, Corners.data(), Color( 0.f, 1.f, 1.f, 0.1f ) );
+    }
+    if (m_bDebugTexture)
+    {
+        ScopedTimer _prof( L"DebugTexture", gfxContext );
+
+        if (m_CascadedShadow)
+        {
+            Utility::DebugTexture( gfxContext, g_Shadow[0].GetSRV(), 0, 0 );
+            Utility::DebugTexture( gfxContext, g_Shadow[1].GetSRV(), 500, 0 );
+            Utility::DebugTexture( gfxContext, g_Shadow[2].GetSRV(), 0, 500 );
+            Utility::DebugTexture( gfxContext, g_Shadow[3].GetSRV(), 500, 500 );
+        }
+        else
+        {
+            Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
+        }
+    }
+    gfxContext.SetRenderTarget( nullptr );
     TemporalEffects::ResolveImage(gfxContext);
 
 	gfxContext.Finish();
@@ -437,7 +680,7 @@ void MikuViewer::RenderScene( void )
 
 void MikuViewer::RenderUI( GraphicsContext& Context )
 {
-	auto pos = m_Camera.GetPosition();
+	auto pos = SelectedCamera()->GetPosition();
 	auto x = (float)g_SceneColorBuffer.GetWidth() - 400.f;
     float px = pos.GetX(), py = pos.GetY(), pz = pos.GetZ();
 

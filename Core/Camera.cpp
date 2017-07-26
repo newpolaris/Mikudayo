@@ -17,6 +17,8 @@
 
 using namespace Math;
 
+const bool BaseCamera::m_ReverseZ = false;
+
 //
 // 'forward' is inverse look direction (right hand coord)
 // So in cross calcuration to calc right and up vector
@@ -48,7 +50,8 @@ void BaseCamera::Update()
 
 	m_ViewMatrix = Matrix4(~m_CameraToWorld);
 	m_ViewProjMatrix = m_ProjMatrix * m_ViewMatrix;
-	m_ReprojectMatrix = m_PreviousViewProjMatrix * Invert(GetViewProjMatrix());
+    m_ClipToWorld = Invert(m_ViewProjMatrix);
+	m_ReprojectMatrix = m_PreviousViewProjMatrix * m_ClipToWorld;
 
 	m_FrustumVS = Frustum( m_ProjMatrix );
 	m_FrustumWS = m_CameraToWorld * m_FrustumVS;

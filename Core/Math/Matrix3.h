@@ -45,6 +45,8 @@ namespace Math
 		static INLINE Matrix3 MakeScale( float sx, float sy, float sz ) { return Matrix3(XMMatrixScaling(sx, sy, sz)); }
 		static INLINE Matrix3 MakeScale( Vector3 scale ) { return Matrix3(XMMatrixScalingFromVector(scale)); }
 
+        INLINE Vector3 Transform( Vector3 v ) { return Vector3(XMVector3TransformCoord( v, *this )); }
+
 		INLINE operator XMMATRIX() const { return (const XMMATRIX&)m_mat; }
 
 		INLINE Vector3 operator* ( Vector3 vec ) const { return Vector3( XMVector3TransformNormal(vec, *this) ); }

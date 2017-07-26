@@ -547,5 +547,11 @@
     <FxCompile Include="Shaders\DebugTexturePS.hlsl">
       <Filter>Shaders\Misc</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\PrimitiveVS.hlsl">
+      <Filter>Shaders\Misc</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PrimitivePS.hlsl">
+      <Filter>Shaders\Misc</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

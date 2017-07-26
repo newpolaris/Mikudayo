@@ -1,9 +1,19 @@
+#include "Shadow.hlsli"
+
+Texture2D<float4>	texDiffuse		    : register(t1);
+Texture2D<float3>	texSphere		    : register(t2);
+Texture2D<float3>	texToon             : register(t3);
+Texture2D<float>	texShadow[MaxSplit] : register(t4);
+SamplerState		sampler0		    : register(s0);
+SamplerState		sampler1		    : register(s1);
+SamplerComparisonState samplerShadow    : register(s2);
+
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
 	float4 posH : SV_POSITION;
 	float3 posV : POSITION0;
-    float4 shadowPosH : POSITION1;
+    float4 shadowPosH[MaxSplit] : POSITION1;
 	float3 normalV : NORMAL;
 	float2 uv : TEXTURE;
 };
@@ -35,16 +45,6 @@ cbuffer PassConstants : register(b1)
     float3 SunColor;
     float4 ShadowTexelSize;
 }
-
-Texture2D<float>	texShadow        : register(t0);
-Texture2D<float4>	texDiffuse		 : register(t1);
-Texture2D<float3>	texSphere		 : register(t2);
-Texture2D<float3>	texToon          : register(t3);
-SamplerState		sampler0		 : register(s0);
-SamplerState		sampler1		 : register(s1);
-SamplerComparisonState samplerShadow : register(s2);
-
-#include "Shadow.hlsli"
 
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
@@ -88,7 +88,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
-    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0 };
+    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0, texShadow[0], texShadow, samplerShadow };
 	float shadow = GetShadow(tex, input.shadowPosH);
 #if 0
 	if (bUseToon) 

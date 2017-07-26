@@ -10,15 +10,17 @@ namespace Math
 	public:
 		MikuCamera();
 
+		void Perspective( bool enable ) { m_bPerspective = enable; }
 		void SetOrthographic( float verticalFovRadians, float aspectHeightOverWidth, float nearZClip, float farZClip );
 		void SetPerspective( float verticalFovRadians, float aspectHeightOverWidth, float nearZClip, float farZClip );
 		void SetFOV( float verticalFovInRadians ) { m_VerticalFOV = verticalFovInRadians; }
 		void SetAspectRatio( float heightOverWidth ) { m_AspectRatio = heightOverWidth; }
 		void SetZRange( float nearZ, float farZ) { m_NearClip = nearZ; m_FarClip = farZ; }
 		void SetDistance( float distance ) { m_Distance = distance; }
+        // Set MMD's Camera Parameter
 		void SetPositionUI( Vector3 position ) { m_Position = position; }
+        // Set MMD's Camera Parameter
 		void SetRotationUI( Quaternion rotation ) { m_Rotation = rotation; }
-		void Perspective( bool enable ) { m_bPerspective = enable; }
 
 		float GetFOV() const { return m_VerticalFOV; }
 		float GetAspectRatio() const { return m_AspectRatio; }

@@ -204,6 +204,7 @@ namespace Graphics
 	D3D11_RASTERIZER_DESC RasterizerDefault;
 	D3D11_RASTERIZER_DESC RasterizerDefaultCW;
 	D3D11_RASTERIZER_DESC RasterizerTwoSided;
+	D3D11_RASTERIZER_DESC RasterizerWireframe;
 	D3D11_RASTERIZER_DESC RasterizerShadow;
 	D3D11_RASTERIZER_DESC RasterizerShadowCW;
 	D3D11_RASTERIZER_DESC RasterizerShadowTwoSided;
@@ -553,6 +554,9 @@ void Graphics::Initialize( void )
 
 	RasterizerTwoSided = RasterizerDefault;
 	RasterizerTwoSided.CullMode = D3D11_CULL_NONE;
+
+	RasterizerWireframe = RasterizerTwoSided;
+	RasterizerWireframe.FillMode = D3D11_FILL_WIREFRAME;
 
 	// Shadows need their own rasterizer state so we can reverse the winding of faces
 	RasterizerShadow = RasterizerDefault;

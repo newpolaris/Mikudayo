@@ -75,6 +75,7 @@ namespace Graphics
 	extern D3D11_RASTERIZER_DESC RasterizerDefault;
 	extern D3D11_RASTERIZER_DESC RasterizerDefaultCW;
 	extern D3D11_RASTERIZER_DESC RasterizerTwoSided;
+    extern D3D11_RASTERIZER_DESC RasterizerWireframe;
 	extern D3D11_RASTERIZER_DESC RasterizerShadow;
 	extern D3D11_RASTERIZER_DESC RasterizerShadowCW;
 	extern D3D11_RASTERIZER_DESC RasterizerShadowTwoSided;

@@ -122,7 +122,7 @@ namespace Graphics
 		VertexBuffer m_PositionBuffer;
 		IndexBuffer m_IndexBuffer;
 
-        Matrix4 m_ModelTrnasform;
+        Matrix4 m_ModelTransform;
 		std::wstring m_Name;
 		std::vector<XMMATRIX> m_BoneAttribute;
 		SubmeshGeometry m_BoneMesh;
@@ -133,6 +133,6 @@ namespace Graphics
 
     inline void MikuModel::SetPosition( Vector3 postion )
     {
-        m_ModelTrnasform = Matrix4::MakeTranslate(postion);
+        m_ModelTransform = Matrix4::MakeTranslate(postion);
     }
 }
