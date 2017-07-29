@@ -37,6 +37,10 @@ using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
 
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(x) { delete x; x = nullptr; }
+#endif
+
 namespace Pmd {
 	std::vector<InputDesc> InputDescriptor
 	{
@@ -100,6 +104,7 @@ private:
 	MikuCamera m_Camera;
     MikuCamera m_SecondCamera;
 	MikuCameraController* m_pCameraController;
+	CameraController* m_pSecondCameraController;
 
     Matrix4 m_ViewMatrix;
     Matrix4 m_ProjMatrix;
@@ -160,7 +165,7 @@ BoolVar ShowWaveTileCounts("Application/Forward+/Show Wave Tile Counts", false);
 BoolVar EnableWaveOps("Application/Forward+/Enable Wave Ops", true);
 #endif
 
-MikuViewer::MikuViewer() : m_pCameraController( nullptr )
+MikuViewer::MikuViewer() : m_pCameraController( nullptr ), m_pSecondCameraController( nullptr )
 {
     float Sign = Math::g_ReverseZ ? -1.f : 1.f;
     for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
@@ -254,7 +259,7 @@ void MikuViewer::Startup( void )
 	m_BlendPSO.Finalize();
 
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
-	m_pCameraController->SetMotion( &m_Motion );
+	m_pSecondCameraController = new CameraController(m_SecondCamera, Vector3(kYUnitVector));
 
     m_SplitViewProjs.resize( kShadowSplit );
     m_SplitViewFrustum.resize( kShadowSplit );
@@ -280,8 +285,8 @@ void MikuViewer::Cleanup( void )
     m_GroundPlanePSO.Destroy();
     m_Models.clear();
 
-	delete m_pCameraController;
-	m_pCameraController = nullptr;
+    SAFE_DELETE( m_pCameraController );
+    SAFE_DELETE( m_pSecondCameraController );
 }
 
 namespace Graphics
@@ -344,8 +349,11 @@ void MikuViewer::Update( float deltaT )
         model->Update( m_Frame );
 	m_Motion.Update( m_Frame );
 
-    m_pCameraController->HandOverControl( SelectedCamera() );
-	m_pCameraController->Update( deltaT );
+    m_Motion.Animate( m_Camera );
+    if (m_CameraType == kCameraMain)
+        m_pCameraController->Update( deltaT );
+    else
+        m_pSecondCameraController->Update( deltaT );
 
 	m_ViewMatrix = SelectedCamera()->GetViewMatrix();
 	m_ProjMatrix = SelectedCamera()->GetProjMatrix();
@@ -662,9 +670,9 @@ void MikuViewer::RenderScene( void )
 
 void MikuViewer::RenderUI( GraphicsContext& Context )
 {
-	auto pos = SelectedCamera()->GetPosition();
+	auto Pos = SelectedCamera()->GetPosition();
 	auto x = (float)g_SceneColorBuffer.GetWidth() - 400.f;
-    float px = pos.GetX(), py = pos.GetY(), pz = pos.GetZ();
+    float px = Pos.GetX(), py = Pos.GetY(), pz = Pos.GetZ();
 
 	TextContext Text(Context);
 	Text.Begin();

@@ -7,8 +7,8 @@ using namespace GameCore;
 
 namespace GameCore
 {
-    const char* CameraLabels[] = { "CameraMMD", "Camera3D", "CameraMotion" };
-    EnumVar CameraMode("Application/Camera/Camera Move", kCameraMoveMMD, kCameraMoveMotion, CameraLabels);
+    const char* CameraLabels[] = { "Camera MMD", "Camera 3D", "Camera Motion" };
+    EnumVar CameraMove("Application/Camera/Main Camera Move", kCameraMove3D, 3, CameraLabels);
 
     Matrix3 GetBasis( Vector3 forward, Vector3 up )
     {
@@ -31,7 +31,7 @@ namespace GameCore
 }
 
 MikuCameraController::MikuCameraController( MikuCamera& camera, Vector3 worldUp ) :
-    m_MainCamera( camera ), m_pSceondCamera( nullptr ), m_pMotion( nullptr )
+    m_TargetCamera( camera )
 {
 	m_WorldUp = Normalize(worldUp);
 	m_WorldNorth = Normalize(Cross(m_WorldUp, Vector3(kXUnitVector)));
@@ -68,28 +68,15 @@ namespace Graphics
 
 void MikuCameraController::Update( float deltaTime )
 {
-    auto mode = ECameraMove((int)CameraMode);
-	if (mode == kCameraMoveMotion)
-	{
-		if (m_pMotion)
-			m_pMotion->Animate( m_MainCamera );
-	}
+    auto mode = ECameraMove((int)CameraMove);
+	if (mode != kCameraMoveMotion)
+        UpdateFromInput( mode, deltaTime );
 
-	if (m_pSceondCamera)
-        UpdateFromInput( m_pSceondCamera, kCameraMove3D, deltaTime );
-    else if (mode != kCameraMoveMotion)
-        UpdateFromInput( &m_MainCamera, mode, deltaTime );
-
-	m_MainCamera.UpdateViewMatrix();
-	m_MainCamera.Update();
-    if (m_pSceondCamera)
-    {
-        m_pSceondCamera->UpdateViewMatrix();
-        m_pSceondCamera->Update();
-    }
+	m_TargetCamera.UpdateViewMatrix();
+	m_TargetCamera.Update();
 }
 
-void MikuCameraController::UpdateFromInput( MikuCamera* TargetCamera, ECameraMove kCameraMode, float deltaTime )
+void MikuCameraController::UpdateFromInput( ECameraMove kCameraMove, float deltaTime )
 {
 	(deltaTime);
 
@@ -132,8 +119,8 @@ void MikuCameraController::UpdateFromInput( MikuCamera* TargetCamera, ECameraMov
 		ApplyMomentum(m_LastAscent, ascent, deltaTime);
 	}
 
-	if (kCameraMode == kCameraMove3D ||
-		kCameraMode == kCameraMoveMMD && GameInput::IsPressed( GameInput::kMouse0 ))
+	if (kCameraMove == kCameraMove3D ||
+		kCameraMove == kCameraMoveMMD && GameInput::IsPressed( GameInput::kMouse0 ))
 	{
 		// don't apply momentum to mouse inputs
 		yaw += GameInput::GetAnalogInput(GameInput::kAnalogMouseX) * m_MouseSensitivityX;
@@ -152,20 +139,20 @@ void MikuCameraController::UpdateFromInput( MikuCamera* TargetCamera, ECameraMov
 	else if (m_CurrentHeading <= -XM_PI)
 		m_CurrentHeading += XM_2PI; 
 
-	if (kCameraMode == kCameraMoveMMD)
+	if (kCameraMove == kCameraMoveMMD)
 	{
 		Matrix3 orientation = Matrix3(m_WorldEast, m_WorldUp, -m_WorldNorth) * Matrix3::MakeYRotation( m_CurrentHeading ) * Matrix3::MakeXRotation( m_CurrentPitch );
-		TargetCamera->SetDistance(TargetCamera->GetDistance() + distanceDelta);
-		TargetCamera->SetRotationUI( Quaternion(orientation) );
+		m_TargetCamera.SetDistance(m_TargetCamera.GetDistance() + distanceDelta);
+		m_TargetCamera.SetRotationUI( Quaternion(orientation) );
 	}
-	else if (kCameraMode == kCameraMove3D)
+	else if (kCameraMove == kCameraMove3D)
 	{
 		Matrix3 orientation = Matrix3( m_WorldEast, m_WorldUp, -m_WorldNorth ) * Matrix3::MakeYRotation( m_CurrentHeading ) * Matrix3::MakeXRotation( m_CurrentPitch );
-		Vector3 position = orientation * Vector3( strafe, ascent, -forward ) + TargetCamera->GetPosition();
+		Vector3 position = orientation * Vector3( strafe, ascent, -forward ) + m_TargetCamera.GetPosition();
 		Quaternion basis = Quaternion(GetBasis( -orientation.GetZ(), orientation.GetY() ));
-		Vector3 CameraPos = position - basis * TargetCamera->GetDistanceVector();
-		TargetCamera->SetRotationUI( basis );
-		TargetCamera->SetPositionUI( CameraPos );
+		Vector3 CameraPos = position - basis * m_TargetCamera.GetDistanceVector();
+		m_TargetCamera.SetRotationUI( basis );
+		m_TargetCamera.SetPositionUI( CameraPos );
 	}
 }
 
