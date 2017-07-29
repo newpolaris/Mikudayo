@@ -29,6 +29,7 @@ namespace Graphics
     ColorBuffer g_HorizontalBuffer;
 
     ShadowBuffer g_ShadowBuffer;
+    ShadowBuffer g_CascadeShadowBuffer;
 
     ColorBuffer g_SSAOFullScreen(Color(1.0f, 1.0f, 1.0f));
     ColorBuffer g_LinearDepth[2];
@@ -152,6 +153,7 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
                     esram.PopStack();	// End generating SSAO
 
 					g_ShadowBuffer.Create( L"Shadow Map", 2048, 2048, esram );
+                    g_CascadeShadowBuffer.CreateArray( L"Cascade Shadow Map", 1024, 1024, 4, esram );
 
                 esram.PopStack();	// End Shading
 

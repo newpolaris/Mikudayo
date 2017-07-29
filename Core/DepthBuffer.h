@@ -33,11 +33,12 @@ public:
 
 	// Get pre-created CPU-visible descriptor handles
 	const D3D11_DSV_HANDLE& GetDSV() const { return m_hDSV[0]; }
+    const D3D11_DSV_HANDLE& GetDSV( uint32_t slice ) const { return m_hDSVSlice[slice]; }
 	const D3D11_DSV_HANDLE& GetDSV_DepthReadOnly() const { return m_hDSV[1]; }
 	const D3D11_DSV_HANDLE& GetDSV_StencilReadOnly() const { return m_hDSV[2]; }
 	const D3D11_DSV_HANDLE& GetDSV_ReadOnly() const { return m_hDSV[3]; }
-    const D3D11_DSV_HANDLE& GetDSVSlice( uint32_t slice ) const { return m_hDSVSlice[slice]; }
 	const D3D11_SRV_HANDLE  GetDepthSRV() const { return m_hDepthSRV.Get(); }
+	const D3D11_SRV_HANDLE  GetDepthSRV( uint32_t slice ) const { return m_hSRVSliceHandle[slice].Get(); }
 	const D3D11_SRV_HANDLE  GetStencilSRV() const { return m_hStencilSRV.Get(); }
 
 	float GetClearDepth() const { return m_ClearDepth; }
@@ -64,4 +65,5 @@ private:
 
     std::vector<D3D11_DSV_HANDLE> m_hDSVSlice;
     std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> m_hDSVSliceHandle;
+    std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> m_hSRVSliceHandle;
 };

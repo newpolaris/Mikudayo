@@ -227,6 +227,7 @@ public:
 
 	void ClearColor( ColorBuffer& Target );
 	void ClearDepth( DepthBuffer& Target );
+	void ClearDepth( DepthBuffer& Target, uint32_t Slice );
 	void ClearStencil( DepthBuffer& Target );
 	void ClearDepthAndStencil( DepthBuffer& Target );
 

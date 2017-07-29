@@ -45,6 +45,11 @@ void DepthBuffer::CreateArray( const std::wstring& Name, uint32_t Width, uint32_
 	CreateDerivedViews(Graphics::g_Device, Format, ArrayCount);
 }
 
+void DepthBuffer::CreateArray( const std::wstring& Name, uint32_t Width, uint32_t Height, uint32_t ArrayCount, DXGI_FORMAT Format, EsramAllocator& )
+{
+    CreateArray( Name, Width, Height, ArrayCount, Format );
+}
+
 void DepthBuffer::CreateDerivedViews( ID3D11Device* Device, DXGI_FORMAT Format, uint32_t ArraySize )
 {
 	ID3D11Resource* Resource = m_pResource.Get();
@@ -165,10 +170,27 @@ void DepthBuffer::CreateDerivedViews( ID3D11Device* Device, DXGI_FORMAT Format, 
             Microsoft::WRL::ComPtr<ID3D11DepthStencilView> DSV;
             Device->CreateDepthStencilView( Resource, &dsvDesc, DSV.GetAddressOf() );
             m_hDSVSliceHandle.push_back( DSV );
+
+            if (dsvDesc.ViewDimension == D3D11_DSV_DIMENSION_TEXTURE2DARRAY)
+            {
+                SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+                SRVDesc.Texture2DArray.MipLevels = 1;
+                SRVDesc.Texture2DArray.FirstArraySlice = i;
+                SRVDesc.Texture2DArray.ArraySize = 1;
+            }
+            else
+            {
+                SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
+                SRVDesc.Texture2DMSArray.FirstArraySlice = i;
+                SRVDesc.Texture2DMSArray.ArraySize = 1;
+            }
+            Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV;
+            Device->CreateShaderResourceView( Resource, &SRVDesc, SRV.GetAddressOf() );
+            m_hSRVSliceHandle.push_back( SRV);
         }
         // TO HANDLE VS2015 BUG. Save pointer another member variable
         for (auto i = 0; i < m_hDSVSliceHandle.size(); ++i)
-            m_hDSVSlice[i] = m_hDSVSliceHandle[i].Get();
+            m_hDSVSlice.push_back( m_hDSVSliceHandle[i].Get() );
     }
 }
 
@@ -183,6 +205,7 @@ void DepthBuffer::Destroy()
 	}
     m_hDSVSliceHandle.clear();
     m_hDSVSlice.clear();
+    m_hSRVSliceHandle.clear();
 
 	PixelBuffer::Destroy();
 }

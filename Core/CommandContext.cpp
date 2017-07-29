@@ -241,11 +241,6 @@ void CommandContext::CopySubresource( GpuResource& Dest, UINT DestSubIndex, GpuR
     m_CommandList->CopySubresourceRegion( Dest.GetResource(), DestSubIndex, 0, 0, 0, Src.GetResource(), SrcSubIndex, nullptr );
 }
 
-void CommandContext::CopyBufferRegion( GpuResource& Dest, size_t DestOffset, GpuResource& Src, size_t SrcOffset, size_t NumBytes )
-{
-    ASSERT(FALSE);
-}
-
 void CommandContext::CopyCounter( GpuResource& Dest, size_t DestOffset, StructuredBuffer& Src)
 {
     m_CommandList->CopyStructureCount( (ID3D11Buffer*)Dest.GetResource(), (UINT)DestOffset, Src.GetUAV() );
@@ -499,8 +494,14 @@ void GraphicsContext::ClearColor( ColorBuffer & Target )
 
 void GraphicsContext::ClearDepth( DepthBuffer& Target )
 {
-    ASSERT( Target.GetDSV() );
+    ASSERT( Target.GetDSV() != nullptr );
 	m_CommandList->ClearDepthStencilView( Target.GetDSV(), D3D11_CLEAR_DEPTH, Target.GetClearDepth(), Target.GetClearStencil() );
+}
+
+void GraphicsContext::ClearDepth( DepthBuffer& Target, uint32_t Slice )
+{
+    ASSERT( Target.GetDSV(Slice) != nullptr );
+	m_CommandList->ClearDepthStencilView( Target.GetDSV(Slice), D3D11_CLEAR_DEPTH, Target.GetClearDepth(), Target.GetClearStencil() );
 }
 
 void GraphicsContext::ClearStencil( DepthBuffer& Target )

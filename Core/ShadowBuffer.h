@@ -26,14 +26,20 @@ public:
         
     void Create( const std::wstring& Name, uint32_t Width, uint32_t Height );
     void Create( const std::wstring& Name, uint32_t Width, uint32_t Height, EsramAllocator& Allocator );
+    void CreateArray( const std::wstring& Name, uint32_t Width, uint32_t Height, uint32_t ArraySize );
+    void CreateArray( const std::wstring& Name, uint32_t Width, uint32_t Height, uint32_t ArraySize, EsramAllocator& Allocator );
 
     D3D11_SRV_HANDLE GetSRV() const { return GetDepthSRV(); }
+    D3D11_SRV_HANDLE GetSRV( uint32_t slice ) const { return GetDepthSRV(slice); }
 
-    void BeginRendering( GraphicsContext& context );
+    void BeginRendering( GraphicsContext& Context );
+    void BeginRendering( GraphicsContext& Context, uint32_t Slice );
     void EndRendering( GraphicsContext& context );
     void SetDepthFormat( DXGI_FORMAT Format );
 
 private:
+    void SetViewport( uint32_t Width, uint32_t Height );
+
     D3D11_VIEWPORT m_Viewport;
     D3D11_RECT m_Scissor;
     DXGI_FORMAT m_DepthFormat;

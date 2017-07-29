@@ -29,9 +29,7 @@ struct ShadowTex
     float4 ShadowTexelSize;
     float3 Position;
     float Bias;
-    texture2D<float> ShadowMap;
-    texture2D<float> texShadow[MaxSplit];
-
+    Texture2DArray<float> ShadowMap;
     SamplerComparisonState ShadowSampler;
 };
 
@@ -65,11 +63,12 @@ float RandomAngle(float3 seed, float freq)
 //
 float SampleSingle( ShadowTex Input, float3 ShadowPos, uint cascadeIdx )
 {
-    texture2D<float> texShadow = Input.ShadowMap;
+    Texture2DArray<float> texShadow = Input.ShadowMap;
 
-    return texShadow.SampleCmpLevelZero( Input.ShadowSampler, ShadowPos.xy, ShadowPos.z );
+    return texShadow.SampleCmpLevelZero( Input.ShadowSampler, float3(ShadowPos.xy, cascadeIdx), ShadowPos.z );
 }
 
+/*
 //
 // 3 tap sized sampling method with total 9 sampling point
 //
@@ -508,6 +507,7 @@ float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shad
         return dot(s, 1.0f) / w;
     #endif
 }
+*/
 
 float GetShadow( ShadowTex Input, float4 ShadowPosH[MaxSplit] )
 {
@@ -523,12 +523,11 @@ float GetShadow( ShadowTex Input, float4 ShadowPosH[MaxSplit] )
         float2 TransTexCoord = ShadowPos.xy;
         if (!any( saturate( TransTexCoord ) != TransTexCoord ))
         {
-            Input.ShadowMap = Input.texShadow[i];
             float3 shadowPosDX = ddx_fine( ShadowPos );
             float3 shadowPosDY = ddy_fine( ShadowPos );
 
 #if ShadowMode_ == ShadowModeSingle_
-            Result = SampleSingle( Input, ShadowPos, 0 );
+            Result = SampleSingle( Input, ShadowPos, i );
 #elif ShadowMode_ == ShadowModeWeighted_
             Result = SampleWeighted( Input, ShadowPos );
 #elif ShadowMode_ == ShadowModePoisson_

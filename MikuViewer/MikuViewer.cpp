@@ -122,7 +122,6 @@ private:
 	GraphicsPSO m_BlendPSO;
 	GraphicsPSO m_GroundPlanePSO;
 
-    std::vector<ShadowBuffer> g_Shadow;
     std::vector<Matrix4> m_SplitViewProjs;
     std::vector<FrustumCorner> m_SplitViewFrustum;
 };
@@ -162,7 +161,10 @@ BoolVar EnableWaveOps("Application/Forward+/Enable Wave Ops", true);
 
 MikuViewer::MikuViewer() : m_pCameraController( nullptr )
 {
-    // g_ShadowBuffer.SetDepthFormat( DXGI_FORMAT_D32_FLOAT );
+    // g_CascadeShadowBuffer.SetDepthFormat( DXGI_FORMAT_D32_FLOAT );
+    g_CascadeShadowBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
+	g_SceneDepthBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
+	g_ShadowBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
 }
 
 void MikuViewer::Startup( void )
@@ -259,12 +261,11 @@ void MikuViewer::Startup( void )
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pCameraController->SetMotion( &m_Motion );
 
-	g_SceneDepthBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
-	g_ShadowBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
-
-    m_SamplerShadow = Camera::GetReverseZ() ? SamplerShadowGE : SamplerShadowLE;
+    m_SamplerShadow = BaseCamera::GetReverseZ() ? SamplerShadowGE : SamplerShadowLE;
 
     using namespace Lighting;
+    m_SplitViewProjs.resize( 4 );
+    m_SplitViewFrustum.resize( 4 );
 
     MotionBlur::Enable = true;
     TemporalEffects::EnableTAA = false;
@@ -272,15 +273,6 @@ void MikuViewer::Startup( void )
     // PostEffects::EnableHDR = true;
     // PostEffects::EnableAdaptation = true;
     // SSAO::Enable = true;
-
-    g_Shadow.resize( 4 );
-    for (auto i = 0; i < g_Shadow.size(); i++)
-    {
-        g_Shadow[i].Create( L"Shadow" + std::to_wstring(i), 1024, 1024 );
-        g_Shadow[i].SetClearDepth( BaseCamera::GetClearDepth() );
-    }
-    m_SplitViewProjs.resize( 4 );
-    m_SplitViewFrustum.resize( 4 );
 }
 
 void MikuViewer::Cleanup( void )
@@ -295,10 +287,6 @@ void MikuViewer::Cleanup( void )
 	m_BlendPSO.Destroy();
     m_GroundPlanePSO.Destroy();
     m_Models.clear();
-
-    for (auto shadow : g_Shadow)
-        ; // shadow.Destroy();
-    g_Shadow.clear();
 
 	delete m_pCameraController;
 	m_pCameraController = nullptr;
@@ -510,9 +498,9 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
     }
 
     auto& ShadowView = m_SunShadow.GetViewMatrix();
-    for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
+    for (auto cascade = 0; cascade < m_SplitViewFrustum.size(); cascade++)
     {
-        auto& frustumCornersWS = m_SplitViewFrustum[i];
+        auto& frustumCornersWS = m_SplitViewFrustum[cascade];
 
         // Calculate the centroid of the view frustum slice
         Vector3 frustumCenter = 0.0f;
@@ -572,17 +560,17 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
             minExtents.GetY(), maxExtents.GetY(), 
             minZ, maxZ ) );
 
-        Matrix4 View = Matrix4 (XMMatrixLookAtRH( shadowCameraPos, frustumCenter, upDir ) );
-        m_SplitViewProjs[i] = SplitProj;
+        Matrix4 View = Matrix4( XMMatrixLookAtRH( shadowCameraPos, frustumCenter, upDir ) );
+        m_SplitViewProjs[cascade] = SplitProj;
     }
 
     for (auto i = 0; i < m_SplitViewProjs.size(); i++)
     {
-        g_Shadow[i].BeginRendering( gfxContext );
+        g_CascadeShadowBuffer.BeginRendering( gfxContext, i );
         gfxContext.SetPipelineState( m_ShadowPSO );
         RenderObjects( gfxContext, m_SplitViewProjs[i] * ShadowView, kOpaque );
         RenderObjects( gfxContext, m_SplitViewProjs[i] * ShadowView, kTransparent );
-        g_Shadow[i].EndRendering( gfxContext );
+        g_CascadeShadowBuffer.EndRendering( gfxContext );
     }
 }
 
@@ -617,11 +605,9 @@ void MikuViewer::RenderScene( void )
     gfxContext.ClearColor( g_SceneColorBuffer );
     gfxContext.ClearDepth( g_SceneDepthBuffer );
     {
-        const int MaxSplit = 4;
-
         ScopedTimer _prof( L"Render Color", gfxContext );
-        D3D11_SRV_HANDLE Ptr[] = { g_Shadow[0].GetSRV(), g_Shadow[1].GetSRV(), g_Shadow[2].GetSRV(), g_Shadow[3].GetSRV() };
-        gfxContext.SetDynamicDescriptors( 4, MaxSplit, Ptr, { kBindPixel } );
+
+        gfxContext.SetDynamicDescriptor( 4, g_CascadeShadowBuffer.GetSRV(), { kBindPixel } );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_OpaquePSO );
@@ -672,11 +658,9 @@ void MikuViewer::RenderScene( void )
     if (m_bDebugTexture)
     {
         ScopedTimer _prof( L"DebugTexture", gfxContext );
-
-        Utility::DebugTexture( gfxContext, g_Shadow[0].GetSRV(), 0, 0 );
-        Utility::DebugTexture( gfxContext, g_Shadow[1].GetSRV(), 500, 0 );
-        Utility::DebugTexture( gfxContext, g_Shadow[2].GetSRV(), 0, 500 );
-        Utility::DebugTexture( gfxContext, g_Shadow[3].GetSRV(), 500, 500 );
+        std::pair<int, int> pos[] = { {0, 0}, {500, 0}, {0, 500}, {500, 500} };
+        for (uint32_t i = 0; i < _countof(pos); i++)
+            Utility::DebugTexture( gfxContext, g_CascadeShadowBuffer.GetSRV( i ), pos[i].first, pos[i].second );
     }
     gfxContext.SetRenderTarget( nullptr );
     TemporalEffects::ResolveImage(gfxContext);

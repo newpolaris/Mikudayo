@@ -1,12 +1,12 @@
 #include "Shadow.hlsli"
 
-Texture2D<float4>	texDiffuse		    : register(t1);
-Texture2D<float3>	texSphere		    : register(t2);
-Texture2D<float3>	texToon             : register(t3);
-Texture2D<float>	texShadow[MaxSplit] : register(t4);
-SamplerState		sampler0		    : register(s0);
-SamplerState		sampler1		    : register(s1);
-SamplerComparisonState samplerShadow    : register(s2);
+Texture2D<float4> texDiffuse : register(t1);
+Texture2D<float3> texSphere : register(t2);
+Texture2D<float3> texToon : register(t3);
+Texture2DArray<float> texShadow : register(t4);
+SamplerState sampler0 : register(s0);
+SamplerState sampler1 : register(s1);
+SamplerComparisonState samplerShadow : register(s2);
 
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
@@ -88,7 +88,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
-    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0, texShadow[0], texShadow, samplerShadow };
+    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0, texShadow, samplerShadow };
 	float shadow = GetShadow(tex, input.shadowPosH);
 #if 0
 	if (bUseToon) 

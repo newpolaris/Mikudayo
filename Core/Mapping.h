@@ -1,6 +1,6 @@
 #pragma once
 
-// Crash. nvidia driver 384.76
+// Crash. Nvidia driver 384.76
 // #if defined(NTDDI_WIN10_RS2) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
 #if 0
 using ID3D11_DEVICE = ID3D11Device5;
