@@ -71,6 +71,8 @@ namespace Math
 
 		static INLINE Matrix4 MakeTranslate( Vector3 translate ) { return Matrix4(XMMatrixTranslationFromVector(translate)); }
 
+        INLINE Vector3 Transform( Vector3 v ) const { return Vector3(XMVector3TransformCoord( v, *this )); }
+
 	private:
 		XMMATRIX m_mat;
 	};

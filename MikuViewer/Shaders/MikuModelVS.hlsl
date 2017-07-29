@@ -1,11 +1,6 @@
 #include "Skinning.hlsli"
 
-#define CSM 1
-#ifdef CSM
 static const uint MaxSplit = 4;
-#else
-static const uint MaxSplit = 1;
-#endif
 
 cbuffer VSConstants : register(b0)
 {

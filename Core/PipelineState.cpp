@@ -228,11 +228,11 @@ void GraphicsPipelineState::Bind( ID3D11DeviceContext* Context )
 	if (InputLayout)
 		InputLayout->Bind( Context );
 
-	if (VertexShader)
-		VertexShader->Bind( Context );
-
-	if (PixelShader)
-		PixelShader->Bind( Context );
+    VertexShader->Bind( Context );
+    PixelShader->Bind( Context );
+    GeometryShader->Bind( Context );
+    DomainShader->Bind( Context );
+    HullShader->Bind( Context );
 
 	if (BlendState)
 		BlendState->Bind( Context );

@@ -93,9 +93,12 @@ public:
 	~Shader();
 
 private:
-	Shader(ShaderType Type);
+    Shader( ShaderType Type );
+    Shader( ShaderType Type, std::wstring Name );
 	void Create( const ShaderByteCode& ByteCode );
 	void FillReflection();
+
+    static std::shared_ptr<Shader> Empty[kShaderCount];
 
 	ShaderType m_ShaderType;
 	std::wstring m_Name;

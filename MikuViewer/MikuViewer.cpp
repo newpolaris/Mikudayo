@@ -123,7 +123,7 @@ private:
 	GraphicsPSO m_GroundPlanePSO;
 
     std::vector<ShadowBuffer> g_Shadow;
-    std::vector<Matrix4> m_SplitProjections;
+    std::vector<Matrix4> m_SplitViewProjs;
     std::vector<FrustumCorner> m_SplitViewFrustum;
 };
 
@@ -138,19 +138,14 @@ BoolVar m_bDebugTexture("Application/Camera/Debug Texture", true);
 BoolVar m_bViewSplit("Application/Camera/View Split", false);
 BoolVar m_bShadowSplit("Application/Camera/Shadow Split", false);
 BoolVar m_bFixDepth("Application/Camera/Fix Depth", false);
+BoolVar m_bLightFrustum("Application/Camera/Light Frustum", false);
+BoolVar m_bStabilizeCascades("Application/Camera/Stabilize Cascades", false);
 
 ExpVar m_SunLightIntensity("Application/Lighting/Sun Light Intensity", 4.0f, 0.0f, 16.0f, 0.1f);
 ExpVar m_AmbientIntensity("Application/Lighting/Ambient Intensity", 0.1f, -16.0f, 16.0f, 0.1f);
 NumVar m_ShadowDimX("Application/Lighting/Shadow Dim X", 100, 10, 1000, 10 );
 NumVar m_ShadowDimY("Application/Lighting/Shadow Dim Y", 100, 10, 1000, 10 );
 NumVar m_ShadowDimZ("Application/Lighting/Shadow Dim Z", 100, 10, 1000, 10 );
-
-#define CSM 1
-#ifdef CSM
-BoolVar m_CascadedShadow("Application/Lighting/CascadedShadow", true);
-#else
-BoolVar m_CascadedShadow("Application/Lighting/CascadedShadow", false);
-#endif
 
 // Default values in MMD. Due to RH coord, z is inverted.
 NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
@@ -173,6 +168,7 @@ MikuViewer::MikuViewer() : m_pCameraController( nullptr )
 void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
+    Lighting::Initialize();
 
     struct ModelInit
     {
@@ -283,12 +279,14 @@ void MikuViewer::Startup( void )
         g_Shadow[i].Create( L"Shadow" + std::to_wstring(i), 1024, 1024 );
         g_Shadow[i].SetClearDepth( BaseCamera::GetClearDepth() );
     }
-    m_SplitProjections.resize( 4 );
+    m_SplitViewProjs.resize( 4 );
     m_SplitViewFrustum.resize( 4 );
 }
 
 void MikuViewer::Cleanup( void )
 {
+    Lighting::Shutdown();
+
 	m_DepthPSO.Destroy(); 
     m_CutoutDepthPSO.Destroy();
     m_ShadowPSO.Destroy();
@@ -378,26 +376,19 @@ void MikuViewer::Update( float deltaT )
 
 void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewMat, const Matrix4& ProjMat, eObjectFilter Filter )
 {
+    const int MaxSplit = 4;
     struct VSConstants
     {
         Matrix4 view;
         Matrix4 projection;
-#ifdef CSM
-        Matrix4 shadow[4];
-#else
-        Matrix4 shadow;
-#endif
+        Matrix4 shadow[MaxSplit];
     } vsConstants;
     vsConstants.view = ViewMat;
     vsConstants.projection = ProjMat; 
 
-#ifdef CSM
     auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
     for (int i = 0; i < 4; i++)
-        vsConstants.shadow[i] = T * m_SplitProjections[i] * m_SunShadow.GetViewMatrix();
-#else
-    vsConstants.shadow = m_SunShadow.GetShadowMatrix();
-#endif
+        vsConstants.shadow[i] = T * m_SplitViewProjs[i] * m_SunShadow.GetViewMatrix();
 
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
 
@@ -417,6 +408,8 @@ void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
     ScopedTimer _prof(L"RenderLightShadows", gfxContext);
 
     static uint32_t LightIndex = 0;
+    if (LightIndex >= kMaxLights)
+        return;
 
     m_LightShadowTempBuffer.BeginRendering(gfxContext);
     {
@@ -425,7 +418,7 @@ void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
     }
     m_LightShadowTempBuffer.EndRendering(gfxContext);
 
-    // gfxContext.CopySubresource(m_LightShadowArray, LightIndex, m_LightShadowTempBuffer, 0);
+    gfxContext.CopySubresource(m_LightShadowArray, LightIndex, m_LightShadowTempBuffer, 0);
 
     ++LightIndex;
 }
@@ -492,82 +485,104 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
     m_SunShadow.UpdateMatrix( m_SunDirection, Vector3( 0, 0, 0 ), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
         (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16 );
 
-    if (m_CascadedShadow)
+    const Matrix4& Proj = m_Camera.GetProjMatrix();
+
+    std::vector<float> ViewSpaceDepth = { -1.0f, -30.f, -80.f, -150.f, -300.f };
+    std::vector<float> ClipSpaceDepth( ViewSpaceDepth.size() );
+    std::transform(ViewSpaceDepth.begin(), ViewSpaceDepth.end(), ClipSpaceDepth.begin(), 
+        [&Proj]( float d ) {
+        Vector4 c = Proj * Vector4( 0.f, 0.f, d, 1.f );
+        if (c.GetW() < 0.0001f)
+            return Scalar(0.f);
+        return c.GetZ() / c.GetW();
+    });
+
+    const Matrix4& ClipToWorld = m_Camera.GetClipToWorld();
+    for (auto i = 0; i + 1 < ClipSpaceDepth.size(); i++)
     {
-        const Matrix4& Proj = m_Camera.GetProjMatrix();
+        // Get clip-space frustum corners for near and far, transform into shadow view space
+        auto ClipCorners = GetClipCorners( ClipSpaceDepth[i], ClipSpaceDepth[i + 1] );
+        std::transform( ClipCorners.begin(), ClipCorners.end(), m_SplitViewFrustum[i].begin(),
+            [&ClipToWorld]( Vector3 v ) {
+            Vector4 vt = ClipToWorld * Vector4(v, 1.f);
+            return Vector3(vt);
+        } );
+    }
 
-        std::vector<float> ViewSpaceDepth = { -1.0f, -30.f, -80.f, -150.f, -300.f };
-        std::vector<float> ClipSpaceDepth( ViewSpaceDepth.size() );
-        std::transform(ViewSpaceDepth.begin(), ViewSpaceDepth.end(), ClipSpaceDepth.begin(), 
-            [&Proj]( float d ) {
-            Vector4 c = Proj * Vector4( 0.f, 0.f, d, 1.f );
-            if (c.GetW() < 0.0001f)
-                return Scalar(0.f);
-            return c.GetZ() / c.GetW();
-        });
+    auto& ShadowView = m_SunShadow.GetViewMatrix();
+    for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
+    {
+        auto& frustumCornersWS = m_SplitViewFrustum[i];
 
-        const Matrix4& ClipToWorld = m_Camera.GetClipToWorld();
-        for (auto i = 0; i + 1 < ClipSpaceDepth.size(); i++)
+        // Calculate the centroid of the view frustum slice
+        Vector3 frustumCenter = 0.0f;
+        for (uint32_t i = 0; i < 8; ++i)
+            frustumCenter = frustumCenter + frustumCornersWS[i];
+        frustumCenter *= Scalar(1.0f / 8.0f);
+
+        // Pick the up vector to use for the light camera
+        Vector3 upDir = m_Camera.GetRightVec(); // camera.Right();
+
+        Vector3 minExtents;
+        Vector3 maxExtents;
+        if (m_bStabilizeCascades)
         {
-            // Get clip-space frustum corners for near and far, transform into shadow view space
-            auto ClipCorners = GetClipCorners( ClipSpaceDepth[i], ClipSpaceDepth[i + 1] );
-            std::transform( ClipCorners.begin(), ClipCorners.end(), m_SplitViewFrustum[i].begin(),
-                [&ClipToWorld]( Vector3 v ) {
-                Vector4 vt = ClipToWorld * Vector4(v, 1.f);
-                return Vector3(vt);
-            } );
-        }
+            // This needs to be constant for it to be stable
+            upDir = Vector3( kYUnitVector );
 
-        auto& ShadowView = m_SunShadow.GetViewMatrix();
-        for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
-        {
-            auto& WorldCorner = m_SplitViewFrustum[i];
-            FrustumCorner Corner;
-            std::transform( WorldCorner.begin(), WorldCorner.end(), Corner.begin(),
-                [&ShadowView]( Vector3 v ) {
-                return Vector3(ShadowView * Vector4(v, 1.f));
-            } );
-            // Find maximum boundary
-            Vector3 MinVec = Corner.front(), MaxVec = Corner.front();
-            for (auto& v : Corner)
+            // Calculate the radius of a bounding sphere surrounding the frustum corners
+            float sphereRadius = 0.0f;
+            for (uint32_t i = 0; i < 8; ++i)
             {
-                MinVec = Min( v, MinVec );
-                MaxVec = Max( v, MaxVec );
+                float dist = Length( frustumCornersWS[i] - frustumCenter );
+                sphereRadius = std::max( sphereRadius, dist );
             }
 
-            BoundingBox box(MinVec, MaxVec);
-            auto points = box.GetCorners();
+            sphereRadius = std::ceil( sphereRadius * 16.0f ) / 16.0f;
 
-            float MinZ = MinVec.GetZ(), MaxZ = MaxVec.GetZ();
-            if (m_bFixDepth)
-                MinZ = -50.f, MaxZ = 50.f;
-
-            Matrix4 SplitProj = Matrix4( XMMatrixOrthographicOffCenterRH(
-                MinVec.GetX(), MaxVec.GetX(),
-                MinVec.GetY(), MaxVec.GetY(),
-                MinZ, MaxZ ) );
-
-            Frustum frustum( SplitProj );
-            
-            m_SplitProjections[i] = SplitProj;
+            maxExtents = Vector3( sphereRadius, sphereRadius, sphereRadius );
+            minExtents = -maxExtents;
         }
-
-        for (auto i = 0; i < m_SplitProjections.size(); i++)
+        else
         {
-            g_Shadow[i].BeginRendering( gfxContext );
-            gfxContext.SetPipelineState( m_ShadowPSO );
-            RenderObjects( gfxContext, m_SplitProjections[i] * ShadowView, kOpaque );
-            RenderObjects( gfxContext, m_SplitProjections[i] * ShadowView, kTransparent );
-            g_Shadow[i].EndRendering( gfxContext );
+            Vector3 mins( Scalar( FLT_MAX ) );
+            Vector3 maxes( Scalar( -FLT_MAX ) );
+            for (uint32_t i = 0; i < 8; ++i)
+            {
+                Vector3 corner = ShadowView.Transform( frustumCornersWS[i] );
+                mins = Min( mins, corner );
+                maxes = Max( maxes, corner );
+            }
+            minExtents = mins;
+            maxExtents = maxes;
         }
+
+        Vector3 cascadeExtents = maxExtents - minExtents;
+
+        // Get position of the shadow camera
+        Vector3 shadowCameraPos = frustumCenter + m_SunDirection * -minExtents.GetZ();
+
+        float minZ = minExtents.GetZ(), maxZ = maxExtents.GetZ();
+        if (m_bFixDepth)
+            minZ = 0.0f, maxZ = cascadeExtents.GetZ();
+
+        // Come up with a new orthographic camera for the shadow caster
+        Matrix4 SplitProj = Matrix4( XMMatrixOrthographicOffCenterRH(
+            minExtents.GetX(), maxExtents.GetX(), 
+            minExtents.GetY(), maxExtents.GetY(), 
+            minZ, maxZ ) );
+
+        Matrix4 View = Matrix4 (XMMatrixLookAtRH( shadowCameraPos, frustumCenter, upDir ) );
+        m_SplitViewProjs[i] = SplitProj;
     }
-    else
+
+    for (auto i = 0; i < m_SplitViewProjs.size(); i++)
     {
-        g_ShadowBuffer.BeginRendering( gfxContext );
+        g_Shadow[i].BeginRendering( gfxContext );
         gfxContext.SetPipelineState( m_ShadowPSO );
-        RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kOpaque );
-        RenderObjects( gfxContext, m_SunShadow.GetViewProjMatrix(), kTransparent );
-        g_ShadowBuffer.EndRendering( gfxContext );
+        RenderObjects( gfxContext, m_SplitViewProjs[i] * ShadowView, kOpaque );
+        RenderObjects( gfxContext, m_SplitViewProjs[i] * ShadowView, kTransparent );
+        g_Shadow[i].EndRendering( gfxContext );
     }
 }
 
@@ -596,19 +611,17 @@ void MikuViewer::RenderScene( void )
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, m_SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
 
-    // RenderLightShadows(gfxContext);
+    RenderLightShadows(gfxContext);
     RenderShadowMap(gfxContext);
 
     gfxContext.ClearColor( g_SceneColorBuffer );
     gfxContext.ClearDepth( g_SceneDepthBuffer );
     {
+        const int MaxSplit = 4;
+
         ScopedTimer _prof( L"Render Color", gfxContext );
-#ifdef CSM
         D3D11_SRV_HANDLE Ptr[] = { g_Shadow[0].GetSRV(), g_Shadow[1].GetSRV(), g_Shadow[2].GetSRV(), g_Shadow[3].GetSRV() };
-        gfxContext.SetDynamicDescriptors( 4, 4, Ptr, { kBindPixel } );
-#else
-        gfxContext.SetDynamicDescriptor( 4, g_ShadowBuffer.GetSRV(), { kBindPixel } );
-#endif
+        gfxContext.SetDynamicDescriptors( 4, MaxSplit, Ptr, { kBindPixel } );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_OpaquePSO );
@@ -631,46 +644,39 @@ void MikuViewer::RenderScene( void )
         };
 
         auto WorldToClip = m_ProjMatrix * m_ViewMatrix;
-        if (m_CascadedShadow)
+        if (m_bShadowSplit)
         {
-            if (m_bShadowSplit)
+            for (auto i = 0; i < m_SplitViewProjs.size(); i++)
             {
-                for (auto i = 0; i < m_SplitProjections.size(); i++)
-                {
-                    Frustum FrustumVS( m_SplitProjections[i] );
-                    Frustum FrustumWS = m_SunShadow.GetCameraToWorld() * FrustumVS;
-                    Utility::DebugCube( gfxContext, WorldToClip, FrustumWS.GetFrustumCorners().data(), SplitColor[i] );
-                }
-            }
-            if (m_bViewSplit)
-            {
-                for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
-                    Utility::DebugCube( gfxContext, WorldToClip, m_SplitViewFrustum[i].data(), SplitColor[i] );
+                Frustum FrustumVS( m_SplitViewProjs[i] );
+                Frustum FrustumWS = m_SunShadow.GetCameraToWorld() * FrustumVS;
+                Utility::DebugCube( gfxContext, WorldToClip, FrustumWS.GetFrustumCorners().data(), SplitColor[i] );
             }
         }
+        if (m_bViewSplit)
+        {
+            for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
+                Utility::DebugCube( gfxContext, WorldToClip, m_SplitViewFrustum[i].data(), SplitColor[i] );
+        }
 
-        Matrix4 FixDepth( kIdentity );
-        FixDepth.SetZ( Vector4(kZero) );
-        FixDepth.SetW( Vector4(0.f, 0.f, 0.0f, 1.f) );
-        auto& WorldFrustum = m_SunShadow.GetWorldSpaceFrustum();
-        auto Corners = WorldFrustum.GetFrustumCorners();
-        Utility::DebugCube( gfxContext, FixDepth * WorldToClip, Corners.data(), Color( 0.f, 1.f, 1.f, 0.1f ) );
+        if (m_bLightFrustum)
+        {
+            Matrix4 FixDepth( kIdentity );
+            FixDepth.SetZ( Vector4(kZero) );
+            FixDepth.SetW( Vector4(0.f, 0.f, 0.0f, 1.f) );
+            auto& WorldFrustum = m_SunShadow.GetWorldSpaceFrustum();
+            auto Corners = WorldFrustum.GetFrustumCorners();
+            Utility::DebugCube( gfxContext, FixDepth * WorldToClip, Corners.data(), Color( 0.f, 1.f, 1.f, 0.1f ) );
+        }
     }
     if (m_bDebugTexture)
     {
         ScopedTimer _prof( L"DebugTexture", gfxContext );
 
-        if (m_CascadedShadow)
-        {
-            Utility::DebugTexture( gfxContext, g_Shadow[0].GetSRV(), 0, 0 );
-            Utility::DebugTexture( gfxContext, g_Shadow[1].GetSRV(), 500, 0 );
-            Utility::DebugTexture( gfxContext, g_Shadow[2].GetSRV(), 0, 500 );
-            Utility::DebugTexture( gfxContext, g_Shadow[3].GetSRV(), 500, 500 );
-        }
-        else
-        {
-            Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
-        }
+        Utility::DebugTexture( gfxContext, g_Shadow[0].GetSRV(), 0, 0 );
+        Utility::DebugTexture( gfxContext, g_Shadow[1].GetSRV(), 500, 0 );
+        Utility::DebugTexture( gfxContext, g_Shadow[2].GetSRV(), 0, 500 );
+        Utility::DebugTexture( gfxContext, g_Shadow[3].GetSRV(), 500, 500 );
     }
     gfxContext.SetRenderTarget( nullptr );
     TemporalEffects::ResolveImage(gfxContext);

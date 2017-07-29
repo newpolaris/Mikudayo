@@ -19,10 +19,19 @@ using Graphics::g_Device;
 
 static std::map<std::wstring, std::shared_ptr<Shader>> s_ShaderMap;
 
+std::shared_ptr<Shader> Shader::Empty[] = { 
+    std::shared_ptr<Shader>( new Shader( kVertexShader, L"EmptyVS" )),
+    std::shared_ptr<Shader>( new Shader( kHullShader, L"EmptyHS" )),
+    std::shared_ptr<Shader>( new Shader( kDomainShader, L"EmptyDS" )),
+    std::shared_ptr<Shader>( new Shader( kGeometryShader, L"EmptyGS" )),
+    std::shared_ptr<Shader>( new Shader( kPixelShader, L"EmptyPS" )),
+    std::shared_ptr<Shader>( new Shader( kComputeShader, L"EmptyCS" )),
+};
+
 std::shared_ptr<Shader> Shader::Create( ShaderType Type, const ShaderByteCode& ByteCode )
 {
 	if (!ByteCode.valid())
-		return nullptr;
+		return Empty[Type];
 
 	static mutex s_HashMapMutex;
 	lock_guard<mutex> CS( s_HashMapMutex );
@@ -46,6 +55,10 @@ void Shader::DestroyAll()
 }
 
 Shader::Shader( ShaderType Type ) : m_ShaderType(Type)
+{
+}
+
+Shader::Shader( ShaderType Type, std::wstring Name ) : m_ShaderType(Type), m_Name(Name)
 {
 }
 
@@ -189,29 +202,27 @@ bool Shader::ShaderCheckResource(D3D_SHADER_INPUT_TYPE inputType, UINT slot, std
 
 void Shader::Bind( ID3D11DeviceContext* pContext )
 {
-	if (m_Shader)
-	{
-		switch (m_ShaderType) {
-		case kVertexShader:
-			pContext->VSSetShader( reinterpret_cast<ID3D11VertexShader*>(m_Shader.Get()), nullptr, 0 );
-			break;
-		case kPixelShader:
-			pContext->PSSetShader( reinterpret_cast<ID3D11PixelShader*>(m_Shader.Get()), nullptr, 0 );
-			break;
-		case kGeometryShader:
-			pContext->GSSetShader( reinterpret_cast<ID3D11GeometryShader*>(m_Shader.Get()), nullptr, 0 );
-			break;
-		case kDomainShader:
-			pContext->DSSetShader( reinterpret_cast<ID3D11DomainShader*>(m_Shader.Get()), nullptr, 0 );
-			break;
-		case kHullShader:
-			pContext->HSSetShader( reinterpret_cast<ID3D11HullShader*>(m_Shader.Get()), nullptr, 0 );
-			break;
-		case kComputeShader:
-			pContext->CSSetShader( reinterpret_cast<ID3D11ComputeShader*>(m_Shader.Get()), nullptr, 0 );
-			break;
-		}
-	}
+    auto shader = m_Shader != nullptr ? m_Shader.Get() : nullptr;
+    switch (m_ShaderType) {
+    case kVertexShader:
+        pContext->VSSetShader( reinterpret_cast<ID3D11VertexShader*>(shader), nullptr, 0 );
+        break;
+    case kPixelShader:
+        pContext->PSSetShader( reinterpret_cast<ID3D11PixelShader*>(shader), nullptr, 0 );
+        break;
+    case kGeometryShader:
+        pContext->GSSetShader( reinterpret_cast<ID3D11GeometryShader*>(shader), nullptr, 0 );
+        break;
+    case kDomainShader:
+        pContext->DSSetShader( reinterpret_cast<ID3D11DomainShader*>(shader), nullptr, 0 );
+        break;
+    case kHullShader:
+        pContext->HSSetShader( reinterpret_cast<ID3D11HullShader*>(shader), nullptr, 0 );
+        break;
+    case kComputeShader:
+        pContext->CSSetShader( reinterpret_cast<ID3D11ComputeShader*>(shader), nullptr, 0 );
+        break;
+    }
 }
 
 ShaderByteCode::ShaderByteCode( const std::string & name, void * pBytecode, size_t length ) :
