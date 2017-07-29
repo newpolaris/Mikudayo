@@ -49,6 +49,8 @@ namespace Pmd {
 	};
 }
 
+enum { kShadowSplit = 4 };
+
 namespace Lighting
 {
     enum { kMaxLights = 4 };
@@ -109,7 +111,6 @@ private:
     Vector3 m_SunDirection;
     Vector3 m_SunColor;
     ShadowCamera m_SunShadow;
-    D3D11_SAMPLER_HANDLE m_SamplerShadow;
 
     std::vector<std::shared_ptr<Graphics::IRenderObject>> m_Models;
 	Graphics::Motion m_Motion;
@@ -161,10 +162,12 @@ BoolVar EnableWaveOps("Application/Forward+/Enable Wave Ops", true);
 
 MikuViewer::MikuViewer() : m_pCameraController( nullptr )
 {
-    // g_CascadeShadowBuffer.SetDepthFormat( DXGI_FORMAT_D32_FLOAT );
-    g_CascadeShadowBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
-	g_SceneDepthBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
-	g_ShadowBuffer.SetClearDepth( BaseCamera::GetClearDepth() );
+    float Sign = Math::g_ReverseZ ? -1.f : 1.f;
+    for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
+    {
+        Desc->SlopeScaledDepthBias = Sign * 2.0f;
+        Desc->DepthBias = static_cast<INT>(Sign * 0);
+    }
 }
 
 void MikuViewer::Startup( void )
@@ -206,20 +209,12 @@ void MikuViewer::Startup( void )
 	const std::wstring cameraPath = L"Models/camera.vmd";
 	m_Motion.LoadMotion( cameraPath );
 
-    D3D11_DEPTH_STENCIL_DESC& DepthReadWrite = Camera::GetReverseZ() ? DepthStateReadWrite : DepthStateReadWriteLE;
-    float Sign = Camera::GetReverseZ() ? -1.f : 1.f;
-    for (auto Desc : {&RasterizerShadow, &RasterizerShadowCW, &RasterizerShadowTwoSided})
-    {
-        Desc->SlopeScaledDepthBias = Sign * 2.0f;
-        Desc->DepthBias = static_cast<INT>(Sign * 0);
-    }
-
 	// Depth-only (2x rate)
 	m_DepthPSO.SetRasterizerState( RasterizerDefault );
 	m_DepthPSO.SetBlendState( BlendNoColorWrite );
 	m_DepthPSO.SetInputLayout( static_cast<UINT>(Pmd::InputDescriptor.size()), Pmd::InputDescriptor.data() );
 	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-    m_DepthPSO.SetDepthStencilState( DepthReadWrite );
+    m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
     m_DepthPSO.SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
     m_DepthPSO.Finalize();
 
@@ -261,11 +256,8 @@ void MikuViewer::Startup( void )
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pCameraController->SetMotion( &m_Motion );
 
-    m_SamplerShadow = BaseCamera::GetReverseZ() ? SamplerShadowGE : SamplerShadowLE;
-
-    using namespace Lighting;
-    m_SplitViewProjs.resize( 4 );
-    m_SplitViewFrustum.resize( 4 );
+    m_SplitViewProjs.resize( kShadowSplit );
+    m_SplitViewFrustum.resize( kShadowSplit );
 
     MotionBlur::Enable = true;
     TemporalEffects::EnableTAA = false;
@@ -375,7 +367,7 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
     vsConstants.projection = ProjMat; 
 
     auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < kShadowSplit; i++)
         vsConstants.shadow[i] = T * m_SplitViewProjs[i] * m_SunShadow.GetViewMatrix();
 
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
@@ -596,7 +588,7 @@ void MikuViewer::RenderScene( void )
     psConstants.ShadowTexelSize[1] = 1.0f / g_ShadowBuffer.GetHeight();
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
 
-    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, m_SamplerShadow };
+    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
 
     RenderLightShadows(gfxContext);

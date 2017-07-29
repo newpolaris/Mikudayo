@@ -2,11 +2,12 @@
 
 #include "PixelBuffer.h"
 #include "Mapping.h"
+#include "Camera.h"
 
 class DepthBuffer : public PixelBuffer
 {
 public:
-	DepthBuffer( float ClearDepth = 0.0f, uint8_t ClearStencil = 0 )
+	DepthBuffer( float ClearDepth = Math::g_ClearDepth, uint8_t ClearStencil = 0 )
 		: m_ClearDepth(ClearDepth), m_ClearStencil(ClearStencil), m_FragmentCount(1) {}
 
 	// Create a depth buffer.

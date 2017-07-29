@@ -18,6 +18,9 @@
 
 namespace Math
 {
+    extern const bool g_ReverseZ;
+    extern const float g_ClearDepth;
+
 	class BaseCamera
 	{
 	public:
@@ -40,8 +43,8 @@ namespace Math
 		const Vector3 GetUpVec() const { return m_Basis.GetY(); }
 		const Vector3 GetForwardVec() const { return -m_Basis.GetZ(); }
 		const Vector3 GetPosition() const { return m_CameraToWorld.GetTranslation(); }
-		static float GetClearDepth() { return m_ReverseZ ? 0.0f : 1.0f; }
-		static bool GetReverseZ() { return m_ReverseZ; }
+		float GetClearDepth() { return m_ReverseZ ? 0.0f : 1.0f; }
+		bool GetReverseZ() { return m_ReverseZ; }
 
 		// Accessors for reading the various matrices and frusta
 		const OrthogonalTransform& GetCameraToWorld() const { return m_CameraToWorld; }
@@ -58,7 +61,7 @@ namespace Math
 
 	protected:
 
-		BaseCamera() : m_CameraToWorld(kIdentity), m_Basis(kIdentity) {}
+        BaseCamera();
 
 		void SetProjMatrix( const Matrix4& ProjMat ) { m_ProjMatrix = ProjMat; }
 
@@ -93,7 +96,7 @@ namespace Math
 		Frustum m_FrustumVS;		// View-space view frustum
 		Frustum m_FrustumWS;		// World-space view frustum
 
-		static const bool m_ReverseZ;		// Invert near and far clip distances so that Z=0 is the far plane
+		bool m_ReverseZ;		// Invert near and far clip distances so that Z=0 is the far plane
 	};
 
 	class Camera : public BaseCamera
@@ -106,6 +109,7 @@ namespace Math
 		void SetFOV( float verticalFovInRadians ) { m_VerticalFOV = verticalFovInRadians; UpdateProjMatrix(); }
 		void SetAspectRatio( float heightOverWidth ) { m_AspectRatio = heightOverWidth; UpdateProjMatrix(); }
 		void SetZRange( float nearZ, float farZ) { m_NearClip = nearZ; m_FarClip = farZ; UpdateProjMatrix(); }
+        void ReverseZ( bool enable ) { m_ReverseZ = enable; UpdateProjMatrix(); }
 
 		float GetFOV() const { return m_VerticalFOV; }
 		float GetAspectRatio() const { return m_AspectRatio; }
@@ -121,6 +125,11 @@ namespace Math
 		float m_NearClip;
 		float m_FarClip;
 	};
+
+    inline Math::BaseCamera::BaseCamera() : 
+        m_CameraToWorld( kIdentity ), m_Basis( kIdentity ), m_ReverseZ( g_ReverseZ )
+    {
+    }
 
 	inline void BaseCamera::SetEyeAtUp( Vector3 eye, Vector3 at, Vector3 up )
 	{

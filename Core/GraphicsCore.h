@@ -56,6 +56,7 @@ namespace Graphics
 	extern SamplerDesc SamplerLinearWrapDesc;
 	extern SamplerDesc SamplerAnisoWrapDesc;
 	extern SamplerDesc SamplerShadowDescGE;
+    extern SamplerDesc SamplerShadowDescLE;
 	extern SamplerDesc SamplerLinearClampDesc;
 	extern SamplerDesc SamplerVolumeWrapDesc;
 	extern SamplerDesc SamplerPointClampDesc;
@@ -66,6 +67,7 @@ namespace Graphics
 	extern D3D11_SAMPLER_HANDLE SamplerAnisoWrap;
 	extern D3D11_SAMPLER_HANDLE SamplerShadowGE;
 	extern D3D11_SAMPLER_HANDLE SamplerShadowLE;
+	extern D3D11_SAMPLER_HANDLE SamplerShadow;
 	extern D3D11_SAMPLER_HANDLE SamplerLinearClamp;
 	extern D3D11_SAMPLER_HANDLE SamplerVolumeWrap;
 	extern D3D11_SAMPLER_HANDLE SamplerPointClamp;
@@ -89,7 +91,6 @@ namespace Graphics
 
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateDisabled;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadWrite;
-	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadWriteLE;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadOnly;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateReadOnlyReversed;
 	extern D3D11_DEPTH_STENCIL_DESC DepthStateTestEqual;

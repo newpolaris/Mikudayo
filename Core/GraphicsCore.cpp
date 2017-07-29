@@ -34,7 +34,6 @@
 #include "SSAO.h"
 #include "DebugHelper.h"
 
-
 // This macro determines whether to detect if there is an HDR display and enable HDR10 output.
 // Currently, with HDR display enabled, the pixel magnfication functionality is broken.
 #define CONDITIONALLY_ENABLE_HDR_OUTPUT 1
@@ -195,6 +194,7 @@ namespace Graphics
 	D3D11_SAMPLER_HANDLE SamplerAnisoWrap;
 	D3D11_SAMPLER_HANDLE SamplerShadowGE;
 	D3D11_SAMPLER_HANDLE SamplerShadowLE;
+	D3D11_SAMPLER_HANDLE SamplerShadow;
 	D3D11_SAMPLER_HANDLE SamplerLinearClamp;
 	D3D11_SAMPLER_HANDLE SamplerVolumeWrap;
 	D3D11_SAMPLER_HANDLE SamplerPointClamp;
@@ -218,7 +218,6 @@ namespace Graphics
 
 	D3D11_DEPTH_STENCIL_DESC DepthStateDisabled;
 	D3D11_DEPTH_STENCIL_DESC DepthStateReadWrite;
-	D3D11_DEPTH_STENCIL_DESC DepthStateReadWriteLE;
 	D3D11_DEPTH_STENCIL_DESC DepthStateReadOnly;
 	D3D11_DEPTH_STENCIL_DESC DepthStateReadOnlyReversed;
 	D3D11_DEPTH_STENCIL_DESC DepthStateTestEqual;
@@ -517,6 +516,8 @@ void Graphics::Initialize( void )
 	SamplerShadowDescLE.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 	SamplerShadowLE = SamplerShadowDescLE.CreateDescriptor();
 
+    SamplerShadow = Math::g_ReverseZ ? SamplerShadowGE : SamplerShadowLE;
+
 	SamplerLinearClampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	SamplerLinearClampDesc.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
 	SamplerLinearClamp = SamplerLinearClampDesc.CreateDescriptor();
@@ -561,9 +562,8 @@ void Graphics::Initialize( void )
 	// Shadows need their own rasterizer state so we can reverse the winding of faces
 	RasterizerShadow = RasterizerDefault;
 	RasterizerShadow.CullMode = D3D11_CULL_FRONT;  // Hacked here rather than fixing the content
-	RasterizerShadow.SlopeScaledDepthBias = -1.1f;
-	RasterizerShadow.DepthBias = -100;
-	RasterizerDefault.DepthClipEnable = FALSE;
+	RasterizerShadow.SlopeScaledDepthBias = Math::g_ReverseZ ? -1.5f : 1.5f;
+	RasterizerShadow.DepthBias = Math::g_ReverseZ ? -100 : 100;
 
 	RasterizerShadowTwoSided = RasterizerShadow;
 	RasterizerShadowTwoSided.CullMode = D3D11_CULL_NONE;
@@ -586,16 +586,13 @@ void Graphics::Initialize( void )
 	DepthStateReadWrite = DepthStateDisabled;
 	DepthStateReadWrite.DepthEnable = TRUE;
 	DepthStateReadWrite.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	DepthStateReadWrite.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
-
-	DepthStateReadWriteLE = DepthStateReadWrite;
-	DepthStateReadWriteLE.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	DepthStateReadWrite.DepthFunc = Math::g_ReverseZ ? D3D11_COMPARISON_GREATER_EQUAL : D3D11_COMPARISON_LESS_EQUAL;
 
 	DepthStateReadOnly = DepthStateReadWrite;
 	DepthStateReadOnly.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 
 	DepthStateReadOnlyReversed = DepthStateReadOnly;
-	DepthStateReadOnlyReversed.DepthFunc = D3D11_COMPARISON_LESS;
+	DepthStateReadOnlyReversed.DepthFunc = Math::g_ReverseZ ? D3D11_COMPARISON_LESS : D3D11_COMPARISON_GREATER;
 
 	DepthStateTestEqual = DepthStateReadOnly;
 	DepthStateTestEqual.DepthFunc = D3D11_COMPARISON_EQUAL;

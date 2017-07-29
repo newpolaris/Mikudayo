@@ -17,7 +17,14 @@
 
 using namespace Math;
 
-const bool BaseCamera::m_ReverseZ = false;
+// #define ReverseZ_
+#ifdef ReverseZD_
+const bool Math::g_bReverseZ = true;
+const float Math::g_ClearDepth = 0.0f;
+#else
+const bool Math::g_ReverseZ = false;
+const float Math::g_ClearDepth = 1.0f;
+#endif
 
 //
 // 'forward' is inverse look direction (right hand coord)
