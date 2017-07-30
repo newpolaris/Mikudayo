@@ -84,7 +84,7 @@ void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToC
 
         // Bottom
         0, 4, 6,
-        0, 6, 2, 
+        0, 6, 2,
 
         // Top
         1, 3, 7,
@@ -101,8 +101,9 @@ void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToC
     IndexBuffer IB;
     IB.Create( L"Cube Index Buffer", _countof( Indices ), sizeof( UINT16 ), Indices );
 
+    auto SRGB = Color.ToSRGB();
     Context.SetDynamicConstantBufferView( 0, sizeof(Math::Matrix4), &WorldToClip, { kBindVertex } );
-    Context.SetDynamicConstantBufferView( 0, sizeof(Color), &Color.ToSRGB(), { kBindPixel } );
+    Context.SetDynamicConstantBufferView( 0, sizeof(Color), &SRGB, { kBindPixel } );
     Context.SetVertexBuffer( 0, VB.VertexBufferView() );
     Context.SetIndexBuffer( IB.IndexBufferView() );
     Context.SetPipelineState( RenderCubePSO );

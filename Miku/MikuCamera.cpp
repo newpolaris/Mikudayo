@@ -16,7 +16,7 @@ MikuCamera::MikuCamera() :
 
 void MikuCamera::SetOrthographic( float verticalFovRadians, float aspectHeightOverWidth, float nearZClip, float farZClip )
 {
-    m_OrthFovY = verticalFovRadians; 
+    m_OrthFovY = verticalFovRadians;
 	m_AspectRatio = aspectHeightOverWidth;
 	m_NearClip =  nearZClip;
 	m_FarClip = farZClip;
@@ -60,7 +60,7 @@ void MikuCamera::UpdateOrthogonalMatrix()
 {
 	auto H = 2 * std::abs(m_Distance) * std::tan( m_OrthFovY*XM_PI / 180.f );
     auto W = H / m_AspectRatio;
-    SetProjMatrix( OrthogonalMatrix( W, H, m_NearClip, m_FarClip, m_ReverseZ ) );
+    SetProjMatrix( OrthographicMatrix( W, H, m_NearClip, m_FarClip, m_ReverseZ ) );
 }
 
 void MikuCamera::UpdatePerspectiveMatrix()

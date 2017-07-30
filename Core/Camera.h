@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -56,9 +56,6 @@ namespace Math
 		const Frustum& GetViewSpaceFrustum() const { return m_FrustumVS; }
 		const Frustum& GetWorldSpaceFrustum() const { return m_FrustumWS; }
 
-        static Matrix4 PerspectiveMatrix( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ );
-        static Matrix4 OrthogonalMatrix( float W, float H, float NearClip, float FarClip, bool bReverseZ );
-
 	protected:
 
         BaseCamera();
@@ -79,7 +76,7 @@ namespace Math
 		Matrix4 m_ViewMatrix;		// i.e. "World-to-View" matrix
 
 		// The projection matrix transforms view space to clip space.  Once division by W has occurred, the final coordinates
-		// can be transformed by the viewport matrix to screen space.  The projection matrix is determined by the screen aspect 
+		// can be transformed by the viewport matrix to screen space.  The projection matrix is determined by the screen aspect
 		// and camera field of view.  A projection matrix can also be orthographic.  In that case, field of view would be defined
 		// in linear units, not angles.
 		Matrix4 m_ProjMatrix;		// i.e. "View-to-Projection" matrix
@@ -126,14 +123,14 @@ namespace Math
 		float m_FarClip;
 	};
 
-    inline Math::BaseCamera::BaseCamera() : 
+    inline Math::BaseCamera::BaseCamera() :
         m_CameraToWorld( kIdentity ), m_Basis( kIdentity ), m_ReverseZ( g_ReverseZ )
     {
     }
 
 	inline void BaseCamera::SetEyeAtUp( Vector3 eye, Vector3 at, Vector3 up )
 	{
-		// This camera system use right-hand cordinate 
+		// This camera system use right-hand cordinate
 		// but, use left-hand look vector and called it as forward
 		SetLookDirection(at - eye, up);
 		SetPosition(eye);

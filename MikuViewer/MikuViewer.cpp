@@ -120,7 +120,7 @@ private:
     std::vector<std::shared_ptr<Graphics::IRenderObject>> m_Models;
 	Graphics::Motion m_Motion;
 
-	GraphicsPSO m_DepthPSO; 
+	GraphicsPSO m_DepthPSO;
     GraphicsPSO m_CutoutDepthPSO;
     GraphicsPSO m_ShadowPSO;
     GraphicsPSO m_CutoutShadowPSO;
@@ -276,7 +276,7 @@ void MikuViewer::Cleanup( void )
 {
     Lighting::Shutdown();
 
-	m_DepthPSO.Destroy(); 
+	m_DepthPSO.Destroy();
     m_CutoutDepthPSO.Destroy();
     m_ShadowPSO.Destroy();
     m_CutoutShadowPSO.Destroy();
@@ -372,7 +372,7 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
         Matrix4 shadow[MaxSplit];
     } vsConstants;
     vsConstants.view = ViewMat;
-    vsConstants.projection = ProjMat; 
+    vsConstants.projection = ProjMat;
 
     auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
     for (int i = 0; i < kShadowSplit; i++)
@@ -411,59 +411,6 @@ void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
     ++LightIndex;
 }
 
-//
-// Returns 8 clipspace frustum corners
-//
-std::vector<Vector3> GetClipCorners( float Near, float Far )
-{
-    float Left = -1.f, Right = 1.f, Bottom = -1.f, Top = 1.f;
-    return {
-        Vector3( Left, Bottom, Near ),	// Near lower left
-        Vector3( Left, Top, Near ),	    // Near upper left
-        Vector3( Right, Bottom, Near ),	// Near lower right
-        Vector3( Right, Top, Near ),	// Near upper right
-        Vector3( Left, Bottom, Far ),	// Far lower left
-        Vector3( Left, Top, Far ),	    // Far upper left
-        Vector3( Right, Bottom, Far ),	// Far lower right
-        Vector3( Right, Top, Far ),	    // Far upper right
-    };
-}
-
-class BoundingBox
-{
-public:
-    BoundingBox(Vector3 MinVec, Vector3 MaxVec) 
-    {
-        m_Center = 0.5f * (MaxVec + MinVec);
-        m_Extent = 0.5f * (MaxVec - MinVec);
-    }
-
-    std::array<Vector3, 8> GetCorners( void ) const;
-
-    Vector3 m_Center;
-    Vector3 m_Extent;
-};
-
-std::array<Vector3, 8> BoundingBox::GetCorners( void ) const
-{
-    const auto x = m_Extent.GetX(), y = m_Extent.GetY(), z = m_Extent.GetZ();
-    const auto cx = m_Center.GetX(), cy = m_Center.GetY(), cz = m_Center.GetZ();
-
-    // kNearLowerLeft, kNearUpperLeft, kNearLowerRight, kNearUpperRight,
-    // kFarLowerLeft, kFarUpperLeft, kFarLowerRight, kFarUpperRight
-    return {
-        Vector3( cx - x, cy - y, cz + z ),
-        Vector3( cx - x, cy + y, cz + z ),
-        Vector3( cx + x, cy - y, cz + z ),
-        Vector3( cx + x, cy + y, cz + z ),
-
-        Vector3( cx - x, cy - y, cz - z ),
-        Vector3( cx - x, cy + y, cz - z ),
-        Vector3( cx + x, cy - y, cz - z ),
-        Vector3( cx + x, cy + y, cz - z )
-    };
-}
-
 void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 {
     ScopedTimer _prof( L"Render Shadow Map", gfxContext );
@@ -477,7 +424,7 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 
     std::vector<float> ViewSpaceDepth = { -1.0f, -30.f, -80.f, -150.f, -300.f };
     std::vector<float> ClipSpaceDepth( ViewSpaceDepth.size() );
-    std::transform(ViewSpaceDepth.begin(), ViewSpaceDepth.end(), ClipSpaceDepth.begin(), 
+    std::transform(ViewSpaceDepth.begin(), ViewSpaceDepth.end(), ClipSpaceDepth.begin(),
         [&Proj]( float d ) {
         Vector4 c = Proj * Vector4( 0.f, 0.f, d, 1.f );
         if (c.GetW() < 0.0001f)
@@ -488,8 +435,9 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
     const Matrix4& ClipToWorld = m_Camera.GetClipToWorld();
     for (auto i = 0; i + 1 < ClipSpaceDepth.size(); i++)
     {
+        BoundingBox Box( Vector3(-1.f, -1.f, ClipSpaceDepth[i]), Vector3( 1.f, 1.f, ClipSpaceDepth[i + 1]) );
         // Get clip-space frustum corners for near and far, transform into shadow view space
-        auto ClipCorners = GetClipCorners( ClipSpaceDepth[i], ClipSpaceDepth[i + 1] );
+        auto ClipCorners = Box.GetCorners();
         std::transform( ClipCorners.begin(), ClipCorners.end(), m_SplitViewFrustum[i].begin(),
             [&ClipToWorld]( Vector3 v ) {
             Vector4 vt = ClipToWorld * Vector4(v, 1.f);
@@ -555,12 +503,17 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
             minZ = 0.0f, maxZ = cascadeExtents.GetZ();
 
         // Come up with a new orthographic camera for the shadow caster
-        Matrix4 SplitProj = Matrix4( XMMatrixOrthographicOffCenterRH(
-            minExtents.GetX(), maxExtents.GetX(), 
-            minExtents.GetY(), maxExtents.GetY(), 
-            minZ, maxZ ) );
+        Matrix4 SplitProj = OrthographicMatrix(
+            minExtents.GetX(), maxExtents.GetX(),
+            minExtents.GetY(), maxExtents.GetY(),
+            minZ, maxZ,
+            Math::g_ReverseZ);
 
-        Matrix4 View = Matrix4( XMMatrixLookAtRH( shadowCameraPos, frustumCenter, upDir ) );
+        Camera cam;
+        cam.SetEyeAtUp( shadowCameraPos, frustumCenter, upDir );
+        cam.Update();
+
+        Matrix4 View = cam.GetViewMatrix();
         m_SplitViewProjs[cascade] = SplitProj;
     }
 
@@ -583,7 +536,7 @@ void MikuViewer::RenderScene( void )
     uint32_t FrameIndex = TemporalEffects::GetFrameIndexMod2();
     (FrameIndex);
 
-    struct 
+    struct
     {
         Vector3 LightDirection;
         Vector3 LightColor;
@@ -621,7 +574,7 @@ void MikuViewer::RenderScene( void )
     {
         ScopedTimer _prof( L"Render Frustum", gfxContext );
 
-        const std::vector<Color> SplitColor = 
+        const std::vector<Color> SplitColor =
         {
             Color(1.f, 0.f, 0.f, 0.36f),
             Color(0.f, 1.f, 0.f, 0.36f),

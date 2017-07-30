@@ -8,11 +8,12 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
 
+#include <ostream>
 #include "Scalar.h"
 
 namespace Math
@@ -137,5 +138,15 @@ namespace Math
 	protected:
 		XMVECTOR m_vec;
 	};
+
+    INLINE std::ostream& operator<<( std::ostream& os, const Vector3& value )
+    {
+        return os << "(" << float( value.GetX() ) << ", " << float( value.GetY() ) << ", " << float( value.GetZ() ) << ")";
+    }
+
+    INLINE std::ostream& operator<<( std::ostream& os, const Vector4& value )
+    {
+        return os << "(" << float( value.GetX() ) << ", " << float( value.GetY() ) << ", " << float( value.GetZ() ) << ", " << float( value.GetW() ) << ")";
+    }
 
 } // namespace Math

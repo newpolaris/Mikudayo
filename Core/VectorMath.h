@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 // This is a system of classes that wrap DirectXMath in a more object-oriented and concise (readable) way.  While these
 // classes are not designed to maximize throughput on the instruction level, they are designed to be easily understood.
@@ -16,7 +16,7 @@
 // way of doing things obvious.  This leaves programmers constantly finding usage patterns that "work for them" but are
 // ultimately inefficient and don't use the API the "way it was intended".  The goal of this wrapper is to be cogent and
 // familiar.
-// 
+//
 // Note that DirectXMath treats vectors like [1x4] matrices (rows) rather than [4x1] matrices (columns).  Likewise, it
 // treats matrices like they are transposed, so that you would multiply a vector and a matrix like so:
 //
@@ -58,5 +58,6 @@
 #include "Math/Matrix3.h"
 #include "Math/Transform.h"
 #include "Math/Matrix4.h"
+#include "Math/BoundingBox.h"
 #include "Math/Functions.inl"
 #include "Math/Functions.h"

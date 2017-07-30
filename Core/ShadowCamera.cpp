@@ -70,7 +70,7 @@ void ShadowCamera::UpdateMatrix(
     SetProjMatrix( PerspectiveMatrix(XM_PI / 4, 1.0f, 0.1f, 10000, m_ReverseZ ) );
 #else
     SetLookDirection( LightDirection, Vector3(kYUnitVector) );
-    SetProjMatrix( OrthogonalMatrix(ShadowBounds.GetX(), ShadowBounds.GetY(), -ShadowBounds.GetZ(), ShadowBounds.GetZ(), m_ReverseZ) );
+    SetProjMatrix( OrthographicMatrix(ShadowBounds.GetX(), ShadowBounds.GetY(), -ShadowBounds.GetZ(), ShadowBounds.GetZ(), m_ReverseZ) );
 #endif
 
     Update();

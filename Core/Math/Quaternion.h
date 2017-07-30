@@ -44,4 +44,6 @@ namespace Math
 		XMVECTOR m_vec;
 	};
 
+	// Returns a quaternion such that q*start = dest
+	Quaternion RotationBetweenVectors( Vector3 start, Vector3 dest );
 }

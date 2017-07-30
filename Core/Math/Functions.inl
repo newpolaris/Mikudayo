@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -124,6 +124,6 @@ namespace Math
 
 	INLINE Quaternion Slerp( const Quaternion& a, const Quaternion& b, float t )
 	{
-		return Quaternion(XMQuaternionSlerp( a, b, t )); 
+		return Quaternion(XMQuaternionSlerp( a, b, t ));
 	}
 }

@@ -8,6 +8,12 @@
     <Filter Include="Source Files\PMX">
       <UniqueIdentifier>{8f7c70b4-4622-41aa-82c3-67cb58bed090}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Math">
+      <UniqueIdentifier>{34a3f3c2-c6cb-405c-aa3e-48ad03ad0d18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{6ef5ff30-59d1-4838-a564-22230635eee2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PMX\Model.cpp">
@@ -15,6 +21,9 @@
     </ClCompile>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Math.cpp">
+      <Filter>Source Files\Math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -24,5 +33,10 @@
     <ClInclude Include="Common.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resource\観客_右利き_サイリウム有AL.pmx">
+      <Filter>Resource</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -48,6 +48,7 @@
     <ClInclude Include="GraphicsCore.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="InputLayout.h" />
+    <ClInclude Include="Math\BoundingBox.h" />
     <ClInclude Include="Math\DualQuaternion.h" />
     <ClInclude Include="Math\Functions.h" />
     <ClInclude Include="MotionBlur.h" />

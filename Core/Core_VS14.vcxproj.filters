@@ -205,9 +205,6 @@
     <ClInclude Include="LinearAllocator.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Functions.h">
-      <Filter>Source Files\Math</Filter>
-    </ClInclude>
     <ClInclude Include="FXAA.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
@@ -234,6 +231,12 @@
     </ClInclude>
     <ClInclude Include="DebugHelper.h">
       <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\BoundingBox.h">
+      <Filter>Source Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Functions.h">
+      <Filter>Source Files\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -357,9 +360,6 @@
     <ClCompile Include="Math\Quaternion.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Math\Functions.cpp">
-      <Filter>Source Files\Math</Filter>
-    </ClCompile>
     <ClCompile Include="PostEffects.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
@@ -385,6 +385,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DebugHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Functions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

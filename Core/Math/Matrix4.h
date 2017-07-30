@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -73,7 +73,26 @@ namespace Math
 
         INLINE Vector3 Transform( Vector3 v ) const { return Vector3(XMVector3TransformCoord( v, *this )); }
 
+        friend bool Near( const Matrix4& m1, const Matrix4& m2, const Vector4& eps );
+
 	private:
 		XMMATRIX m_mat;
 	};
+
+	INLINE bool Near( const Matrix4& m1, const Matrix4& m2, const Vector4& eps )
+    {
+        return XMVector4NearEqual( m1.m_mat.r[0], m2.m_mat.r[0], eps ) &&
+            XMVector4NearEqual( m1.m_mat.r[1], m2.m_mat.r[1], eps ) &&
+            XMVector4NearEqual( m1.m_mat.r[2], m2.m_mat.r[2], eps ) &&
+            XMVector4NearEqual( m1.m_mat.r[3], m2.m_mat.r[3], eps );
+    }
+
+    INLINE std::ostream& operator<<( std::ostream& os, const Math::Matrix4& m )
+    {
+        Vector4 r0 = m.GetX(), r1 = m.GetY(), r2 = m.GetZ(), r3 = m.GetW();
+        return os << "[" << float( r0.GetX() ) << ", " << float( r0.GetY() ) << ", " << float( r0.GetZ() ) << ", " << float( r0.GetW() ) << "; " <<
+            float( r1.GetX() ) << ", " << float( r1.GetY() ) << ", " << float( r1.GetZ() ) << ", " << float( r1.GetW() ) << "; " <<
+            float( r2.GetX() ) << ", " << float( r2.GetY() ) << ", " << float( r2.GetZ() ) << ", " << float( r2.GetW() ) << "; " <<
+            float( r3.GetX() ) << ", " << float( r3.GetY() ) << ", " << float( r3.GetZ() ) << ", " << float( r3.GetW() ) << "]";
+    }
 }
