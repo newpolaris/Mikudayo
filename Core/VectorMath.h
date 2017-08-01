@@ -58,6 +58,5 @@
 #include "Math/Matrix3.h"
 #include "Math/Transform.h"
 #include "Math/Matrix4.h"
-#include "Math/BoundingBox.h"
 #include "Math/Functions.inl"
 #include "Math/Functions.h"

@@ -6,7 +6,6 @@ const std::wstring PmxModelPath = ResourcePath(PmxModel);
 
 TEST(FileReadTest, ReadSync)
 {
-    bool bRightHand = true;
     Utility::ByteArray ba = Utility::ReadFileSync( PmxModelPath );
     EXPECT_EQ( ba->size(), 10047 );
 }

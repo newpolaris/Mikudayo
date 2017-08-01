@@ -19,21 +19,25 @@ inline std::wstring ResourcePath( fs::path Path )
 
 MATCHER_P(MatcherNearFast, Precision, "")
 {
+    (result_listener);
     return Near( get<0>( arg ), get<1>( arg ), Scalar( Precision ) );
 }
 
 MATCHER_P2(MatcherNearFast, Precision, Ref, "")
 {
+    (result_listener);
     return Near( arg, Ref, Scalar( Precision ) );
 }
 
 MATCHER_P(MatcherNearRelative, Precision, "")
 {
+    (result_listener);
     auto A = get<0>( arg ), B = get<1>( arg );
     return NearRelative( A, B, Scalar(Precision) );
 }
 
 MATCHER_P2(MatcherNearRelative, Precision, Ref, "")
 {
+    (result_listener);
     return NearRelative( arg, Ref, Scalar(Precision) );
 }

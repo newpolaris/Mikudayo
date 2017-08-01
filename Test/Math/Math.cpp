@@ -3,6 +3,8 @@
 #include "VectorMath.h"
 #include "Camera.h"
 
+#include "Math/BoundingBox.h"
+
 using namespace Math;
 
 TEST(MathTest, OrthograhicMatrix)
@@ -50,7 +52,7 @@ TEST(BoundingBoxTest, FrustumCorner)
     Matrix4 Proj = OrthographicMatrix( Left, Right, Bottom, Top, Near, Far, false );
     Frustum frustum( Proj );
     BoundingBox box( min, max );
-    auto& corners = box.GetCorners();
+    auto corners = box.GetCorners();
 
     EXPECT_THAT( frustum.GetFrustumCorners(), Pointwise( MatcherNearRelative( FLT_EPSILON ), corners) );
 }
@@ -63,7 +65,6 @@ TEST(FrustumTest, WorldSpaceCorner)
     cam.SetEyeAtUp( Pos, At, Up );
     cam.Update();
 
-    auto& ViewMatrix = cam.GetViewMatrix();
     auto& ProjMatrix = cam.GetProjMatrix();
 
     Frustum FrustumVS( ProjMatrix );
@@ -80,7 +81,7 @@ TEST(CameraTest, LookAt)
     Camera cam;
     cam.SetEyeAtUp( Pos, At, Up );
     auto& CameraToWorld = cam.GetCameraToWorld();
-    auto& View = Matrix4(~CameraToWorld);
+    auto View = Matrix4(~CameraToWorld);
     Matrix4 RefView = Matrix4( XMMatrixLookAtRH( Pos, At, Up ) );
 
     EXPECT_THAT( View, MatcherNearFast( 1e-5f, RefView ) );

@@ -24,6 +24,7 @@
 #include "MikuModel.h"
 #include "GroundPlane.h"
 #include "Shadow.h"
+#include "Math/BoundingBox.h"
 
 #include "CompiledShaders/MikuModelVS.h"
 #include "CompiledShaders/MikuModelPS.h"
@@ -128,7 +129,8 @@ private:
 	GraphicsPSO m_BlendPSO;
 	GraphicsPSO m_GroundPlanePSO;
 
-    std::vector<Matrix4> m_SplitViewProjs;
+    std::vector<Matrix4> m_SplitViewProj;
+    std::vector<FrustumCorner> m_FrustumWS;
     std::vector<FrustumCorner> m_SplitViewFrustum;
 };
 
@@ -180,6 +182,8 @@ void MikuViewer::Startup( void )
 	TextureManager::Initialize( L"Textures" );
     Lighting::Initialize();
 
+    MikuModel::Initialize();
+
     struct ModelInit
     {
         std::wstring Model;
@@ -189,8 +193,9 @@ void MikuViewer::Startup( void )
 
     auto motionPath = L"Models/nekomimi_lat.vmd";
     std::vector<ModelInit> list = {
-        { L"Models/Lat0.pmd", motionPath, XMFLOAT3( -10.f, 0.f, 0.f ) },
+        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
 #ifndef _DEBUG
+        { L"Models/Lat0.pmd", motionPath, XMFLOAT3( -10.f, 0.f, 0.f ) },
         { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
         { L"Models/m_GUMI.zip", motionPath, XMFLOAT3( 10.f, 0.f, 0.f ) },
         { L"Models/Lat式ミクVer2.31_White.pmd", motionPath, XMFLOAT3( -11.f, 10.f, -19.f ) },
@@ -261,8 +266,9 @@ void MikuViewer::Startup( void )
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pSecondCameraController = new CameraController(m_SecondCamera, Vector3(kYUnitVector));
 
-    m_SplitViewProjs.resize( kShadowSplit );
+    m_SplitViewProj.resize( kShadowSplit );
     m_SplitViewFrustum.resize( kShadowSplit );
+    m_FrustumWS.resize( kShadowSplit );
 
     MotionBlur::Enable = true;
     TemporalEffects::EnableTAA = false;
@@ -274,6 +280,9 @@ void MikuViewer::Startup( void )
 
 void MikuViewer::Cleanup( void )
 {
+    m_Models.clear();
+    MikuModel::Shutdown();
+
     Lighting::Shutdown();
 
 	m_DepthPSO.Destroy();
@@ -283,7 +292,6 @@ void MikuViewer::Cleanup( void )
 	m_OpaquePSO.Destroy();
 	m_BlendPSO.Destroy();
     m_GroundPlanePSO.Destroy();
-    m_Models.clear();
 
     SAFE_DELETE( m_pCameraController );
     SAFE_DELETE( m_pSecondCameraController );
@@ -376,7 +384,7 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
 
     auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
     for (int i = 0; i < kShadowSplit; i++)
-        vsConstants.shadow[i] = T * m_SplitViewProjs[i] * m_SunShadow.GetViewMatrix();
+        vsConstants.shadow[i] = T * m_SplitViewProj[i] * m_SunShadow.GetViewMatrix();
 
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
 
@@ -496,7 +504,7 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         Vector3 cascadeExtents = maxExtents - minExtents;
 
         // Get position of the shadow camera
-        Vector3 shadowCameraPos = frustumCenter + m_SunDirection * -minExtents.GetZ();
+        Vector3 shadowCameraPos = frustumCenter - m_SunDirection;// * -minExtents.GetZ();
 
         float minZ = minExtents.GetZ(), maxZ = maxExtents.GetZ();
         if (m_bFixDepth)
@@ -514,15 +522,19 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         cam.Update();
 
         Matrix4 View = cam.GetViewMatrix();
-        m_SplitViewProjs[cascade] = SplitProj;
+        m_SplitViewProj[cascade] = SplitProj * View;
+
+        Frustum FrustumVS( SplitProj );
+        Frustum FrustumWS = cam.GetCameraToWorld() * FrustumVS;
+        m_FrustumWS[cascade] = FrustumWS.GetFrustumCorners();
     }
 
-    for (auto i = 0; i < m_SplitViewProjs.size(); i++)
+    for (auto i = 0; i < m_SplitViewProj.size(); i++)
     {
         g_CascadeShadowBuffer.BeginRendering( gfxContext, i );
         gfxContext.SetPipelineState( m_ShadowPSO );
-        RenderObjects( gfxContext, m_SplitViewProjs[i] * ShadowView, kOpaque );
-        RenderObjects( gfxContext, m_SplitViewProjs[i] * ShadowView, kTransparent );
+        RenderObjects( gfxContext, m_SplitViewProj[i] * ShadowView, kOpaque );
+        RenderObjects( gfxContext, m_SplitViewProj[i] * ShadowView, kTransparent );
         g_CascadeShadowBuffer.EndRendering( gfxContext );
     }
 }
@@ -585,12 +597,8 @@ void MikuViewer::RenderScene( void )
         auto WorldToClip = m_ProjMatrix * m_ViewMatrix;
         if (m_bShadowSplit)
         {
-            for (auto i = 0; i < m_SplitViewProjs.size(); i++)
-            {
-                Frustum FrustumVS( m_SplitViewProjs[i] );
-                Frustum FrustumWS = m_SunShadow.GetCameraToWorld() * FrustumVS;
-                Utility::DebugCube( gfxContext, WorldToClip, FrustumWS.GetFrustumCorners().data(), SplitColor[i] );
-            }
+            for (auto i = 0; i < m_SplitViewProj.size(); i++)
+                Utility::DebugCube( gfxContext, WorldToClip, m_FrustumWS[i].data(), SplitColor[i] );
         }
         if (m_bViewSplit)
         {

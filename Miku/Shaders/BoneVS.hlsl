@@ -4,7 +4,7 @@ cbuffer VSConstants: register(b0)
 	matrix projection;
 };
 
-cbuffer BoneConstants : register(b1)
+cbuffer Constants : register(b1)
 {
 	matrix model;
 };

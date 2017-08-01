@@ -57,7 +57,7 @@ ComputePSO::ComputePSO()
 }
 
 GraphicsPSO::GraphicsPSO()
-{ 
+{
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>();
 }
 
@@ -111,16 +111,16 @@ std::shared_ptr<ComputePipelineState> ComputePSO::GetState()
     while (m_LoadingState == kStateLoading)
         std::this_thread::yield();
 
-	return m_PSOState; 
+	return m_PSOState;
 }
 
-std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState() 
+std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState()
 {
 	ASSERT( m_LoadingState != kStateUnloaded, L"Not Finalized Yet" );
     while (m_LoadingState == kStateLoading)
         std::this_thread::yield();
 
-	return m_PSOState; 
+	return m_PSOState;
 }
 
 void GraphicsPSO::SetBlendState( const D3D11_BLEND_DESC& BlendDesc )
@@ -163,7 +163,7 @@ void GraphicsPSO::SetInputLayout( UINT NumElements, const InputDesc* pInputEleme
 		std::copy(pInputElementDescs, pInputElementDescs + NumElements, std::back_inserter(Desc));
 		m_PSODesc->InputDescList.swap(Desc);
 	}
-	else 
+	else
 	{
 		m_PSODesc->InputDescList.clear();
 	}

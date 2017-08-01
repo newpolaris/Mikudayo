@@ -13,6 +13,7 @@
 #include "Archive.h"
 #include "KeyFrameAnimation.h"
 #include "IRenderObject.h"
+#include "Math/BoundingSphere.h"
 
 class ManagedTexture;
 
@@ -40,15 +41,16 @@ namespace Graphics
 		kTextureMax
 	};
 
-	struct Mesh 
+	struct Mesh
 	{
 		bool isTransparent() const { return Material.Diffuse.w < 1.f; }
         bool LoadTexture( GraphicsContext& gfxContext );
 
 		MaterialCB Material;
-        const ManagedTexture* Texture[kTextureMax];		int32_t IndexOffset;
+        const ManagedTexture* Texture[kTextureMax];
+        int32_t IndexOffset;
 		uint32_t IndexCount;
-		
+        BoundingSphere Sphere;
 		bool bEdgeFlag;
 	};
 
@@ -61,33 +63,40 @@ namespace Graphics
 
 	struct Bone
 	{
-		std::wstring Name; 
+		std::wstring Name;
 		Vector3 Translate;
 	};
 
 	class MikuModel : public IRenderObject
 	{
 	public:
+        static void Initialize();
+        static void Shutdown();
 
 		MikuModel( bool bRightHand = true );
 		~MikuModel();
 
-		void Clear();
-		void Draw( GraphicsContext& gfxContext, eObjectFilter Filter ) override;
-        void Load();
-		void SetModel( const std::wstring& model );
-		void SetMotion( const std::wstring& model );
+        void Clear( void );
+        void Draw( GraphicsContext& gfxContext, eObjectFilter Filter ) override;
+        void Load( void );
+
+        BoundingSphere GetBoundingSphere();
+
+        void SetModel( const std::wstring& model );
+        void SetMotion( const std::wstring& model );
         void SetPosition( Vector3 postion );
+        void SetBoundingSphere( void );
 		void Update( float kFrameTime ) override;
 
 	private:
 
 		void DrawBone( GraphicsContext& gfxContext );
-        void LoadBone();
+		void DrawBoundingSphere( GraphicsContext& gfxContext );
+        void SetVisualizeSkeleton();
 		void LoadPmd( const std::wstring& model, bool bRightHand );
 		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
 		void LoadVmd( const std::wstring& vmd, bool bRightHand );
-        void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames ); 
+        void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
 		void SetBoneNum( size_t numBones );
 
 		void UpdateIK( const Pmd::IK& ik );
@@ -117,6 +126,7 @@ namespace Graphics
 
 		std::vector<XMFLOAT3> m_VertexPos; // original vertex position
 		std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
+        std::vector<uint16_t> m_Indices;
 
 		VertexBuffer m_AttributeBuffer;
 		VertexBuffer m_PositionBuffer;
@@ -124,11 +134,11 @@ namespace Graphics
 
         Matrix4 m_ModelTransform;
 		std::wstring m_Name;
+
+        uint32_t m_RootBoneIndex; // named as center
+        BoundingSphere m_BoundingSphere;
+
 		std::vector<XMMATRIX> m_BoneAttribute;
-		SubmeshGeometry m_BoneMesh;
-		VertexBuffer m_BoneVertexBuffer;
-		IndexBuffer m_BoneIndexBuffer;
-		GraphicsPSO m_BonePSO;
 	};
 
     inline void MikuModel::SetPosition( Vector3 postion )

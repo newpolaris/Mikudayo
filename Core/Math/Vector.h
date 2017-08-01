@@ -126,8 +126,7 @@ namespace Math
 
 	INLINE Vector3::Vector3( Vector4 v )
 	{
-		Scalar W = v.GetW();
-		m_vec = XMVectorSelect( XMVectorDivide(v, W), v, XMVectorEqual(W, SplatZero()) );
+		m_vec = v;
 	}
 
 	class BoolVector

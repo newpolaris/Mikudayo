@@ -8,12 +8,13 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
 
 #include "VectorMath.h"
+#include <vector>
 
 namespace Math
 {
@@ -26,6 +27,10 @@ namespace Math
 
 		Vector3 GetCenter( void ) const;
 		Scalar GetRadius( void ) const;
+
+		friend BoundingSphere operator* ( const OrthogonalTransform& xform, const BoundingSphere& sphere );	// Fast
+		friend BoundingSphere operator* ( const AffineTransform& xform, const BoundingSphere& sphere );		// Slow
+		friend BoundingSphere operator* ( const Matrix4& xform, const BoundingSphere& sphere );				// Slowest (and most general)
 
 	private:
 
@@ -56,5 +61,30 @@ namespace Math
 	{
 		return m_repr.GetW();
 	}
+
+	inline BoundingSphere operator* ( const OrthogonalTransform& mtx, const BoundingSphere& sphere )
+    {
+        Vector3 Center = mtx * sphere.GetCenter();
+        return BoundingSphere( Center, sphere.GetRadius() );
+    }
+
+	inline BoundingSphere operator* ( const AffineTransform& mtx, const BoundingSphere& sphere )
+    {
+        Vector3 Center = mtx * sphere.GetCenter();
+        Vector3 Radius = mtx.GetBasis() * sphere.GetRadius();
+        Scalar r = Max(Radius.GetX(), Max(Radius.GetY(), Radius.GetZ()));
+        return BoundingSphere( Center, r );
+    }
+
+	inline BoundingSphere operator* ( const Matrix4& mtx, const BoundingSphere& sphere )
+	{
+        Vector3 Center = mtx.Transform( sphere.GetCenter() );
+        Vector3 Radius = mtx.Get3x3() * Vector3(sphere.GetRadius());
+        Scalar r = Max(Radius.GetX(), Max(Radius.GetY(), Radius.GetZ()));
+        return BoundingSphere( Center, r );
+    }
+
+    BoundingSphere ComputeBoundingSphereFromVertices( const std::vector<XMFLOAT3>& vertices, const std::vector<uint16_t>& indices, uint32_t numPoints, uint32_t offset );
+    BoundingSphere ComputeBoundingSphereFromVertices( const std::vector<XMFLOAT3>& vertices, const std::vector<uint32_t>& indices, uint32_t numPoints, uint32_t offset );
 
 } // namespace Math

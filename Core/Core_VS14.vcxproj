@@ -110,6 +110,7 @@
     <ClCompile Include="GraphRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="LinearAllocator.cpp" />
+    <ClCompile Include="Math\BoundingSphere.cpp" />
     <ClCompile Include="Math\DualQuaternion.cpp" />
     <ClCompile Include="Math\Frustum.cpp" />
     <ClCompile Include="Math\Functions.cpp" />
