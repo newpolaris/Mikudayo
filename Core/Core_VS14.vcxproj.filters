@@ -333,9 +333,6 @@
     <ClCompile Include="SystemTime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RasterizerState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="WICTextureLoader.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
@@ -378,12 +375,6 @@
     <ClCompile Include="FXAA.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="ShadowBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ShadowCamera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DebugHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -392,6 +383,15 @@
     </ClCompile>
     <ClCompile Include="Math\BoundingSphere.cpp">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowBuffer.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowCamera.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="RasterizerState.cpp">
+      <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

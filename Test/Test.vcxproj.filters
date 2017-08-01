@@ -28,6 +28,9 @@
     <ClCompile Include="Math\BoundingSphere.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
+    <ClCompile Include="Math\MiniBall.cpp">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PMX\Common.h">

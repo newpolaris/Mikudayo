@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Core;..\3rdParty\boost_1_64_0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Core;..\3rdParty\boost_1_64_0\include;..\3rdParty\miniball</AdditionalIncludeDirectories>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
