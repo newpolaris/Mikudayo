@@ -24,7 +24,9 @@
 #include "MikuModel.h"
 #include "GroundPlane.h"
 #include "Shadow.h"
+
 #include "Math/BoundingBox.h"
+#include "OrthographicCamera.h"
 
 #include "CompiledShaders/MikuModelVS.h"
 #include "CompiledShaders/MikuModelPS.h"
@@ -129,9 +131,16 @@ private:
 	GraphicsPSO m_BlendPSO;
 	GraphicsPSO m_GroundPlanePSO;
 
+    Matrix4 m_GlobalShadowMatrix;
+    __declspec(align(16)) struct CascadeParameter
+    {
+        Vector4 CascadeOffsets[kShadowSplit];
+        Vector4 CascadeScales[kShadowSplit];
+        float CascadeSplits[kShadowSplit];
+    } m_Cascade;
     std::vector<Matrix4> m_SplitViewProj;
-    std::vector<FrustumCorner> m_FrustumWS;
-    std::vector<FrustumCorner> m_SplitViewFrustum;
+    std::vector<FrustumCorner> m_SplitFrustum;
+    std::vector<FrustumCorner> m_ViewFrustum;
 };
 
 CREATE_APPLICATION( MikuViewer )
@@ -141,8 +150,8 @@ NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 enum { kCameraMain, kCameraVirtual };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
-BoolVar m_bDebugTexture("Application/Camera/Debug Texture", true);
-BoolVar m_bViewSplit("Application/Camera/View Split", false);
+BoolVar m_bDebugTexture("Application/Camera/Debug Texture", false);
+BoolVar m_bViewSplit("Application/Camera/View Split", true);
 BoolVar m_bShadowSplit("Application/Camera/Shadow Split", false);
 BoolVar m_bFixDepth("Application/Camera/Fix Depth", false);
 BoolVar m_bLightFrustum("Application/Camera/Light Frustum", false);
@@ -193,9 +202,9 @@ void MikuViewer::Startup( void )
 
     auto motionPath = L"Models/nekomimi_lat.vmd";
     std::vector<ModelInit> list = {
-        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
-#ifndef _DEBUG
         { L"Models/Lat0.pmd", motionPath, XMFLOAT3( -10.f, 0.f, 0.f ) },
+#ifndef _DEBUG
+        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
         { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
         { L"Models/m_GUMI.zip", motionPath, XMFLOAT3( 10.f, 0.f, 0.f ) },
         { L"Models/Lat式ミクVer2.31_White.pmd", motionPath, XMFLOAT3( -11.f, 10.f, -19.f ) },
@@ -267,8 +276,8 @@ void MikuViewer::Startup( void )
 	m_pSecondCameraController = new CameraController(m_SecondCamera, Vector3(kYUnitVector));
 
     m_SplitViewProj.resize( kShadowSplit );
-    m_SplitViewFrustum.resize( kShadowSplit );
-    m_FrustumWS.resize( kShadowSplit );
+    m_ViewFrustum.resize( kShadowSplit );
+    m_SplitFrustum.resize( kShadowSplit );
 
     MotionBlur::Enable = true;
     TemporalEffects::EnableTAA = false;
@@ -419,53 +428,122 @@ void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
     ++LightIndex;
 }
 
+// Makes the "global" shadow matrix used as the reference point for the cascades
+Matrix4 MakeGlobalShadowMatrix(const BaseCamera& camera, Vector3 LightDirection)
+{
+    // Get the 8 points of the view frustum in world space
+    Vector3 frustumCorners[8] =
+    {
+        Vector3(-1.0f, -1.0f, 1.0f),
+        Vector3(-1.0f,  1.0f, 1.0f),
+        Vector3( 1.0f, -1.0f, 1.0f),
+        Vector3( 1.0f,  1.0f, 1.0f),
+        Vector3(-1.0f, -1.0f, 0.0f),
+        Vector3(-1.0f,  1.0f, 0.0f),
+        Vector3( 1.0f, -1.0f, 0.0f),
+        Vector3( 1.0f,  1.0f, 0.0f),
+    };
+
+    const Matrix4& invViewProj = camera.GetClipToWorld();
+    Vector3 frustumCenter = 0.0f;
+    for(uint32_t i = 0; i < 8; ++i)
+    {
+        frustumCorners[i] = invViewProj.Transform( frustumCorners[i] );
+        frustumCenter += frustumCorners[i];
+    }
+
+    frustumCenter /= Scalar(8.0f);
+
+    // Pick the up vector to use for the light camera
+    Vector3 upDir = camera.GetRightVec();
+
+    // This needs to be constant for it to be stable
+    if (m_bStabilizeCascades)
+        upDir = Vector3(0.0f, 1.0f, 0.0f);
+
+    // Get position of the shadow camera
+    Vector3 shadowCameraPos = frustumCenter + LightDirection * 0.5f;
+
+    // Come up with a new orthographic camera for the shadow caster
+    OrthographicCamera lightCamera;
+    lightCamera.SetOrthographic( -0.5f, 0.5f, -0.5f, 0.5f, 0.0f, 1.0f );
+    lightCamera.SetEyeAtUp( shadowCameraPos, frustumCenter, upDir );
+    lightCamera.Update();
+
+    Matrix4 Tex = AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) );
+    return Tex * lightCamera.GetViewProjMatrix();
+}
+
 void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 {
     ScopedTimer _prof( L"Render Shadow Map", gfxContext );
 
-    // m_SunShadow.UpdateMatrix( m_Camera.GetForwardVec(), m_Camera.GetPosition(), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
-    // m_SunShadow.UpdateMatrix( m_SunDirection, -m_SunDirection * 200, Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
-    m_SunShadow.UpdateMatrix( m_SunDirection, Vector3( 0, 0, 0 ), Vector3( m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ ),
-        (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16 );
+    const float sMapSize = static_cast<float>(g_CascadeShadowBuffer.GetWidth());
 
-    const Matrix4& Proj = m_Camera.GetProjMatrix();
+    // MinCascadeDistance.Initialize(tweakBar, "MinCascadeDistance", "CascadeControls", "Min Cascade Distance", "The closest depth that is covered by the shadow cascades", 0.0000f, 0.0000f, 0.1000f, 0.0010f);
+    // MaxCascadeDistance.Initialize(tweakBar, "MaxCascadeDistance", "CascadeControls", "Max Cascade Distance", "The furthest depth that is covered by the shadow cascades", 1.0000f, 0.0000f, 1.0000f, 0.0100f);
+    const float MinDistance = 0.0f;
+    const float MaxDistance = 1.f;
 
-    std::vector<float> ViewSpaceDepth = { -1.0f, -30.f, -80.f, -150.f, -300.f };
-    std::vector<float> ClipSpaceDepth( ViewSpaceDepth.size() );
-    std::transform(ViewSpaceDepth.begin(), ViewSpaceDepth.end(), ClipSpaceDepth.begin(),
-        [&Proj]( float d ) {
-        Vector4 c = Proj * Vector4( 0.f, 0.f, d, 1.f );
-        if (c.GetW() < 0.0001f)
-            return Scalar(0.f);
-        return c.GetZ() / c.GetW();
-    });
+    // Compute the split distances based on the partitioning mode
+    float CascadeSplits[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    const Matrix4& ClipToWorld = m_Camera.GetClipToWorld();
-    for (auto i = 0; i + 1 < ClipSpaceDepth.size(); i++)
+    float m_SplitDistance0 = 0.002f, m_SplitDistance1 = 0.006f, m_SplitDistance2 = 0.01f, m_SplitDistance3 = 0.1f;
+    if (true)
     {
-        BoundingBox Box( Vector3(-1.f, -1.f, ClipSpaceDepth[i]), Vector3( 1.f, 1.f, ClipSpaceDepth[i + 1]) );
-        // Get clip-space frustum corners for near and far, transform into shadow view space
-        auto ClipCorners = Box.GetCorners();
-        std::transform( ClipCorners.begin(), ClipCorners.end(), m_SplitViewFrustum[i].begin(),
-            [&ClipToWorld]( Vector3 v ) {
-            Vector4 vt = ClipToWorld * Vector4(v, 1.f);
-            return Vector3(vt);
-        } );
+        CascadeSplits[0] = MinDistance + m_SplitDistance0 * MaxDistance;
+        CascadeSplits[1] = MinDistance + m_SplitDistance1 * MaxDistance;
+        CascadeSplits[2] = MinDistance + m_SplitDistance2 * MaxDistance;
+        CascadeSplits[3] = MinDistance + m_SplitDistance3 * MaxDistance;
     }
 
-    auto& ShadowView = m_SunShadow.GetViewMatrix();
-    for (auto cascade = 0; cascade < m_SplitViewFrustum.size(); cascade++)
+    m_GlobalShadowMatrix = MakeGlobalShadowMatrix( m_Camera, m_SunDirection );
+
+    // Render the meshes to each cascade
+    uint32_t NumCascades = kShadowSplit;
+    for (uint32_t cascadeIdx = 0; cascadeIdx < NumCascades; ++cascadeIdx)
     {
-        auto& frustumCornersWS = m_SplitViewFrustum[cascade];
+        float prevSplitDist = cascadeIdx == 0 ? MinDistance : CascadeSplits[cascadeIdx - 1];
+        float splitDist = CascadeSplits[cascadeIdx];
+
+        // Get the 8 points of the view frustum in world space
+        Vector3 frustumCornersWS[8] =
+        {
+            Vector3(-1.0f, -1.0f, 1.0f),
+            Vector3(-1.0f,  1.0f, 1.0f),
+            Vector3( 1.0f, -1.0f, 1.0f),
+            Vector3( 1.0f,  1.0f, 1.0f),
+
+            Vector3(-1.0f, -1.0f, 0.0f),
+            Vector3(-1.0f,  1.0f, 0.0f),
+            Vector3( 1.0f, -1.0f, 0.0f),
+            Vector3( 1.0f,  1.0f, 0.0f),
+        };
+
+        Matrix4 invViewProj = m_Camera.GetClipToWorld();
+        for(uint32_t i = 0; i < 8; ++i)
+            frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
+
+        // Get the corners of the current cascade slice of the view frustum
+        for (uint32_t i = 0; i < 4; ++i)
+        {
+            Vector3 cornerRay = frustumCornersWS[i + 4] - frustumCornersWS[i];
+            Vector3 nearCornerRay = cornerRay * prevSplitDist;
+            Vector3 farCornerRay = cornerRay * splitDist;
+            frustumCornersWS[i] = frustumCornersWS[i + 4] - farCornerRay;
+            frustumCornersWS[i + 4] = frustumCornersWS[i + 4] - nearCornerRay;
+        }
+
+        std::copy( frustumCornersWS, frustumCornersWS + 8, m_ViewFrustum[cascadeIdx].begin() );
 
         // Calculate the centroid of the view frustum slice
         Vector3 frustumCenter = 0.0f;
-        for (uint32_t i = 0; i < 8; ++i)
+        for(uint32_t i = 0; i < 8; ++i)
             frustumCenter = frustumCenter + frustumCornersWS[i];
-        frustumCenter *= Scalar(1.0f / 8.0f);
+        frustumCenter *= Scalar( 1.0f / 8.0f );
 
         // Pick the up vector to use for the light camera
-        Vector3 upDir = m_Camera.GetRightVec(); // camera.Right();
+        Vector3 upDir = m_Camera.GetRightVec();
 
         Vector3 minExtents;
         Vector3 maxExtents;
@@ -489,11 +567,18 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         }
         else
         {
+            Vector3 lookAt = frustumCenter + m_SunDirection;
+
+            Camera light;
+            light.SetEyeAtUp( frustumCenter, lookAt, upDir );
+            light.Update();
+            Matrix4 lightView = light.GetViewMatrix();
+
             Vector3 mins( Scalar( FLT_MAX ) );
             Vector3 maxes( Scalar( -FLT_MAX ) );
             for (uint32_t i = 0; i < 8; ++i)
             {
-                Vector3 corner = ShadowView.Transform( frustumCornersWS[i] );
+                Vector3 corner = lightView.Transform( frustumCornersWS[i] );
                 mins = Min( mins, corner );
                 maxes = Max( maxes, corner );
             }
@@ -504,38 +589,75 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         Vector3 cascadeExtents = maxExtents - minExtents;
 
         // Get position of the shadow camera
-        Vector3 shadowCameraPos = frustumCenter - m_SunDirection;// * -minExtents.GetZ();
-
-        float minZ = minExtents.GetZ(), maxZ = maxExtents.GetZ();
-        if (m_bFixDepth)
-            minZ = 0.0f, maxZ = cascadeExtents.GetZ();
+        Vector3 shadowCameraPos = frustumCenter + m_SunDirection * minExtents.GetZ();
 
         // Come up with a new orthographic camera for the shadow caster
-        Matrix4 SplitProj = OrthographicMatrix(
-            minExtents.GetX(), maxExtents.GetX(),
-            minExtents.GetY(), maxExtents.GetY(),
-            minZ, maxZ,
-            Math::g_ReverseZ);
+        OrthographicCamera shadowCamera;
+        if (m_bFixDepth)
+            shadowCamera.SetOrthographic( minExtents.GetX(), maxExtents.GetX(), minExtents.GetY(), maxExtents.GetY(), 0.0f, cascadeExtents.GetZ() );
+        else
+            shadowCamera.SetOrthographic( minExtents.GetX(), maxExtents.GetX(), minExtents.GetY(), maxExtents.GetY(), minExtents.GetZ(), maxExtents.GetZ() );
+        shadowCamera.SetEyeAtUp( shadowCameraPos, frustumCenter, upDir );
+        shadowCamera.Update();
 
-        Camera cam;
-        cam.SetEyeAtUp( shadowCameraPos, frustumCenter, upDir );
-        cam.Update();
+        if (m_bStabilizeCascades)
+        {
+            // Create the rounding matrix, by projecting the world-space origin and determining
+            // the fractional offset in texel space
+            XMMATRIX shadowMatrix = shadowCamera.GetViewProjMatrix();
+            XMVECTOR shadowOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+            shadowOrigin = XMVector4Transform(shadowOrigin, shadowMatrix);
+            shadowOrigin = XMVectorScale(shadowOrigin, sMapSize / 2.0f);
 
-        Matrix4 View = cam.GetViewMatrix();
-        m_SplitViewProj[cascade] = SplitProj * View;
+            XMVECTOR roundedOrigin = XMVectorRound(shadowOrigin);
+            XMVECTOR roundOffset = XMVectorSubtract(roundedOrigin, shadowOrigin);
+            roundOffset = XMVectorScale(roundOffset, 2.0f / sMapSize);
+            roundOffset = XMVectorSetZ(roundOffset, 0.0f);
+            roundOffset = XMVectorSetW(roundOffset, 0.0f);
 
-        Frustum FrustumVS( SplitProj );
-        Frustum FrustumWS = cam.GetCameraToWorld() * FrustumVS;
-        m_FrustumWS[cascade] = FrustumWS.GetFrustumCorners();
-    }
+            XMMATRIX shadowProj = shadowCamera.GetProjMatrix();
+            shadowProj.r[3] = XMVectorAdd(shadowProj.r[3], roundOffset);
+            shadowCamera.UpdateProjection(Matrix4(shadowProj));
+            shadowCamera.Update();
+        }
 
-    for (auto i = 0; i < m_SplitViewProj.size(); i++)
-    {
-        g_CascadeShadowBuffer.BeginRendering( gfxContext, i );
+        m_SplitFrustum[cascadeIdx] = shadowCamera.GetWorldSpaceFrustum().GetFrustumCorners();
+
+        // Draw the mesh with depth only, using the new shadow camera
+        g_CascadeShadowBuffer.BeginRendering( gfxContext, cascadeIdx );
         gfxContext.SetPipelineState( m_ShadowPSO );
-        RenderObjects( gfxContext, m_SplitViewProj[i] * ShadowView, kOpaque );
-        RenderObjects( gfxContext, m_SplitViewProj[i] * ShadowView, kTransparent );
+        RenderObjects( gfxContext, shadowCamera.GetViewProjMatrix(), kOpaque );
+        RenderObjects( gfxContext, shadowCamera.GetViewProjMatrix(), kTransparent );
         g_CascadeShadowBuffer.EndRendering( gfxContext );
+
+        // Apply the scale/offset matrix, which transforms from [-1,1]
+        // post-projection space to [0,1] UV space
+        XMMATRIX texScaleBias;
+        texScaleBias.r[0] = XMVectorSet(0.5f,  0.0f, 0.0f, 0.0f);
+        texScaleBias.r[1] = XMVectorSet(0.0f, -0.5f, 0.0f, 0.0f);
+        texScaleBias.r[2] = XMVectorSet(0.0f,  0.0f, 1.0f, 0.0f);
+        texScaleBias.r[3] = XMVectorSet(0.5f,  0.5f, 0.0f, 1.0f);
+        XMMATRIX shadowMatrix = shadowCamera.GetViewProjMatrix();
+        shadowMatrix = XMMatrixMultiply(shadowMatrix, texScaleBias);
+
+        // Store the split distance in terms of view space depth
+        const float clipDist = m_Camera.GetFarClip() - m_Camera.GetNearClip();
+        m_Cascade.CascadeSplits[cascadeIdx] = m_Camera.GetNearClip() + splitDist * clipDist;
+
+        // Calculate the position of the lower corner of the cascade partition, in the UV space
+        // of the first cascade partition
+        Matrix4 invCascadeMat = Invert( Matrix4( shadowMatrix ) );
+        Vector3 cascadeCorner = invCascadeMat.Transform(Vector3(0.0f, 0.0f, 0.0f));
+        cascadeCorner = m_GlobalShadowMatrix.Transform(cascadeCorner );
+
+        // Do the same for the upper corner
+        Vector3 otherCorner = invCascadeMat.Transform(Vector3(1.0f, 1.0f, 1.0f) );
+        otherCorner = m_GlobalShadowMatrix.Transform(otherCorner );
+
+        // Calculate the scale and offset
+        Vector3 cascadeScale = Vector3(1.0f, 1.0f, 1.0f) / (otherCorner - cascadeCorner);
+        m_Cascade.CascadeOffsets[cascadeIdx] = Vector4(-cascadeCorner, 0.0f);
+        m_Cascade.CascadeScales[cascadeIdx] = Vector4(cascadeScale, 1.0f);
     }
 }
 
@@ -548,11 +670,13 @@ void MikuViewer::RenderScene( void )
     uint32_t FrameIndex = TemporalEffects::GetFrameIndexMod2();
     (FrameIndex);
 
-    struct
+    __declspec(align(16)) struct
     {
         Vector3 LightDirection;
         Vector3 LightColor;
         float ShadowTexelSize[4];
+        Matrix4 ShadowMatrix;
+        CascadeParameter CasCade;
     } psConstants;
 
     psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
@@ -566,6 +690,11 @@ void MikuViewer::RenderScene( void )
 
     RenderLightShadows(gfxContext);
     RenderShadowMap(gfxContext);
+
+    // update
+    psConstants.ShadowMatrix = m_GlobalShadowMatrix;
+    psConstants.CasCade = m_Cascade;
+	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
 
     gfxContext.ClearColor( g_SceneColorBuffer );
     gfxContext.ClearDepth( g_SceneDepthBuffer );
@@ -598,12 +727,12 @@ void MikuViewer::RenderScene( void )
         if (m_bShadowSplit)
         {
             for (auto i = 0; i < m_SplitViewProj.size(); i++)
-                Utility::DebugCube( gfxContext, WorldToClip, m_FrustumWS[i].data(), SplitColor[i] );
+                Utility::DebugCube( gfxContext, WorldToClip, m_SplitFrustum[i].data(), SplitColor[i] );
         }
         if (m_bViewSplit)
         {
-            for (auto i = 0; i < m_SplitViewFrustum.size(); i++)
-                Utility::DebugCube( gfxContext, WorldToClip, m_SplitViewFrustum[i].data(), SplitColor[i] );
+            for (auto i = 0; i < m_ViewFrustum.size(); i++)
+                Utility::DebugCube( gfxContext, WorldToClip, m_ViewFrustum[i].data(), SplitColor[i] );
         }
 
         if (m_bLightFrustum)

@@ -71,6 +71,7 @@ namespace Math
 
 		static INLINE Matrix4 MakeTranslate( Vector3 translate ) { return Matrix4(XMMatrixTranslationFromVector(translate)); }
 
+        // with perspective dividing
         INLINE Vector3 Transform( Vector3 v ) const { return Vector3(XMVector3TransformCoord( v, *this )); }
 
         friend bool Near( const Matrix4& m1, const Matrix4& m2, const Vector4& eps );

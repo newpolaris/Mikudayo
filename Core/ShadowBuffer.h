@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -23,7 +23,7 @@ class ShadowBuffer : public DepthBuffer
 {
 public:
     ShadowBuffer() : m_DepthFormat(DXGI_FORMAT_D16_UNORM) {}
-        
+
     void Create( const std::wstring& Name, uint32_t Width, uint32_t Height );
     void Create( const std::wstring& Name, uint32_t Width, uint32_t Height, EsramAllocator& Allocator );
     void CreateArray( const std::wstring& Name, uint32_t Width, uint32_t Height, uint32_t ArraySize );

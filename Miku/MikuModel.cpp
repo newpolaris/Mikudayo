@@ -126,6 +126,7 @@ void MikuModel::Load()
     LoadPmd( m_ModelPath, m_bRightHand );
     SetVisualizeSkeleton();
     SetBoundingSphere();
+    // SetBoundingBox();
 
 	if (!m_MotionPath.empty())
         LoadVmd( m_MotionPath, m_bRightHand );

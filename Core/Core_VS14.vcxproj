@@ -52,6 +52,7 @@
     <ClInclude Include="Math\DualQuaternion.h" />
     <ClInclude Include="Math\Functions.h" />
     <ClInclude Include="MotionBlur.h" />
+    <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="PostEffects.h" />
     <ClInclude Include="RasterizerState.h" />
     <ClInclude Include="SamplerManager.h" />
@@ -117,6 +118,7 @@
     <ClCompile Include="Math\Quaternion.cpp" />
     <ClCompile Include="Math\Random.cpp" />
     <ClCompile Include="MotionBlur.cpp" />
+    <ClCompile Include="OrthographicCamera.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Create</PrecompiledHeader>
