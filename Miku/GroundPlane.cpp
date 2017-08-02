@@ -18,6 +18,7 @@ namespace Graphics
 }
 
 using namespace Graphics;
+using namespace Math;
 
 GroundPlane::GroundPlane()
 {
@@ -58,4 +59,9 @@ void GroundPlane::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
         gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
         gfxContext.DrawIndexed( 6 );
     }
+}
+
+BoundingBox GroundPlane::GetBoundingBox()
+{
+    return BoundingBox( Vector3( 0.f ), Vector3( 0.f ) );
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Math/BoundingBox.h"
+
 class GraphicsContext;
 
 namespace Graphics
@@ -10,5 +12,6 @@ namespace Graphics
     public:
         virtual void Draw( GraphicsContext& gfxContext, eObjectFilter Filter ) = 0;
         virtual void Update( float deltaT ) = 0;
+        virtual Math::BoundingBox GetBoundingBox() = 0;
     };
 }

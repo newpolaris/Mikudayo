@@ -14,6 +14,7 @@
 #include "KeyFrameAnimation.h"
 #include "IRenderObject.h"
 #include "Math/BoundingSphere.h"
+#include "Math/BoundingBox.h"
 
 class ManagedTexture;
 
@@ -81,11 +82,13 @@ namespace Graphics
         void Load( void );
 
         BoundingSphere GetBoundingSphere();
+        BoundingBox GetBoundingBox() override;
 
         void SetModel( const std::wstring& model );
         void SetMotion( const std::wstring& model );
         void SetPosition( Vector3 postion );
         void SetBoundingSphere( void );
+        void SetBoundingBox( void );
 		void Update( float kFrameTime ) override;
 
 	private:
@@ -137,6 +140,7 @@ namespace Graphics
 
         uint32_t m_RootBoneIndex; // named as center
         BoundingSphere m_BoundingSphere;
+        BoundingBox m_BoundingBox;
 
 		std::vector<XMMATRIX> m_BoneAttribute;
 	};

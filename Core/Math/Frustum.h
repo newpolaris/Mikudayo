@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -19,6 +19,8 @@
 
 namespace Math
 {
+    using FrustumCorner = std::array<Vector3, 8>;
+
 	class Frustum
 	{
 	public:
@@ -40,7 +42,7 @@ namespace Math
 		Vector3         GetFrustumCorner( CornerID id ) const   { return m_FrustumCorners[id]; }
 		BoundingPlane   GetFrustumPlane( PlaneID id ) const     { return m_FrustumPlanes[id]; }
 
-		std::array<Vector3, 8> GetFrustumCorners( void ) const;
+		FrustumCorner GetFrustumCorners( void ) const;
 
 		// Test whether the bounding sphere intersects the frustum.  Intersection is defined as either being
 		// fully contained in the frustum, or by intersecting one or more of the planes.
@@ -77,7 +79,7 @@ namespace Math
 		return true;
 	}
 
-    inline std::array<Vector3, 8> Frustum::GetFrustumCorners( void ) const 
+    inline std::array<Vector3, 8> Frustum::GetFrustumCorners( void ) const
     {
         std::array<Vector3, 8> Corners;
         std::copy( m_FrustumCorners, m_FrustumCorners + 8, Corners.begin() );

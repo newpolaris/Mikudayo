@@ -1,6 +1,4 @@
 static const uint MaxSplit = 4;
-static const uint NumCascades = 4;
-static const uint kShadowSplit = 4;
 
 //
 // Poisson disk kerenl width
@@ -33,10 +31,6 @@ struct ShadowTex
     float Bias;
     Texture2DArray<float> ShadowMap;
     SamplerComparisonState ShadowSampler;
-    matrix ShadowMatrix;
-    float4 CascadeOffsets[kShadowSplit];
-    float4 CascadeScales[kShadowSplit];
-    float CascadeSplits[kShadowSplit];
 };
 
 //
@@ -44,7 +38,7 @@ struct ShadowTex
 // the pseudorandom numbers will change with change of world space position
 //
 // seed: world space position of a fragemnt
-// freq: modifier for seed. The bigger, the faster
+// freq: modifier for seed. The bigger, the faster 
 //
 // Uses code from "http://www.sunandblackcat.com/tipFullView.php?l=eng&topicid=35"
 //
@@ -54,7 +48,7 @@ float Random(float3 seed, float freq)
     float dt = dot( floor( seed * freq ), float3( 53.1215, 21.1352, 9.1322 ) );
     // return only fractional part
     return frac( sin( dt ) * 2105.2354 );
-}
+} 
 
 //
 // Returns random angle
@@ -169,7 +163,7 @@ float ShadowModePoissonDiskStratified( ShadowTex Input, float3 ShadowPos )
         uint index = uint(kPoissonSample*Random( Input.Position.xyz, i )) % kPoissonSample;
         Result += texShadow.SampleCmpLevelZero( samplerShadow, ShadowPos.xy + PoissonDisk[index]*Texel, ShadowPos.z );
     }
-    return Result / Num;
+    return Result / Num; 
 }
 
 //
@@ -199,7 +193,7 @@ float SampletexShadow( ShadowTex Input, float2 base_uv, float u, float v, float2
 //
 // Uses code from "https://github.com/TheRealMJP/Shadows" by MJP
 //
-float SampletexShadowOptimizedGaussinPCF( ShadowTex Input, float3 ShadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx )
+float SampletexShadowOptimizedGaussinPCF( ShadowTex Input, float3 ShadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx ) 
 {
     texture2D<float> texShadow = Input.ShadowMap;
     SamplerComparisonState samplerShadow = Input.ShadowSampler;
@@ -342,13 +336,13 @@ float SampletexShadowOptimizedGaussinPCF( ShadowTex Input, float3 ShadowPos, flo
 }
 
 //
-// Samples the shadow map with a fixed-size PCF kernel optimized with GatherCmp.
+// Samples the shadow map with a fixed-size PCF kernel optimized with GatherCmp. 
 //
 // Uses code from "Fast Conventional Shadow Filtering" by Holger Gruen, in GPU Pro.
 //
 // (Shader compilation time increases significantly)
 //
-float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx)
+float SampleShadowMapFixedSizePCF(ShadowTex Input, float3 shadowPos, float3 shadowPosDX, float3 shadowPosDY, uint cascadeIdx) 
 {
     texture2D<float> texShadow = Input.ShadowMap;
     SamplerComparisonState samplerShadow = Input.ShadowSampler;
@@ -557,89 +551,3 @@ float GetShadow( ShadowTex Input, float4 ShadowPosH[MaxSplit] )
     return Result * Result * 0.5 + 0.5;
 }
 
-//-------------------------------------------------------------------------------------------------
-// Samples the appropriate shadow map cascade
-//-------------------------------------------------------------------------------------------------
-float3 SampleShadowCascade(
-    ShadowTex Input,
-    in float3 shadowPosition,
-    in float3 shadowPosDX,
-    in float3 shadowPosDY, in uint cascadeIdx,
-    in uint2 screenPos )
-{
-    shadowPosition += Input.CascadeOffsets[cascadeIdx].xyz;
-    shadowPosition *= Input.CascadeScales[cascadeIdx].xyz;
-
-    shadowPosDX *= Input.CascadeScales[cascadeIdx].xyz;
-    shadowPosDY *= Input.CascadeScales[cascadeIdx].xyz;
-
-    float3 cascadeColor = 1.0f;
-
-    #if VisualizeCascades_
-        const float3 CascadeColors[NumCascades] =
-        {
-            float3(1.0f, 0.0, 0.0f),
-            float3(0.0f, 1.0f, 0.0f),
-            float3(0.0f, 0.0f, 1.0f),
-            float3(1.0f, 1.0f, 0.0f)
-        };
-
-        cascadeColor = CascadeColors[cascadeIdx];
-    #endif
-
-    float shadow = SampleSingle( Input, shadowPosition, cascadeIdx );
-    return shadow * cascadeColor;
-}
-
-float3 GetShadowPosOffset(ShadowTex Input, in float nDotL, in float3 normal)
-{
-    float2 shadowMapSize;
-    float numSlices;
-    Input.ShadowMap.GetDimensions(shadowMapSize.x, shadowMapSize.y, numSlices);
-    float texelSize = 2.0f / shadowMapSize.x;
-    float nmlOffsetScale = saturate(1.0f - nDotL);
-    return texelSize * 0.f * nmlOffsetScale * normal;
-}
-
-//-------------------------------------------------------------------------------------------------
-// Computes the visibility term by performing the shadow test
-//-------------------------------------------------------------------------------------------------
-float3 ShadowVisibility( ShadowTex Input, in float3 positionWS, in float depthVS, in float nDotL, in float3 normal,
-                        in uint2 screenPos)
-{
-
-	float3 shadowVisibility = 1.0f;
-	uint cascadeIdx = NumCascades - 1;
-    float3 projectionPos = mul(float4(positionWS, 1.0f), Input.ShadowMatrix).xyz;
-
-	// Figure out which cascade to sample from
-	[unroll]
-	for(int i = NumCascades - 1; i >= 0; --i)
-	{
-        #if SelectFromProjection_
-            // Select based on whether or not the pixel is inside the projection
-            // used for rendering to the cascade
-            float3 cascadePos = projectionPos + CascadeOffsets[i].xyz;
-            cascadePos *= Input.CascadeScales[i].xyz;
-            cascadePos = abs(cascadePos - 0.5f);
-            if(all(cascadePos <= 0.5f))
-                cascadeIdx = i;
-        #else
-            // Select based on whether or not our view-space depth falls within
-            // the depth range of a cascade split
-            if(depthVS <= Input.CascadeSplits[i])
-                cascadeIdx = i;
-        #endif
-	}
-
-    // Project into shadow space
-    float3 samplePos = positionWS;
-	float3 shadowPosition = mul(float4(samplePos, 1.0f), Input.ShadowMatrix).xyz;
-    float3 shadowPosDX = ddx_fine(shadowPosition);
-    float3 shadowPosDY = ddy_fine(shadowPosition);
-
-	shadowVisibility = SampleShadowCascade( Input, shadowPosition, shadowPosDX, shadowPosDY,
-                                           cascadeIdx, screenPos);
-
-	return shadowVisibility;
-}

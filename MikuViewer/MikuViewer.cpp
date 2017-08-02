@@ -81,8 +81,6 @@ void Lighting::Shutdown( void )
     m_LightShadowTempBuffer.Destroy();
 }
 
-using FrustumCorner = std::array<Vector3, 8>;
-
 class MikuViewer : public GameCore::IGameApp
 {
 public:
@@ -98,6 +96,7 @@ public:
 
 private:
 
+    BoundingBox GetBoundingBox();
     void RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewProjMat, eObjectFilter Filter );
     void RenderObjects( GraphicsContext& gfxContext, const Matrix4 & ViewMat, const Matrix4 & ProjMat, eObjectFilter Filter );
     void RenderLightShadows(GraphicsContext& gfxContext);
@@ -120,7 +119,8 @@ private:
     Vector3 m_SunColor;
     ShadowCamera m_SunShadow;
 
-    std::vector<std::shared_ptr<Graphics::IRenderObject>> m_Models;
+    using IRenderObjectPtr = std::shared_ptr<Graphics::IRenderObject>;
+    std::vector<IRenderObjectPtr> m_Models;
 	Graphics::Motion m_Motion;
 
 	GraphicsPSO m_DepthPSO;
@@ -131,14 +131,7 @@ private:
 	GraphicsPSO m_BlendPSO;
 	GraphicsPSO m_GroundPlanePSO;
 
-    Matrix4 m_GlobalShadowMatrix;
-    __declspec(align(16)) struct CascadeParameter
-    {
-        Vector4 CascadeOffsets[kShadowSplit];
-        Vector4 CascadeScales[kShadowSplit];
-        float CascadeSplits[kShadowSplit];
-    } m_Cascade;
-    std::vector<Matrix4> m_SplitViewProj;
+    std::vector<Matrix4> m_ShadowViewProj;
     std::vector<FrustumCorner> m_SplitFrustum;
     std::vector<FrustumCorner> m_ViewFrustum;
 };
@@ -151,8 +144,8 @@ enum { kCameraMain, kCameraVirtual };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
 BoolVar m_bDebugTexture("Application/Camera/Debug Texture", false);
-BoolVar m_bViewSplit("Application/Camera/View Split", true);
-BoolVar m_bShadowSplit("Application/Camera/Shadow Split", false);
+BoolVar m_bViewSplit("Application/Camera/View Split", false);
+BoolVar m_bShadowSplit("Application/Camera/Shadow Split", true);
 BoolVar m_bFixDepth("Application/Camera/Fix Depth", false);
 BoolVar m_bLightFrustum("Application/Camera/Light Frustum", false);
 BoolVar m_bStabilizeCascades("Application/Camera/Stabilize Cascades", false);
@@ -275,7 +268,7 @@ void MikuViewer::Startup( void )
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pSecondCameraController = new CameraController(m_SecondCamera, Vector3(kYUnitVector));
 
-    m_SplitViewProj.resize( kShadowSplit );
+    m_ShadowViewProj.resize( kShadowSplit );
     m_ViewFrustum.resize( kShadowSplit );
     m_SplitFrustum.resize( kShadowSplit );
 
@@ -393,12 +386,24 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
 
     auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
     for (int i = 0; i < kShadowSplit; i++)
-        vsConstants.shadow[i] = T * m_SplitViewProj[i] * m_SunShadow.GetViewMatrix();
+        vsConstants.shadow[i] = T * m_ShadowViewProj[i] * m_SunShadow.GetViewMatrix();
 
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
 
     for (auto& model : m_Models)
         model->Draw( gfxContext, Filter );
+}
+
+BoundingBox MikuViewer::GetBoundingBox()
+{
+    Vector3 minVec( FLT_MAX ), maxVec( FLT_MIN );
+    for (auto& model : m_Models)
+    {
+        auto bound = model->GetBoundingBox();
+        minVec = Min(bound.GetMin(), minVec);
+        maxVec = Max(bound.GetMax(), maxVec);
+    }
+    return BoundingBox( minVec, maxVec );
 }
 
 void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewProjMat, eObjectFilter Filter )
@@ -478,6 +483,15 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 {
     ScopedTimer _prof( L"Render Shadow Map", gfxContext );
 
+    m_SunShadow.UpdateMatrix( m_SunDirection, Vector3(0.f), Vector3(m_ShadowDimX, m_ShadowDimY, m_ShadowDimZ),
+        (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16 );
+
+    Matrix4 lightView = m_SunShadow.GetViewMatrix();
+    BoundingBox bound = GetBoundingBox();
+    FrustumCorner boundFrustum = bound.GetCorners();
+    for ( auto i = 0; i < boundFrustum.size(); i++ )
+        boundFrustum[i] = Vector3(lightView * boundFrustum[i]);
+
     const float sMapSize = static_cast<float>(g_CascadeShadowBuffer.GetWidth());
 
     // MinCascadeDistance.Initialize(tweakBar, "MinCascadeDistance", "CascadeControls", "Min Cascade Distance", "The closest depth that is covered by the shadow cascades", 0.0000f, 0.0000f, 0.1000f, 0.0010f);
@@ -496,8 +510,6 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         CascadeSplits[2] = MinDistance + m_SplitDistance2 * MaxDistance;
         CascadeSplits[3] = MinDistance + m_SplitDistance3 * MaxDistance;
     }
-
-    m_GlobalShadowMatrix = MakeGlobalShadowMatrix( m_Camera, m_SunDirection );
 
     // Render the meshes to each cascade
     uint32_t NumCascades = kShadowSplit;
@@ -542,16 +554,10 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
             frustumCenter = frustumCenter + frustumCornersWS[i];
         frustumCenter *= Scalar( 1.0f / 8.0f );
 
-        // Pick the up vector to use for the light camera
-        Vector3 upDir = m_Camera.GetRightVec();
-
         Vector3 minExtents;
         Vector3 maxExtents;
         if (m_bStabilizeCascades)
         {
-            // This needs to be constant for it to be stable
-            upDir = Vector3( kYUnitVector );
-
             // Calculate the radius of a bounding sphere surrounding the frustum corners
             float sphereRadius = 0.0f;
             for (uint32_t i = 0; i < 8; ++i)
@@ -567,13 +573,6 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         }
         else
         {
-            Vector3 lookAt = frustumCenter + m_SunDirection;
-
-            Camera light;
-            light.SetEyeAtUp( frustumCenter, lookAt, upDir );
-            light.Update();
-            Matrix4 lightView = light.GetViewMatrix();
-
             Vector3 mins( Scalar( FLT_MAX ) );
             Vector3 maxes( Scalar( -FLT_MAX ) );
             for (uint32_t i = 0; i < 8; ++i)
@@ -588,40 +587,14 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 
         Vector3 cascadeExtents = maxExtents - minExtents;
 
-        // Get position of the shadow camera
-        Vector3 shadowCameraPos = frustumCenter + m_SunDirection * minExtents.GetZ();
-
         // Come up with a new orthographic camera for the shadow caster
         OrthographicCamera shadowCamera;
-        if (m_bFixDepth)
-            shadowCamera.SetOrthographic( minExtents.GetX(), maxExtents.GetX(), minExtents.GetY(), maxExtents.GetY(), 0.0f, cascadeExtents.GetZ() );
-        else
-            shadowCamera.SetOrthographic( minExtents.GetX(), maxExtents.GetX(), minExtents.GetY(), maxExtents.GetY(), minExtents.GetZ(), maxExtents.GetZ() );
-        shadowCamera.SetEyeAtUp( shadowCameraPos, frustumCenter, upDir );
+        shadowCamera.SetOrthographic( minExtents.GetX(), maxExtents.GetX(), minExtents.GetY(), maxExtents.GetY(), minExtents.GetZ(), maxExtents.GetZ() );
+        shadowCamera.SetEyeAtUp( Vector3(0.f), m_SunDirection, Vector3( kYUnitVector ) );
         shadowCamera.Update();
 
-        if (m_bStabilizeCascades)
-        {
-            // Create the rounding matrix, by projecting the world-space origin and determining
-            // the fractional offset in texel space
-            XMMATRIX shadowMatrix = shadowCamera.GetViewProjMatrix();
-            XMVECTOR shadowOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-            shadowOrigin = XMVector4Transform(shadowOrigin, shadowMatrix);
-            shadowOrigin = XMVectorScale(shadowOrigin, sMapSize / 2.0f);
-
-            XMVECTOR roundedOrigin = XMVectorRound(shadowOrigin);
-            XMVECTOR roundOffset = XMVectorSubtract(roundedOrigin, shadowOrigin);
-            roundOffset = XMVectorScale(roundOffset, 2.0f / sMapSize);
-            roundOffset = XMVectorSetZ(roundOffset, 0.0f);
-            roundOffset = XMVectorSetW(roundOffset, 0.0f);
-
-            XMMATRIX shadowProj = shadowCamera.GetProjMatrix();
-            shadowProj.r[3] = XMVectorAdd(shadowProj.r[3], roundOffset);
-            shadowCamera.UpdateProjection(Matrix4(shadowProj));
-            shadowCamera.Update();
-        }
-
         m_SplitFrustum[cascadeIdx] = shadowCamera.GetWorldSpaceFrustum().GetFrustumCorners();
+        m_ShadowViewProj[cascadeIdx] = shadowCamera.GetViewProjMatrix();
 
         // Draw the mesh with depth only, using the new shadow camera
         g_CascadeShadowBuffer.BeginRendering( gfxContext, cascadeIdx );
@@ -629,35 +602,6 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
         RenderObjects( gfxContext, shadowCamera.GetViewProjMatrix(), kOpaque );
         RenderObjects( gfxContext, shadowCamera.GetViewProjMatrix(), kTransparent );
         g_CascadeShadowBuffer.EndRendering( gfxContext );
-
-        // Apply the scale/offset matrix, which transforms from [-1,1]
-        // post-projection space to [0,1] UV space
-        XMMATRIX texScaleBias;
-        texScaleBias.r[0] = XMVectorSet(0.5f,  0.0f, 0.0f, 0.0f);
-        texScaleBias.r[1] = XMVectorSet(0.0f, -0.5f, 0.0f, 0.0f);
-        texScaleBias.r[2] = XMVectorSet(0.0f,  0.0f, 1.0f, 0.0f);
-        texScaleBias.r[3] = XMVectorSet(0.5f,  0.5f, 0.0f, 1.0f);
-        XMMATRIX shadowMatrix = shadowCamera.GetViewProjMatrix();
-        shadowMatrix = XMMatrixMultiply(shadowMatrix, texScaleBias);
-
-        // Store the split distance in terms of view space depth
-        const float clipDist = m_Camera.GetFarClip() - m_Camera.GetNearClip();
-        m_Cascade.CascadeSplits[cascadeIdx] = m_Camera.GetNearClip() + splitDist * clipDist;
-
-        // Calculate the position of the lower corner of the cascade partition, in the UV space
-        // of the first cascade partition
-        Matrix4 invCascadeMat = Invert( Matrix4( shadowMatrix ) );
-        Vector3 cascadeCorner = invCascadeMat.Transform(Vector3(0.0f, 0.0f, 0.0f));
-        cascadeCorner = m_GlobalShadowMatrix.Transform(cascadeCorner );
-
-        // Do the same for the upper corner
-        Vector3 otherCorner = invCascadeMat.Transform(Vector3(1.0f, 1.0f, 1.0f) );
-        otherCorner = m_GlobalShadowMatrix.Transform(otherCorner );
-
-        // Calculate the scale and offset
-        Vector3 cascadeScale = Vector3(1.0f, 1.0f, 1.0f) / (otherCorner - cascadeCorner);
-        m_Cascade.CascadeOffsets[cascadeIdx] = Vector4(-cascadeCorner, 0.0f);
-        m_Cascade.CascadeScales[cascadeIdx] = Vector4(cascadeScale, 1.0f);
     }
 }
 
@@ -675,8 +619,6 @@ void MikuViewer::RenderScene( void )
         Vector3 LightDirection;
         Vector3 LightColor;
         float ShadowTexelSize[4];
-        Matrix4 ShadowMatrix;
-        CascadeParameter CasCade;
     } psConstants;
 
     psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
@@ -691,9 +633,6 @@ void MikuViewer::RenderScene( void )
     RenderLightShadows(gfxContext);
     RenderShadowMap(gfxContext);
 
-    // update
-    psConstants.ShadowMatrix = m_GlobalShadowMatrix;
-    psConstants.CasCade = m_Cascade;
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
 
     gfxContext.ClearColor( g_SceneColorBuffer );
@@ -726,7 +665,7 @@ void MikuViewer::RenderScene( void )
         auto WorldToClip = m_ProjMatrix * m_ViewMatrix;
         if (m_bShadowSplit)
         {
-            for (auto i = 0; i < m_SplitViewProj.size(); i++)
+            for (auto i = 0; i < m_ShadowViewProj.size(); i++)
                 Utility::DebugCube( gfxContext, WorldToClip, m_SplitFrustum[i].data(), SplitColor[i] );
         }
         if (m_bViewSplit)
@@ -740,8 +679,7 @@ void MikuViewer::RenderScene( void )
             Matrix4 FixDepth( kIdentity );
             FixDepth.SetZ( Vector4(kZero) );
             FixDepth.SetW( Vector4(0.f, 0.f, 0.0f, 1.f) );
-            auto& WorldFrustum = m_SunShadow.GetWorldSpaceFrustum();
-            auto Corners = WorldFrustum.GetFrustumCorners();
+            auto Corners  = m_SunShadow.GetWorldSpaceFrustum().GetFrustumCorners();
             Utility::DebugCube( gfxContext, FixDepth * WorldToClip, Corners.data(), Color( 0.f, 1.f, 1.f, 0.1f ) );
         }
     }

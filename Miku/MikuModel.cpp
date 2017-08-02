@@ -21,7 +21,7 @@ using namespace Graphics;
 using namespace DirectX;
 
 BoolVar s_EnableDrawBone("Application/Model/Draw Bone", false);
-// If model is mixed with sky box, model's boundary is exculde by ''
+// If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
 BoolVar s_ExcludeSkyBox("Application/Model/Exclude Sky Box", true);
 NumVar s_ExcludeRange("Application/Model/Exclude Range", 1000.f, 500.f, 10000.f);
 
@@ -126,7 +126,7 @@ void MikuModel::Load()
     LoadPmd( m_ModelPath, m_bRightHand );
     SetVisualizeSkeleton();
     SetBoundingSphere();
-    // SetBoundingBox();
+    SetBoundingBox();
 
 	if (!m_MotionPath.empty())
         LoadVmd( m_MotionPath, m_bRightHand );
@@ -162,6 +162,33 @@ void MikuModel::SetBoundingSphere( void )
     }
 
     m_BoundingSphere = BoundingSphere( Center, Sqrt(Radius) );
+    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
+}
+
+void MikuModel::SetBoundingBox( void )
+{
+    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){
+        return Bone.Name.compare( L"センター" ) == 0;
+    });
+    if (it == m_Bones.end())
+        it = m_Bones.begin();
+
+    Vector3 Center = it->Translate;
+
+    Vector3 MinV( FLT_MAX ), MaxV( FLT_MIN );
+    for (auto& vert : m_VertexPos)
+    {
+        if (s_ExcludeSkyBox)
+        {
+            Scalar R = Dot( Vector3( 1.f ), Abs( Center - Vector3( vert ) ) );
+            if (R > s_ExcludeRange)
+                continue;
+        }
+        MinV = Min( MinV, vert );
+        MaxV = Max( MaxV, vert );
+    }
+
+    m_BoundingBox = BoundingBox( MinV, MaxV );
     m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 }
 
@@ -830,5 +857,12 @@ BoundingSphere MikuModel::GetBoundingSphere()
 	if (m_BoneMotions.size() > 0)
         return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingSphere;
     return m_ModelTransform * m_BoundingSphere;
+}
+
+BoundingBox MikuModel::GetBoundingBox()
+{
+	if (m_BoneMotions.size() > 0)
+        return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingBox;
+    return m_ModelTransform * m_BoundingBox;
 }
 
