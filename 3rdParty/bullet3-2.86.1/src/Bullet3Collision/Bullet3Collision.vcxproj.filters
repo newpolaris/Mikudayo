@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3DynamicBvh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3DynamicBvhBroadphase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3OverlappingPairCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3ConvexUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3CpuNarrowPhase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3BroadphaseCallback.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3DynamicBvh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3DynamicBvhBroadphase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3OverlappingPair.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\b3OverlappingPairCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\BroadPhaseCollision\shared\b3Aabb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3BvhSubtreeInfoData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3BvhTraversal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3ClipFaces.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3Collidable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3Contact4Data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3ContactConvexConvexSAT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3ContactSphereSphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3ConvexPolyhedronData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3FindConcaveSatAxis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3FindSeparatingAxis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3MprPenetration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3NewContactReduction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3QuantizedBvhNodeData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3ReduceContacts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3RigidBodyData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\shared\b3UpdateAabbs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3Contact4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3ConvexUtility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3CpuNarrowPhase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3RaycastInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\NarrowPhaseCollision\b3RigidBodyCL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{1633EF35-39A9-3B42-ADF1-13748E84A6BC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{01B13951-E1C3-3A8A-97BE-F90918D9C609}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

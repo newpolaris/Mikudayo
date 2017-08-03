@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyConcaveCollisionAlgorithm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyRigidBodyCollisionConfiguration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftRigidCollisionAlgorithm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftRigidDynamicsWorld.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftMultiBodyDynamicsWorld.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftSoftCollisionAlgorithm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btDefaultSoftBodySolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyConcaveCollisionAlgorithm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyRigidBodyCollisionConfiguration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftRigidCollisionAlgorithm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftRigidDynamicsWorld.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftMultiBodyDynamicsWorld.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftSoftCollisionAlgorithm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSparseSDF.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodySolvers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btDefaultSoftBodySolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodySolverVertexBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{1633EF35-39A9-3B42-ADF1-13748E84A6BC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{01B13951-E1C3-3A8A-97BE-F90918D9C609}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,393 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3331592D-B9FA-3FE3-82E0-55341C2496E9}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>BulletCollision</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Import Project="..\..\..\..\PropertySheets\Bullet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="..\..\..\..\PropertySheets\Bullet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="..\..\..\..\PropertySheets\Bullet.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">BulletCollision_Debug</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">BulletCollision</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">BulletCollision_RelWithDebugInfo</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btAxisSweep3.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btBroadphaseProxy.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btDbvt.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btDbvtBroadphase.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btDispatcher.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btOverlappingPairCache.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btQuantizedBvh.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btSimpleBroadphase.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btActivatingCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btBoxBoxCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btBox2dBox2dCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btBoxBoxDetector.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionDispatcher.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionObject.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionWorld.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionWorldImporter.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCompoundCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCompoundCompoundCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvexConcaveCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvexConvexAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvexPlaneCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvex2dConvex2dAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btDefaultCollisionConfiguration.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btEmptyCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btGhostObject.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btHashedSimplePairCache.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btInternalEdgeUtility.cpp" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btInternalEdgeUtility.h" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btManifoldResult.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSimulationIslandManager.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSphereBoxCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSphereSphereCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSphereTriangleCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btUnionFind.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\SphereTriangleDetector.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btBoxShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btBox2dShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btBvhTriangleMeshShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCapsuleShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCollisionShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCompoundShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConcaveShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConeShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexHullShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexInternalShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexPointCloudShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexPolyhedron.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvex2dShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexTriangleMeshShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCylinderShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btEmptyShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMinkowskiSumShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMultimaterialTriangleMeshShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btOptimizedBvh.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btPolyhedralConvexShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btScaledBvhTriangleMeshShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btShapeHull.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btSphereShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btStaticPlaneShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btStridingMeshInterface.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTetrahedronShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleBuffer.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleCallback.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleIndexVertexArray.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleIndexVertexMaterialArray.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleMesh.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleMeshShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btUniformScalingShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btContactProcessing.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGenericPoolAllocator.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactBvh.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactCollisionAlgorithm.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactQuantizedBvh.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactShape.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btTriangleShapeEx.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_box_set.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_contact.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_memory.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_tri_collision.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btContinuousConvexCollision.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btConvexCast.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkConvexCast.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkEpa2.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkEpaPenetrationDepthSolver.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btMinkowskiPenetrationDepthSolver.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btRaycastCallback.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btSubSimplexConvexCast.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btVoronoiSimplexSolver.cpp" />
+    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btPolyhedralContactClipping.cpp" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\btBulletCollisionCommon.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btAxisSweep3.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btBroadphaseInterface.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btBroadphaseProxy.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btDbvt.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btDbvtBroadphase.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btDispatcher.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btOverlappingPairCache.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btOverlappingPairCallback.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btQuantizedBvh.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BroadphaseCollision\btSimpleBroadphase.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btActivatingCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btBoxBoxCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btBox2dBox2dCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btBoxBoxDetector.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionConfiguration.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionCreateFunc.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionDispatcher.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionObject.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionObjectWrapper.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionWorld.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCollisionWorldImporter.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCompoundCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btCompoundCompoundCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvexConcaveCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvexConvexAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvex2dConvex2dAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btConvexPlaneCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btDefaultCollisionConfiguration.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btEmptyCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btGhostObject.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btHashedSimplePairCache.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btManifoldResult.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSimulationIslandManager.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSphereBoxCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSphereSphereCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btSphereTriangleCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\btUnionFind.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionDispatch\SphereTriangleDetector.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btBoxShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btBox2dShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btBvhTriangleMeshShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCapsuleShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCollisionMargin.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCollisionShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCompoundShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConcaveShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConeShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexHullShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexInternalShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexPointCloudShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexPolyhedron.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvex2dShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btConvexTriangleMeshShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btCylinderShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btEmptyShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMaterial.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMinkowskiSumShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMultimaterialTriangleMeshShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btMultiSphereShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btOptimizedBvh.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btPolyhedralConvexShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btScaledBvhTriangleMeshShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btShapeHull.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btSphereShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btStaticPlaneShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btStridingMeshInterface.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTetrahedronShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleBuffer.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleCallback.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleIndexVertexArray.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleIndexVertexMaterialArray.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleInfoMap.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleMesh.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleMeshShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btTriangleShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\CollisionShapes\btUniformScalingShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btBoxCollision.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btClipPolygon.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btContactProcessing.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGenericPoolAllocator.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGeometryOperations.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactBvh.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactCollisionAlgorithm.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactMassUtil.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactQuantizedBvh.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btGImpactShape.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btQuantization.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\btTriangleShapeEx.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_array.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_basic_geometry_operations.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_bitset.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_box_collision.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_box_set.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_clip_polygon.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_contact.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_geom_types.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_geometry.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_hash_table.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_linear_math.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_math.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_memory.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_radixsort.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\Gimpact\gim_tri_collision.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btContinuousConvexCollision.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btConvexCast.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btConvexPenetrationDepthSolver.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btDiscreteCollisionDetectorInterface.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkConvexCast.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkEpa2.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkEpaPenetrationDepthSolver.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btManifoldPoint.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btMinkowskiPenetrationDepthSolver.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btPointCollector.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btRaycastCallback.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btSimplexSolverInterface.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btSubSimplexConvexCast.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btVoronoiSimplexSolver.h" />
+    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\NarrowPhaseCollision\btPolyhedralContactClipping.h" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

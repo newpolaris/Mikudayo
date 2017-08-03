@@ -14,6 +14,9 @@
     <Filter Include="Resource">
       <UniqueIdentifier>{6ef5ff30-59d1-4838-a564-22230635eee2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Bullet">
+      <UniqueIdentifier>{aa463add-e33e-4460-a053-96134883d3a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PMX\Model.cpp">
@@ -33,6 +36,9 @@
     </ClCompile>
     <ClCompile Include="Math\BoundingBox.cpp">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\DynamicCommon.cpp">
+      <Filter>Source Files\Bullet</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

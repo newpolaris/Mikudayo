@@ -1,0 +1,207 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4D471913-07C2-31B3-A997-45A4744309B4}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\BasicDemo\AppBasicExampleGui.vcxproj">
+      <Project>{2D5CF349-5549-346F-A43E-D2EAECF28557}</Project>
+      <Name>AppBasicExampleGui</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\BasicDemo\App_BasicExample.vcxproj">
+      <Project>{5186B7CB-78CE-3C0B-BB3E-05E06C5DCE3A}</Project>
+      <Name>App_BasicExample</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\ExampleBrowser\App_ExampleBrowser.vcxproj">
+      <Project>{1BEB99EA-48DF-3A39-9138-4D81B62DBB47}</Project>
+      <Name>App_ExampleBrowser</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\HelloWorld\App_HelloWorld.vcxproj">
+      <Project>{90C8AD5C-66FE-36E2-BFFB-A6C88774A205}</Project>
+      <Name>App_HelloWorld</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\SharedMemory\App_SharedMemoryPhysics.vcxproj">
+      <Project>{4CC0B64B-4F33-357C-A620-3652DA540E1B}</Project>
+      <Name>App_SharedMemoryPhysics</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\SharedMemory\App_SharedMemoryPhysics_GUI.vcxproj">
+      <Project>{6ABDF2D5-C9C2-34CA-A9B1-C74C9799E1ED}</Project>
+      <Name>App_SharedMemoryPhysics_GUI</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\SharedMemory\App_SharedMemoryPhysics_VR.vcxproj">
+      <Project>{05088EBF-A5B4-32FD-9546-F04F8456A6E8}</Project>
+      <Name>App_SharedMemoryPhysics_VR</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Serialize\Bullet2FileLoader\Bullet2FileLoader.vcxproj">
+      <Project>{769AC6B0-AF02-3DA3-B70E-F088750E6001}</Project>
+      <Name>Bullet2FileLoader</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Collision\Bullet3Collision.vcxproj">
+      <Project>{B8AE476A-332B-3EF3-BB4D-441AEC1F0B8B}</Project>
+      <Name>Bullet3Collision</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Common\Bullet3Common.vcxproj">
+      <Project>{ACEBAE3C-5921-3B63-830C-7F298239F425}</Project>
+      <Name>Bullet3Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Dynamics\Bullet3Dynamics.vcxproj">
+      <Project>{44C0EA5F-08C8-31ED-93B5-1C50C1BA1995}</Project>
+      <Name>Bullet3Dynamics</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3Geometry\Bullet3Geometry.vcxproj">
+      <Project>{59BA5B10-52E2-3D32-8228-1489F22CC47C}</Project>
+      <Name>Bullet3Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\Bullet3OpenCL\Bullet3OpenCL_clew.vcxproj">
+      <Project>{001D3713-026E-3C4F-A08F-8F2AFDAF2488}</Project>
+      <Name>Bullet3OpenCL_clew</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletCollision\BulletCollision.vcxproj">
+      <Project>{3331592D-B9FA-3FE3-82E0-55341C2496E9}</Project>
+      <Name>BulletCollision</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\BulletDynamics.vcxproj">
+      <Project>{94A39064-CBA0-3029-BF08-195B7839DC23}</Project>
+      <Name>BulletDynamics</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\ExampleBrowser\BulletExampleBrowserLib.vcxproj">
+      <Project>{E00F28D5-E778-3095-AE76-65592875D3A6}</Project>
+      <Name>BulletExampleBrowserLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\Serialize\BulletFileLoader\BulletFileLoader.vcxproj">
+      <Project>{6E1BE7B7-0190-36C8-AE8E-D7B6B7BDD1A7}</Project>
+      <Name>BulletFileLoader</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\BulletInverseDynamics.vcxproj">
+      <Project>{4900EC5D-DE24-3361-B701-3D9886705621}</Project>
+      <Name>BulletInverseDynamics</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\InverseDynamics\BulletInverseDynamicsUtils.vcxproj">
+      <Project>{9CDD496B-F2F1-3571-94CC-4FE58E4A05C9}</Project>
+      <Name>BulletInverseDynamicsUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\BulletSoftBody.vcxproj">
+      <Project>{04A343D3-15DA-31B0-ADFC-23BA3AE9D419}</Project>
+      <Name>BulletSoftBody</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\Serialize\BulletWorldImporter\BulletWorldImporter.vcxproj">
+      <Project>{6BED93D4-1ADC-3915-8146-7C5FA8B1CB03}</Project>
+      <Name>BulletWorldImporter</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\Serialize\BulletXmlWorldImporter\BulletXmlWorldImporter.vcxproj">
+      <Project>{37AE2581-7A35-348C-8694-139072C61BB2}</Project>
+      <Name>BulletXmlWorldImporter</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\ThirdPartyLibs\BussIK\BussIK.vcxproj">
+      <Project>{E3641DC5-0119-3750-8AB1-E184961C8551}</Project>
+      <Name>BussIK</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\ConvexDecomposition\ConvexDecomposition.vcxproj">
+      <Project>{39FA4DC6-9E5F-340F-8A73-E60CC8606707}</Project>
+      <Name>ConvexDecomposition</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\GIMPACTUtils\GIMPACTUtils.vcxproj">
+      <Project>{35901492-6370-3382-B86D-7F849AB10CAF}</Project>
+      <Name>GIMPACTUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\Extras\HACD\HACD.vcxproj">
+      <Project>{02B59F77-CB69-3286-9D6B-A7021A72AAED}</Project>
+      <Name>HACD</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\LinearMath\LinearMath.vcxproj">
+      <Project>{83D0FB92-3B9B-3EF9-92A0-71521F9D16D3}</Project>
+      <Name>LinearMath</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\OpenGLWindow\OpenGLWindow.vcxproj">
+      <Project>{B8AD2559-511A-32C1-83DF-A6CE43E492DD}</Project>
+      <Name>OpenGLWindow</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\examples\ThirdPartyLibs\Gwen\gwen.vcxproj">
+      <Project>{2C65F5C6-0A92-36AD-A971-C77877044726}</Project>
+      <Name>gwen</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\CMakeFiles\f2d351b9634a277055ac4c9ae7bf6a7e\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{D493AF1D-901D-39F9-BF9B-47EF25776C6E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
