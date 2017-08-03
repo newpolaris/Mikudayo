@@ -15,6 +15,7 @@ namespace Utility
     GraphicsPSO DebugTexturePSO;
     GraphicsPSO RenderCubePSO;
     GraphicsPSO RenderCubeWirePSO;
+    GraphicsPSO RenderCubeWireDepthPSO;
 }
 
 void Utility::Initialize( void )
@@ -41,6 +42,10 @@ void Utility::Initialize( void )
     RenderCubeWirePSO.SetBlendState( Graphics::BlendDisable );
     RenderCubeWirePSO.SetDepthStencilState( Graphics::DepthStateDisabled );
     RenderCubeWirePSO.Finalize();
+
+    RenderCubeWireDepthPSO = RenderCubeWirePSO;
+    RenderCubeWireDepthPSO.SetDepthStencilState( Graphics::DepthStateDisabled );
+    RenderCubeWireDepthPSO.Finalize();
 }
 
 void Utility::Shutdown( void )
@@ -48,6 +53,7 @@ void Utility::Shutdown( void )
     DebugTexturePSO.Destroy();
     RenderCubePSO.Destroy();
     RenderCubeWirePSO.Destroy();
+    RenderCubeWireDepthPSO.Destroy();
 }
 
 void Utility::DebugTexture( GraphicsContext& Context, D3D11_SRV_HANDLE SRV, LONG X, LONG Y, LONG W, LONG H )
@@ -67,7 +73,7 @@ void Utility::DebugTexture( GraphicsContext& Context, D3D11_SRV_HANDLE SRV, LONG
 //
 // Frustum::m_FrustumCorners
 //
-void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToClip, void* VertexData, Color Color )
+void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToClip, void* VertexData, Color Color, bool bDepth )
 {
     UINT16 Indices[] = {
         // Face
@@ -101,6 +107,7 @@ void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToC
     IndexBuffer IB;
     IB.Create( L"Cube Index Buffer", _countof( Indices ), sizeof( UINT16 ), Indices );
 
+    GraphicsPSO& Wireframe = bDepth ? RenderCubeWireDepthPSO : RenderCubeWirePSO;
     auto SRGB = Color.ToSRGB();
     Context.SetDynamicConstantBufferView( 0, sizeof(Math::Matrix4), &WorldToClip, { kBindVertex } );
     Context.SetDynamicConstantBufferView( 0, sizeof(Color), &SRGB, { kBindPixel } );
@@ -108,7 +115,7 @@ void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToC
     Context.SetIndexBuffer( IB.IndexBufferView() );
     Context.SetPipelineState( RenderCubePSO );
     Context.DrawIndexed( _countof( Indices ) );
-    Context.SetPipelineState( RenderCubeWirePSO );
+    Context.SetPipelineState( Wireframe );
     Context.DrawIndexed( _countof( Indices ) );
 
     VB.Destroy();

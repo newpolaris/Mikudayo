@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -304,7 +304,7 @@ void Graphics::Initialize( void )
 	deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-	D3D_FEATURE_LEVEL featureLevels[] = 
+	D3D_FEATURE_LEVEL featureLevels[] =
 	{
 		D3D_FEATURE_LEVEL_12_1,
 		D3D_FEATURE_LEVEL_12_0,
@@ -321,10 +321,10 @@ void Graphics::Initialize( void )
 			if (desc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 				continue;
 
-			if (desc1.DedicatedVideoMemory > MaxSize && 
+			if (desc1.DedicatedVideoMemory > MaxSize &&
 				SUCCEEDED(D3D11CreateDevice(
-					pAdapter.Get(), 
-					D3D_DRIVER_TYPE_UNKNOWN, 
+					pAdapter.Get(),
+					D3D_DRIVER_TYPE_UNKNOWN,
 					nullptr,
 					deviceFlags,
 					featureLevels,
@@ -403,7 +403,7 @@ void Graphics::Initialize( void )
         // if (DeveloperModeEnabled)
         //    g_Device->SetStablePowerState(TRUE);
     }
-#endif	
+#endif
 #if _DEBUG
 	ID3D11InfoQueue* pInfoQueue = nullptr;
 	if (SUCCEEDED(g_Device->QueryInterface(MY_IID_PPV_ARGS(&pInfoQueue))))
@@ -412,12 +412,12 @@ void Graphics::Initialize( void )
 		// D3D11_MESSAGE_CATEGORY Categories[] = {};
 
 		// Suppress messages based on their severity level
-		D3D11_MESSAGE_SEVERITY Severities[] = 
+		D3D11_MESSAGE_SEVERITY Severities[] =
 		{
 			D3D11_MESSAGE_SEVERITY_INFO
 		};
 
-		D3D11_MESSAGE_ID Id[] = 
+		D3D11_MESSAGE_ID Id[] =
 		{
 			D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
 		};
@@ -720,7 +720,7 @@ void Graphics::Shutdown( void )
 void Graphics::PreparePresentLDR( void )
 {
 	GraphicsContext& Context = GraphicsContext::Begin(L"Present");
-		
+
 	// We're going to be reading these buffers to write to the swap chain buffer(s)
 	Context.SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

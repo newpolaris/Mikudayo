@@ -2,6 +2,7 @@
 
 #include "VectorMath.h"
 #include "Camera.h"
+#include "OrthographicCamera.h"
 
 #include "Math/BoundingBox.h"
 
@@ -65,13 +66,34 @@ TEST(FrustumTest, WorldSpaceCorner)
     cam.SetEyeAtUp( Pos, At, Up );
     cam.Update();
 
-    auto& ProjMatrix = cam.GetProjMatrix();
-
-    Frustum FrustumVS( ProjMatrix );
+    Frustum FrustumVS( cam.GetProjMatrix() );
     Frustum FrustumWS = cam.GetCameraToWorld() * FrustumVS;
     auto Coners = cam.GetWorldSpaceFrustum().GetFrustumCorners();
 
     EXPECT_THAT( FrustumWS.GetFrustumCorners(), Pointwise( MatcherNearRelative( FLT_EPSILON ), Coners) );
+}
+
+TEST(FrustumTest, WorldSpaceCorner2)
+{
+    Vector3 Pos( 0.f ), At( 1.f, 1.f, 1.f ), Up( kYUnitVector );
+
+    OrthographicCamera cam;
+    cam.SetEyeAtUp( Pos, Normalize(At), Up );
+    cam.Update();
+
+    Frustum FrustumVS( cam.GetProjMatrix() );
+    Frustum FrustumWS = cam.GetCameraToWorld() * FrustumVS;
+    auto Coners = cam.GetWorldSpaceFrustum().GetFrustumCorners();
+
+    EXPECT_THAT( FrustumWS.GetFrustumCorners(), Pointwise( MatcherNearRelative( FLT_EPSILON ), Coners) );
+
+    Matrix4 InvView = Invert(cam.GetViewMatrix());
+    FrustumCorner CornersWS;
+    auto CornersVS = FrustumVS.GetFrustumCorners();
+    for (auto i = 0; i < CornersVS.size(); i++)
+        CornersWS[i] = InvView.Transform( CornersVS[i] );
+
+    EXPECT_THAT( CornersWS, Pointwise( MatcherNearRelative( 1e-5f), Coners) );
 }
 
 TEST(CameraTest, LookAt)

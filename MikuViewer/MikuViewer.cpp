@@ -145,7 +145,7 @@ const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
 BoolVar m_bDebugTexture("Application/Camera/Debug Texture", false);
 BoolVar m_bViewSplit("Application/Camera/View Split", false);
-BoolVar m_bShadowSplit("Application/Camera/Shadow Split", true);
+BoolVar m_bShadowSplit("Application/Camera/Shadow Split", false);
 BoolVar m_bFixDepth("Application/Camera/Fix Depth", false);
 BoolVar m_bLightFrustum("Application/Camera/Light Frustum", false);
 BoolVar m_bStabilizeCascades("Application/Camera/Stabilize Cascades", false);
@@ -386,7 +386,7 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
 
     auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
     for (int i = 0; i < kShadowSplit; i++)
-        vsConstants.shadow[i] = T * m_ShadowViewProj[i] * m_SunShadow.GetViewMatrix();
+        vsConstants.shadow[i] = T * m_ShadowViewProj[i];
 
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
 
@@ -645,7 +645,7 @@ void MikuViewer::RenderScene( void )
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_OpaquePSO );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOpaque );
-        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kBone );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOverlay );
         gfxContext.SetPipelineState( m_BlendPSO );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kTransparent );
         gfxContext.SetPipelineState( m_GroundPlanePSO );

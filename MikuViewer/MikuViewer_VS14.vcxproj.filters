@@ -60,5 +60,8 @@
     <ClInclude Include="Shadow.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\ShadowDefine.hlsli">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

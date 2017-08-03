@@ -21,6 +21,7 @@ using namespace Graphics;
 using namespace DirectX;
 
 BoolVar s_EnableDrawBone("Application/Model/Draw Bone", false);
+BoolVar s_EnableDrawBoundingSphere("Application/Model/Draw Bounding Shphere", false);
 // If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
 BoolVar s_ExcludeSkyBox("Application/Model/Exclude Sky Box", true);
 NumVar s_ExcludeRange("Application/Model/Exclude Range", 1000.f, 500.f, 10000.f);
@@ -781,7 +782,7 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 
 void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
-    if (Filter & kBone)
+    if (Filter & kOverlay)
     {
         DrawBone( gfxContext );
         DrawBoundingSphere( gfxContext );
@@ -820,7 +821,8 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 
 void MikuModel::DrawBone( GraphicsContext& gfxContext )
 {
-    if (!s_EnableDrawBone) return;
+    if (!s_EnableDrawBone)
+        return;
 
 	gfxContext.SetPipelineState( m_BonePSO );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
@@ -839,6 +841,9 @@ void MikuModel::DrawBone( GraphicsContext& gfxContext )
 
 void MikuModel::DrawBoundingSphere( GraphicsContext& gfxContext )
 {
+    if (!s_EnableDrawBoundingSphere)
+        return;
+
 	gfxContext.SetPipelineState( m_BonePSO );
 	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	gfxContext.SetVertexBuffer( 0, m_GeometryVertexBuffer.VertexBufferView() );

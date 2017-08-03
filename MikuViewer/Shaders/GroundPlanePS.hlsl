@@ -1,4 +1,4 @@
-#include "Shadow.hlsli"
+#include "ShadowDefine.hlsli"
 
 struct PixelShaderInput
 {
@@ -16,9 +16,11 @@ cbuffer PassConstants : register(b1)
 Texture2DArray<float> texShadow : register(t4);
 SamplerComparisonState samplerShadow    : register(s2);
 
+static const float Bias = 0.f;
+#include "Shadow.hlsli"
+
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0, texShadow, samplerShadow };
-	float shadow = GetShadow(tex, input.shadowPosH);
-    return float4(shadow.xxx, 1.0f);
+	float3 shadow = GetShadow(input.shadowPosH, input.posH.xyz);
+    return float4(shadow, 1.0f);
 }

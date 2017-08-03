@@ -79,9 +79,9 @@ namespace Math
 		return true;
 	}
 
-    inline std::array<Vector3, 8> Frustum::GetFrustumCorners( void ) const
+    inline FrustumCorner Frustum::GetFrustumCorners( void ) const
     {
-        std::array<Vector3, 8> Corners;
+        FrustumCorner Corners;
         std::copy( m_FrustumCorners, m_FrustumCorners + 8, Corners.begin() );
         return Corners;
     }

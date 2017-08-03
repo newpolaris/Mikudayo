@@ -1,12 +1,4 @@
-#include "Shadow.hlsli"
-
-Texture2D<float4> texDiffuse : register(t1);
-Texture2D<float3> texSphere : register(t2);
-Texture2D<float3> texToon : register(t3);
-Texture2DArray<float> texShadow : register(t4);
-SamplerState sampler0 : register(s0);
-SamplerState sampler1 : register(s1);
-SamplerComparisonState samplerShadow : register(s2);
+#include "ShadowDefine.hlsli"
 
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
@@ -35,7 +27,7 @@ cbuffer MaterialConstants : register(b0)
 {
 	Material material;
 	int sphereOperation;
-	int bUseTexture; 
+	int bUseTexture;
 	int bUseToon;
 };
 
@@ -45,6 +37,17 @@ cbuffer PassConstants : register(b1)
     float3 SunColor;
     float4 ShadowTexelSize;
 }
+
+Texture2D<float4> texDiffuse : register(t1);
+Texture2D<float3> texSphere : register(t2);
+Texture2D<float3> texToon : register(t3);
+Texture2DArray<float> texShadow : register(t4);
+SamplerState sampler0 : register(s0);
+SamplerState sampler1 : register(s1);
+SamplerComparisonState samplerShadow : register(s2);
+
+static const float Bias = 0.f;
+#include "Shadow.hlsli"
 
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
@@ -59,7 +62,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 	// For u, can't find valid equation. Usually, it is ignored in various model.
 	//
 	// http://trackdancer.deviantart.com/art/MMD-PMD-Tutorial-Toon-Shaders-Primer-394445914
-	// 
+	//
 	float2 toonCoord = float2(0.5, 1.0 - intensity);
 
 	float3 toEyeV = -input.posV;
@@ -88,14 +91,13 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
 
 	float3 color = texColor * (ambient + diffuse) + specular;
-    ShadowTex tex = { ShadowTexelSize, input.posH.xyz, 0, texShadow, samplerShadow };
-	float shadow = GetShadow(tex, input.shadowPosH);
-#if 0
-	if (bUseToon) 
+	float3 shadow = GetShadow(input.shadowPosH, input.posH.xyz);
+#if 1
+	if (bUseToon)
         color *= texToon.Sample( sampler0, toonCoord );
     color *= shadow;
 #else
-	if (bUseToon) 
+	if (bUseToon)
     {
         if (shadow < 1.00)
         {
