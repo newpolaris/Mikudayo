@@ -95,6 +95,7 @@ namespace Math
 	INLINE Vector3 Normalize( Vector3 v ) { return Vector3(XMVector3Normalize(v)); }
 	INLINE Vector4 Normalize( Vector4 v ) { return Vector4(XMVector4Normalize(v)); }
 	INLINE Quaternion Normalize( Quaternion q ) { return Quaternion(XMQuaternionNormalize(q)); }
+	INLINE bool Near( Scalar v1, Scalar v2, Scalar eps ) { return XMVector3NearEqual( v1, v2, eps ); }
 	INLINE bool Near( Vector3 v1, Vector3 v2, Vector3 eps ) { return XMVector3NearEqual( v1, v2, eps ); }
 	INLINE bool Near( Vector4 v1, Vector4 v2, Vector4 eps ) { return XMVector4NearEqual( v1, v2, eps ); }
 

@@ -4,8 +4,8 @@ Copyright (c) 2003-2009 Erwin Coumans  http://bulletphysics.org
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
-Permission is granted to anyone to use this software for any purpose, 
-including commercial applications, and to alter it and redistribute it freely, 
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
 subject to the following restrictions:
 
 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
@@ -33,9 +33,9 @@ protected:
 	btCapsuleShape() : btConvexInternalShape() {m_shapeType = CAPSULE_SHAPE_PROXYTYPE;};
 
 public:
-	
+
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	
+
 	btCapsuleShape(btScalar radius,btScalar height);
 
 	///CollisionShape Interface
@@ -45,9 +45,10 @@ public:
 	virtual btVector3	localGetSupportingVertexWithoutMargin(const btVector3& vec)const;
 
 	virtual void	batchedUnitVectorGetSupportingVertexWithoutMargin(const btVector3* vectors,btVector3* supportVerticesOut,int numVectors) const;
-	
+
 	virtual void setMargin(btScalar collisionMargin)
 	{
+        (collisionMargin);
 		//don't override the margin for capsules, their entire radius == margin
 	}
 
@@ -55,15 +56,15 @@ public:
 	{
 			btVector3 halfExtents(getRadius(),getRadius(),getRadius());
 			halfExtents[m_upAxis] = getRadius() + getHalfHeight();
-			btMatrix3x3 abs_b = t.getBasis().absolute();  
+			btMatrix3x3 abs_b = t.getBasis().absolute();
 			btVector3 center = t.getOrigin();
             btVector3 extent = halfExtents.dot3(abs_b[0], abs_b[1], abs_b[2]);
-        
+
 			aabbMin = center - extent;
 			aabbMax = center + extent;
 	}
 
-	virtual const char*	getName()const 
+	virtual const char*	getName()const
 	{
 		return "CapsuleShape";
 	}
@@ -118,14 +119,14 @@ class btCapsuleShapeX : public btCapsuleShape
 public:
 
 	btCapsuleShapeX(btScalar radius,btScalar height);
-		
+
 	//debugging
 	virtual const char*	getName()const
 	{
 		return "CapsuleX";
 	}
 
-	
+
 
 };
 
@@ -142,7 +143,7 @@ public:
 		return "CapsuleZ";
 	}
 
-	
+
 };
 
 ///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
@@ -164,11 +165,11 @@ SIMD_FORCE_INLINE	int	btCapsuleShape::calculateSerializeBufferSize() const
 SIMD_FORCE_INLINE	const char*	btCapsuleShape::serialize(void* dataBuffer, btSerializer* serializer) const
 {
 	btCapsuleShapeData* shapeData = (btCapsuleShapeData*) dataBuffer;
-	
+
 	btConvexInternalShape::serialize(&shapeData->m_convexInternalShapeData,serializer);
 
 	shapeData->m_upAxis = m_upAxis;
-	
+
 	return "btCapsuleShapeData";
 }
 

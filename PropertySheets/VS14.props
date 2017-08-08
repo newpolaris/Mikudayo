@@ -5,11 +5,11 @@
   <PropertyGroup>
     <OutDir>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Intermediate\$(ProjectName)\</IntDir>
-    <IncludePath>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Core;..\3rdParty\boost_1_64_0\include;..\3rdParty\miniball</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\Core;$(SolutionDir)..\3rdParty\boost_1_64_0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -18,7 +18,7 @@
     <Link>
       <LargeAddressAware>true</LargeAddressAware>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>..\3rdParty\boost_1_64_0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\3rdParty\boost_1_64_0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <FxCompile>
       <ShaderType>Compute</ShaderType>
@@ -26,7 +26,7 @@
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
       <VariableName>g_p%(Filename)</VariableName>
-      <HeaderFileOutput>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName)\CompiledShaders\%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\$(ProjectName)\CompiledShaders\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
     </FxCompile>
     <Manifest>

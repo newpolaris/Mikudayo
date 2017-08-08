@@ -270,7 +270,6 @@ void Graphics::Resize(uint32_t width, uint32_t height)
 	ASSERT_SUCCEEDED(s_SwapChain1->GetBuffer(0, MY_IID_PPV_ARGS(&BackBuffer)));
 	g_DisplayPlane.CreateFromSwapChain(L"Primary SwapChain Buffer", BackBuffer);
 
-
     g_CommandManager.IdleGPU();
     ResizeDisplayDependentBuffers(g_NativeWidth, g_NativeHeight);
 }

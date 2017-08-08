@@ -61,7 +61,7 @@ namespace Lighting
 
     enum {kShadowDim = 512};
     ColorBuffer m_LightShadowArray;
-    // ShadowBuffer m_LightShadowTempBuffer;
+    ShadowBuffer m_LightShadowTempBuffer;
     Matrix4 m_LightShadowMatrix[MaxLights];
 
     void InitializeResources(void);
@@ -230,7 +230,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     m_LightGridBitMask.Create(L"m_LightGridBitMask", lightGridBitMaskSizeBytes, 1, nullptr);
 
     m_LightShadowArray.CreateArray(L"m_LightShadowArray", kShadowDim, kShadowDim, MaxLights, DXGI_FORMAT_R16_UNORM);
-    // m_LightShadowTempBuffer.Create(L"m_LightShadowTempBuffer", shadowDim, shadowDim);
+    m_LightShadowTempBuffer.Create(L"m_LightShadowTempBuffer", kShadowDim, kShadowDim);
 }
 
 void Lighting::Shutdown(void)
