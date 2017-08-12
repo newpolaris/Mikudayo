@@ -61,12 +61,21 @@
     <Import Project="..\PropertySheets\Profile.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;$(SolutionDir)..\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\3rdParty\gtest\lib;..\3rdParty\gmock\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -79,7 +88,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;$(SolutionDir)..\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -89,22 +99,14 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;$(SolutionDir)..\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\3rdParty\gtest\lib;..\3rdParty\gmock\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\Bullet3Collision\Bullet3Collision.vcxproj">
-      <Project>{b8ae476a-332b-3ef3-bb4d-441aec1f0b8b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\Bullet3Common\Bullet3Common.vcxproj">
-      <Project>{acebae3c-5921-3b63-830c-7f298239f425}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\Bullet3Dynamics\Bullet3Dynamics.vcxproj">
-      <Project>{44c0ea5f-08c8-31ed-93b5-1c50c1ba1995}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\BulletCollision\BulletCollision.vcxproj">
       <Project>{3331592d-b9fa-3fe3-82e0-55341c2496e9}</Project>
     </ProjectReference>
@@ -117,6 +119,9 @@
     <ProjectReference Include="..\3rdParty\zlib-win64\ZLib_VS14.vcxproj">
       <Project>{ae5221d1-87e2-4428-8ef9-f25909c43291}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Bullet\Bullet.vcxproj">
+      <Project>{ff4d1578-70e5-4953-9889-d99c88bba923}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Core_VS14.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
     </ProjectReference>
@@ -125,16 +130,23 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Bullet\DynamicCommon.cpp" />
+    <ClCompile Include="Bullet\CollistionTest.cpp" />
+    <ClCompile Include="Bullet\LinearMath.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Math\BoundingBox.cpp" />
     <ClCompile Include="Math\BoundingSphere.cpp" />
     <ClCompile Include="Math\Math.cpp" />
     <ClCompile Include="Math\MiniBall.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="PMX\Model.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="PMX\Common.h" />
   </ItemGroup>
   <ItemGroup>

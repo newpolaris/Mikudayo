@@ -40,10 +40,6 @@ using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
 
-#ifndef SAFE_DELETE
-#define SAFE_DELETE(x) { delete x; x = nullptr; }
-#endif
-
 namespace Pmd {
 	std::vector<InputDesc> InputDescriptor
 	{
@@ -295,8 +291,8 @@ void MikuViewer::Cleanup( void )
 	m_BlendPSO.Destroy();
     m_GroundPlanePSO.Destroy();
 
-    SAFE_DELETE( m_pCameraController );
-    SAFE_DELETE( m_pSecondCameraController );
+    Utility::DeleteObject( m_pCameraController );
+    Utility::DeleteObject( m_pSecondCameraController  );
 }
 
 namespace Graphics
@@ -699,7 +695,7 @@ void MikuViewer::RenderScene( void )
 void MikuViewer::RenderUI( GraphicsContext& Context )
 {
 	auto Pos = SelectedCamera()->GetPosition();
-	auto x = (float)g_SceneColorBuffer.GetWidth() - 400.f;
+	auto x = (float)g_OverlayBuffer.GetWidth() - 400.f;
     float px = Pos.GetX(), py = Pos.GetY(), pz = Pos.GetZ();
 
 	TextContext Text(Context);

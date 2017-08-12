@@ -47,8 +47,8 @@ void MikuModel::Initialize()
 	std::vector<GeometryGenerator::Vertex> Vertices;
 	std::vector<uint32_t> Indices;
 
-    GeometryGenerator geoGen;
 	{
+        GeometryGenerator geoGen;
         auto AppendGeometry = [&]( const GeometryGenerator::MeshData& data )
         {
             int32_t baseIndex = static_cast<int32_t>(Indices.size());

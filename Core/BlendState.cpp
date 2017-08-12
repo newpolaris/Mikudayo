@@ -16,7 +16,7 @@ std::shared_ptr<BlendState> BlendState::Create( const BlendDesc& desc )
 	std::copy_n(desc.BlendFactor, _countof(desc.BlendFactor), Blend->m_BlendFactor);
 
 	Blend->GetBlendState( desc.Desc );
-	
+
 	return Blend;
 }
 
@@ -59,7 +59,7 @@ void BlendState::GetBlendState( const CD3D11_BLEND_DESC& desc )
 	}
 }
 
-BlendState::BlendState() : m_BlendState(nullptr) 
+BlendState::BlendState() : m_BlendState(nullptr)
 {
 }
 

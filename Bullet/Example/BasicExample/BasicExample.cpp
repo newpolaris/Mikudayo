@@ -12,103 +12,13 @@
 #include "CameraController.h"
 #include "SamplerManager.h"
 #include "GameInput.h"
-#include "btBulletDynamicsCommon.h"
-#include "BulletDebugDraw.h"
+#include "Physics.h"
+#include "TextureManager.h"
+#include "PhysicsPrimitive.h"
 
 using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
-
-namespace Physics
-{
-    btBroadphaseInterface* broadphase = nullptr;
-    btCollisionDispatcher* dispatcher = nullptr;
-    btDefaultCollisionConfiguration* collisionConfiguration = nullptr;
-    btSequentialImpulseConstraintSolver* solver = nullptr;
-    btDiscreteDynamicsWorld* dynamicsWorld = nullptr;
-    btCollisionShape* groundShape = nullptr;
-    btCollisionShape* fallShape = nullptr;
-    btDefaultMotionState* groundMotionState = nullptr;
-    btRigidBody* groundRigidBody = nullptr;
-    btDefaultMotionState* fallMotionState = nullptr;
-    btRigidBody* fallRigidBody = nullptr;
-    BulletDebugDraw* debugDrawer = nullptr;
-
-    void Initialize( void );
-    void Shutdown( void );
-    void Update( float deltaT );
-    void Render( GraphicsContext& Context, const Matrix4& ClipToWorld );
-};
-
-void Physics::Initialize( void )
-{
-    BulletDebug::Initialize();
-
-    broadphase = new btDbvtBroadphase();
-    collisionConfiguration = new btDefaultCollisionConfiguration();
-    dispatcher = new btCollisionDispatcher( collisionConfiguration );
-    solver = new btSequentialImpulseConstraintSolver;
-    dynamicsWorld = new btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
-    dynamicsWorld->setGravity( btVector3( 0, -10, 0 ) );
-
-    groundMotionState = new btDefaultMotionState( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, -1, 0 ) ) );
-    groundShape = new btStaticPlaneShape( btVector3( 0, 1, 0 ), 1 );
-    btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI( 0, groundMotionState, groundShape, btVector3( 0, 0, 0 ) );
-    groundRigidBody = new btRigidBody( groundRigidBodyCI );
-    dynamicsWorld->addRigidBody( groundRigidBody );
-
-    fallMotionState = new btDefaultMotionState( btTransform( btQuaternion( 0, 0, 0, 1 ), btVector3( 0, 50, 0 ) ) );
-    btScalar mass = 1;
-    btVector3 fallInertia( 0, 0, 0 );
-    fallShape = new btSphereShape( 1 );
-    fallShape->calculateLocalInertia( mass, fallInertia );
-    btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI( mass, fallMotionState, fallShape, fallInertia );
-    fallRigidBody = new btRigidBody( fallRigidBodyCI );
-    dynamicsWorld->addRigidBody( fallRigidBody );
-    debugDrawer = new BulletDebugDraw();
-    debugDrawer->setDebugMode(
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits |
-        btIDebugDraw::DBG_DrawWireframe |
-        btIDebugDraw::DBG_DrawAabb );
-    dynamicsWorld->setDebugDrawer( debugDrawer );
-}
-
-void Physics::Shutdown( void )
-{
-    dynamicsWorld->removeRigidBody( fallRigidBody );
-    delete fallRigidBody->getMotionState();
-    delete fallRigidBody;
-
-    dynamicsWorld->removeRigidBody( groundRigidBody );
-    delete groundRigidBody->getMotionState();
-    delete groundRigidBody;
-    delete fallShape;
-    delete groundShape;
-    delete debugDrawer;
-    delete dynamicsWorld;
-    delete solver;
-    delete collisionConfiguration;
-    delete dispatcher;
-    delete broadphase;
-
-    BulletDebug::Shutdown();
-}
-
-void Physics::Update( float deltaT )
-{
-    dynamicsWorld->stepSimulation( deltaT );
-    {
-        btTransform trans;
-        fallRigidBody->getMotionState()->getWorldTransform( trans );
-    }
-}
-
-void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
-{
-    dynamicsWorld->debugDrawWorld();
-    debugDrawer->flush( Context, ClipToWorld );
-}
 
 class ModelViewer : public GameCore::IGameApp
 {
@@ -128,6 +38,9 @@ private:
 
     Camera m_Camera;
     std::auto_ptr<CameraController> m_CameraController;
+
+    Matrix4 m_ViewMatrix;
+    Matrix4 m_ProjMatrix;
     Matrix4 m_ViewProjMatrix;
     D3D11_VIEWPORT m_MainViewport;
     D3D11_RECT m_MainScissor;
@@ -135,40 +48,130 @@ private:
     GraphicsPSO m_DepthPSO;
     GraphicsPSO m_CutoutDepthPSO;
     GraphicsPSO m_ModelPSO;
+
+    std::vector<Primitive::PhysicsPrimitivePtr> m_Models;
 };
 
 CREATE_APPLICATION( ModelViewer )
 
+namespace {
+    static int uRigidNum = 0;
+}
+
 void ModelViewer::Startup( void )
 {
+    TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
 
     const Vector3 eye = Vector3(0.0f, 10.0f, 10.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
+
+	{
+        Primitive::PhysicsPrimitiveInfo Info[] = {
+#if 1
+            { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
+#else
+            { Physics::kBoxShape, 0.f, Scalar( 50.f ), Vector3( 0, -50, 0 ) },
+#endif
+            { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( -10, 2, 0 ) },
+            { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
+            { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
+            { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
+        };
+        for (auto& info : Info)
+            m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
+    }
 }
 
 void ModelViewer::Cleanup( void )
 {
+    for (auto& model : m_Models)
+        model->Destroy();
+    m_Models.clear();
     Physics::Shutdown();
 }
 
 void ModelViewer::Update( float deltaT )
 {
-    Physics::Update( deltaT );
+    ScopedTimer _prof( L"Bullet Update" );
+
+    if (!EngineProfiling::IsPaused())
+    {
+        static int uCount = 0;
+        if ((uCount++ % 2) == 0 && uRigidNum++ < 600 ) {
+            static UINT rigid = 0;
+            auto randf = []() { return (float)rand() / (float)RAND_MAX; };
+            auto randrf = [randf]( float mn, float mx ) { return randf()*(mx - mn) + mn; };
+            FLOAT x = randrf( -5, 5 );
+            FLOAT y = 15.0f + randf()*2.0f;
+            FLOAT z = randrf( -5, 5 );
+            FLOAT sx = randrf( 0.5f, 1.0f );
+            FLOAT sy = randrf( 0.5f, 1.0f );
+            FLOAT sz = randrf( 0.5f, 1.0f );
+            FLOAT mass = randrf( 0.8f, 1.2f );
+
+            m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
+                { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x,y,z )  }
+            ) ) );
+        }
+        Physics::Update( deltaT );
+    }
+
     m_CameraController->Update( deltaT );
+    m_ViewMatrix = m_Camera.GetViewMatrix();
+    m_ProjMatrix = m_Camera.GetProjMatrix();
     m_ViewProjMatrix = m_Camera.GetViewProjMatrix();
+
+	m_MainViewport.Width = (float)g_SceneColorBuffer.GetWidth();
+	m_MainViewport.Height = (float)g_SceneColorBuffer.GetHeight();
+	m_MainViewport.MinDepth = 0.0f;
+	m_MainViewport.MaxDepth = 1.0f;
+
+	m_MainScissor.left = 0;
+	m_MainScissor.top = 0;
+	m_MainScissor.right = (LONG)g_SceneColorBuffer.GetWidth();
+	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 }
 
 void ModelViewer::RenderScene( void )
 {
+    struct {
+        Matrix4 View;
+        Matrix4 Proj;
+    } vsConstants {
+        m_ViewMatrix,
+        m_ProjMatrix
+    };
+
+    struct {
+        Vector3 CameraPosition;
+    } psConstants {
+        m_Camera.GetPosition()
+    };
+
     GraphicsContext& gfxContext = GraphicsContext::Begin(L"Scene Render");
+
+    gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
     gfxContext.ClearColor( g_SceneColorBuffer );
     gfxContext.ClearDepth( g_SceneDepthBuffer );
+    gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetDynamicSampler( 0, SamplerLinearWrap, { kBindPixel } );
+    gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 0, sizeof(psConstants), &psConstants, { kBindPixel } );
+    for (auto& model : m_Models)
+        model->Draw( gfxContext );
     gfxContext.Finish();
 }
 
 void ModelViewer::RenderUI( GraphicsContext& Context )
 {
     Physics::Render( Context, m_ViewProjMatrix );
+	int32_t x = g_OverlayBuffer.GetWidth() - 300;
+
+	TextContext UiContext(Context);
+	UiContext.Begin();
+    UiContext.ResetCursor( float(x), 10.f );
+    UiContext.SetColor(Color( 0.7f, 1.0f, 0.7f ));
+    UiContext.DrawFormattedString( "Primitive Count %3d", uRigidNum );
 }

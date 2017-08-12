@@ -62,14 +62,14 @@ public:
 		Texture::Destroy();
 	}
 	virtual const D3D11_SRV_HANDLE GetSRV() const override {
-        return m_SRV.Get(); 
+        return m_SRV.Get();
     }
     void SetTask( Task&& task );
 	void WaitForLoad( void ) const;
     void Unload( void );
     bool IsValid( void ) const {
 		WaitForLoad();
-        return m_IsValid; 
+        return m_IsValid;
     }
     void SetToInvalidTexture( void );
 

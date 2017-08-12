@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -25,13 +25,41 @@ public:
 		m_pResource = nullptr;
 	}
 
-	ID3D11Resource* operator->() { return m_pResource.Get(); } 
+	ID3D11Resource* operator->() { return m_pResource.Get(); }
 	const ID3D11Resource* operator->() const { return m_pResource.Get(); }
 
-	ID3D11Resource* GetResource() { return m_pResource.Get(); } 
+	ID3D11Resource* GetResource() { return m_pResource.Get(); }
 	const ID3D11Resource* GetResource() const { return m_pResource.Get(); }
 
 protected:
 
 	Microsoft::WRL::ComPtr<ID3D11Resource> m_pResource;
 };
+
+inline void SetName( ID3D11DeviceChild* Resource, const std::string& Name )
+{
+#ifdef _DEBUG
+	ASSERT( Resource != nullptr );
+	Resource->SetPrivateData( WKPDID_D3DDebugObjectName, static_cast<UINT>(Name.size()), Name.c_str() );
+#else
+	(Resource);
+	(Name);
+#endif
+}
+
+inline void SetName( ID3D11DeviceChild* Resource, const std::wstring& Name )
+{
+#ifdef _DEBUG
+	ASSERT( Resource != nullptr );
+    UINT sizeInByte = static_cast<UINT>(Name.size() * sizeof(std::wstring::traits_type::char_type));
+	Resource->SetPrivateData( WKPDID_D3DDebugObjectNameW, sizeInByte, Name.c_str() );
+#else
+	(Resource);
+	(Name);
+#endif
+}
+
+inline void SetName( Microsoft::WRL::ComPtr<ID3D11DeviceChild> Resource, const std::wstring& Name )
+{
+    SetName( Resource.Get(), Name );
+}

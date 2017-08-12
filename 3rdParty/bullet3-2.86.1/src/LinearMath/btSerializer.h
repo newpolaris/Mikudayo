@@ -174,7 +174,7 @@ protected:
 	btAlignedObjectArray<short>			mTlens;
 	btHashMap<btHashInt, int>			mStructReverse;
 	btHashMap<btHashString,int>	mTypeLookup;
-	
+
 
 
 	btHashMap<btHashPtr,void*>	m_chunkP;
@@ -198,7 +198,7 @@ protected:
 
 protected:
 
-	
+
 	virtual	void*	findPointer(void* oldPtr)
 	{
 		void** ptr = m_chunkP.find(oldPtr);
@@ -486,7 +486,8 @@ public:
 			int littleEndian= 1;
 			littleEndian= ((char*)&littleEndian)[0];
 
-			if (sizeof(void*)==8)
+            static const bool bVoid8Byte = sizeof( void* ) == 8;
+			if (bVoid8Byte)
 			{
 				buffer[7] = '-';
 			} else
@@ -731,14 +732,14 @@ struct btInMemorySerializer : public btDefaultSerializer
     btHashMap<btHashPtr,btChunk*> m_uid2ChunkPtr;
     btHashMap<btHashPtr,void*> m_orgPtr2UniqueDataPtr;
     btHashMap<btHashString,const void*> m_names2Ptr;
-    
+
 
     btBulletSerializedArrays    m_arrays;
 
     btInMemorySerializer(int totalSize=0, unsigned char*	buffer=0)
     :btDefaultSerializer(totalSize,buffer)
     {
-        
+
     }
 
     virtual void startSerialization()
@@ -748,7 +749,7 @@ struct btInMemorySerializer : public btDefaultSerializer
         btDefaultSerializer::startSerialization();
     }
 
-    
+
 
     btChunk* findChunkFromUniquePointer(void* uniquePointer)
     {
