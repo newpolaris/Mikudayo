@@ -16,7 +16,7 @@ public:
 	ConstantBuffer& operator=( const ConstantBuffer& rhs ) = delete;
 	~ConstantBuffer() {}
 
-	void Create( std::wstring Name = L"ConstantBuffer") 
+	void Create( std::wstring Name = L"ConstantBuffer")
 	{
 		D3D11_BUFFER_DESC Desc;
 		Desc.ByteWidth = sizeof(T);

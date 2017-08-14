@@ -9,7 +9,6 @@
 #include "Physics.h"
 #include "btBulletDynamicsCommon.h"
 #include "BaseRigidBody.h"
-#include "PhysicsPrimitive.h"
 #include "BulletDebugDraw.h"
 #include "MultiThread.inl"
 #include "LinearMath/btThreads.h"
@@ -22,7 +21,7 @@ namespace Physics
     BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
 
     // bullet needs to define BT_THREADSAFE and (BT_USE_OPENMP || BT_USE_PPL || BT_USE_TBB)
-    const bool bMultithreadCapable = false;
+    const bool bMultithreadCapable = true;
     const float EarthGravity = 9.8f;
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
     int m_SolverMode = SOLVER_SIMD |
@@ -72,8 +71,7 @@ btConstraintSolver* Physics::CreateSolverByType( SolverType t )
 void Physics::Initialize( void )
 {
     BulletDebug::Initialize();
-    Primitive::Initialize();
-    gTaskMgr.init();
+    gTaskMgr.init(8);
 
     if (bMultithreadCapable)
     {
@@ -139,7 +137,6 @@ void Physics::Initialize( void )
 void Physics::Shutdown( void )
 {
     gTaskMgr.shutdown();
-    Primitive::Shutdown();
     BulletDebug::Shutdown();
 
     ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
@@ -169,20 +166,17 @@ void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
 void Physics::Profile( ProfileStatus& Status )
 {
     Status.NumIslands = gNumIslands;
-    if (bMultithreadCapable)
+    Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
+    int numContacts = 0;
+    int numManifolds = Dispatcher->getNumManifolds();
+    for (int i = 0; i < numManifolds; ++i)
     {
-        int numContacts = 0;
-        int numManifolds = Dispatcher->getNumManifolds();
-        for (int i = 0; i < numManifolds; ++i)
-        {
-            const btPersistentManifold* man = Dispatcher->getManifoldByIndexInternal( i );
-            numContacts += man->getNumContacts();
-        }
-        Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
-        Status.NumManifolds = numManifolds;
-        Status.NumContacts = numContacts;
-        Status.NumThread = gTaskMgr.getNumThreads();
+        const btPersistentManifold* man = Dispatcher->getManifoldByIndexInternal( i );
+        numContacts += man->getNumContacts();
     }
+    Status.NumManifolds = numManifolds;
+    Status.NumContacts = numContacts;
+    Status.NumThread = gTaskMgr.getNumThreads();
     Status.InternalTimeStep = gProfiler.getAverageTime( Profiler::kRecordInternalTimeStep )*0.001f;
     if (bMultithreadCapable)
     {

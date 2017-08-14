@@ -423,7 +423,7 @@ void parallelIslandDispatch( btAlignedObjectArray<btSimulationIslandManagerMt::I
 {
     ProfileHelper prof(Profiler::kRecordDispatchIslands);
     gNumIslands = islandsPtr->size();
-    int grainSize = 1;  // iterations per task
+    int grainSize = 2;  // iterations per task
     UpdateIslandDispatcher dispatcher;
     dispatcher.islandsPtr = islandsPtr;
     dispatcher.callback = callback;

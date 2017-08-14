@@ -58,11 +58,11 @@ private:
 };
 
 //
-// When deferred context and umap are used in a delay, the debugging 
+// When deferred context and umap are used in a delay, the debugging
 // pixel shader is not possible. Because, debug button is inactive
 // with the message "the pixel shader is not running".
-// Therefore, we add an operation that maps or unmaps the constant 
-// buffer immediately before the drawing operation. 
+// Therefore, we add an operation that maps or unmaps the constant
+// buffer immediately before the drawing operation.
 //
 // #define GRAPHICS_DEBUG
 
@@ -161,7 +161,7 @@ protected:
 	void SetID(const std::wstring& ID) { m_ID = ID; }
 
 	ContextType m_Type;
-	
+
 	__declspec(align(16)) struct InternalCBStorage {
 		float v[kNumConstant];
 	};
@@ -349,5 +349,10 @@ inline void GraphicsContext::DrawIndexed( UINT IndexCount, UINT StartIndexLocati
 inline void GraphicsContext::DrawInstanced( UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation )
 {
 	m_CommandList->DrawInstanced( VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation );
+}
+
+inline void GraphicsContext::DrawIndexedInstanced( UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation )
+{
+	m_CommandList->DrawIndexedInstanced( IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation );
 }
 

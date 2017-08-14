@@ -15,6 +15,9 @@
 #include "Physics.h"
 #include "TextureManager.h"
 #include "PhysicsPrimitive.h"
+#include "PrimitiveBatch.h"
+
+#define LARGESCALE_BENCHMARK 1
 
 using namespace GameCore;
 using namespace Graphics;
@@ -56,32 +59,79 @@ CREATE_APPLICATION( ModelViewer )
 
 namespace {
     static int uRigidNum = 0;
+
+    const float ofs = 32.0f;
+    XMFLOAT2 IslandOfs[] = {
+        {0,0},
+        { ofs,0},
+        {-ofs,0},
+        {0,ofs },
+        {0,-ofs },
+        { ofs,ofs },
+        { ofs,-ofs },
+        { -ofs,ofs },
+        { -ofs,-ofs },
+        { ofs * 2,0 },
+        { ofs * 2,ofs },
+        { ofs * 2,-ofs },
+        { -ofs * 2,0 },
+        { -ofs * 2,ofs },
+        { -ofs * 2,-ofs },
+        { 0,ofs * 2 },
+        { ofs,ofs * 2 },
+        { -ofs,ofs * 2 },
+        { 0,-ofs * 2 },
+        { ofs,-ofs * 2 },
+        { -ofs,-ofs * 2 },
+        { -ofs * 2,-ofs * 2 },
+        { -ofs * 2,ofs * 2 },
+        { ofs * 2,-ofs * 2 },
+        { ofs * 2,ofs * 2 },
+    };
 }
 
 void ModelViewer::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
+    PrimitiveBatch::Initialize();
 
     const Vector3 eye = Vector3(0.0f, 10.0f, 10.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
 
-	{
-        Primitive::PhysicsPrimitiveInfo Info[] = {
+#if LARGESCALE_BENCHMARK
+    std::vector<Primitive::PhysicsPrimitiveInfo> Info = {
 #if 1
             { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
 #else
             { Physics::kBoxShape, 0.f, Scalar( 50.f ), Vector3( 0, -50, 0 ) },
 #endif
-            { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( -10, 2, 0 ) },
-            { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
-            { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
-            { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
-        };
-        for (auto& info : Info)
-            m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
-    }
+    };
+	for (auto& o : IslandOfs) {
+		std::vector<Primitive::PhysicsPrimitiveInfo> Bound = {
+            { Physics::kBoxShape, 50.0f, Vector3( 1,2,9 ), Vector3( -10 + o.x, 2, 0 + o.y ) },
+            { Physics::kBoxShape, 50.0f, Vector3( 1,2,9 ), Vector3( 10 + o.x, 2, 0 + o.y ) },
+            { Physics::kBoxShape, 50.0f, Vector3( 9,2,1 ), Vector3( 0 + o.x, 2, 10 + o.y ) },
+            { Physics::kBoxShape, 50.0f, Vector3( 9,2,1 ), Vector3( 0 + o.x, 2, -10 + o.y ) },
+		};
+        std::copy( Bound.begin(), Bound.end(), std::back_inserter(Info));
+	}
+#else
+    Primitive::PhysicsPrimitiveInfo Info[] = {
+#if 1
+        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
+#else
+        { Physics::kBoxShape, 0.f, Scalar( 50.f ), Vector3( 0, -50, 0 ) },
+#endif
+        { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( -10, 2, 0 ) },
+        { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
+        { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
+        { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
+    };
+#endif
+    for (auto& info : Info)
+        m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 }
 
 void ModelViewer::Cleanup( void )
@@ -89,6 +139,7 @@ void ModelViewer::Cleanup( void )
     for (auto& model : m_Models)
         model->Destroy();
     m_Models.clear();
+    PrimitiveBatch::Shutdown();
     Physics::Shutdown();
 }
 
@@ -112,9 +163,17 @@ void ModelViewer::Update( float deltaT )
             FLOAT sz = randrf( 0.5f, 1.0f );
             FLOAT mass = randrf( 0.8f, 1.2f );
 
+#if LARGESCALE_BENCHMARK
+            for (auto& o : IslandOfs) {
+                m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
+                    { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x+o.x, y, z+o.y )  }
+                ) ) );
+			};
+#else
             m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
                 { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x,y,z )  }
             ) ) );
+#endif
             uRigidNum++;
         }
         Physics::Update( deltaT );
@@ -141,16 +200,10 @@ void ModelViewer::RenderScene( void )
     struct {
         Matrix4 View;
         Matrix4 Proj;
-    } vsConstants {
-        m_ViewMatrix,
-        m_ProjMatrix
-    };
-
+    } vsConstants { m_ViewMatrix, m_ProjMatrix };
     struct {
         Vector3 CameraPosition;
-    } psConstants {
-        m_Camera.GetPosition()
-    };
+    } psConstants { m_Camera.GetPosition() };
 
     GraphicsContext& gfxContext = GraphicsContext::Begin(L"Scene Render");
 
@@ -161,8 +214,12 @@ void ModelViewer::RenderScene( void )
     gfxContext.SetDynamicSampler( 0, SamplerLinearWrap, { kBindPixel } );
     gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
     gfxContext.SetDynamicConstantBufferView( 0, sizeof(psConstants), &psConstants, { kBindPixel } );
-    for (auto& model : m_Models)
-        model->Draw( gfxContext );
+    {
+        ScopedTimer _prof( L"Primitive Draw" );
+        for (auto& model : m_Models)
+            model->Draw();
+        PrimitiveBatch::Flush( gfxContext );
+    }
     gfxContext.Finish();
 }
 
@@ -188,7 +245,7 @@ void ModelViewer::RenderUI( GraphicsContext& Context )
     DebugAttribute(NumManifolds);
     DebugAttribute(NumContacts);
     DebugAttribute(NumThread);
-#undef DebugAttirbute
+#undef DebugAttribute
 
 #define DebugAttribute(Attribute) \
     UiContext.DrawFormattedString( ""#Attribute " %5.3f", Status.Attribute ); \
@@ -200,5 +257,5 @@ void ModelViewer::RenderUI( GraphicsContext& Context )
     DebugAttribute(PredictUnconstrainedMotion);
     DebugAttribute(CreatePredictiveContacts);
     DebugAttribute(IntegrateTransforms);
-#undef DebugAttirbute
+#undef DebugAttribute
 }

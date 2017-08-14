@@ -17,9 +17,6 @@ namespace Primitive
     using namespace Math;
     using namespace Physics;
 
-    extern void Initialize();
-    extern void Shutdown();
-
     struct PhysicsPrimitiveInfo
     {
         ShapeType Type;
@@ -36,7 +33,7 @@ namespace Primitive
 
         virtual void Create( const PhysicsPrimitiveInfo& Info );
         virtual void Destroy();
-        virtual void Draw( GraphicsContext& gfxContext );
+        virtual void Draw();
 
         ShapeType m_Type;
         ObjectType m_Kind;

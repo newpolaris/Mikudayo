@@ -63,7 +63,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -71,7 +71,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -79,7 +79,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -94,12 +94,14 @@
   <ItemGroup>
     <ClCompile Include="BaseRigidBody.cpp" />
     <ClCompile Include="BulletDebugDraw.cpp" />
+    <ClCompile Include="PrimitiveBatch.cpp" />
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="PhysicsPrimitive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseRigidBody.h" />
     <ClInclude Include="BulletDebugDraw.h" />
+    <ClInclude Include="PrimitiveBatch.h" />
     <ClInclude Include="IRigidBody.h" />
     <ClInclude Include="LinearMath.h" />
     <ClInclude Include="ParallelFor.h" />

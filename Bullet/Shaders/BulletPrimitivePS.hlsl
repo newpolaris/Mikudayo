@@ -14,7 +14,6 @@ cbuffer CB0 : register(b0)
 cbuffer CB1 : register(b1)
 {
 	float4 Diffuse;
-	int bTexture;
 };
 
 Texture2D txDiffuse : register(t0);
@@ -22,8 +21,7 @@ SamplerState samLinear : register(s0);
 
 float4 main( PS_INPUT input ) : SV_Target
 {
-	float4 tex = bTexture ? txDiffuse.Sample(samLinear, input.Tex) : float4(1,1,1,1);
-
+	float4 tex = txDiffuse.Sample(samLinear, input.Tex);
 	float3 light = normalize(float3(1.1, 0.9, -1));
 	float3 nor = normalize(input.Nor);
 
