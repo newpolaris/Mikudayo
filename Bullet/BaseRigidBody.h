@@ -1,6 +1,7 @@
 //
 // Used MMDAI's RigidBody code
-// following is original boilerplate
+//
+// Original Boilerplate:
 //
 /**
 

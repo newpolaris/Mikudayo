@@ -99,7 +99,8 @@ void ModelViewer::Update( float deltaT )
     if (!EngineProfiling::IsPaused())
     {
         static int uCount = 0;
-        if ((uCount++ % 2) == 0 && uRigidNum++ < 600 ) {
+        if ((uCount++ % 1) == 0 && uRigidNum < 600 )
+        {
             static UINT rigid = 0;
             auto randf = []() { return (float)rand() / (float)RAND_MAX; };
             auto randrf = [randf]( float mn, float mx ) { return randf()*(mx - mn) + mn; };
@@ -114,6 +115,7 @@ void ModelViewer::Update( float deltaT )
             m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
                 { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x,y,z )  }
             ) ) );
+            uRigidNum++;
         }
         Physics::Update( deltaT );
     }
