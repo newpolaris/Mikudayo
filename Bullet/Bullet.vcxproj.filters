@@ -42,6 +42,9 @@
     <ClInclude Include="PhysicsPrimitive.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ParallelFor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\BulletLinePS.hlsl">
@@ -56,5 +59,10 @@
     <FxCompile Include="Shaders\BulletPrimitivePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MultiThread.inl">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

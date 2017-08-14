@@ -1,14 +1,18 @@
 #include <memory>
 #include <vector>
 
-#include "BulletDebugDraw.h"
-#define BT_NO_SIMD_OPERATOR_OVERLOADS 1
-#include "btBulletDynamicsCommon.h"
-#include "BaseRigidBody.h"
-#include "PhysicsPrimitive.h"
 #include "GameCore.h"
 #include "EngineTuning.h"
 #include "Utility.h"
+#define BT_THREADSAFE 1
+#define BT_NO_SIMD_OPERATOR_OVERLOADS 1
+#include "Physics.h"
+#include "btBulletDynamicsCommon.h"
+#include "BaseRigidBody.h"
+#include "PhysicsPrimitive.h"
+#include "BulletDebugDraw.h"
+#include "MultiThread.inl"
+#include "LinearMath/btThreads.h"
 
 using namespace Math;
 
@@ -17,33 +21,109 @@ namespace Physics
     BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
     BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
 
+    // bullet needs to define BT_THREADSAFE and (BT_USE_OPENMP || BT_USE_PPL || BT_USE_TBB)
+    const bool bMultithreadCapable = false;
+    const float EarthGravity = 9.8f;
+    SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
+    int m_SolverMode = SOLVER_SIMD |
+        SOLVER_USE_WARMSTARTING |
+        // SOLVER_RANDMIZE_ORDER |
+        // SOLVER_INTERLEAVE_CONTACT_AND_FRICTION_CONSTRAINTS |
+        // SOLVER_USE_2_FRICTION_DIRECTIONS |
+        0;
+
 	btDynamicsWorld* g_DynamicsWorld = nullptr;
 
-    btDefaultCollisionConfiguration Config;
+    std::unique_ptr<btDefaultCollisionConfiguration> Config;
     std::unique_ptr<btBroadphaseInterface> Broadphase;
     std::unique_ptr<btCollisionDispatcher> Dispatcher;
-    std::unique_ptr<btSequentialImpulseConstraintSolver> Solver;
+    std::unique_ptr<btConstraintSolver> Solver;
     std::unique_ptr<btDiscreteDynamicsWorld> DynamicsWorld;
     std::unique_ptr<BulletDebug::DebugDraw> DebugDrawer;
 
-    void Initialize( void );
-    void Shutdown( void );
-    void Update( float deltaT );
-    void Render( GraphicsContext& Context, const Matrix4& ClipToWorld );
+    btConstraintSolver* CreateSolverByType( SolverType t );
 };
+
+btConstraintSolver* Physics::CreateSolverByType( SolverType t )
+{
+    btMLCPSolverInterface* mlcpSolver = NULL;
+    switch (t)
+    {
+    case SOLVER_TYPE_SEQUENTIAL_IMPULSE:
+        return new btSequentialImpulseConstraintSolver();
+    case SOLVER_TYPE_NNCG:
+        return new btNNCGConstraintSolver();
+    case SOLVER_TYPE_MLCP_PGS:
+        mlcpSolver = new btSolveProjectedGaussSeidel();
+        break;
+    case SOLVER_TYPE_MLCP_DANTZIG:
+        mlcpSolver = new btDantzigSolver();
+        break;
+    case SOLVER_TYPE_MLCP_LEMKE:
+        mlcpSolver = new btLemkeSolver();
+        break;
+    default: {}
+    }
+    if (mlcpSolver)
+        return new btMLCPSolver( mlcpSolver );
+    return NULL;
+}
 
 void Physics::Initialize( void )
 {
     BulletDebug::Initialize();
     Primitive::Initialize();
+    gTaskMgr.init();
 
-    Broadphase = std::make_unique<btDbvtBroadphase>();
-    Dispatcher = std::make_unique<btCollisionDispatcher>( &Config );
-    Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
-    const float EarthGravity = 9.8f;
-    DynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), &Config );
+    if (bMultithreadCapable)
+    {
+        btDefaultCollisionConstructionInfo cci;
+        cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
+        cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
+        Config = std::make_unique<btDefaultCollisionConfiguration>( cci );
+
+#if USE_PARALLEL_NARROWPHASE
+        Dispatcher = std::make_unique<MyCollisionDispatcher>( Config.get() );
+#else
+        Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
+#endif //USE_PARALLEL_NARROWPHASE
+
+        Broadphase = std::make_unique<btDbvtBroadphase>();
+
+#if USE_PARALLEL_ISLAND_SOLVER
+        {
+            btConstraintSolver* solvers[ BT_MAX_THREAD_COUNT ];
+            int maxThreadCount = btMin( int(BT_MAX_THREAD_COUNT), TaskManager::getMaxNumThreads() );
+            for ( int i = 0; i < maxThreadCount; ++i )
+                solvers[ i ] = CreateSolverByType( m_SolverType );
+            Solver.reset( new MyConstraintSolverPool( solvers, maxThreadCount ) );
+        }
+#else
+        Solver.reset( CreateSolverByType( m_SolverType ) );
+#endif //#if USE_PARALLEL_ISLAND_SOLVER
+
+        DynamicsWorld = std::make_unique<MyDiscreteDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+
+#if USE_PARALLEL_ISLAND_SOLVER
+        if ( btSimulationIslandManagerMt* islandMgr = dynamic_cast<btSimulationIslandManagerMt*>( DynamicsWorld->getSimulationIslandManager() ) )
+            islandMgr->setIslandDispatchFunction( parallelIslandDispatch );
+#endif //#if USE_PARALLEL_ISLAND_SOLVER
+    }
+    else
+    {
+        Config = std::make_unique<btDefaultCollisionConfiguration>();
+        Broadphase = std::make_unique<btDbvtBroadphase>();
+        Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
+        Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+        Solver.reset( CreateSolverByType( m_SolverType ) );
+        const float EarthGravity = 9.8f;
+        DynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+    }
     ASSERT( DynamicsWorld != nullptr );
     DynamicsWorld->setGravity( btVector3( 0, -EarthGravity, 0 ) );
+    DynamicsWorld->setInternalTickCallback( profileBeginCallback, NULL, true );
+    DynamicsWorld->setInternalTickCallback( profileEndCallback, NULL, false );
+    DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
 
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
@@ -58,6 +138,7 @@ void Physics::Initialize( void )
 
 void Physics::Shutdown( void )
 {
+    gTaskMgr.shutdown();
     Primitive::Shutdown();
     BulletDebug::Shutdown();
 
@@ -85,3 +166,30 @@ void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
     }
 }
 
+void Physics::Profile( ProfileStatus& Status )
+{
+    Status.NumIslands = gNumIslands;
+    if (bMultithreadCapable)
+    {
+        int numContacts = 0;
+        int numManifolds = Dispatcher->getNumManifolds();
+        for (int i = 0; i < numManifolds; ++i)
+        {
+            const btPersistentManifold* man = Dispatcher->getManifoldByIndexInternal( i );
+            numContacts += man->getNumContacts();
+        }
+        Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
+        Status.NumManifolds = numManifolds;
+        Status.NumContacts = numContacts;
+        Status.NumThread = gTaskMgr.getNumThreads();
+    }
+    Status.InternalTimeStep = gProfiler.getAverageTime( Profiler::kRecordInternalTimeStep )*0.001f;
+    if (bMultithreadCapable)
+    {
+        Status.DispatchAllCollisionPairs = gProfiler.getAverageTime( Profiler::kRecordDispatchAllCollisionPairs )*0.001f;
+        Status.DispatchIslands = gProfiler.getAverageTime( Profiler::kRecordDispatchIslands )*0.001f;
+        Status.PredictUnconstrainedMotion = gProfiler.getAverageTime( Profiler::kRecordPredictUnconstrainedMotion )*0.001f;
+        Status.CreatePredictiveContacts = gProfiler.getAverageTime( Profiler::kRecordCreatePredictiveContacts )*0.001f;
+        Status.IntegrateTransforms = gProfiler.getAverageTime( Profiler::kRecordIntegrateTransforms )*0.001f;
+    }
+}
