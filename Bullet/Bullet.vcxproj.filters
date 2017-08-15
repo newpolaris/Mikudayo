@@ -8,6 +8,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{1c5c26cc-8677-490e-85af-311086a19195}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Mesh">
+      <UniqueIdentifier>{ac37a025-811f-44e1-bc7e-37d15fd68f1b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BaseRigidBody.cpp">
@@ -50,6 +53,24 @@
     </ClInclude>
     <ClInclude Include="PrimitiveBatch.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\box.hpp">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\capsule.hpp">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\cone.hpp">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\cylinder.hpp">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\ground.hpp">
+      <Filter>Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh\sphere.hpp">
+      <Filter>Mesh</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

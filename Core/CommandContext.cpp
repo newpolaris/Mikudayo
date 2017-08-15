@@ -348,7 +348,7 @@ void CommandContext::SetConstantBuffers( UINT Offset, UINT Count,
 	}
 }
 
-void CommandContext::UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, const void* Data, size_t Size )
+void CommandContext::UpdateBuffer( D3D11_BUFFER_HANDLE Handle, const void* Data, size_t Size )
 {
 	D3D11_MAPPED_SUBRESOURCE MapData = {};
 	ASSERT_SUCCEEDED( m_CommandList->Map(

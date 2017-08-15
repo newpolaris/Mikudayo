@@ -151,7 +151,7 @@ public:
     void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, EPipelineBind Bind );
     void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[], BindList Binds );
 
-	void UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
+	void UpdateBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
 
 protected:
 	CommandListManager* m_OwningManager;

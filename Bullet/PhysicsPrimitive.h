@@ -11,6 +11,10 @@ namespace Physics
 {
     class BaseRigidBody;
 }
+namespace Math
+{
+    class Frustum;
+}
 
 namespace Primitive
 {
@@ -33,7 +37,7 @@ namespace Primitive
 
         virtual void Create( const PhysicsPrimitiveInfo& Info );
         virtual void Destroy();
-        virtual void Draw();
+        virtual void Draw( const Math::Frustum& CameraFrustum );
 
         ShapeType m_Type;
         ObjectType m_Kind;

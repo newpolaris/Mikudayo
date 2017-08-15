@@ -46,10 +46,11 @@ void PhysicsPrimitive::Destroy()
     m_Body->LeaveWorld( g_DynamicsWorld );
 }
 
-void PhysicsPrimitive::Draw()
+void PhysicsPrimitive::Draw(const Math::Frustum& CameraFrustum)
 {
     PrimitiveBatch::Append(
         m_Type,
         Convert(m_Body->GetTransfrom()),
-        Convert(m_Body->GetSize()) );
+        Convert(m_Body->GetSize()),
+        CameraFrustum);
 }

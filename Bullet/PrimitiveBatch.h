@@ -7,11 +7,15 @@ namespace Math
 {
     class AffineTransform;
     class Vector3;
+    class Frustum;
 }
 namespace PrimitiveBatch
 {
+    using namespace Physics;
+    using namespace Math;
+
     void Initialize();
     void Shutdown();
-    void Append( Physics::ShapeType Type, const Math::AffineTransform& Transform, const Math::Vector3& Size );
+    void Append( ShapeType Type, const AffineTransform& Transform, const Vector3& Size, const Frustum& CameraFrustum );
     void Flush( GraphicsContext& UiContext );
 }

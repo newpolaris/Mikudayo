@@ -17,7 +17,9 @@
 #include "PhysicsPrimitive.h"
 #include "PrimitiveBatch.h"
 
+#ifndef _DEBUG
 #define LARGESCALE_BENCHMARK 1
+#endif
 
 using namespace GameCore;
 using namespace Graphics;
@@ -102,11 +104,7 @@ void ModelViewer::Startup( void )
 
 #if LARGESCALE_BENCHMARK
     std::vector<Primitive::PhysicsPrimitiveInfo> Info = {
-#if 1
             { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
-#else
-            { Physics::kBoxShape, 0.f, Scalar( 50.f ), Vector3( 0, -50, 0 ) },
-#endif
     };
 	for (auto& o : IslandOfs) {
 		std::vector<Primitive::PhysicsPrimitiveInfo> Bound = {
@@ -119,11 +117,7 @@ void ModelViewer::Startup( void )
 	}
 #else
     Primitive::PhysicsPrimitiveInfo Info[] = {
-#if 1
         { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
-#else
-        { Physics::kBoxShape, 0.f, Scalar( 50.f ), Vector3( 0, -50, 0 ) },
-#endif
         { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( -10, 2, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
@@ -198,9 +192,8 @@ void ModelViewer::Update( float deltaT )
 void ModelViewer::RenderScene( void )
 {
     struct {
-        Matrix4 View;
-        Matrix4 Proj;
-    } vsConstants { m_ViewMatrix, m_ProjMatrix };
+        Matrix4 ViewToClip;
+    } vsConstants { m_ProjMatrix*m_ViewMatrix };
     struct {
         Vector3 CameraPosition;
     } psConstants { m_Camera.GetPosition() };
@@ -215,9 +208,9 @@ void ModelViewer::RenderScene( void )
     gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
     gfxContext.SetDynamicConstantBufferView( 0, sizeof(psConstants), &psConstants, { kBindPixel } );
     {
-        ScopedTimer _prof( L"Primitive Draw" );
+        ScopedTimer _prof( L"Primitive Draw", gfxContext );
         for (auto& model : m_Models)
-            model->Draw();
+            model->Draw(m_Camera.GetWorldSpaceFrustum());
         PrimitiveBatch::Flush( gfxContext );
     }
     gfxContext.Finish();

@@ -15,23 +15,21 @@ struct PS_INPUT
 
 cbuffer CB0 : register(b0)
 {
-	matrix mtxView;
-	matrix mtxProj;
+	matrix ViewToClip;
 };
 
 cbuffer CB1 : register(b1)
 {
-	matrix mtxWorld[64];
+	matrix World[64];
 };
 
 PS_INPUT main( VS_INPUT input, uint instanceID : SV_InstanceID )
 {
 	PS_INPUT output = (PS_INPUT)0;
-	float4 pos = mul( mtxWorld[instanceID], input.Pos );
+	float4 pos = mul( World[instanceID], input.Pos );
 	output.WPos = pos;
-	pos = mul( mtxView, pos );
-	output.Pos = mul( mtxProj, pos );
-	output.Nor = mul( (float3x3)mtxWorld[instanceID], input.Nor );
+	output.Pos = mul( ViewToClip, pos );
+	output.Nor = mul( (float3x3)World[instanceID], input.Nor );
 	output.Tex = input.Tex;
 	return output;
 }

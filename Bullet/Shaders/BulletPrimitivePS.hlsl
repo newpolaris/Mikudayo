@@ -33,8 +33,8 @@ float4 main( PS_INPUT input ) : SV_Target
 	float s = pow(saturate(dot(nor, h)), 24)*0.2;
 
 	float4 color = tex*float4(l*Diffuse.xyz, Diffuse.w);
-	if (color.a <= 0.0)discard;
-
+	if (color.a <= 0.0)
+        discard;
 	color.xyz += s;
 	return color;
 }

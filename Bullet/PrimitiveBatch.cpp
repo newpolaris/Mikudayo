@@ -33,6 +33,8 @@
 #include "TextureManager.h"
 #include "LinearMath.h"
 #include "IRigidBody.h"
+#include "Math/BoundingSphere.h"
+#include "Math/Frustum.h"
 
 #include "CompiledShaders/BulletPrimitiveVS.h"
 #include "CompiledShaders/BulletPrimitivePS.h"
@@ -78,6 +80,7 @@ namespace PrimitiveBatch
 		uint32_t IndexCount;
 		int32_t IndexOffset;
 		int32_t VertexOffset;
+        Math::BoundingSphere Bound;
 	};
 
     const ManagedTexture* m_MatTexture = nullptr;
@@ -133,7 +136,13 @@ void PrimitiveBatch::Initialize()
         std::copy( vertex.begin(), vertex.end(), std::back_inserter( vertices ) );
         std::copy( index.begin(), index.end(), std::back_inserter( indices ) );
 
-        return SubmeshGeometry { NumIndices, baseIndex, baseVertex };
+        // bounding sphere
+        std::vector<XMFLOAT3> positions(vertex.size());
+        for (auto i = 0; i < vertex.size(); i++)
+            positions[i] = vertex[i].Position;
+        auto sphere = Math::ComputeBoundingSphereFromVertices(positions);
+
+        return SubmeshGeometry { NumIndices, baseIndex, baseVertex, sphere };
     };
 
     {
@@ -182,7 +191,8 @@ void PrimitiveBatch::Shutdown()
     m_GeometryVertexBuffer.Destroy();
 }
 
-void PrimitiveBatch::Append( ShapeType Type, const AffineTransform& Transform, const Vector3& Size )
+void PrimitiveBatch::Append( ShapeType Type,
+    const AffineTransform& Transform, const Vector3& Size, const Frustum& CameraFrustum )
 {
     auto GetScale = [](ShapeType Type, Vector3 Vec) {
         switch (Type) {
@@ -201,16 +211,24 @@ void PrimitiveBatch::Append( ShapeType Type, const AffineTransform& Transform, c
     };
 
     Vector3 scaleVec = GetScale( Type, Size );
-    Matrix4 transform = Transform * AffineTransform::MakeScale(scaleVec);
+    AffineTransform transform = Transform * AffineTransform::MakeScale(scaleVec);
 
     if (Type != kBatchCapsule)
     {
-        m_PrimitiveQueue[Type].push_back( transform );
+        BoundingSphere transformed = transform * m_Mesh[Type].Bound;
+        if (CameraFrustum.IntersectSphere(transformed))
+            m_PrimitiveQueue[Type].push_back( transform );
     }
     else
     {
         auto radius = Size.GetX();
         auto height = Size.GetY();
+
+        // Roughly setting bounding radius
+        BoundingSphere transformed = transform * BoundingSphere(Vector3(kZero), radius + height );
+        if (!CameraFrustum.IntersectSphere(transformed))
+            return;
+
         auto capScale = AffineTransform::MakeScale( Vector3( radius ) );
         auto topOffset = AffineTransform::MakeTranslation( Vector3(0, height/2.f, 0) );
         auto bottomOffset = AffineTransform::MakeTranslation( Vector3(0, -height/2.f, 0) );

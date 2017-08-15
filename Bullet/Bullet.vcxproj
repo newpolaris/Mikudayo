@@ -101,6 +101,12 @@
   <ItemGroup>
     <ClInclude Include="BaseRigidBody.h" />
     <ClInclude Include="BulletDebugDraw.h" />
+    <ClInclude Include="Mesh\box.hpp" />
+    <ClInclude Include="Mesh\capsule.hpp" />
+    <ClInclude Include="Mesh\cone.hpp" />
+    <ClInclude Include="Mesh\cylinder.hpp" />
+    <ClInclude Include="Mesh\ground.hpp" />
+    <ClInclude Include="Mesh\sphere.hpp" />
     <ClInclude Include="PrimitiveBatch.h" />
     <ClInclude Include="IRigidBody.h" />
     <ClInclude Include="LinearMath.h" />
