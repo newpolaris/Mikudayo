@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 #include "pch.h"
 #include "CommandContext.h"
@@ -137,7 +137,7 @@ uint64_t CommandContext::Finish( bool WaitForCompletion )
 
 CommandContext::CommandContext(ContextType Type) :
 	m_Type(Type),
-	m_CpuLinearAllocator(kCpuWritable), 
+	m_CpuLinearAllocator(kCpuWritable),
 	m_GpuLinearAllocator(kGpuExclusive),
 	m_CommandList(nullptr),
 	m_OwningManager(nullptr)
@@ -297,13 +297,13 @@ void ComputeContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11
     m_CommandList->CSSetUnorderedAccessViews( Offset, Count, Handles, pUAVInitialCounts );
 }
 
-void CommandContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, 
+void CommandContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle,
 	EPipelineBind Bind )
 {
 	SetDynamicSamplers( Offset, 1, &Handle, { Bind } );
 }
 
-void CommandContext::SetDynamicSamplers( UINT Offset, UINT Count, 
+void CommandContext::SetDynamicSamplers( UINT Offset, UINT Count,
 	const D3D11_SAMPLER_HANDLE Handles[], BindList Binds )
 {
 	for (auto Bind : Binds )
@@ -348,7 +348,7 @@ void CommandContext::SetConstantBuffers( UINT Offset, UINT Count,
 	}
 }
 
-void CommandContext::UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, const void* Data, size_t Size )
+void CommandContext::UpdateBuffer( D3D11_BUFFER_HANDLE Handle, const void* Data, size_t Size )
 {
 	D3D11_MAPPED_SUBRESOURCE MapData = {};
 	ASSERT_SUCCEEDED( m_CommandList->Map(
@@ -430,12 +430,12 @@ void CommandContext::SetDynamicConstantBufferView( UINT Slot, size_t BufferSize,
 	{
 		switch (Bind)
 		{
-		case kBindVertex:		m_Context->VSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
-		case kBindHull:			m_Context->HSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
-		case kBindDomain:		m_Context->DSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
-		case kBindGeometry:		m_Context->GSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
-		case kBindPixel:		m_Context->PSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
-		case kBindCompute:		m_Context->CSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
+		case kBindVertex:		m_CommandList->VSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
+		case kBindHull:			m_CommandList->HSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
+		case kBindDomain:		m_CommandList->DSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
+		case kBindGeometry:		m_CommandList->GSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
+		case kBindPixel:		m_CommandList->PSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
+		case kBindCompute:		m_CommandList->CSSetConstantBuffers1( Slot, 1, Buffers, &Alloc.FirstConstant, &Alloc.NumConstants ); break;
 		}
 	}
 }
@@ -483,8 +483,8 @@ void GraphicsContext::SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTV
 	m_CommandList->OMSetRenderTargets( NumRTVs, RTVs, DSV );
 }
 
-void GraphicsContext::SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DSV ) { 
-	SetRenderTargets( 1, &RTV, DSV ); 
+void GraphicsContext::SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DSV ) {
+	SetRenderTargets( 1, &RTV, DSV );
 }
 
 void GraphicsContext::ClearColor( ColorBuffer & Target )

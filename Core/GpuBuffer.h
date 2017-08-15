@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -41,6 +41,7 @@ public:
 	const D3D11_SRV_HANDLE GetSRV(void) const { return m_SRV.Get(); }
 
 	void SetBindFlag( UINT Flags ) { m_BindFlags |= Flags; }
+    void UnsetBindFlag( UINT Flags ) { m_BindFlags &= ~Flags; }
 	void SetUsage( D3D11_USAGE Usage ) { m_Usage = Usage; }
 	void SetCPUAccess( D3D11_CPU_ACCESS_FLAG Access ) { m_CPUAccessFlags |= Access; }
 
@@ -49,6 +50,8 @@ public:
 
 	D3D11_INDEX_BUFFER_VIEW IndexBufferView( uint32_t Offset, bool b32Bit = false ) const;
 	D3D11_INDEX_BUFFER_VIEW IndexBufferView( uint32_t StartIndex = 0 ) const;
+
+    D3D11_BUFFER_HANDLE GetHandle(void) { return m_Buffer.Get(); }
 
 protected:
 
@@ -102,7 +105,7 @@ private:
 };
 
 
-class IndexBuffer : public ByteAddressBuffer 
+class IndexBuffer : public ByteAddressBuffer
 {
 public:
 	IndexBuffer();

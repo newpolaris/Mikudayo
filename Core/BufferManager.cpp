@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -69,7 +69,7 @@ namespace Graphics
     ColorBuffer g_LumaBuffer;
     ColorBuffer g_TemporalColor[2];
     ColorBuffer g_aBloomUAV1[2];	// 640x384 (1/3)
-    ColorBuffer g_aBloomUAV2[2];	// 320x192 (1/6)  
+    ColorBuffer g_aBloomUAV2[2];	// 320x192 (1/6)
     ColorBuffer g_aBloomUAV3[2];	// 160x96  (1/12)
     ColorBuffer g_aBloomUAV4[2];	// 80x48   (1/24)
     ColorBuffer g_aBloomUAV5[2];	// 40x24   (1/48)
@@ -249,6 +249,7 @@ void Graphics::DestroyRenderingBuffers()
     g_PostEffectsBufferTyped.Destroy();
 
     g_ShadowBuffer.Destroy();
+    g_CascadeShadowBuffer.Destroy();
 
     g_SSAOFullScreen.Destroy();
     g_LinearDepth[0].Destroy();

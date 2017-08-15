@@ -1,4 +1,5 @@
-﻿#include "Common.h"
+﻿#include "stdafx.h"
+#include "Common.h"
 #include "Pmx.h"
 
 const std::wstring PmxModel = L"resource/観客_右利き_サイリウム有AL.pmx";

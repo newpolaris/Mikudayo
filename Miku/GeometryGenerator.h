@@ -1,10 +1,10 @@
 //***************************************************************************************
 // GeometryGenerator.h by Frank Luna (C) 2011 All Rights Reserved.
-//   
-// Defines a static class for procedurally generating the geometry of 
+//
+// Defines a static class for procedurally generating the geometry of
 // common mathematical objects.
 //
-// All triangles are generated "outward" facing.  If you want "inward" 
+// All triangles are generated "outward" facing.  If you want "inward"
 // facing triangles (for example, if you want to place the camera inside
 // a sphere to simulate a sky), you will need to:
 //   1. Change the Direct3D cull mode or manually reverse the winding order.
@@ -29,22 +29,22 @@ public:
 	{
 		Vertex(){}
         Vertex(
-            const DirectX::XMFLOAT3& p, 
-            const DirectX::XMFLOAT3& n, 
-            const DirectX::XMFLOAT3& t, 
+            const DirectX::XMFLOAT3& p,
+            const DirectX::XMFLOAT3& n,
+            const DirectX::XMFLOAT3& t,
             const DirectX::XMFLOAT2& uv) :
-            Position(p), 
-            Normal(n), 
-            TangentU(t), 
+            Position(p),
+            Normal(n),
+            TangentU(t),
             TexC(uv){}
 		Vertex(
-			float px, float py, float pz, 
+			float px, float py, float pz,
 			float nx, float ny, float nz,
 			float tx, float ty, float tz,
-			float u, float v) : 
-            Position(px,py,pz), 
+			float u, float v) :
+            Position(px,py,pz),
             Normal(nx,ny,nz),
-			TangentU(tx, ty, tz), 
+			TangentU(tx, ty, tz),
             TexC(u,v){}
 
         DirectX::XMFLOAT3 Position;
@@ -58,7 +58,7 @@ public:
 		std::vector<Vertex> Vertices;
         std::vector<uint32> Indices32;
 
-        std::vector<uint16>& GetIndices16()
+        std::vector<uint16> GetIndices16()
         {
 			if(mIndices16.empty())
 			{
@@ -93,7 +93,7 @@ public:
     MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
 
 	///<summary>
-	/// Creates a cylinder parallel to the y-axis, and centered about the origin.  
+	/// Creates a cylinder parallel to the y-axis, and centered about the origin.
 	/// The bottom and top radius can vary to form various cone shapes rather than true
 	// cylinders.  The slices and stacks parameters control the degree of tessellation.
 	///</summary>

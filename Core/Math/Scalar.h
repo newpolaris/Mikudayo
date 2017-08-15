@@ -8,11 +8,12 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
 
+#include <ostream>
 #include "Common.h"
 
 namespace Math
@@ -47,5 +48,10 @@ namespace Math
 	INLINE Scalar operator- ( float s1, Scalar s2 ) { return Scalar(s1) - s2; }
 	INLINE Scalar operator* ( float s1, Scalar s2 ) { return Scalar(s1) * s2; }
 	INLINE Scalar operator/ ( float s1, Scalar s2 ) { return Scalar(s1) / s2; }
+
+    INLINE std::ostream& operator<<( std::ostream& os, const Scalar& value )
+    {
+        return os << float( value );
+    }
 
 } // namespace Math

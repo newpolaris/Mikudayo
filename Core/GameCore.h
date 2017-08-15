@@ -7,7 +7,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -38,7 +38,7 @@ namespace GameCore {
         virtual void RenderUI( class GraphicsContext& ) {};
 	};
 
-    bool UpdateApplication( IGameApp & game );
+    bool UpdateApplication( IGameApp& game );
 
     void RunApplication( IGameApp& app, const wchar_t* className );
 }
@@ -56,4 +56,3 @@ namespace GameCore {
 		GameCore::RunApplication( app, L#app_class ); \
 		return 0; \
 	}
-	

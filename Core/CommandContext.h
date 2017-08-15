@@ -58,13 +58,13 @@ private:
 };
 
 //
-// When deferred context and umap are used in a delay, the debugging 
+// When deferred context and umap are used in a delay, the debugging
 // pixel shader is not possible. Because, debug button is inactive
 // with the message "the pixel shader is not running".
-// Therefore, we add an operation that maps or unmaps the constant 
-// buffer immediately before the drawing operation. 
+// Therefore, we add an operation that maps or unmaps the constant
+// buffer immediately before the drawing operation.
 //
-#define GRAPHICS_DEBUG
+// #define GRAPHICS_DEBUG
 
 #ifdef GRAPHICS_DEBUG
 struct ConstantBufferAllocator
@@ -151,7 +151,7 @@ public:
     void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, EPipelineBind Bind );
     void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[], BindList Binds );
 
-	void UploadContstantBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
+	void UpdateBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
 
 protected:
 	CommandListManager* m_OwningManager;
@@ -161,7 +161,7 @@ protected:
 	void SetID(const std::wstring& ID) { m_ID = ID; }
 
 	ContextType m_Type;
-	
+
 	__declspec(align(16)) struct InternalCBStorage {
 		float v[kNumConstant];
 	};
@@ -349,5 +349,10 @@ inline void GraphicsContext::DrawIndexed( UINT IndexCount, UINT StartIndexLocati
 inline void GraphicsContext::DrawInstanced( UINT VertexCountPerInstance, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation )
 {
 	m_CommandList->DrawInstanced( VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation );
+}
+
+inline void GraphicsContext::DrawIndexedInstanced( UINT IndexCountPerInstance, UINT InstanceCount, UINT StartIndexLocation, INT BaseVertexLocation, UINT StartInstanceLocation )
+{
+	m_CommandList->DrawIndexedInstanced( IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation );
 }
 

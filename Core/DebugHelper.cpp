@@ -108,7 +108,7 @@ void Utility::DebugCube( GraphicsContext& Context, const Math::Matrix4& WorldToC
     IB.Create( L"Cube Index Buffer", _countof( Indices ), sizeof( UINT16 ), Indices );
 
     GraphicsPSO& Wireframe = bDepth ? RenderCubeWireDepthPSO : RenderCubeWirePSO;
-    auto SRGB = Color.ToSRGB();
+    auto SRGB = Color.FromSRGB();
     Context.SetDynamicConstantBufferView( 0, sizeof(Math::Matrix4), &WorldToClip, { kBindVertex } );
     Context.SetDynamicConstantBufferView( 0, sizeof(Color), &SRGB, { kBindPixel } );
     Context.SetVertexBuffer( 0, VB.VertexBufferView() );

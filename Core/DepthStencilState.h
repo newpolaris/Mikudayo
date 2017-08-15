@@ -15,7 +15,7 @@ public:
 class DepthStencilState
 {
 public:
-	static std::shared_ptr<DepthStencilState> Create(const DepthStencilDesc& desc); 
+	static std::shared_ptr<DepthStencilState> Create(const DepthStencilDesc& desc);
 	static void DestroyAll();
 	void Bind( ID3D11DeviceContext* pContext );
 

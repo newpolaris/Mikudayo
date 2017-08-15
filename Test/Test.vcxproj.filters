@@ -14,6 +14,9 @@
     <Filter Include="Resource">
       <UniqueIdentifier>{6ef5ff30-59d1-4838-a564-22230635eee2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Bullet">
+      <UniqueIdentifier>{aa463add-e33e-4460-a053-96134883d3a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PMX\Model.cpp">
@@ -34,12 +37,30 @@
     <ClCompile Include="Math\BoundingBox.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
+    <ClCompile Include="Bullet\LinearMath.cpp">
+      <Filter>Source Files\Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\CollistionTest.cpp">
+      <Filter>Source Files\Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\BoundingPlane.cpp">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Frustum.cpp">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PMX\Common.h">
       <Filter>Source Files\PMX</Filter>
     </ClInclude>
     <ClInclude Include="Common.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

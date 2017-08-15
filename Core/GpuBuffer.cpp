@@ -49,6 +49,7 @@ void GpuBuffer::Create( const std::wstring& name, uint32_t NumElements, uint32_t
 	m_BufferSize = NumElements * ElementSize;
 
 	ASSERT(!(m_Usage == D3D11_USAGE_IMMUTABLE && m_BindFlags & D3D11_BIND_UNORDERED_ACCESS));
+	ASSERT(!(m_Usage == D3D11_USAGE_DYNAMIC && m_BindFlags & D3D11_BIND_UNORDERED_ACCESS));
 
 	D3D11_BUFFER_DESC Desc;
 	Desc.ByteWidth = static_cast<UINT>(m_BufferSize);
@@ -157,7 +158,7 @@ StructuredBuffer::StructuredBuffer( bool bUseCounter ) : m_bUseCounter(bUseCount
 	m_MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 }
 
-void StructuredBuffer::CreateDerivedViews( void ) 
+void StructuredBuffer::CreateDerivedViews( void )
 {
 	if (m_BindFlags & D3D11_BIND_SHADER_RESOURCE)
 	{

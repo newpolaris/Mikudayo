@@ -342,6 +342,35 @@ void ModelViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& Vie
     }
 }
 
+void ModelViewer::RenderLightShadows(GraphicsContext& gfxContext)
+{
+    using namespace Lighting;
+
+    ScopedTimer _prof(L"RenderLightShadows", gfxContext);
+
+    static uint32_t LightIndex = 0;
+    if (LightIndex >= MaxLights)
+        return;
+
+    m_LightShadowTempBuffer.BeginRendering(gfxContext);
+    {
+        gfxContext.SetPipelineState(m_ShadowPSO);
+        RenderObjects(gfxContext, m_LightShadowMatrix[LightIndex], kOpaque);
+        gfxContext.SetPipelineState(m_CutoutShadowPSO);
+        RenderObjects(gfxContext, m_LightShadowMatrix[LightIndex], kCutout);
+    }
+    m_LightShadowTempBuffer.EndRendering(gfxContext);
+
+    // gfxContext.TransitionResource(m_LightShadowTempBuffer, D3D12_RESOURCE_STATE_GENERIC_READ);
+    // gfxContext.TransitionResource(m_LightShadowArray, D3D12_RESOURCE_STATE_COPY_DEST);
+
+    gfxContext.CopySubresource(m_LightShadowArray, LightIndex, m_LightShadowTempBuffer, 0);
+
+    // gfxContext.TransitionResource(m_LightShadowArray, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+    ++LightIndex;
+}
+
 void ModelViewer::RenderScene( void )
 {
     static bool s_ShowLightCounts = false;
@@ -362,6 +391,8 @@ void ModelViewer::RenderScene( void )
 
     GraphicsContext& gfxContext = GraphicsContext::Begin(L"Scene Render");
 
+    uint32_t FrameIndex = TemporalEffects::GetFrameIndexMod2();
+
     __declspec(align(16)) struct
     {
         Vector3 sunDirection;
@@ -372,6 +403,7 @@ void ModelViewer::RenderScene( void )
         float InvTileDim[4];
         uint32_t TileCount[4];
         uint32_t FirstLightIndex[4];
+        uint32_t FrameIndexMod2;
     } psConstants;
 
     psConstants.sunDirection = m_SunDirection;
@@ -384,6 +416,7 @@ void ModelViewer::RenderScene( void )
     psConstants.TileCount[1] = Math::DivideByMultiple(g_SceneColorBuffer.GetHeight(), Lighting::LightGridDim);
     psConstants.FirstLightIndex[0] = Lighting::m_FirstConeLight;
     psConstants.FirstLightIndex[1] = Lighting::m_FirstConeShadowedLight;
+    psConstants.FrameIndexMod2 = FrameIndex;
 
     D3D11_SAMPLER_HANDLE Sampler[] = { m_DefaultSampler, SamplerShadowGE };
     gfxContext.SetDynamicSamplers( 0, 2, Sampler, { kBindPixel } );
@@ -397,6 +430,40 @@ void ModelViewer::RenderScene( void )
     };
 
     pfnSetupGraphicsState();
+
+    RenderLightShadows(gfxContext);
+
+    /*
+    {
+        ScopedTimer _prof(L"Z PrePass", gfxContext);
+
+        gfxContext.SetDynamicConstantBufferView(1, sizeof(psConstants), &psConstants);
+
+        {
+            ScopedTimer _prof(L"Opaque", gfxContext);
+            gfxContext.ClearDepth(g_SceneDepthBuffer);
+
+#ifdef _WAVE_OP
+            gfxContext.SetPipelineState(EnableWaveOps ? m_DepthWaveOpsPSO : m_DepthPSO );
+#else
+            gfxContext.SetPipelineState(m_DepthPSO);
+#endif
+            gfxContext.SetDepthStencilTarget(g_SceneDepthBuffer.GetDSV());
+            gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
+            RenderObjects(gfxContext, m_ViewProjMatrix, kOpaque );
+        }
+
+        {
+            ScopedTimer _prof(L"Cutout", gfxContext);
+            gfxContext.SetPipelineState(m_CutoutDepthPSO);
+            RenderObjects(gfxContext, m_ViewProjMatrix, kCutout );
+        }
+    }
+    */
+
+    // SSAO::Render(gfxContext, m_Camera);
+
+    // Lighting::FillLightGrid(gfxContext, m_Camera);
 
     if (!SSAO::DebugDraw)
     {
@@ -435,9 +502,6 @@ void ModelViewer::RenderScene( void )
             gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
 
             RenderObjects( gfxContext, m_ViewProjMatrix, kOpaque );
-#ifdef _DEBUG
-            Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
-#endif
             if (!ShowWaveTileCounts)
             {
                 gfxContext.SetPipelineState(m_CutoutModelPSO);

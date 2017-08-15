@@ -1,17 +1,18 @@
 //--------------------------------------------------------------------------------
 // This file is a portion of the Hieroglyph 3 Rendering Engine.  It is distributed
-// under the MIT License, available in the root of this distribution and 
+// under the MIT License, available in the root of this distribution and
 // at the following URL:
 //
 // http://www.opensource.org/licenses/mit-license.php
 //
-// Copyright (c) Jason Zink 
+// Copyright (c) Jason Zink
 //--------------------------------------------------------------------------------
 
 #include "pch.h"
 #include "Shader.h"
 #include "GraphicsCore.h"
 #include "TextUtility.h"
+#include "GpuResource.h"
 
 using namespace std;
 using Microsoft::WRL::ComPtr;
@@ -19,7 +20,7 @@ using Graphics::g_Device;
 
 static std::map<std::wstring, std::shared_ptr<Shader>> s_ShaderMap;
 
-std::shared_ptr<Shader> Shader::Empty[] = { 
+std::shared_ptr<Shader> Shader::Empty[] = {
     std::shared_ptr<Shader>( new Shader( kVertexShader, L"EmptyVS" )),
     std::shared_ptr<Shader>( new Shader( kHullShader, L"EmptyHS" )),
     std::shared_ptr<Shader>( new Shader( kDomainShader, L"EmptyDS" )),
@@ -45,7 +46,7 @@ std::shared_ptr<Shader> Shader::Create( ShaderType Type, const ShaderByteCode& B
 		s_ShaderMap.insert( { ByteCode.Name, shader } );
 		return shader;
 	}
-	else 
+	else
 		return iter->second;
 }
 
@@ -74,7 +75,7 @@ void Shader::Create( const ShaderByteCode& ByteCode )
 		case kVertexShader:
 		{
 			ComPtr<ID3D11VertexShader> Shader;
-            ASSERT_SUCCEEDED(g_Device->CreateVertexShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf())); 
+            ASSERT_SUCCEEDED(g_Device->CreateVertexShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
             m_Shader.Swap(Shader);
             break;
 		}
@@ -123,7 +124,7 @@ void Shader::Create( const ShaderByteCode& ByteCode )
 
 void Shader::FillReflection()
 {
-	ComPtr<ID3D11ShaderReflection> pReflector; 
+	ComPtr<ID3D11ShaderReflection> pReflector;
 	ASSERT_SUCCEEDED( D3DReflect( m_ShaderByteCode.pShaderBytecode, m_ShaderByteCode.Length,
 		IID_ID3D11ShaderReflection, reinterpret_cast<void**>(pReflector.GetAddressOf()) ) );
 
@@ -193,7 +194,7 @@ bool Shader::ShaderCheckResource(D3D_SHADER_INPUT_TYPE inputType, UINT slot, std
 	for (UINT i = 0; i < m_ResourceDescrition.size(); i++) {
 		if (m_ResourceDescrition[i].Type == inputType && m_ResourceDescrition[i].BindPoint == slot) {
 			ASSERT(m_ResourceDescrition[i].Name == name);
-			if (m_ResourceDescrition[i].Name == name) 
+			if (m_ResourceDescrition[i].Name == name)
 				return true;
 		}
 	}
@@ -227,7 +228,7 @@ void Shader::Bind( ID3D11DeviceContext* pContext )
 
 ShaderByteCode::ShaderByteCode( const std::string & name, void * pBytecode, size_t length ) :
 	pShaderBytecode(pBytecode), Length(length)
-{ 
+{
 	Name = Utility::MakeWStr(name);
 }
 

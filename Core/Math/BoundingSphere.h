@@ -84,6 +84,7 @@ namespace Math
         return BoundingSphere( Center, r );
     }
 
+    BoundingSphere ComputeBoundingSphereFromVertices( const std::vector<XMFLOAT3>& vertices );
     BoundingSphere ComputeBoundingSphereFromVertices( const std::vector<XMFLOAT3>& vertices, const std::vector<uint16_t>& indices, uint32_t numPoints, uint32_t offset );
     BoundingSphere ComputeBoundingSphereFromVertices( const std::vector<XMFLOAT3>& vertices, const std::vector<uint32_t>& indices, uint32_t numPoints, uint32_t offset );
 

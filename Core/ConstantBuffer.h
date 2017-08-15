@@ -16,7 +16,7 @@ public:
 	ConstantBuffer& operator=( const ConstantBuffer& rhs ) = delete;
 	~ConstantBuffer() {}
 
-	void Create( std::wstring Name = L"ConstantBuffer") 
+	void Create( std::wstring Name = L"ConstantBuffer")
 	{
 		D3D11_BUFFER_DESC Desc;
 		Desc.ByteWidth = sizeof(T);
@@ -56,7 +56,7 @@ public:
 
 	void UploadAndBind( CommandContext& Context, UINT Slot, BindList BindList ) const
 	{
-		Context.UploadContstantBuffer( m_Buffer.Get(), &m_CpuLocal, sizeof(m_CpuLocal) );
+		Context.UpdateBuffer( m_Buffer.Get(), &m_CpuLocal, sizeof(m_CpuLocal) );
 
 		ID3D11Buffer* Buffers[] = { m_Buffer.Get() };
 		Context.SetConstantBuffers( Slot, 1, Buffers, BindList );

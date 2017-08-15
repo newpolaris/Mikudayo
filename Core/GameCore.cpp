@@ -7,7 +7,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -62,10 +62,10 @@ namespace GameCore
 
 		GameInput::Update( DeltaTime );
 		EngineTuning::Update( DeltaTime );
-		
+
 		game.Update( DeltaTime );
 		game.RenderScene();
-        
+
         PostEffects::Render();
 
         GraphicsContext& UiContext = GraphicsContext::Begin(L"Render UI");
@@ -214,7 +214,7 @@ namespace GameCore
         Graphics::Resize((uint32_t)sender->Bounds.Width, (uint32_t)sender->Bounds.Height);
     }
 
-    void MyApplicationView::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args) 
+    void MyApplicationView::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args)
     {
         m_IsRunning = false;
     }
@@ -241,7 +241,7 @@ namespace GameCore
             //DEBUGPRINT("Pointer captured");
         }
     }
-    
+
     void MyApplicationView::OnPointerMoved(CoreWindow^ sender, PointerEventArgs^ args)
     {
         if (!m_IsCapturingPointer)

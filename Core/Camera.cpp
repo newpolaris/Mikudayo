@@ -17,7 +17,7 @@
 
 using namespace Math;
 
-// #define ReverseZ_
+#define ReverseZ_
 #ifdef ReverseZD_
 const bool Math::g_bReverseZ = true;
 const float Math::g_ClearDepth = 0.0f;
