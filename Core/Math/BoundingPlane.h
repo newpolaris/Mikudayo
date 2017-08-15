@@ -32,16 +32,27 @@ namespace Math
 
 		Vector3 GetNormal( void ) const { return Vector3(m_repr); }
 
-		Scalar DistanceFromPoint( Vector3 point ) const
-		{
-			//return Dot(point, GetNormal()) + m_repr.GetW();
-			return Dot( Vector4(point, 1.0f), m_repr );
-		}
+        // Returns the point on the plane closest to the origin
+        Vector3 GetPointOnPlane( void ) const { return -GetNormal() * m_repr.GetW(); }
+        // Distance from 3D point
+        Scalar DistanceFromPoint( Vector3 point ) const
+        {
+            return Dot(point, GetNormal()) + m_repr.GetW();
+        }
 
-		friend BoundingPlane operator* ( const OrthogonalTransform& xform, BoundingPlane plane )
-		{
-			return BoundingPlane( xform.GetTranslation() - plane.GetNormal() * plane.m_repr.GetW(), xform.GetRotation() * plane.GetNormal() );
-		}
+        // Distance from homogeneous point
+        Scalar DistanceFromPoint(Vector4 point) const
+        {
+            return Dot(point, m_repr);
+        }
+
+        // Most efficient way to transform a plane.  (Involves one quaternion-vector rotation and one dot product.)
+        friend BoundingPlane operator* ( const OrthogonalTransform& xform, BoundingPlane plane )
+        {
+            Vector3 normalToPlane = xform.GetRotation() * plane.GetNormal();
+            float distanceFromOrigin = plane.m_repr.GetW() - Dot(normalToPlane, xform.GetTranslation());
+            return BoundingPlane(normalToPlane, distanceFromOrigin);
+        }
 
 		friend BoundingPlane operator* ( const Matrix4& mat, BoundingPlane plane )
 		{
