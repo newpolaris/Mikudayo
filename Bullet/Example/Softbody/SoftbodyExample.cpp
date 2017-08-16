@@ -25,10 +25,10 @@ using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
 
-class BasicExample : public GameCore::IGameApp
+class SoftbodyExample : public GameCore::IGameApp
 {
 public:
-	BasicExample()
+	SoftbodyExample()
 	{
 	}
 
@@ -57,7 +57,7 @@ private:
     std::vector<Primitive::PhysicsPrimitivePtr> m_Models;
 };
 
-CREATE_APPLICATION( BasicExample )
+CREATE_APPLICATION( SoftbodyExample )
 
 namespace {
     static int uRigidNum = 0;
@@ -92,7 +92,7 @@ namespace {
     };
 }
 
-void BasicExample::Startup( void )
+void SoftbodyExample::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
@@ -128,7 +128,7 @@ void BasicExample::Startup( void )
         m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 }
 
-void BasicExample::Cleanup( void )
+void SoftbodyExample::Cleanup( void )
 {
     for (auto& model : m_Models)
         model->Destroy();
@@ -137,7 +137,7 @@ void BasicExample::Cleanup( void )
     Physics::Shutdown();
 }
 
-void BasicExample::Update( float deltaT )
+void SoftbodyExample::Update( float deltaT )
 {
     ScopedTimer _prof( L"Bullet Update" );
 
@@ -189,7 +189,7 @@ void BasicExample::Update( float deltaT )
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 }
 
-void BasicExample::RenderScene( void )
+void SoftbodyExample::RenderScene( void )
 {
     struct {
         Matrix4 ViewToClip;
@@ -216,7 +216,7 @@ void BasicExample::RenderScene( void )
     gfxContext.Finish();
 }
 
-void BasicExample::RenderUI( GraphicsContext& Context )
+void SoftbodyExample::RenderUI( GraphicsContext& Context )
 {
     Physics::Render( Context, m_ViewProjMatrix );
 	int32_t x = g_OverlayBuffer.GetWidth() - 500;
