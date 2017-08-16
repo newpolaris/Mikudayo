@@ -37,16 +37,16 @@ namespace Pmx
 		int16_t i16;
 		int32_t i32;
 
-        switch (byteSize) 
+        switch (byteSize)
         {
-		case 1: 
-            Read( is, i8 ); 
+		case 1:
+            Read( is, i8 );
             return i8;
 		case 2:
-            Read( is, i16 ); 
-            return i16; 
-		case 4: 
-            Read( is, i32 ); 
+            Read( is, i16 );
+            return i16;
+		case 4:
+            Read( is, i32 );
             return i32;
 		}
         return 0;
@@ -245,7 +245,7 @@ namespace Pmx
         // bone is transformed after external parent bone transformation
         if (BitFlag & kTransformByExternalParent)
             Read( is, ExtParentIndex );
-            
+
         // bone is IK
         if (BitFlag & kHasInverseKinematics)
         {
@@ -277,8 +277,8 @@ namespace Pmx
     {
         BoneIndex = -1;
         bLimit = false;
-        MinLimit = XMFLOAT3( 0.f, 0.f, 0.f ); 
-        MaxLimit = XMFLOAT3( 0.f, 0.f, 0.f ); 
+        MinLimit = XMFLOAT3( 0.f, 0.f, 0.f );
+        MaxLimit = XMFLOAT3( 0.f, 0.f, 0.f );
     }
 
     void IkLink::Fill( bufferstream& is, bool bRH, uint8_t boneIndexByteSize )
@@ -401,7 +401,7 @@ namespace Pmx
 
 		uint32_t NumVertex = ReadUint( is );
 		m_Vertices.resize( NumVertex );
-		for (uint32_t i = 0; i < NumVertex; i++) 
+		for (uint32_t i = 0; i < NumVertex; i++)
 			m_Vertices[i].Fill( is, bRightHand, GetNumAddUV(), GetByteSize(kBoneIndex) );
 
 		uint32_t NumIndices = ReadUint( is );
