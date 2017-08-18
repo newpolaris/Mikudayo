@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -196,6 +196,9 @@ private:
 class NestedTimingTree
 {
 public:
+    static const int sm_kProfileMaxThreadCount = 64;
+    static const int sm_kMainThread = 0;
+
     NestedTimingTree( const wstring& name, NestedTimingTree* parent = nullptr )
         : m_Name(name), m_Parent(parent), m_IsExpanded(false), m_IsGraphed(false), m_GraphHandle(PERF_GRAPH_ERROR), m_GpuTimer(name) {}
 
@@ -255,7 +258,7 @@ public:
         if (m_Parent != nullptr)
             return m_Parent->NextChild(this);
         else
-            return &sm_RootScope;
+            return &sm_RootScope[sm_kSelectedThread];
     }
 
     NestedTimingTree* PrevChild( NestedTimingTree* curChild )
@@ -264,8 +267,8 @@ public:
 
         if (*m_Children.begin() == curChild)
         {
-            if (this == &sm_RootScope)
-                return sm_RootScope.LastChild();
+            if (this == &sm_RootScope[sm_kSelectedThread])
+                return sm_RootScope[sm_kSelectedThread].LastChild();
             else
                 return this;
         }
@@ -296,7 +299,13 @@ public:
 
     void StopTiming( CommandContext* Context )
     {
+        m_Calls++;
         m_EndTick = SystemTime::GetCurrentTick();
+
+		// To handle multiple calls
+        m_TotalTick += m_EndTick - m_StartTick;
+        m_StartTick = 0, m_EndTick = 0;
+
         if (Context == nullptr)
             return;
 
@@ -305,7 +314,7 @@ public:
         Context->PIXEndEvent();
     }
 
-    void GatherTimes(uint32_t FrameIndex)
+    void GatherTimes(uint32_t FrameIndex, bool bGpuReady)
     {
         if (sm_SelectedScope == this)
         {
@@ -314,17 +323,20 @@ public:
         if (EngineProfiling::Paused)
         {
             for (auto node : m_Children)
-                node->GatherTimes(FrameIndex);
+                node->GatherTimes(FrameIndex, bGpuReady);
             return;
         }
-        m_CpuTime.RecordStat(FrameIndex, 1000.0f * (float)SystemTime::TimeBetweenTicks(m_StartTick, m_EndTick));
-        m_GpuTime.RecordStat(FrameIndex, 1000.0f * m_GpuTimer.GetTime());
+        m_CpuTime.RecordStat(FrameIndex, 1000.0f * (float)SystemTime::TimeBetweenTicks(0, m_TotalTick));
+        if (bGpuReady)
+            m_GpuTime.RecordStat( FrameIndex, 1000.0f * m_GpuTimer.GetTime() );
 
         for (auto node : m_Children)
-            node->GatherTimes(FrameIndex);
+            node->GatherTimes(FrameIndex, bGpuReady);
 
         m_StartTick = 0;
         m_EndTick = 0;
+        m_TotalTick = 0;
+        m_Calls = 0;
     }
 
     void SumInclusiveTimes(float& cpuTime, float& gpuTime)
@@ -341,27 +353,31 @@ public:
     static void PushProfilingMarker( const wstring& name, CommandContext* Context );
     static void PopProfilingMarker( CommandContext* Context );
     static void Update( void );
-    static void UpdateTimes( void )
+    static void UpdateTimes( int kThreadID )
     {
+        ASSERT(kThreadID < sm_kProfileMaxThreadCount);
+
         uint32_t FrameIndex = (uint32_t)Graphics::GetFrameCount();
 
-        if (!GpuTimeManager::ResolveTimes())
-            return;
+        bool bGpuReady = GpuTimeManager::ResolveTimes();
 
-        sm_RootScope.GatherTimes(FrameIndex);
+        sm_RootScope[kThreadID].GatherTimes(FrameIndex, bGpuReady);
+        if (!bGpuReady) return;
         s_FrameDelta.RecordStat(FrameIndex, GpuTimeManager::GetTime(0));
 
-        float TotalCpuTime, TotalGpuTime;
-        sm_RootScope.SumInclusiveTimes(TotalCpuTime, TotalGpuTime);
-        s_TotalCpuTime.RecordStat(FrameIndex, TotalCpuTime);
-        s_TotalGpuTime.RecordStat(FrameIndex, TotalGpuTime);
-
-        GraphRenderer::Update(XMFLOAT2(TotalCpuTime, TotalGpuTime), 0, GraphType::Global);
+        if (kThreadID == sm_kMainThread)
+        {
+            float TotalCpuTime, TotalGpuTime;
+            sm_RootScope[kThreadID].SumInclusiveTimes(TotalCpuTime, TotalGpuTime);
+            s_TotalCpuTime.RecordStat(FrameIndex, TotalCpuTime);
+            s_TotalGpuTime.RecordStat(FrameIndex, TotalGpuTime);
+        }
     }
 
     static float GetTotalCpuTime(void) { return s_TotalCpuTime.GetAvg(); }
     static float GetTotalGpuTime(void) { return s_TotalGpuTime.GetAvg(); }
     static float GetFrameDelta(void) { return s_FrameDelta.GetAvg(); }
+    static void SetSelectedThread( int ThreadID ) { sm_kSelectedThread = ThreadID; }
 
     static void Display( TextContext& Text, float x )
     {
@@ -369,12 +385,12 @@ public:
         Text.DrawString("  ");
         float indent = Text.GetCursorX() - curX;
         Text.SetCursorX(curX);
-        sm_RootScope.DisplayNode( Text, x - indent, indent );
-        sm_RootScope.StoreToGraph();
+        sm_RootScope[sm_kSelectedThread].DisplayNode( Text, x - indent, indent );
+        sm_RootScope[sm_kSelectedThread].StoreToGraph();
     }
 
     void Toggle()
-    { 
+    {
         //if (m_GraphHandle == PERF_GRAPH_ERROR)
         //	m_GraphHandle = GraphRenderer::InitGraph(GraphType::Profile);
         //m_IsGraphed = GraphRenderer::ManageGraphs(m_GraphHandle, GraphType::Profile);
@@ -398,6 +414,8 @@ private:
     unordered_map<wstring, NestedTimingTree*> m_LUT;
     int64_t m_StartTick;
     int64_t m_EndTick;
+    int64_t m_Calls = 0;
+    int64_t m_TotalTick = 0;
     StatHistory m_CpuTime;
     StatHistory m_GpuTime;
     bool m_IsExpanded;
@@ -407,20 +425,54 @@ private:
     static StatHistory s_TotalCpuTime;
     static StatHistory s_TotalGpuTime;
     static StatHistory s_FrameDelta;
-    static NestedTimingTree sm_RootScope;
-    static NestedTimingTree* sm_CurrentNode;
+    static NestedTimingTree sm_RootScope[sm_kProfileMaxThreadCount];
+    static NestedTimingTree* sm_CurrentNode[sm_kProfileMaxThreadCount];
     static NestedTimingTree* sm_SelectedScope;
-
+    static int sm_kSelectedThread;
     static bool sm_CursorOnGraph;
-
 };
+
+NumVar SelectedThread( "Application/Profile Thread", 0, 0, (float)NestedTimingTree::sm_kProfileMaxThreadCount, 1 );
 
 StatHistory NestedTimingTree::s_TotalCpuTime;
 StatHistory NestedTimingTree::s_TotalGpuTime;
 StatHistory NestedTimingTree::s_FrameDelta;
-NestedTimingTree NestedTimingTree::sm_RootScope(L"Root");
-NestedTimingTree* NestedTimingTree::sm_CurrentNode = &NestedTimingTree::sm_RootScope;
-NestedTimingTree* NestedTimingTree::sm_SelectedScope = &NestedTimingTree::sm_RootScope;
+
+//
+// Support multithreaded profiling
+//
+NestedTimingTree NestedTimingTree::sm_RootScope[sm_kProfileMaxThreadCount] = {
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+    L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root", L"Root",
+};
+
+NestedTimingTree* NestedTimingTree::sm_CurrentNode[sm_kProfileMaxThreadCount] = {
+	&sm_RootScope[ 0],	&sm_RootScope[ 1],	&sm_RootScope[ 2],	&sm_RootScope[ 3],
+	&sm_RootScope[ 4],	&sm_RootScope[ 5],	&sm_RootScope[ 6],	&sm_RootScope[ 7],
+	&sm_RootScope[ 8],	&sm_RootScope[ 9],	&sm_RootScope[10],	&sm_RootScope[11],
+	&sm_RootScope[12],	&sm_RootScope[13],	&sm_RootScope[14],	&sm_RootScope[15],
+	&sm_RootScope[16],	&sm_RootScope[17],	&sm_RootScope[18],	&sm_RootScope[19],
+	&sm_RootScope[20],	&sm_RootScope[21],	&sm_RootScope[22],	&sm_RootScope[23],
+	&sm_RootScope[24],	&sm_RootScope[25],	&sm_RootScope[26],	&sm_RootScope[27],
+	&sm_RootScope[28],	&sm_RootScope[29],	&sm_RootScope[30],	&sm_RootScope[31],
+	&sm_RootScope[32],	&sm_RootScope[33],	&sm_RootScope[34],	&sm_RootScope[35],
+	&sm_RootScope[36],	&sm_RootScope[37],	&sm_RootScope[38],	&sm_RootScope[39],
+	&sm_RootScope[40],	&sm_RootScope[41],	&sm_RootScope[42],	&sm_RootScope[43],
+	&sm_RootScope[44],	&sm_RootScope[45],	&sm_RootScope[46],	&sm_RootScope[47],
+	&sm_RootScope[48],	&sm_RootScope[49],	&sm_RootScope[50],	&sm_RootScope[51],
+	&sm_RootScope[52],	&sm_RootScope[53],	&sm_RootScope[54],	&sm_RootScope[55],
+	&sm_RootScope[56],	&sm_RootScope[57],	&sm_RootScope[58],	&sm_RootScope[59],
+	&sm_RootScope[60],	&sm_RootScope[61],	&sm_RootScope[62],	&sm_RootScope[63],
+};
+
+int NestedTimingTree::sm_kSelectedThread = NestedTimingTree::sm_kMainThread;
+NestedTimingTree* NestedTimingTree::sm_SelectedScope = &sm_RootScope[sm_kMainThread];
 bool NestedTimingTree::sm_CursorOnGraph = false;
 
 namespace EngineProfiling
@@ -429,21 +481,24 @@ namespace EngineProfiling
     BoolVar DrawProfiler("Display Profiler", true);
     //BoolVar DrawPerfGraph("Display Performance Graph", false);
     const bool DrawPerfGraph = false;
-    
+
     void Begin( void )
     {
-        if (GameInput::IsFirstPressed( GameInput::kStartButton ) 
+        if (GameInput::IsFirstPressed( GameInput::kStartButton )
             || GameInput::IsFirstPressed( GameInput::kKey_space ))
         {
             Paused = !Paused;
         }
+        NestedTimingTree::SetSelectedThread((int)SelectedThread);
         GpuTimeManager::Begin();
     }
 
     void End( void )
     {
         GpuTimeManager::End();
-        NestedTimingTree::UpdateTimes();
+
+        for (int i = 0; i < NestedTimingTree::sm_kProfileMaxThreadCount; i++)
+            NestedTimingTree::UpdateTimes( i );
     }
 
     void BeginBlock(const wstring& name, CommandContext* Context)
@@ -465,7 +520,7 @@ namespace EngineProfiling
     {
         if (!DrawFrameRate)
             return;
-        
+
         float cpuTime = NestedTimingTree::GetTotalCpuTime();
         float gpuTime = NestedTimingTree::GetTotalGpuTime();
         float frameRate = 1.0f / NestedTimingTree::GetFrameDelta();
@@ -504,31 +559,81 @@ namespace EngineProfiling
         Text.GetCommandContext().SetScissor(0, 0, g_DisplayWidth, g_DisplayHeight);
     }
 
+    //
+    // Source from bullet's btQuickProf.cpp
+    // Original boilerplate
+    //
+    /*
+    ** profile.cpp
+    **
+    ** Real - Time Hierarchical Profiling for Game Programming Gems 3
+    **
+    ** by Greg Hjelstrom & Byon Garrabrant
+    */
+    unsigned int GetCurrentThreadIndex()
+    {
+        const unsigned int kNullIndex = ~0U;
+#ifdef _WIN32
+        __declspec(thread) static unsigned int sThreadIndex = kNullIndex;
+#else
+#ifdef __APPLE__
+#if TARGET_OS_IPHONE
+        unsigned int sThreadIndex = 0;
+        return -1;
+#else
+        static __thread unsigned int sThreadIndex = kNullIndex;
+#endif
+#else//__APPLE__
+#if __linux__
+        static __thread unsigned int sThreadIndex = kNullIndex;
+#else
+        unsigned int sThreadIndex = 0;
+        return -1;
+#endif
+#endif//__APPLE__
 
+#endif
+        static int gThreadCounter = 0;
+
+        if (sThreadIndex == kNullIndex)
+        {
+            sThreadIndex = gThreadCounter++;
+        }
+        return sThreadIndex;
+    }
 } // EngineProfiling
 
 void NestedTimingTree::PushProfilingMarker( const wstring& name, CommandContext* Context )
 {
+	int threadIndex = EngineProfiling::GetCurrentThreadIndex();
+    if (threadIndex < 0)
+		return;
+
     ASSERT(sm_CurrentNode != nullptr);
-    sm_CurrentNode = sm_CurrentNode->GetChild(name);
-    sm_CurrentNode->StartTiming(Context);
+    sm_CurrentNode[threadIndex] = sm_CurrentNode[threadIndex]->GetChild(name);
+    sm_CurrentNode[threadIndex]->StartTiming(Context);
 }
 
 void NestedTimingTree::PopProfilingMarker( CommandContext* Context )
 {
+	int threadIndex = EngineProfiling::GetCurrentThreadIndex();
+    if (threadIndex < 0)
+		return;
+
     ASSERT(sm_CurrentNode != nullptr);
-    sm_CurrentNode->StopTiming(Context);
-    sm_CurrentNode = sm_CurrentNode->m_Parent;
+    sm_CurrentNode[threadIndex]->StopTiming(Context);
+    sm_CurrentNode[threadIndex] = sm_CurrentNode[threadIndex]->m_Parent;
 }
 
 void NestedTimingTree::Update( void )
 {
     ASSERT(sm_SelectedScope != nullptr, "Corrupted profiling data structure");
 
-    if (sm_SelectedScope == &sm_RootScope)
+    // Root is just arbitary tree holder, so move to first valid member (GUI)
+    if (sm_SelectedScope == &sm_RootScope[sm_kSelectedThread])
     {
-        sm_SelectedScope = sm_RootScope.FirstChild();
-        if (sm_SelectedScope == &sm_RootScope)
+        sm_SelectedScope = sm_RootScope[sm_kSelectedThread].FirstChild();
+        if (sm_SelectedScope == &sm_RootScope[sm_kSelectedThread])
             return;
     }
 
@@ -561,20 +666,20 @@ void NestedTimingTree::Update( void )
     {
         sm_SelectedScope = sm_SelectedScope ? sm_SelectedScope->PrevScope() : nullptr;
     }
-    else if (GameInput::IsFirstPressed( GameInput::kAButton ) 
+    else if (GameInput::IsFirstPressed( GameInput::kAButton )
         || GameInput::IsFirstPressed( GameInput::kKey_return ))
     {
         sm_SelectedScope->Toggle();
     }
-
 }
 
 void NestedTimingTree::DisplayNode( TextContext& Text, float leftMargin, float indent )
 {
-    if (this == &sm_RootScope)
+    NestedTimingTree& DisplayTarget = sm_RootScope[sm_kSelectedThread];
+    if (this == &DisplayTarget && DisplayTarget.FirstChild() != nullptr)
     {
         m_IsExpanded = true;
-        sm_RootScope.FirstChild()->m_IsExpanded = true;
+        DisplayTarget.FirstChild()->m_IsExpanded = true;
     }
     else
     {
@@ -582,7 +687,7 @@ void NestedTimingTree::DisplayNode( TextContext& Text, float leftMargin, float i
             Text.SetColor( Color(1.0f, 1.0f, 0.5f) );
         else
             Text.SetColor( Color(1.0f, 1.0f, 1.0f) );
-    
+
 
         Text.SetLeftMargin(leftMargin);
         Text.SetCursorX(leftMargin);
@@ -621,4 +726,17 @@ void NestedTimingTree::StoreToGraph(void)
 
     for (auto node : m_Children)
         node->StoreToGraph();
+}
+
+//
+// To intergrate with library external profiling support
+//
+void PushProfilingMarker( const std::wstring& name, CommandContext* Context )
+{
+    NestedTimingTree::PushProfilingMarker( name, Context );
+}
+
+void PopProfilingMarker( CommandContext* Context )
+{
+    NestedTimingTree::PopProfilingMarker( Context );
 }

@@ -12,6 +12,8 @@
 #include "BulletDebugDraw.h"
 #include "MultiThread.inl"
 #include "LinearMath/btThreads.h"
+#include "LinearMath/btQuickprof.h"
+#include "TextUtility.h"
 
 using namespace Math;
 
@@ -68,10 +70,23 @@ btConstraintSolver* Physics::CreateSolverByType( SolverType t )
     return NULL;
 }
 
+void EnterProfileZoneDefault(const char* name)
+{
+    PushProfilingMarker( Utility::MakeWStr(std::string(name)), nullptr );
+}
+
+void LeaveProfileZoneDefault()
+{
+    PopProfilingMarker( nullptr );
+}
+
 void Physics::Initialize( void )
 {
     BulletDebug::Initialize();
-    gTaskMgr.init(8);
+    gTaskMgr.init(4);
+
+    btSetCustomEnterProfileZoneFunc(EnterProfileZoneDefault);
+    btSetCustomLeaveProfileZoneFunc(LeaveProfileZoneDefault);
 
     if (bMultithreadCapable)
     {
@@ -114,7 +129,6 @@ void Physics::Initialize( void )
         Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
         Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
         Solver.reset( CreateSolverByType( m_SolverType ) );
-        const float EarthGravity = 9.8f;
         DynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
     }
     ASSERT( DynamicsWorld != nullptr );
@@ -125,10 +139,10 @@ void Physics::Initialize( void )
 
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits |
-        btIDebugDraw::DBG_DrawAabb |
-        btIDebugDraw::DBG_DrawWireframe );
+        // btIDebugDraw::DBG_DrawConstraints |
+        // btIDebugDraw::DBG_DrawConstraintLimits |
+        btIDebugDraw::DBG_DrawWireframe
+    );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
 
     g_DynamicsWorld = DynamicsWorld.get();
@@ -165,7 +179,6 @@ void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
 
 void Physics::Profile( ProfileStatus& Status )
 {
-    Status.NumIslands = gNumIslands;
     Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
     int numContacts = 0;
     int numManifolds = Dispatcher->getNumManifolds();
@@ -180,6 +193,7 @@ void Physics::Profile( ProfileStatus& Status )
     Status.InternalTimeStep = gProfiler.getAverageTime( Profiler::kRecordInternalTimeStep )*0.001f;
     if (bMultithreadCapable)
     {
+        Status.NumIslands = gNumIslands;
         Status.DispatchAllCollisionPairs = gProfiler.getAverageTime( Profiler::kRecordDispatchAllCollisionPairs )*0.001f;
         Status.DispatchIslands = gProfiler.getAverageTime( Profiler::kRecordDispatchIslands )*0.001f;
         Status.PredictUnconstrainedMotion = gProfiler.getAverageTime( Profiler::kRecordPredictUnconstrainedMotion )*0.001f;

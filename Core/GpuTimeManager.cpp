@@ -7,7 +7,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -65,9 +65,6 @@ void GpuTimeManager::Shutdown()
 
 uint32_t GpuTimeManager::NewTimer(void)
 {
-    //
-    // TODO: Thread safe
-    //
     return sm_NumTimers++;
 }
 
@@ -131,5 +128,14 @@ float GpuTimeManager::GetTime(uint32_t TimerIdx)
 
 void GpuTimeManager::Register(uint32_t TimerIdx, std::wstring Name)
 {
+	// The root node is a tree holder and is created before any timer is created.
+	// In this case, just skip registration.
+    if (sm_MaxNumTimers == 0) return;
+	
+    ASSERT(TimerIdx < sm_MaxNumTimers );
+
+    static std::mutex s_GpuTimeName;
+	std::lock_guard<std::mutex> LockGuard(s_GpuTimeName);
+
     sm_TimerNames.push_back( { TimerIdx, Name });
 }
