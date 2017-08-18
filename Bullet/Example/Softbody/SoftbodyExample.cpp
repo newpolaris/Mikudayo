@@ -17,9 +17,239 @@
 #include "PhysicsPrimitive.h"
 #include "PrimitiveBatch.h"
 
-#ifndef _DEBUG
-#define LARGESCALE_BENCHMARK 1
-#endif
+#include "GameCore.h"
+#include "EngineTuning.h"
+#include "Utility.h"
+#define BT_THREADSAFE 1
+#define BT_NO_SIMD_OPERATOR_OVERLOADS 1
+#include "btBulletDynamicsCommon.h"
+#include "BaseRigidBody.h"
+#include "BulletDebugDraw.h"
+#include "MultiThread.inl"
+#include "LinearMath/btThreads.h"
+#include "BulletSoftBody/btSoftBodyHelpers.h"
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
+
+using namespace Math;
+
+namespace Physics
+{
+    BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
+    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
+
+    // bullet needs to define BT_THREADSAFE and (BT_USE_OPENMP || BT_USE_PPL || BT_USE_TBB)
+    const bool bMultithreadCapable = false;
+    const float EarthGravity = 9.8f;
+    SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
+    int m_SolverMode = SOLVER_SIMD |
+        SOLVER_USE_WARMSTARTING |
+        // SOLVER_RANDMIZE_ORDER |
+        // SOLVER_INTERLEAVE_CONTACT_AND_FRICTION_CONSTRAINTS |
+        // SOLVER_USE_2_FRICTION_DIRECTIONS |
+        0;
+
+	btDynamicsWorld* g_DynamicsWorld = nullptr;
+
+    std::unique_ptr<btDefaultCollisionConfiguration> Config;
+    std::unique_ptr<btBroadphaseInterface> Broadphase;
+    std::unique_ptr<btCollisionDispatcher> Dispatcher;
+    std::unique_ptr<btConstraintSolver> Solver;
+    std::unique_ptr<btSoftRigidDynamicsWorld> DynamicsWorld;
+    std::unique_ptr<BulletDebug::DebugDraw> DebugDrawer;
+    btSoftBodyWorldInfo SoftBodyWorldInfo;
+
+    btConstraintSolver* CreateSolverByType( SolverType t );
+};
+
+btConstraintSolver* Physics::CreateSolverByType( SolverType t )
+{
+    btMLCPSolverInterface* mlcpSolver = NULL;
+    switch (t)
+    {
+    case SOLVER_TYPE_SEQUENTIAL_IMPULSE:
+        return new btSequentialImpulseConstraintSolver();
+    case SOLVER_TYPE_NNCG:
+        return new btNNCGConstraintSolver();
+    case SOLVER_TYPE_MLCP_PGS:
+        mlcpSolver = new btSolveProjectedGaussSeidel();
+        break;
+    case SOLVER_TYPE_MLCP_DANTZIG:
+        mlcpSolver = new btDantzigSolver();
+        break;
+    case SOLVER_TYPE_MLCP_LEMKE:
+        mlcpSolver = new btLemkeSolver();
+        break;
+    default: {}
+    }
+    if (mlcpSolver)
+        return new btMLCPSolver( mlcpSolver );
+    return NULL;
+}
+
+void Physics::Initialize( void )
+{
+    BulletDebug::Initialize();
+    gTaskMgr.init(8);
+
+    if (bMultithreadCapable)
+    {
+        btDefaultCollisionConstructionInfo cci;
+        cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
+        cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
+        Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration >( cci );
+
+#if USE_PARALLEL_NARROWPHASE
+        Dispatcher = std::make_unique<MyCollisionDispatcher>( Config.get() );
+#else
+        Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
+#endif //USE_PARALLEL_NARROWPHASE
+
+        Broadphase = std::make_unique<btDbvtBroadphase>();
+
+#if USE_PARALLEL_ISLAND_SOLVER
+        {
+            btConstraintSolver* solvers[ BT_MAX_THREAD_COUNT ];
+            int maxThreadCount = btMin( int(BT_MAX_THREAD_COUNT), TaskManager::getMaxNumThreads() );
+            for ( int i = 0; i < maxThreadCount; ++i )
+                solvers[ i ] = CreateSolverByType( m_SolverType );
+            Solver.reset( new MyConstraintSolverPool( solvers, maxThreadCount ) );
+        }
+#else
+        Solver.reset( CreateSolverByType( m_SolverType ) );
+#endif //#if USE_PARALLEL_ISLAND_SOLVER
+
+        DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+
+#if USE_PARALLEL_ISLAND_SOLVER
+        if ( btSimulationIslandManagerMt* islandMgr = dynamic_cast<btSimulationIslandManagerMt*>( DynamicsWorld->getSimulationIslandManager() ) )
+            islandMgr->setIslandDispatchFunction( parallelIslandDispatch );
+#endif //#if USE_PARALLEL_ISLAND_SOLVER
+    }
+    else
+    {
+        Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration>();
+        Broadphase = std::make_unique<btDbvtBroadphase>();
+        Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
+        Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+        Solver.reset( CreateSolverByType( m_SolverType ) );
+        DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+    }
+    SoftBodyWorldInfo.m_broadphase = Broadphase.get();
+    SoftBodyWorldInfo.m_dispatcher = Dispatcher.get();
+    SoftBodyWorldInfo.m_gravity = DynamicsWorld->getGravity();
+    SoftBodyWorldInfo.m_sparsesdf.Initialize();
+
+    ASSERT( DynamicsWorld != nullptr );
+    DynamicsWorld->setGravity( btVector3( 0, -EarthGravity, 0 ) );
+    DynamicsWorld->setInternalTickCallback( profileBeginCallback, NULL, true );
+    DynamicsWorld->setInternalTickCallback( profileEndCallback, NULL, false );
+    DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
+
+    DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
+    DebugDrawer->setDebugMode(
+        btIDebugDraw::DBG_DrawConstraints |
+        btIDebugDraw::DBG_DrawConstraintLimits |
+        btIDebugDraw::DBG_DrawAabb |
+        btIDebugDraw::DBG_DrawWireframe );
+    DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
+
+    g_DynamicsWorld = DynamicsWorld.get();
+}
+
+void Physics::Shutdown( void )
+{
+    gTaskMgr.shutdown();
+    SoftBodyWorldInfo.m_sparsesdf.Reset();
+    BulletDebug::Shutdown();
+    for (int i = 0; i < DynamicsWorld->getSoftBodyArray().size(); i++)
+    {
+        btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
+        DynamicsWorld->removeSoftBody( psb );
+        delete psb;
+    }
+    ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
+        "Remove all rigidbody objects from world");
+
+    DynamicsWorld.reset( nullptr );
+    g_DynamicsWorld = nullptr;
+}
+
+void Physics::Update( float deltaT )
+{
+    DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
+    ASSERT(DynamicsWorld.get() != nullptr);
+    DynamicsWorld->stepSimulation( deltaT, 1 );
+}
+
+void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
+{
+    ASSERT( DynamicsWorld.get() != nullptr );
+    if (s_bDebugDraw)
+    {
+        DynamicsWorld->debugDrawWorld();
+        for (int i = 0; i < DynamicsWorld->getSoftBodyArray().size(); i++)
+		{
+            btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
+            btSoftBodyHelpers::DrawFrame( psb, DynamicsWorld->getDebugDrawer() );
+            btSoftBodyHelpers::Draw( psb, DynamicsWorld->getDebugDrawer(), DynamicsWorld->getDrawFlags() );
+		}
+        DebugDrawer->flush( Context, ClipToWorld );
+    }
+}
+
+void Physics::Profile( ProfileStatus& Status )
+{
+    Status.NumIslands = gNumIslands;
+    Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
+    int numContacts = 0;
+    int numManifolds = Dispatcher->getNumManifolds();
+    for (int i = 0; i < numManifolds; ++i)
+    {
+        const btPersistentManifold* man = Dispatcher->getManifoldByIndexInternal( i );
+        numContacts += man->getNumContacts();
+    }
+    Status.NumManifolds = numManifolds;
+    Status.NumContacts = numContacts;
+    Status.NumThread = gTaskMgr.getNumThreads();
+    Status.InternalTimeStep = gProfiler.getAverageTime( Profiler::kRecordInternalTimeStep )*0.001f;
+    if (bMultithreadCapable)
+    {
+        Status.DispatchAllCollisionPairs = gProfiler.getAverageTime( Profiler::kRecordDispatchAllCollisionPairs )*0.001f;
+        Status.DispatchIslands = gProfiler.getAverageTime( Profiler::kRecordDispatchIslands )*0.001f;
+        Status.PredictUnconstrainedMotion = gProfiler.getAverageTime( Profiler::kRecordPredictUnconstrainedMotion )*0.001f;
+        Status.CreatePredictiveContacts = gProfiler.getAverageTime( Profiler::kRecordCreatePredictiveContacts )*0.001f;
+        Status.IntegrateTransforms = gProfiler.getAverageTime( Profiler::kRecordIntegrateTransforms )*0.001f;
+    }
+}
+
+namespace {
+    std::vector<Primitive::PhysicsPrimitivePtr> m_Models;
+};
+
+void CreateSoftBody(const btScalar s,
+    const int numX,
+    const int numY,
+    const int fixed = 1+2 )
+{
+    btSoftBody* cloth = btSoftBodyHelpers::CreatePatch(
+        Physics::SoftBodyWorldInfo,
+        btVector3( -s / 2, s + 1, 0 ),
+        btVector3( +s / 2, s + 1, 0 ),
+        btVector3( -s / 2, s + 1, +s ),
+        btVector3( +s / 2, s + 1, +s ),
+        numX, numY,
+        fixed, true );
+
+	cloth->m_cfg.piterations = 5;
+	cloth->getCollisionShape()->setMargin(0.001f);
+	cloth->generateBendingConstraints(2,cloth->appendMaterial());
+	cloth->setTotalMass(10);
+	cloth->m_cfg.citerations = 10;
+    cloth->m_cfg.diterations = 10;
+	cloth->m_cfg.kDP = 0.005f;
+	Physics::DynamicsWorld->addSoftBody(cloth);
+}
 
 using namespace GameCore;
 using namespace Graphics;
@@ -53,44 +283,9 @@ private:
     GraphicsPSO m_DepthPSO;
     GraphicsPSO m_CutoutDepthPSO;
     GraphicsPSO m_ModelPSO;
-
-    std::vector<Primitive::PhysicsPrimitivePtr> m_Models;
 };
 
 CREATE_APPLICATION( SoftbodyExample )
-
-namespace {
-    static int uRigidNum = 0;
-
-    const float ofs = 32.0f;
-    XMFLOAT2 IslandOfs[] = {
-        {0,0},
-        { ofs,0},
-        {-ofs,0},
-        {0,ofs },
-        {0,-ofs },
-        { ofs,ofs },
-        { ofs,-ofs },
-        { -ofs,ofs },
-        { -ofs,-ofs },
-        { ofs * 2,0 },
-        { ofs * 2,ofs },
-        { ofs * 2,-ofs },
-        { -ofs * 2,0 },
-        { -ofs * 2,ofs },
-        { -ofs * 2,-ofs },
-        { 0,ofs * 2 },
-        { ofs,ofs * 2 },
-        { -ofs,ofs * 2 },
-        { 0,-ofs * 2 },
-        { ofs,-ofs * 2 },
-        { -ofs,-ofs * 2 },
-        { -ofs * 2,-ofs * 2 },
-        { -ofs * 2,ofs * 2 },
-        { ofs * 2,-ofs * 2 },
-        { ofs * 2,ofs * 2 },
-    };
-}
 
 void SoftbodyExample::Startup( void )
 {
@@ -102,30 +297,16 @@ void SoftbodyExample::Startup( void )
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
 
-#if LARGESCALE_BENCHMARK
-    std::vector<Primitive::PhysicsPrimitiveInfo> Info = {
-            { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
-    };
-	for (auto& o : IslandOfs) {
-		std::vector<Primitive::PhysicsPrimitiveInfo> Bound = {
-            { Physics::kBoxShape, 50.0f, Vector3( 1,2,9 ), Vector3( -10 + o.x, 2, 0 + o.y ) },
-            { Physics::kBoxShape, 50.0f, Vector3( 1,2,9 ), Vector3( 10 + o.x, 2, 0 + o.y ) },
-            { Physics::kBoxShape, 50.0f, Vector3( 9,2,1 ), Vector3( 0 + o.x, 2, 10 + o.y ) },
-            { Physics::kBoxShape, 50.0f, Vector3( 9,2,1 ), Vector3( 0 + o.x, 2, -10 + o.y ) },
-		};
-        std::copy( Bound.begin(), Bound.end(), std::back_inserter(Info));
-	}
-#else
-    Primitive::PhysicsPrimitiveInfo Info[] = {
-        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
-        { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( -10, 2, 0 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
-    };
-#endif
-    for (auto& info : Info)
-        m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
+    m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
+        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) }
+    ) ) );
+
+    {
+        const btScalar s = 4; // size of cloth patch
+        const int NUM_X = 31; // vertices on X axis
+        const int NUM_Z = 31; // vertices on Z axis
+        CreateSoftBody( s, NUM_X, NUM_Z );
+    }
 }
 
 void SoftbodyExample::Cleanup( void )
@@ -133,6 +314,7 @@ void SoftbodyExample::Cleanup( void )
     for (auto& model : m_Models)
         model->Destroy();
     m_Models.clear();
+
     PrimitiveBatch::Shutdown();
     Physics::Shutdown();
 }
@@ -143,33 +325,6 @@ void SoftbodyExample::Update( float deltaT )
 
     if (!EngineProfiling::IsPaused())
     {
-        static int uCount = 0;
-        if ((uCount++ % 1) == 0 && uRigidNum < 600 )
-        {
-            static UINT rigid = 0;
-            auto randf = []() { return (float)rand() / (float)RAND_MAX; };
-            auto randrf = [randf]( float mn, float mx ) { return randf()*(mx - mn) + mn; };
-            FLOAT x = randrf( -5, 5 );
-            FLOAT y = 15.0f + randf()*2.0f;
-            FLOAT z = randrf( -5, 5 );
-            FLOAT sx = randrf( 0.5f, 1.0f );
-            FLOAT sy = randrf( 0.5f, 1.0f );
-            FLOAT sz = randrf( 0.5f, 1.0f );
-            FLOAT mass = randrf( 0.8f, 1.2f );
-
-#if LARGESCALE_BENCHMARK
-            for (auto& o : IslandOfs) {
-                m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
-                    { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x+o.x, y, z+o.y )  }
-                ) ) );
-			};
-#else
-            m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
-                { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x,y,z )  }
-            ) ) );
-#endif
-            uRigidNum++;
-        }
         Physics::Update( deltaT );
     }
 
