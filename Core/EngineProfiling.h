@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -58,4 +58,8 @@ public:
 private:
 	CommandContext* m_Context;
 };
+
+void PushProfilingMarker( const std::wstring& name, CommandContext* Context = nullptr );
+void PopProfilingMarker( CommandContext* Context = nullptr );
+
 #endif

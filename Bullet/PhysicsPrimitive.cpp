@@ -4,11 +4,6 @@
 #include "LinearMath.h"
 #include "PrimitiveBatch.h"
 
-namespace Primitive
-{
-    PhysicsPrimitivePtr CreatePhysicsPrimitive( const PhysicsPrimitiveInfo& Info );
-}
-
 using namespace Physics;
 using namespace Primitive;
 
@@ -50,7 +45,12 @@ void PhysicsPrimitive::Draw(const Math::Frustum& CameraFrustum)
 {
     PrimitiveBatch::Append(
         m_Type,
-        Convert(m_Body->GetTransfrom()),
+        m_Transform,
         Convert(m_Body->GetSize()),
         CameraFrustum);
+}
+
+void PhysicsPrimitive::UpdateTransform()
+{
+    m_Transform = Convert(m_Body->GetTransfrom());
 }

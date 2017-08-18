@@ -256,6 +256,7 @@
     <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btSolveProjectedGaussSeidel.h" />
     <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btLemkeSolver.h" />
     <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btLemkeAlgorithm.h" />
+    <ClInclude Include="Dynamics\InplaceSolverIslandCallbackMT.h" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

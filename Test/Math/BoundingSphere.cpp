@@ -209,7 +209,7 @@ TEST(BoundingSphereTest, ComputeBoundingSphereFromVertices2)
     std::vector<uint16_t> indices(vertices.size());
     std::iota(indices.begin(), indices.end(), 0);
 
-    BoundingSphere sphere = ComputeBoundingSphereFromVertices( vertices, indices, indices.size(), 0 );
+    BoundingSphere sphere = ComputeBoundingSphereFromVertices( vertices, indices, (uint32_t)indices.size(), 0 );
     Scalar RSquare = sphere.GetRadius()*sphere.GetRadius();
     for (auto& pt : vertices)
     {

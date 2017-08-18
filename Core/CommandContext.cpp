@@ -108,6 +108,7 @@ ComputeContext& ComputeContext::Begin( const std::wstring& ID )
 
 uint64_t CommandContext::Flush(bool WaitForCompletion)
 {
+    (WaitForCompletion);
 	return 0;
 }
 

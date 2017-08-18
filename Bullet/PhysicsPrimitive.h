@@ -4,6 +4,7 @@
 
 #include "Math/Vector.h"
 #include "Math/Quaternion.h"
+#include "Math/Transform.h"
 #include "IRigidBody.h"
 
 class GraphicsContext;
@@ -38,9 +39,11 @@ namespace Primitive
         virtual void Create( const PhysicsPrimitiveInfo& Info );
         virtual void Destroy();
         virtual void Draw( const Math::Frustum& CameraFrustum );
+        virtual void UpdateTransform();
 
         ShapeType m_Type;
         ObjectType m_Kind;
+        AffineTransform m_Transform;
         std::shared_ptr<BaseRigidBody> m_Body;
     };
     using PhysicsPrimitivePtr = std::shared_ptr<PhysicsPrimitive>;

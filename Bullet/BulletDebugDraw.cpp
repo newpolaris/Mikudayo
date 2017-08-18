@@ -14,6 +14,31 @@
 using namespace Math;
 namespace BulletDebug
 {
+    template <typename T, size_t S>
+    class Array
+    {
+    public:
+        Array() : m_Index( 0 )
+        {
+        }
+
+        T* data( void ) { return m_Data.data(); }
+        T& operator[]( size_t Pos ) { return m_Data[Pos]; }
+        void resize( size_t Pos ) { m_Index = Pos; }
+        void clear( void ) { m_Index = 0; }
+        size_t size( void ) const { return m_Index; }
+
+        template <typename... Args>
+        void emplace_back( Args&&... Val )
+        {
+            m_Data[m_Index++] = std::move( T( std::forward<Args>( Val )... ) );
+        }
+
+    private:
+        std::array<T, S> m_Data;
+        size_t m_Index;
+    };
+
     struct Vertex
     {
         Vertex() {}
@@ -22,6 +47,13 @@ namespace BulletDebug
         XMFLOAT3 position;
         XMFLOAT3 color;
     };
+
+#define FAST_LINE_DRAW 1
+#ifdef FAST_LINE_DRAW
+    using LineStorage = Array<Vertex, 1 << 20>; // Slightly faster
+#else
+    using LineStorage = std::vector<Vertex>;
+#endif
 
     void Initialize();
     void Shutdown();
@@ -61,7 +93,7 @@ struct DebugDraw::Context
 {
     std::vector<std::string> Warning;
     std::vector<Text3D> Text;
-    std::vector<Vertex> Lines;
+    LineStorage Lines;
 };
 
 DebugDraw::DebugDraw() :
@@ -71,18 +103,18 @@ DebugDraw::DebugDraw() :
 
 void DebugDraw::drawLine( const btVector3& from, const btVector3& to, const btVector3& color )
 {
-    m_Context->Lines.emplace_back( Vertex(from, color) );
-    m_Context->Lines.emplace_back( Vertex(to, color) );
+    m_Context->Lines.emplace_back(from, color);
+    m_Context->Lines.emplace_back(to, color);
 }
 
 void DebugDraw::reportErrorWarning( const char* warningString )
 {
-    m_Context->Warning.emplace_back(std::string(warningString));
+    m_Context->Warning.emplace_back(warningString);
 }
 
 void DebugDraw::draw3dText( const btVector3& location, const char* textString )
 {
-    m_Context->Text.emplace_back( Text3D{ std::string(textString), Vector3(location.get128()) } );
+    m_Context->Text.emplace_back( std::string(textString), Vector3(location.get128()) );
 }
 
 void DebugDraw::flush( GraphicsContext& UiContext, const Matrix4& WorldToClip )
@@ -103,7 +135,7 @@ void DebugDraw::flush( GraphicsContext& UiContext, const Matrix4& WorldToClip )
         UiContext.SetDynamicVB( 0, Lines.size(), sizeof(Vertex), Lines.data() );
         UiContext.Draw( static_cast<UINT>(Lines.size()), 0 );
     }
-    Lines.clear();
+    Lines.resize( 0 );
 
     // Print reportErrorWarning
     const XMFLOAT2 WarningPos( 10.f, 100.f );

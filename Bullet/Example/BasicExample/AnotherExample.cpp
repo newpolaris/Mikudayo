@@ -16,10 +16,8 @@
 #include "TextureManager.h"
 #include "PhysicsPrimitive.h"
 #include "PrimitiveBatch.h"
-
-#ifndef _DEBUG
-#define LARGESCALE_BENCHMARK 1
-#endif
+#include "ParallelFor.h"
+#include <ppl.h>
 
 using namespace GameCore;
 using namespace Graphics;
@@ -61,35 +59,6 @@ CREATE_APPLICATION( BasicExample )
 
 namespace {
     static int uRigidNum = 0;
-
-    const float ofs = 32.0f;
-    XMFLOAT2 IslandOfs[] = {
-        {0,0},
-        { ofs,0},
-        {-ofs,0},
-        {0,ofs },
-        {0,-ofs },
-        { ofs,ofs },
-        { ofs,-ofs },
-        { -ofs,ofs },
-        { -ofs,-ofs },
-        { ofs * 2,0 },
-        { ofs * 2,ofs },
-        { ofs * 2,-ofs },
-        { -ofs * 2,0 },
-        { -ofs * 2,ofs },
-        { -ofs * 2,-ofs },
-        { 0,ofs * 2 },
-        { ofs,ofs * 2 },
-        { -ofs,ofs * 2 },
-        { 0,-ofs * 2 },
-        { ofs,-ofs * 2 },
-        { -ofs,-ofs * 2 },
-        { -ofs * 2,-ofs * 2 },
-        { -ofs * 2,ofs * 2 },
-        { ofs * 2,-ofs * 2 },
-        { ofs * 2,ofs * 2 },
-    };
 }
 
 void BasicExample::Startup( void )
@@ -98,32 +67,55 @@ void BasicExample::Startup( void )
     Physics::Initialize();
     PrimitiveBatch::Initialize();
 
-    const Vector3 eye = Vector3(0.0f, 10.0f, 10.0f);
+    const Vector3 eye = Vector3(62.0f, 18.0f, -15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
 
-#if LARGESCALE_BENCHMARK
     std::vector<Primitive::PhysicsPrimitiveInfo> Info = {
-            { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
-    };
-	for (auto& o : IslandOfs) {
-		std::vector<Primitive::PhysicsPrimitiveInfo> Bound = {
-            { Physics::kBoxShape, 50.0f, Vector3( 1,2,9 ), Vector3( -10 + o.x, 2, 0 + o.y ) },
-            { Physics::kBoxShape, 50.0f, Vector3( 1,2,9 ), Vector3( 10 + o.x, 2, 0 + o.y ) },
-            { Physics::kBoxShape, 50.0f, Vector3( 9,2,1 ), Vector3( 0 + o.x, 2, 10 + o.y ) },
-            { Physics::kBoxShape, 50.0f, Vector3( 9,2,1 ), Vector3( 0 + o.x, 2, -10 + o.y ) },
-		};
-        std::copy( Bound.begin(), Bound.end(), std::back_inserter(Info));
-	}
-#else
-    Primitive::PhysicsPrimitiveInfo Info[] = {
         { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
         { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( -10, 2, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
         { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
     };
-#endif
+
+    {
+        const int X = 7, Y = 20, Z = 6;
+        const float GAP = 0.2f;
+        const float box = 0.6f;
+        const float mass = 1.0f;
+        for (int y = 0; y < Y; ++y) {
+            float vy = (box * 3 + GAP)*y;
+            for (int x = 0; x < X; ++x) {
+                float vx = (box * 3 + GAP)*(x - X / 2) + 0.0f*y;
+                for (int z = 0; z < Z; ++z) {
+                    float vz = (box * 3 + GAP)*(z - Z / 2);
+                    Info.push_back( {Physics::ShapeType(rand() % 5), mass, Vector3( box, box, box ), Vector3( vx, vy + 15, vz )});
+                }
+            }
+        }
+    }
+    {
+        const int X = 8, Y = 36, Z = 8;
+        const float GAP = 0.05f;
+        const float box = 1.0f;
+        const float mass = 1.0f;
+        for (int y = 0; y < Y; ++y) {
+            float vy = (box * 2 + GAP)*y;
+            for (int x = 0; x < X; ++x) {
+                float vx = (box * 2 + GAP)*(x - X / 2) + 0.3f*y;
+                for (int z = 0; z < Z; ++z) {
+                    float vz = (box * 2 + GAP)*(z - Z / 2);
+                    Primitive::PhysicsPrimitiveInfo cinfo = {
+                        Physics::kBoxShape, mass, Vector3( box,box,box ), Vector3( vx,vy + 1,vz + 50 )
+                    };
+                    if ((x + z + y / 2) % 2) {
+                        m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( cinfo ) ) );
+                    }
+                }
+            }
+        }
+    }
     for (auto& info : Info)
         m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 }
@@ -137,40 +129,24 @@ void BasicExample::Cleanup( void )
     Physics::Shutdown();
 }
 
+template <typename Func>
+void parallelFor( size_t Begin, size_t End, Func func)
+{
+    concurrency::parallel_for( Begin, End, func );
+}
+
 void BasicExample::Update( float deltaT )
 {
-    ScopedTimer _prof( L"Bullet Update" );
-
+    ScopedTimer _prof( L"Update" );
     if (!EngineProfiling::IsPaused())
     {
-        static int uCount = 0;
-        if ((uCount++ % 1) == 0 && uRigidNum < 600 )
-        {
-            static UINT rigid = 0;
-            auto randf = []() { return (float)rand() / (float)RAND_MAX; };
-            auto randrf = [randf]( float mn, float mx ) { return randf()*(mx - mn) + mn; };
-            FLOAT x = randrf( -5, 5 );
-            FLOAT y = 15.0f + randf()*2.0f;
-            FLOAT z = randrf( -5, 5 );
-            FLOAT sx = randrf( 0.5f, 1.0f );
-            FLOAT sy = randrf( 0.5f, 1.0f );
-            FLOAT sz = randrf( 0.5f, 1.0f );
-            FLOAT mass = randrf( 0.8f, 1.2f );
-
-#if LARGESCALE_BENCHMARK
-            for (auto& o : IslandOfs) {
-                m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
-                    { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x+o.x, y, z+o.y )  }
-                ) ) );
-			};
-#else
-            m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
-                { Physics::ShapeType(uRigidNum % 5), mass, Vector3( sx,sy,sz ), Vector3( x,y,z )  }
-            ) ) );
-#endif
-            uRigidNum++;
-        }
         Physics::Update( deltaT );
+        {
+            ScopedTimer _( L"Update2" );
+            parallelFor( size_t(0), m_Models.size(), [&](size_t i) {
+                m_Models[i]->UpdateTransform();
+            } );
+        }
     }
 
     m_CameraController->Update( deltaT );
