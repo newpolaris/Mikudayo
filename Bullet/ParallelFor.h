@@ -139,8 +139,9 @@ public:
         return concurrency::GetProcessorCount();
 #elif USE_TBB
         return tbb::task_scheduler_init::default_num_threads();
-#endif
+#else
         return 1;
+#endif
     }
 
     int getNumThreads() const

@@ -53,18 +53,18 @@ private:
     struct Record
     {
         int mCallCount;
-        unsigned long long mAccum;
-        unsigned int mStartTime;
-        unsigned int mHistory[8];
+        size_t mAccum;
+        size_t mStartTime;
+        size_t mHistory[8];
 
-        void begin(unsigned int curTime)
+        void begin(size_t curTime)
         {
             mStartTime = curTime;
         }
-        void end(unsigned int curTime)
+        void end(size_t curTime)
         {
-            unsigned int endTime = curTime;
-            unsigned int elapsed = endTime - mStartTime;
+            size_t endTime = curTime;
+            size_t elapsed = endTime - mStartTime;
             mAccum += elapsed;
             mHistory[ mCallCount & 7 ] = elapsed;
             ++mCallCount;
@@ -74,7 +74,7 @@ private:
             int count = btMin( 8, mCallCount );
             if ( count > 0 )
             {
-                unsigned int sum = 0;
+                size_t sum = 0;
                 for ( int i = 0; i < count; ++i )
                 {
                     sum += mHistory[ i ];
@@ -241,6 +241,7 @@ public:
 
     virtual void dispatchAllCollisionPairs( btOverlappingPairCache* pairCache, const btDispatcherInfo& info, btDispatcher* dispatcher ) BT_OVERRIDE
     {
+        (dispatcher);
         ProfileHelper prof(Profiler::kRecordDispatchAllCollisionPairs);
         int grainSize = 80;  // iterations per task
         int pairCount = pairCache->getNumOverlappingPairs();
@@ -423,7 +424,7 @@ void parallelIslandDispatch( btAlignedObjectArray<btSimulationIslandManagerMt::I
 {
     ProfileHelper prof(Profiler::kRecordDispatchIslands);
     gNumIslands = islandsPtr->size();
-    int grainSize = 2;  // iterations per task
+    int grainSize = 1;  // iterations per task
     UpdateIslandDispatcher dispatcher;
     dispatcher.islandsPtr = islandsPtr;
     dispatcher.callback = callback;
@@ -436,11 +437,13 @@ void parallelIslandDispatch( btAlignedObjectArray<btSimulationIslandManagerMt::I
 
 void profileBeginCallback(btDynamicsWorld *world, btScalar timeStep)
 {
+    (world), (timeStep);
     gProfiler.begin(Profiler::kRecordInternalTimeStep);
 }
 
 void profileEndCallback(btDynamicsWorld *world, btScalar timeStep)
 {
+    (world), (timeStep);
     gProfiler.end(Profiler::kRecordInternalTimeStep);
 }
 
