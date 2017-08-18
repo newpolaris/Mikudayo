@@ -30,6 +30,7 @@
 #include "BulletSoftBody/btSoftBodyHelpers.h"
 #include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
+#include "BulletDynamics/Dynamics/InplaceSolverIslandCallbackMt.h"
 
 using namespace Math;
 
@@ -39,7 +40,7 @@ namespace Physics
     BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
 
     // bullet needs to define BT_THREADSAFE and (BT_USE_OPENMP || BT_USE_PPL || BT_USE_TBB)
-    const bool bMultithreadCapable = false;
+    const bool bMultithreadCapable = true;
     const float EarthGravity = 9.8f;
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
     int m_SolverMode = SOLVER_SIMD |
@@ -61,6 +62,16 @@ namespace Physics
 
     btConstraintSolver* CreateSolverByType( SolverType t );
 };
+
+void EnterProfileZoneDefault(const char* name)
+{
+    PushProfilingMarker( Utility::MakeWStr(std::string(name)), nullptr );
+}
+
+void LeaveProfileZoneDefault()
+{
+    PopProfilingMarker( nullptr );
+}
 
 btConstraintSolver* Physics::CreateSolverByType( SolverType t )
 {
@@ -90,7 +101,10 @@ btConstraintSolver* Physics::CreateSolverByType( SolverType t )
 void Physics::Initialize( void )
 {
     BulletDebug::Initialize();
-    gTaskMgr.init(8);
+    gTaskMgr.init(4);
+
+    btSetCustomEnterProfileZoneFunc(EnterProfileZoneDefault);
+    btSetCustomLeaveProfileZoneFunc(LeaveProfileZoneDefault);
 
     if (bMultithreadCapable)
     {
@@ -119,6 +133,7 @@ void Physics::Initialize( void )
         Solver.reset( CreateSolverByType( m_SolverType ) );
 #endif //#if USE_PARALLEL_ISLAND_SOLVER
 
+        // DynamicsWorld = std::make_unique<MySoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
         DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
 
 #if USE_PARALLEL_ISLAND_SOLVER
@@ -147,11 +162,7 @@ void Physics::Initialize( void )
     DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
 
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
-    DebugDrawer->setDebugMode(
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits |
-        btIDebugDraw::DBG_DrawAabb |
-        btIDebugDraw::DBG_DrawWireframe );
+    DebugDrawer->setDebugMode( btIDebugDraw::DBG_DrawWireframe );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
 
     g_DynamicsWorld = DynamicsWorld.get();
@@ -162,7 +173,9 @@ void Physics::Shutdown( void )
     gTaskMgr.shutdown();
     SoftBodyWorldInfo.m_sparsesdf.Reset();
     BulletDebug::Shutdown();
-    for (int i = 0; i < DynamicsWorld->getSoftBodyArray().size(); i++)
+
+    int Len = (int)DynamicsWorld->getSoftBodyArray().size();
+    for (int i = Len -1; i >= 0; i--)
     {
         btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
         DynamicsWorld->removeSoftBody( psb );
@@ -230,14 +243,15 @@ namespace {
 void CreateSoftBody(const btScalar s,
     const int numX,
     const int numY,
-    const int fixed = 1+2 )
+    const int fixed = 1+2,
+    btVector3 offset = btVector3(0, 0, 0))
 {
     btSoftBody* cloth = btSoftBodyHelpers::CreatePatch(
         Physics::SoftBodyWorldInfo,
-        btVector3( -s / 2, s + 1, 0 ),
-        btVector3( +s / 2, s + 1, 0 ),
-        btVector3( -s / 2, s + 1, +s ),
-        btVector3( +s / 2, s + 1, +s ),
+        btVector3( -s / 2, s + 1, 0 ) + offset,
+        btVector3( +s / 2, s + 1, 0 ) + offset,
+        btVector3( -s / 2, s + 1, +s ) + offset,
+        btVector3( +s / 2, s + 1, +s ) + offset,
         numX, numY,
         fixed, true );
 
@@ -248,6 +262,7 @@ void CreateSoftBody(const btScalar s,
 	cloth->m_cfg.citerations = 10;
     cloth->m_cfg.diterations = 10;
 	cloth->m_cfg.kDP = 0.005f;
+
 	Physics::DynamicsWorld->addSoftBody(cloth);
 }
 
@@ -297,15 +312,19 @@ void SoftbodyExample::Startup( void )
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
 
-    m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive(
-        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) }
-    ) ) );
+    // m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) } ) ) );
 
     {
         const btScalar s = 4; // size of cloth patch
         const int NUM_X = 31; // vertices on X axis
         const int NUM_Z = 31; // vertices on Z axis
-        CreateSoftBody( s, NUM_X, NUM_Z );
+        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(0, 25, 0 ) );
+    }
+    {
+        const btScalar s = 4; // size of cloth patch
+        const int NUM_X = 31; // vertices on X axis
+        const int NUM_Z = 31; // vertices on Z axis
+        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(15, 25, 0) );
     }
 }
 

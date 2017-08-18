@@ -15,6 +15,7 @@
 #include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
 #include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
 #include "BulletDynamics/MLCPSolvers/btLemkeSolver.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorldMT.h"
 
 TaskManager gTaskMgr;
 
@@ -568,6 +569,132 @@ public:
                              btCollisionConfiguration* collisionConfiguration
                              ) :
                              btDiscreteDynamicsWorldMt( dispatcher, pairCache, constraintSolver, collisionConfiguration )
+    {
+    }
+
+};
+
+//
+// MySoftRigidDynamicsWorld
+//
+//  Should function exactly like btDiscreteDynamicsWorld.
+//  3 methods that iterate over all of the rigidbodies can run in parallel:
+//     - predictUnconstraintMotion
+//     - integrateTransforms
+//     - createPredictiveContacts
+//
+ATTRIBUTE_ALIGNED16( class ) MySoftRigidDynamicsWorld : public btSoftRigidDynamicsWorldMT
+{
+    typedef btSoftRigidDynamicsWorld ParentClass;
+
+protected:
+#if USE_PARALLEL_PREDICT_UNCONSTRAINED_MOTION
+    struct UpdaterUnconstrainedMotion
+    {
+        btScalar timeStep;
+        btRigidBody** rigidBodies;
+
+        void forLoop( int iBegin, int iEnd ) const
+        {
+            for ( int i = iBegin; i < iEnd; ++i )
+            {
+                btRigidBody* body = rigidBodies[ i ];
+                if ( !body->isStaticOrKinematicObject() )
+                {
+                    //don't integrate/update velocities here, it happens in the constraint solver
+                    body->applyDamping( timeStep );
+                    body->predictIntegratedTransform( timeStep, body->getInterpolationWorldTransform() );
+                }
+            }
+        }
+    };
+
+    virtual void predictUnconstraintMotion( btScalar timeStep ) BT_OVERRIDE
+    {
+        ProfileHelper prof( Profiler::kRecordPredictUnconstrainedMotion );
+        BT_PROFILE( "predictUnconstraintMotion" );
+        int grainSize = 50;  // num of iterations per task for TBB
+        int bodyCount = m_nonStaticRigidBodies.size();
+        UpdaterUnconstrainedMotion update;
+        update.timeStep = timeStep;
+        update.rigidBodies = bodyCount ? &m_nonStaticRigidBodies[ 0 ] : NULL;
+        btPushThreadsAreRunning();
+        parallelFor( 0, bodyCount, grainSize, update );
+        btPopThreadsAreRunning();
+    }
+#endif // #if USE_PARALLEL_PREDICT_UNCONSTRAINED_MOTION
+
+#if USE_PARALLEL_CREATE_PREDICTIVE_CONTACTS
+    struct UpdaterCreatePredictiveContacts
+    {
+        btScalar timeStep;
+        btRigidBody** rigidBodies;
+        MySoftRigidDynamicsWorld* world;
+
+        void forLoop( int iBegin, int iEnd ) const
+        {
+            world->createPredictiveContactsInternal( &rigidBodies[ iBegin ], iEnd - iBegin, timeStep );
+        }
+    };
+
+    virtual void createPredictiveContacts( btScalar timeStep )
+    {
+        ProfileHelper prof( Profiler::kRecordCreatePredictiveContacts );
+        releasePredictiveContacts();
+        int grainSize = 50;  // num of iterations per task for TBB or OPENMP
+        if ( int bodyCount = m_nonStaticRigidBodies.size() )
+        {
+            UpdaterCreatePredictiveContacts update;
+            update.world = this;
+            update.timeStep = timeStep;
+            update.rigidBodies = &m_nonStaticRigidBodies[ 0 ];
+            btPushThreadsAreRunning();
+            parallelFor( 0, bodyCount, grainSize, update );
+            btPopThreadsAreRunning();
+        }
+    }
+#endif // #if USE_PARALLEL_CREATE_PREDICTIVE_CONTACTS
+
+#if USE_PARALLEL_INTEGRATE_TRANSFORMS
+    struct UpdaterIntegrateTransforms
+    {
+        btScalar timeStep;
+        btRigidBody** rigidBodies;
+        MySoftRigidDynamicsWorld* world;
+
+        void forLoop( int iBegin, int iEnd ) const
+        {
+            world->integrateTransformsInternal( &rigidBodies[ iBegin ], iEnd - iBegin, timeStep );
+        }
+    };
+
+    virtual void integrateTransforms( btScalar timeStep ) BT_OVERRIDE
+    {
+        ProfileHelper prof( Profiler::kRecordIntegrateTransforms );
+        BT_PROFILE( "integrateTransforms" );
+        int grainSize = 100;  // num of iterations per task for TBB or OPENMP
+        if ( int bodyCount = m_nonStaticRigidBodies.size() )
+        {
+            UpdaterIntegrateTransforms update;
+            update.world = this;
+            update.timeStep = timeStep;
+            update.rigidBodies = &m_nonStaticRigidBodies[ 0 ];
+            btPushThreadsAreRunning();
+            parallelFor( 0, bodyCount, grainSize, update );
+            btPopThreadsAreRunning();
+        }
+    }
+#endif // #if USE_PARALLEL_INTEGRATE_TRANSFORMS
+
+public:
+    BT_DECLARE_ALIGNED_ALLOCATOR();
+
+    MySoftRigidDynamicsWorld( btDispatcher* dispatcher,
+                             btBroadphaseInterface* pairCache,
+                             btConstraintSolver* constraintSolver,
+                             btCollisionConfiguration* collisionConfiguration
+                             ) :
+                             btSoftRigidDynamicsWorldMT( dispatcher, pairCache, constraintSolver, collisionConfiguration )
     {
     }
 

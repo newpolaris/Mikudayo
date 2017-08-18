@@ -165,6 +165,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="btSoftRigidDynamicsWorldMT.cpp" />
     <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBody.cpp" />
     <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyConcaveCollisionAlgorithm.cpp" />
     <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyHelpers.cpp" />
@@ -174,6 +175,7 @@
     <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftMultiBodyDynamicsWorld.cpp" />
     <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftSoftCollisionAlgorithm.cpp" />
     <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btDefaultSoftBodySolver.cpp" />
+    <ClInclude Include="btSoftRigidDynamicsWorldMT.h" />
     <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBody.h" />
     <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyData.h" />
     <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletSoftBody\btSoftBodyConcaveCollisionAlgorithm.h" />

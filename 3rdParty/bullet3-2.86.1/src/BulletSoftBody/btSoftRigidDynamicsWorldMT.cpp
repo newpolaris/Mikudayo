@@ -1,27 +1,11 @@
-/*
-Bullet Continuous Collision Detection and Physics Library
-Copyright (c) 2003-2009 Erwin Coumans  http://bulletphysics.org
-
-This software is provided 'as-is', without any express or implied warranty.
-In no event will the authors be held liable for any damages arising from the use of this software.
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it freely,
-subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
-3. This notice may not be removed or altered from any source distribution.
-*/
-
-
-#include "btDiscreteDynamicsWorldMt.h"
+#include "btSoftRigidDynamicsWorldMT.h"
 
 //collision detection
 #include "BulletCollision/CollisionDispatch/btCollisionDispatcher.h"
 #include "BulletCollision/BroadphaseCollision/btSimpleBroadphase.h"
 #include "BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
 #include "BulletCollision/CollisionShapes/btCollisionShape.h"
-#include "btSimulationIslandManagerMt.h"
+#include "BulletDynamics/Dynamics/btSimulationIslandManagerMt.h"
 #include "LinearMath/btTransformUtil.h"
 #include "LinearMath/btQuickprof.h"
 
@@ -50,10 +34,8 @@ subject to the following restrictions:
 #include "LinearMath/btSerializer.h"
 
 
-
-
-btDiscreteDynamicsWorldMt::btDiscreteDynamicsWorldMt(btDispatcher* dispatcher,btBroadphaseInterface* pairCache,btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration)
-: btDiscreteDynamicsWorld(dispatcher,pairCache,constraintSolver,collisionConfiguration)
+btSoftRigidDynamicsWorldMT::btSoftRigidDynamicsWorldMT(btDispatcher* dispatcher,btBroadphaseInterface* pairCache,btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration)
+: btSoftRigidDynamicsWorld(dispatcher,pairCache,constraintSolver,collisionConfiguration)
 {
 	if (m_ownsIslandManager)
 	{
@@ -73,7 +55,7 @@ btDiscreteDynamicsWorldMt::btDiscreteDynamicsWorldMt(btDispatcher* dispatcher,bt
 }
 
 
-btDiscreteDynamicsWorldMt::~btDiscreteDynamicsWorldMt()
+btSoftRigidDynamicsWorldMT::~btSoftRigidDynamicsWorldMT()
 {
 	if (m_solverIslandCallbackMt)
 	{
@@ -88,7 +70,7 @@ btDiscreteDynamicsWorldMt::~btDiscreteDynamicsWorldMt()
 }
 
 
-void	btDiscreteDynamicsWorldMt::solveConstraints(btContactSolverInfo& solverInfo)
+void	btSoftRigidDynamicsWorldMT::solveConstraints(btContactSolverInfo& solverInfo)
 {
 	BT_PROFILE("solveConstraints");
 
@@ -101,5 +83,6 @@ void	btDiscreteDynamicsWorldMt::solveConstraints(btContactSolverInfo& solverInfo
 
 	m_constraintSolver->allSolved(solverInfo, m_debugDrawer);
 }
+
 
 
