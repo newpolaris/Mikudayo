@@ -2,7 +2,7 @@
 // ZeroGram
 // http://zerogram.info
 //
-// Pmx Parser MMDFormats 
+// Pmx Parser MMDFormats
 // https://github.com/oguna/MMDFormats
 //
 // MMDAI
@@ -38,7 +38,7 @@ namespace Pmx
     enum EConfigFlag {
         kEncoding = 0, // encoding setting | 0:UTF16, 1:UTF8
         kAddUV, // additional UV number | 0~4
-        kVertIndx, // vertex index byte size | 1,2,4
+        kVertIndex, // vertex index byte size | 1,2,4
         kTexIndex, // texture index byte size | 1,2,4
         kMatIndex, // material index byte size | 1,2,4
         kBoneIndex, // bone index byte size | 1,2,4
@@ -127,11 +127,14 @@ namespace Pmx
     };
 
 	enum EMaterialFlag : uint8_t {
-		kCullOff = 0x01,	// two face 
+		kCullOff = 0x01,	// two face
 		kGrdShadow = 0x02,	// ground shadow (地面影)
-		kSelfShadowCast = 0x04,	// セルフシャドウ（キャスタ）
-		kSelfShadow = 0x08,	// セルフシャドウ（レシーバ）
-		kEdge = 0x10,	// edge-outline (輪郭線)
+		kCastShadowMap = 0x04,	// セルフシャドウ（キャスタ）
+		kEnableShadowMap = 0x08, // セルフシャドウ（レシーバ）
+		kEnableEdge = 0x10,	// edge-outline (輪郭線)
+        kEnableVertexColor = 0x20,
+        kEnablePointDraw   = 0x40,
+        kEnableLineDraw    = 0x80,
 	};
 
     enum ESphereOpeation : uint8_t
@@ -141,7 +144,7 @@ namespace Pmx
         kPlus, // spa
         kSub,  // sub
     };
-    
+
     struct Material
     {
         wstring Name;
@@ -171,7 +174,7 @@ namespace Pmx
         int32_t BoneIndex;
         uint8_t bLimit;
         // if bLimit == 1
-        XMFLOAT3 MinLimit; 
+        XMFLOAT3 MinLimit;
         XMFLOAT3 MaxLimit;
 
         IkLink();
@@ -195,14 +198,16 @@ namespace Pmx
         wstring NameEnglish;
         XMFLOAT3 Position;
         int32_t ParentBoneIndex;
-        uint32_t MoprhHierarchy; // maybe morph idx, layer index (?)
+        uint32_t MoprhHierarchy; // deform, layer index
         uint16_t BitFlag;
 
-        int32_t JointIndex; // kJointIndex == 0, given by bone index
-        XMFLOAT3 JointOffset; // kJointIndex == 0, given by offset
+        // Link to
+        int32_t DestinationOriginIndex; // if BitFlag & kHasDestinationOriginIndex, given by bone index
+        XMFLOAT3 DestinationOriginOffset; // else given by offset
 
+        // Additional bias bone (Inherent Rotation | Translation from parent)
         int32_t ParentInherentBoneIndex;
-        XMFLOAT3 ParentInherentBoneCoefficent;
+        float ParentInherentBoneCoefficent;
 
         bool bFixedAxis;
         XMFLOAT3 FixedAxis;
@@ -337,7 +342,7 @@ namespace Pmx
         Config m_Config;
         Description m_Description;
         vector<Vertex> m_Vertices;
-        vector<int32_t> m_Indices;
+        vector<uint32_t> m_Indices;
         vector<wstring> m_Textures;
         vector<Material> m_Materials;
         vector<Bone> m_Bones;
