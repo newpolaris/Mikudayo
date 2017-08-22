@@ -33,6 +33,7 @@ public:
 	void Create( size_t Width, size_t Height, DXGI_FORMAT Format, const void* InitData );
 
 	bool CreateWICFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB = false );
+	bool CreateTGAFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB = false );
 	bool CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB = false );
 
 	virtual void Destroy() override
@@ -89,6 +90,7 @@ namespace TextureManager
 	const ManagedTexture* LoadFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadDDSFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadWISFromFile( const std::wstring& fileName, bool sRGB = false );
+	const ManagedTexture* LoadTGAFromFile( const std::wstring& fileName, bool sRGB = false );
 	const ManagedTexture* LoadFromStream( const std::wstring& key, std::istream& stream, bool sRGB = false );
     const ManagedTexture* LoadFromMemory( const std::wstring & key, size_t size, void * data, bool sRGB );
     const ManagedTexture* LoadFromMemory( const std::wstring& key, Utility::ByteArray ba, bool sRGB );

@@ -199,7 +199,7 @@ void MikuViewer::Startup( void )
         XMFLOAT3 Position;
     };
 
-    ModelLoader Loader( L"Models/mikudayo-3_6_.pmx", L"", XMFLOAT3( 15, 0, 0 ) );
+    ModelLoader Loader( L"Models/Tda式初音ミク_デフォ服ver.pmx", L"", XMFLOAT3( 15, 0, 0 ) );
     auto model = Loader.Load();
     if (model)
         m_Models.push_back( model );
