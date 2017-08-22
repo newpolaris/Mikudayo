@@ -249,7 +249,7 @@ void PrimitiveBatch::Flush( GraphicsContext& gfxContext )
 	gfxContext.SetIndexBuffer( m_GeometryIndexBuffer.IndexBufferView() );
     gfxContext.SetDynamicDescriptor( 0, m_MatTexture->GetSRV(), { kBindPixel } );
 
-    const UINT chuckMax = 64;
+    const UINT chuckMax = 1024;
     for (auto i = 0; i < kBatchMax; i++)
     {
         Color& color = m_Color[i];

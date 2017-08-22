@@ -6,7 +6,7 @@ cbuffer VSConstants: register(b0)
 
 cbuffer Constants : register(b1)
 {
-	matrix model[64];
+	matrix model[1024];
 };
 
 // Per-vertex data used as input to the vertex shader.

@@ -106,7 +106,7 @@ void ModelBase::Flush( GraphicsContext& Context )
 	Context.SetVertexBuffer( 0, m_GeometryVertexBuffer.VertexBufferView() );
 	Context.SetIndexBuffer( m_GeometryIndexBuffer.IndexBufferView() );
 
-    const UINT chuckMax = 64;
+    const UINT chuckMax = 1024;
     for (auto i = 0; i < kBatchMax; i++)
     {
         SubmeshGeometry& mesh = m_Mesh[i];
