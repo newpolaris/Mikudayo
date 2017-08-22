@@ -3,25 +3,21 @@
 #include <string>
 #include <vector>
 
-#include "InputLayout.h"
 #include "GpuBuffer.h"
-#include "FileUtility.h"
-#include "CommandContext.h"
 #include "Vmd.h"
 #include "Pmd.h"
-#include "VectorMath.h"
-#include "Archive.h"
+#include "IModel.h"
 #include "KeyFrameAnimation.h"
-#include "IRenderObject.h"
 #include "Math/BoundingSphere.h"
 #include "Math/BoundingBox.h"
 
 class ManagedTexture;
 
-namespace Graphics
-{
+namespace Graphics {
+namespace Pmd {
+    using namespace ::Pmd;
 	using namespace Math;
-	namespace fs = boost::filesystem;
+    using namespace Utility;
 
 	__declspec(align(16)) struct MaterialCB
 	{
@@ -68,22 +64,18 @@ namespace Graphics
 		Vector3 Translate;
 	};
 
-	class MikuModel : public IRenderObject
+	class Model : public IModel
 	{
 	public:
-        static void Initialize();
-        static void Shutdown();
 
-		MikuModel( bool bRightHand = true );
-		~MikuModel();
-
+		Model( bool bRightHand = true );
+		~Model();
         void Clear( void );
         void Draw( GraphicsContext& gfxContext, eObjectFilter Filter ) override;
-        void Load( void );
-
         BoundingSphere GetBoundingSphere();
         BoundingBox GetBoundingBox() override;
-
+        bool LoadModel( ArchivePtr& Archive, Path& FilePath ) override;
+		bool LoadMotion( const std::wstring& motion ) override;
         void SetModel( const std::wstring& model );
         void SetMotion( const std::wstring& model );
         void SetPosition( Vector3 postion );
@@ -93,17 +85,13 @@ namespace Graphics
 
 	private:
 
-		void DrawBone( GraphicsContext& gfxContext );
-		void DrawBoundingSphere( GraphicsContext& gfxContext );
-        void SetVisualizeSkeleton();
-		void LoadPmd( const std::wstring& model, bool bRightHand );
-		void LoadPmd( Utility::ArchivePtr archive, fs::path pmdPath, bool bRightHand );
-		void LoadVmd( const std::wstring& vmd, bool bRightHand );
+		void DrawBone( void );
+		void DrawBoundingSphere( void );
         void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
 		void SetBoneNum( size_t numBones );
-
-		void UpdateIK( const Pmd::IK& ik );
+        void SetVisualizeSkeleton();
 		void UpdateChildPose( int32_t idx );
+		void UpdateIK( const IK& ik );
 
 	public:
 		bool m_bRightHand;
@@ -111,7 +99,7 @@ namespace Graphics
         std::wstring m_MotionPath;
 		std::vector<Mesh> m_Mesh;
 		std::vector<Bone> m_Bones;
-		std::vector<Pmd::IK> m_IKs;
+		std::vector<IK> m_IKs;
 		std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
 		std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
 		std::vector<OrthogonalTransform> m_Pose; // cumulative transfrom matrix from root
@@ -142,11 +130,12 @@ namespace Graphics
         BoundingSphere m_BoundingSphere;
         BoundingBox m_BoundingBox;
 
-		std::vector<XMMATRIX> m_BoneAttribute;
+        std::vector<AffineTransform> m_BoneAttribute;
 	};
 
-    inline void MikuModel::SetPosition( Vector3 postion )
+    inline void Model::SetPosition( Vector3 postion )
     {
         m_ModelTransform = Matrix4::MakeTranslate(postion);
     }
-}
+} // namespace Pmx
+} // namespace Graphics

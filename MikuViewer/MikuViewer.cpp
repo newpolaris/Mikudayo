@@ -21,25 +21,39 @@
 #include "Motion.h"
 #include "FXAA.h"
 #include "DebugHelper.h"
-#include "MikuModel.h"
 #include "GroundPlane.h"
 #include "Shadow.h"
-
+#include "ModelLoader.h"
+#include "ModelBase.h"
 #include "Math/BoundingBox.h"
 #include "OrthographicCamera.h"
 
-#include "CompiledShaders/MikuModelVS.h"
-#include "CompiledShaders/MikuModelPS.h"
-#include "CompiledShaders/DepthViewerVS.h"
+#include "CompiledShaders/PmdOpaqueVS.h"
+#include "CompiledShaders/PmdOpaquePS.h"
+#include "CompiledShaders/PmxOpaqueVS.h"
+#include "CompiledShaders/PmxOpaquePS.h"
+#include "CompiledShaders/GroundOpaqueVS.h"
+#include "CompiledShaders/GroundOpaquePS.h"
+#include "CompiledShaders/PmdDepthViewerVS.h"
+#include "CompiledShaders/PmxDepthViewerVS.h"
 #include "CompiledShaders/DepthViewerPS.h"
-#include "CompiledShaders/GroundPlaneVS.h"
-#include "CompiledShaders/GroundPlanePS.h"
 
 using namespace DirectX;
 using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
 
+namespace Pmx {
+	std::vector<InputDesc> InputDescriptor
+	{
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+}
 namespace Pmd {
 	std::vector<InputDesc> InputDescriptor
 	{
@@ -119,13 +133,10 @@ private:
     std::vector<IRenderObjectPtr> m_Models;
 	Graphics::Motion m_Motion;
 
-	GraphicsPSO m_DepthPSO;
-    GraphicsPSO m_CutoutDepthPSO;
-    GraphicsPSO m_ShadowPSO;
-    GraphicsPSO m_CutoutShadowPSO;
-	GraphicsPSO m_OpaquePSO;
-	GraphicsPSO m_BlendPSO;
-	GraphicsPSO m_GroundPlanePSO;
+	GraphicsPSO m_DepthPSO[kModelMAX];
+    GraphicsPSO m_ShadowPSO[kModelMAX];
+	GraphicsPSO m_OpaquePSO[kModelMAX];
+	GraphicsPSO m_BlendPSO[kModelMAX];
 
     std::vector<Matrix4> m_ShadowViewProj;
     std::vector<FrustumCorner> m_SplitFrustum;
@@ -179,8 +190,7 @@ void MikuViewer::Startup( void )
 {
 	TextureManager::Initialize( L"Textures" );
     Lighting::Initialize();
-
-    MikuModel::Initialize();
+    ModelBase::Initialize();
 
     struct ModelInit
     {
@@ -189,11 +199,18 @@ void MikuViewer::Startup( void )
         XMFLOAT3 Position;
     };
 
-    auto motionPath = L"Models/nekomimi_lat.vmd";
+    ModelLoader Loader( L"Models/mikudayo-3_6_.pmx", L"", XMFLOAT3( 15, 0, 0 ) );
+    auto model = Loader.Load();
+    if (model)
+        m_Models.push_back( model );
+
+    auto motionPath = L"Motions/nekomimi_lat.vmd";
     std::vector<ModelInit> list = {
+        // { L"Models/mikudayo-3_6_.pmx", L"", XMFLOAT3( 0, 0, 0 ) },
+        // { L"Models/観客_右利き_サイリウム有AL.pmx", L"", XMFLOAT3( 0, 0, 0 ) },
+        { L"Models/Tda式初音ミク_デフォ服ver.pmx", L"", XMFLOAT3( 15, 0, 0 ) },
+#if 0
         { L"Models/Lat0.pmd", motionPath, XMFLOAT3( -10.f, 0.f, 0.f ) },
-#ifndef _DEBUG
-        { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
         { L"Models/Library.pmd", L"", XMFLOAT3( 0.f, 1.f, 0.f ) },
         { L"Models/m_GUMI.zip", motionPath, XMFLOAT3( 10.f, 0.f, 0.f ) },
         { L"Models/Lat式ミクVer2.31_White.pmd", motionPath, XMFLOAT3( -11.f, 10.f, -19.f ) },
@@ -201,65 +218,60 @@ void MikuViewer::Startup( void )
 #endif
     };
 
-    for (auto l : list)
-    {
-        auto model = std::make_shared<Graphics::MikuModel>();
-        model->SetModel( l.Model );
-        model->SetMotion( l.Motion );
-        model->SetPosition( l.Position );
-        model->Load();
-        m_Models.push_back( model );
-    }
 #ifdef _DEBUG
     m_Models.emplace_back( std::make_shared<Graphics::GroundPlane>() );
 #endif
 
-	const std::wstring cameraPath = L"Models/camera.vmd";
+	const std::wstring cameraPath = L"Motions/camera.vmd";
 	m_Motion.LoadMotion( cameraPath );
 
 	// Depth-only (2x rate)
-	m_DepthPSO.SetRasterizerState( RasterizerDefault );
-	m_DepthPSO.SetBlendState( BlendNoColorWrite );
-	m_DepthPSO.SetInputLayout( static_cast<UINT>(Pmd::InputDescriptor.size()), Pmd::InputDescriptor.data() );
-	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-    m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
-    m_DepthPSO.SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
-    m_DepthPSO.Finalize();
+    GraphicsPSO& DepthPSO = m_DepthPSO[kModelPMX];
+	DepthPSO.SetRasterizerState( RasterizerDefault );
+	DepthPSO.SetBlendState( BlendNoColorWrite );
+	DepthPSO.SetInputLayout( static_cast<UINT>(Pmx::InputDescriptor.size()), Pmx::InputDescriptor.data() );
+	DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+    DepthPSO.SetDepthStencilState( DepthStateReadWrite );
+    DepthPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxDepthViewerVS ) );
+    DepthPSO.Finalize();
 
-    // Depth-only shading but with alpha testing
-    m_CutoutDepthPSO = m_DepthPSO;
-    m_CutoutDepthPSO.SetPixelShader( MY_SHADER_ARGS( g_pDepthViewerPS ) );
-    m_CutoutDepthPSO.SetRasterizerState(RasterizerTwoSided);
-    m_CutoutDepthPSO.Finalize();
+    m_DepthPSO[kModelPMD] = DepthPSO;
+	m_DepthPSO[kModelPMD].SetInputLayout( static_cast<UINT>(Pmd::InputDescriptor.size()), Pmd::InputDescriptor.data() );
+    m_DepthPSO[kModelPMD].SetVertexShader( MY_SHADER_ARGS( g_pPmxDepthViewerVS ) );
+    m_DepthPSO[kModelPMD].Finalize();
 
     // Depth-only but with a depth bias and/or render only backfaces
-    m_ShadowPSO = m_DepthPSO;
-    m_ShadowPSO.SetRasterizerState( RasterizerShadow );
-    m_ShadowPSO.Finalize();
+    for (int i = kModelPMD; i <= kModelPMX; i++)
+    {
+        m_ShadowPSO[i] = m_DepthPSO[i];
+        m_ShadowPSO[i].SetRasterizerState( RasterizerShadow );
+        m_ShadowPSO[i].Finalize();
+    }
 
-    // Shadows with alpha testing
-    m_CutoutShadowPSO = m_ShadowPSO;
-    m_CutoutShadowPSO.SetPixelShader( MY_SHADER_ARGS( g_pDepthViewerPS ) );
-    m_CutoutShadowPSO.SetRasterizerState(RasterizerShadowTwoSided);
-    m_CutoutShadowPSO.Finalize();
+    m_DepthPSO[kModelGRD] = DepthPSO;
+	m_DepthPSO[kModelGRD].SetInputLayout( static_cast<UINT>(Graphics::GroundPlanInputDesc.size()), Graphics::GroundPlanInputDesc.data() );
 
-	m_GroundPlanePSO = m_DepthPSO;
-	m_GroundPlanePSO.SetInputLayout( static_cast<UINT>(Graphics::GroundPlanInputDesc.size()), Graphics::GroundPlanInputDesc.data() );
-	m_GroundPlanePSO.SetBlendState( BlendDisable );
-	m_GroundPlanePSO.SetVertexShader( MY_SHADER_ARGS( g_pGroundPlaneVS) );
-	m_GroundPlanePSO.SetPixelShader( MY_SHADER_ARGS( g_pGroundPlanePS ) );
-	m_GroundPlanePSO.Finalize();
+    for (int i = kModelPMD; i <= kModelGRD; i++)
+    {
+        m_OpaquePSO[i] = m_DepthPSO[i];
+        m_OpaquePSO[i].SetBlendState( BlendDisable );
+    }
+    m_OpaquePSO[kModelPMD].SetVertexShader( MY_SHADER_ARGS( g_pPmdOpaqueVS ) );
+    m_OpaquePSO[kModelPMD].SetPixelShader( MY_SHADER_ARGS( g_pPmdOpaquePS ) );;
+    m_OpaquePSO[kModelPMX].SetVertexShader( MY_SHADER_ARGS( g_pPmxOpaqueVS ) );
+    m_OpaquePSO[kModelPMX].SetPixelShader( MY_SHADER_ARGS( g_pPmxOpaquePS ) );;
+    m_OpaquePSO[kModelGRD].SetVertexShader( MY_SHADER_ARGS( g_pGroundOpaqueVS ) );
+    m_OpaquePSO[kModelGRD].SetPixelShader( MY_SHADER_ARGS( g_pGroundOpaquePS ) );;
+    for (int i = kModelPMD; i <= kModelGRD; i++)
+        m_OpaquePSO[i].Finalize();
 
-	m_OpaquePSO = m_DepthPSO;
-	m_OpaquePSO.SetBlendState( BlendDisable );
-	m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pMikuModelVS ) );
-	m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pMikuModelPS ) );
-	m_OpaquePSO.Finalize();
-
-	m_BlendPSO = m_OpaquePSO;
-	m_BlendPSO.SetRasterizerState( RasterizerDefault );
-	m_BlendPSO.SetBlendState( BlendTraditional );
-	m_BlendPSO.Finalize();
+    for (int i = kModelPMD; i <= kModelGRD; i++)
+    {
+        m_BlendPSO[i] = m_OpaquePSO[i];
+        m_BlendPSO[i].SetRasterizerState( RasterizerDefault );
+        m_BlendPSO[i].SetBlendState( BlendTraditional );
+        m_BlendPSO[i].Finalize();
+    }
 
 	m_pCameraController = new MikuCameraController(m_Camera, Vector3(kYUnitVector));
 	m_pSecondCameraController = new CameraController(m_SecondCamera, Vector3(kYUnitVector));
@@ -279,17 +291,18 @@ void MikuViewer::Startup( void )
 void MikuViewer::Cleanup( void )
 {
     m_Models.clear();
-    MikuModel::Shutdown();
-
+    ModelBase::Shutdown();
     Lighting::Shutdown();
 
-	m_DepthPSO.Destroy();
-    m_CutoutDepthPSO.Destroy();
-    m_ShadowPSO.Destroy();
-    m_CutoutShadowPSO.Destroy();
-	m_OpaquePSO.Destroy();
-	m_BlendPSO.Destroy();
-    m_GroundPlanePSO.Destroy();
+	m_DepthPSO[kModelPMD].Destroy();
+	m_DepthPSO[kModelPMX].Destroy();
+	m_ShadowPSO[kModelPMD].Destroy();
+	m_ShadowPSO[kModelPMX].Destroy();
+    for (int i = 0; i < kModelMAX; i++)
+    {
+        m_OpaquePSO[i].Destroy();
+        m_BlendPSO[i].Destroy();
+    }
 
     Utility::DeleteObject( m_pCameraController );
     Utility::DeleteObject( m_pSecondCameraController  );
@@ -380,12 +393,10 @@ void MikuViewer::RenderObjects( GraphicsContext& gfxContext, const Matrix4& View
     vsConstants.view = ViewMat;
     vsConstants.projection = ProjMat;
 
-    auto T = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) );
+    const Matrix4 T = AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) );
     for (int i = 0; i < kShadowSplit; i++)
         vsConstants.shadow[i] = T * m_ShadowViewProj[i];
-
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
-
     for (auto& model : m_Models)
         model->Draw( gfxContext, Filter );
 }
@@ -419,8 +430,7 @@ void MikuViewer::RenderLightShadows( GraphicsContext& gfxContext )
 
     m_LightShadowTempBuffer.BeginRendering(gfxContext);
     {
-        gfxContext.SetPipelineState(m_ShadowPSO);
-        gfxContext.SetPipelineState(m_CutoutShadowPSO);
+        gfxContext.SetPipelineState(m_ShadowPSO[kModelPMX]);
     }
     m_LightShadowTempBuffer.EndRendering(gfxContext);
 
@@ -594,7 +604,7 @@ void MikuViewer::RenderShadowMap( GraphicsContext& gfxContext )
 
         // Draw the mesh with depth only, using the new shadow camera
         g_CascadeShadowBuffer.BeginRendering( gfxContext, cascadeIdx );
-        gfxContext.SetPipelineState( m_ShadowPSO );
+        gfxContext.SetPipelineState( m_ShadowPSO[kModelPMX] );
         RenderObjects( gfxContext, shadowCamera.GetViewProjMatrix(), kOpaque );
         RenderObjects( gfxContext, shadowCamera.GetViewProjMatrix(), kTransparent );
         g_CascadeShadowBuffer.EndRendering( gfxContext );
@@ -639,13 +649,12 @@ void MikuViewer::RenderScene( void )
         gfxContext.SetDynamicDescriptor( 4, g_CascadeShadowBuffer.GetSRV(), { kBindPixel } );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-        gfxContext.SetPipelineState( m_OpaquePSO );
+        gfxContext.SetPipelineState( m_OpaquePSO[kModelPMX] );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOpaque );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOverlay );
-        gfxContext.SetPipelineState( m_BlendPSO );
+        ModelBase::Flush( gfxContext );
+        gfxContext.SetPipelineState( m_BlendPSO[kModelPMX] );
         RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kTransparent );
-        gfxContext.SetPipelineState( m_GroundPlanePSO );
-        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kGroundPlane );
     }
     {
         ScopedTimer _prof( L"Render Frustum", gfxContext );

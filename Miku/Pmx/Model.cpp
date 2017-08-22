@@ -1,4 +1,4 @@
-﻿#include "MikuModel.h"
+﻿#include "Model.h"
 
 #include <string>
 #include <vector>
@@ -7,89 +7,19 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "Archive.h"
+#include "InputLayout.h"
 #include "TextureManager.h"
 #include "FileUtility.h"
 #include "Utility.h"
 #include "Mapping.h"
 #include "Encoding.h"
-#include "GeometryGenerator.h"
+#include "ModelBase.h"
+#include "CommandContext.h"
 
-#include "CompiledShaders/BoneVS.h"
-#include "CompiledShaders/BonePS.h"
-
-using namespace Graphics;
 using namespace DirectX;
-
-BoolVar s_EnableDrawBone("Application/Model/Draw Bone", false);
-BoolVar s_EnableDrawBoundingSphere("Application/Model/Draw Bounding Shphere", false);
-// If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
-BoolVar s_ExcludeSkyBox("Application/Model/Exclude Sky Box", true);
-NumVar s_ExcludeRange("Application/Model/Exclude Range", 1000.f, 500.f, 10000.f);
-
-namespace {
-    SubmeshGeometry m_BoneMesh;
-    SubmeshGeometry m_SphereMesh;
-    VertexBuffer m_GeometryVertexBuffer;
-    IndexBuffer m_GeometryIndexBuffer;
-    GraphicsPSO m_BonePSO;
-};
-
-void MikuModel::Initialize()
-{
-	InputDesc GeoGenInputDesc[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-	std::vector<GeometryGenerator::Vertex> Vertices;
-	std::vector<uint32_t> Indices;
-
-	{
-        GeometryGenerator geoGen;
-        auto AppendGeometry = [&]( const GeometryGenerator::MeshData& data )
-        {
-            int32_t baseIndex = static_cast<int32_t>(Indices.size());
-            int32_t baseVertex = static_cast<int32_t>(Vertices.size());
-            std::copy( data.Vertices.begin(), data.Vertices.end(), std::back_inserter( Vertices ) );
-            std::copy( data.Indices32.begin(), data.Indices32.end(), std::back_inserter( Indices ) );
-
-            SubmeshGeometry mesh;
-            mesh.IndexCount = static_cast<int32_t>(data.Indices32.size());
-            mesh.IndexOffset = baseIndex;
-            mesh.VertexOffset = baseVertex;
-
-            return mesh;
-        };
-		m_BoneMesh = AppendGeometry( geoGen.CreateCylinder( 2.0f, 0.1f, 1.0f, 5, 1 ) );
-		m_SphereMesh = AppendGeometry( geoGen.CreateSphere( 1.0f, 8, 8 ) );
-	}
-
-	m_GeometryVertexBuffer.Create( L"GeometryVertex", static_cast<uint32_t>(Vertices.size()),
-		sizeof( Vertices.front() ), Vertices.data() );
-
-	m_GeometryIndexBuffer.Create( L"GeometryIndex", static_cast<uint32_t>(Indices.size()),
-		sizeof( Indices.front() ), Indices.data() );
-
-	D3D11_RASTERIZER_DESC RasterizerWire = RasterizerDefault;
-	RasterizerWire.FillMode = D3D11_FILL_WIREFRAME;
-
-	m_BonePSO.SetInputLayout( _countof(GeoGenInputDesc), GeoGenInputDesc );
-	m_BonePSO.SetVertexShader( MY_SHADER_ARGS( g_pBoneVS ) );
-	m_BonePSO.SetPixelShader( MY_SHADER_ARGS( g_pBonePS ) );
-	// m_BonePSO.SetDepthStencilState( DepthStateDisabled );
-	m_BonePSO.SetRasterizerState( RasterizerWire );
-	m_BonePSO.Finalize();
-}
-
-void MikuModel::Shutdown()
-{
-	m_BonePSO.Destroy();
-	m_GeometryIndexBuffer.Destroy();
-	m_GeometryVertexBuffer.Destroy();
-}
+using namespace Graphics;
+using namespace Graphics::Pmx;
 
 template <typename T>
 size_t GetVectorSize(const std::vector<T>& vec)
@@ -97,7 +27,7 @@ size_t GetVectorSize(const std::vector<T>& vec)
     return sizeof(T) * vec.size();
 }
 
-bool Mesh::LoadTexture( GraphicsContext& gfxContext )
+bool Mesh::SetTexture( GraphicsContext& gfxContext )
 {
     D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
     for (auto i = 0; i < _countof( Texture ); i++)
@@ -109,133 +39,26 @@ bool Mesh::LoadTexture( GraphicsContext& gfxContext )
     return false;
 }
 
-MikuModel::MikuModel( bool bRightHand ) : m_bRightHand( bRightHand )
+Model::Model( bool bRightHand ) : m_bRightHand( bRightHand ), m_ModelTransform(kIdentity)
 {
 }
 
-MikuModel::~MikuModel()
+Model::~Model()
 {
     Clear();
 }
 
-void MikuModel::Load()
+bool Model::LoadModel( ArchivePtr& Archive, Path& FilePath )
 {
-    ASSERT(!m_ModelPath.empty());
-    if (m_ModelPath.empty())
-        return;
+    using namespace ::Pmx;
 
-    LoadPmd( m_ModelPath, m_bRightHand );
-    SetVisualizeSkeleton();
-    SetBoundingSphere();
-    SetBoundingBox();
-
-	if (!m_MotionPath.empty())
-        LoadVmd( m_MotionPath, m_bRightHand );
-}
-
-void MikuModel::SetModel( const std::wstring& model )
-{
-    m_ModelPath = model;
-}
-
-void MikuModel::SetMotion( const std::wstring& motion )
-{
-    m_MotionPath = motion;
-}
-
-void MikuModel::SetBoundingSphere( void )
-{
-    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){
-        return Bone.Name.compare( L"センター" ) == 0;
-    });
-    if (it == m_Bones.end())
-        it = m_Bones.begin();
-
-    Vector3 Center = it->Translate;
-    Scalar Radius( 0.f );
-
-    for (auto& vert : m_VertexPos) {
-        Scalar R = LengthSquare( Center - Vector3( vert ) );
-        if (s_ExcludeSkyBox)
-            if (R > s_ExcludeRange*s_ExcludeRange)
-                continue;
-        Radius = Max( Radius, R );
-    }
-
-    m_BoundingSphere = BoundingSphere( Center, Sqrt(Radius) );
-    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
-}
-
-void MikuModel::SetBoundingBox( void )
-{
-    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){
-        return Bone.Name.compare( L"センター" ) == 0;
-    });
-    if (it == m_Bones.end())
-        it = m_Bones.begin();
-
-    Vector3 Center = it->Translate;
-
-    Vector3 MinV( FLT_MAX ), MaxV( FLT_MIN );
-    for (auto& vert : m_VertexPos)
-    {
-        if (s_ExcludeSkyBox)
-        {
-            Scalar R = Dot( Vector3( 1.f ), Abs( Center - Vector3( vert ) ) );
-            if (R > s_ExcludeRange)
-                continue;
-        }
-        MinV = Min( MinV, vert );
-        MaxV = Max( MaxV, vert );
-    }
-
-    m_BoundingBox = BoundingBox( MinV, MaxV );
-    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
-}
-
-void MikuModel::LoadPmd( const std::wstring& modelPath, bool bRightHand )
-{
-	using Path = fs::path;
-	Path model ( modelPath );
-
-	bool bZipArchive = Utility::isZip( model );
-
-	if (bZipArchive)
-	{
-		auto archive = std::make_shared<Utility::ZipArchive>( modelPath );
-		auto Filenames = archive->GetFileList();
-
-		Path pmdname;
-		for (auto& name : Filenames)
-		{
-			auto ext = Path(name).extension().generic_wstring();
-			if (boost::to_lower_copy(ext) == L".pmd")
-			{
-				pmdname = name;
-				break;
-			}
-		}
-		ASSERT( !pmdname.empty() );
-        Path name;
-        for (auto it = ++pmdname.begin(); it != pmdname.end(); ++it)
-            name /= *it;
-		LoadPmd( archive, name, bRightHand );
-	}
-	else
-	{
-		auto archive = std::make_shared<Utility::RelativeFile>( model.parent_path() );
-		LoadPmd( archive, model.filename(), bRightHand );
-	}
-}
-
-void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRightHand )
-{
-	auto ba = archive->GetFile( pmdKey );
+	auto ba = Archive->GetFile( FilePath );
     Utility::ByteStream bs( ba );
 
-	Pmd::PMD pmd;
-	pmd.Fill( bs, bRightHand );
-	ASSERT( pmd.IsValid() );
+	PMX pmx;
+	pmx.Fill( bs, m_bRightHand );
+    if (!pmx.IsValid())
+        return false;
 
 	//
 	// raw: decode with system default.
@@ -243,7 +66,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
 	//      but, it will also happens when extract from zip archive. so, can find the file
 	// unicode: decode with shift-jis
 	//
-	auto LoadTexture = []( Utility::ArchivePtr archive, std::string raw, std::wstring unicode, bool bSRGB )
+	auto LoadTexture = []( ArchivePtr& archive, std::wstring unicode, bool bSRGB )
 		-> const ManagedTexture*
 	{
 		//
@@ -253,14 +76,8 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
         const ManagedTexture* texture = nullptr;
 
 		// Try raw name
-        fs::path name = raw;
-        bool bExist = archive->IsExist( raw );
-        // If not, try unicode interpreted name
-        if (!bExist)
-        {
-            name = unicode;
-            bExist = archive->IsExist( unicode );
-        }
+        Path name = unicode;
+        bool bExist = archive->IsExist( name );
         if (bExist)
         {
             auto ia = archive->GetFile( name );
@@ -269,7 +86,7 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
         else
         {
             // If not, try default provided texture in MMD (toon01.bmp)
-            auto toon = fs::path( "toon" ) / raw;
+            auto toon = Path( "toon" ) / name;
             texture = TextureManager::LoadFromFile( toon.generic_wstring(), bSRGB );
         }
 		return texture;
@@ -279,27 +96,48 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
 	{
 		XMFLOAT3 Normal;
 		XMFLOAT2 UV;
-		uint16_t Bone_id[2];
-		uint8_t  Bone_weight;
-		uint8_t  Edge_flat;
+        uint32_t BoneID[4] = {0, };
+        float    Weight[4] = {0.f };
+		float    EdgeSize;
 	};
 
-	std::vector<Attribute> attributes( pmd.m_Vertices.size() );
-	m_VertexPos.resize( pmd.m_Vertices.size() );
-	for (auto i = 0; i < pmd.m_Vertices.size(); i++)
+	std::vector<Attribute> attributes( pmx.m_Vertices.size() );
+	m_VertexPos.resize( pmx.m_Vertices.size() );
+	for (auto i = 0; i < pmx.m_Vertices.size(); i++)
 	{
-		m_VertexPos[i] = pmd.m_Vertices[i].Pos;
-		attributes[i].Normal = pmd.m_Vertices[i].Normal;
-		attributes[i].UV = pmd.m_Vertices[i].UV;
-		attributes[i].Bone_id[0] = pmd.m_Vertices[i].Bone_id[0];
-		attributes[i].Bone_id[1] = pmd.m_Vertices[i].Bone_id[1];
-		attributes[i].Bone_weight = pmd.m_Vertices[i].Bone_weight;
-		attributes[i].Edge_flat = pmd.m_Vertices[i].Edge_flat;
+		m_VertexPos[i] = pmx.m_Vertices[i].Pos;
+		attributes[i].Normal = pmx.m_Vertices[i].Normal;
+		attributes[i].UV = pmx.m_Vertices[i].UV;
+
+        ASSERT( pmx.m_Vertices[i].SkinningType != Vertex::kQdef );
+
+        switch (pmx.m_Vertices[i].SkinningType)
+        {
+        case Vertex::kBdef1:
+            attributes[i].BoneID[0] = pmx.m_Vertices[i].bdef1.BoneIndex;
+            attributes[i].Weight[0] = 1.f;
+            break;
+        case Vertex::kSdef: // ignore rotation center, r0 and r1 treat as Bdef2
+        case Vertex::kBdef2:
+            attributes[i].BoneID[0] = pmx.m_Vertices[i].bdef2.BoneIndex[0];
+            attributes[i].BoneID[1] = pmx.m_Vertices[i].bdef2.BoneIndex[1];
+            attributes[i].Weight[0] = pmx.m_Vertices[i].bdef2.Weight;
+            attributes[i].Weight[1] = 1 - pmx.m_Vertices[i].bdef2.Weight;
+            break;
+        case Vertex::kBdef4:
+            for (int k = 0; k < 4; k++)
+            {
+                attributes[i].BoneID[k] = pmx.m_Vertices[i].bdef4.BoneIndex[k];
+                attributes[i].Weight[k] = pmx.m_Vertices[i].bdef4.Weight[k];
+            }
+            break;
+        }
+		attributes[i].EdgeSize = pmx.m_Vertices[i].EdgeSize;
 	}
 	m_VertexMorphedPos = m_VertexPos;
 
-	m_Name = pmd.m_Header.Name;
-    m_Indices = pmd.m_Indices;
+	m_Name = pmx.m_Description.Name;
+    std::copy(pmx.m_Indices.begin(), pmx.m_Indices.end(), std::back_inserter(m_Indices));
 
 	m_AttributeBuffer.Create( m_Name + L"_AttrBuf",
 		static_cast<uint32_t>(attributes.size()),
@@ -311,13 +149,13 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
 		sizeof( XMFLOAT3 ),
 		m_VertexPos.data() );
 
-	m_IndexBuffer.Create( pmd.m_Header.Name + L"_IndexBuf",
-		static_cast<uint32_t>(pmd.m_Indices.size()),
-		sizeof( pmd.m_Indices[0] ),
-		pmd.m_Indices.data() );
+	m_IndexBuffer.Create( m_Name + L"_IndexBuf",
+		static_cast<uint32_t>(pmx.m_Indices.size()),
+		sizeof( pmx.m_Indices[0] ),
+		pmx.m_Indices.data() );
 
 	uint32_t IndexOffset = 0;
-	for (auto& material : pmd.m_Materials)
+	for (auto& material : pmx.m_Materials)
 	{
 		Mesh mesh = {};
 
@@ -326,31 +164,35 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
 		mat.SpecularPower = material.SpecularPower;
 		mat.Ambient = material.Ambient;
 
-		mesh.IndexCount = material.FaceVertexCount;
+		mesh.IndexCount = material.NumVertex;
 		mesh.IndexOffset = IndexOffset;
-		IndexOffset += material.FaceVertexCount;
+		IndexOffset += material.NumVertex;
 
-		if (!material.TextureRaw.empty())
-			mesh.Texture[kTextureDiffuse] = LoadTexture( archive, material.TextureRaw, material.Texture, true );
-		if (!material.SphereRaw.empty()) {
-			//
-			// https://learnmmd.com/http:/learnmmd.com/pmd-editor-basics-sph-and-spa-files-add-sparkle/
-			//
-			// spa adds to main texture and sph multiplies.
-			// However, spa does not use sRGB because it is generally
-			// used as a brightness image.
-			//
-			bool sRGB = true;
-			if (std::string::npos != material.SphereRaw.rfind(".spa"))
-				sRGB = false;
-			mesh.Texture[kTextureSphere] = LoadTexture( archive, material.SphereRaw, material.Texture, sRGB );
-		}
-		if (material.ToonIndex < pmd.m_ToonTextureRawList.size())
-		{
-			auto toonRaw = pmd.m_ToonTextureRawList[material.ToonIndex];
-			auto toon = pmd.m_ToonTextureList[material.ToonIndex];
-			mesh.Texture[kTextureToon] = LoadTexture( archive, toonRaw, toon, true );
-		}
+        if (material.DiffuseTexureIndex >= 0)
+			mesh.Texture[kTextureDiffuse] = LoadTexture( Archive, pmx.m_Textures[material.DiffuseTexureIndex], true );
+
+        //
+        // https://learnmmd.com/http:/learnmmd.com/pmd-editor-basics-sph-and-spa-files-add-sparkle/
+        //
+        // spa adds to main texture and sph multiplies.
+        // However, spa does not use sRGB because it is generally
+        // used as a brightness image.
+        //
+        //    bool sRGB = true;
+        //    if (std::string::npos != material.SphereRaw.rfind(".spa"))
+        //        sRGB = false;
+        //
+        if (material.SphereTextureIndex >= 0)
+			mesh.Texture[kTextureSphere] = LoadTexture( Archive, pmx.m_Textures[material.SphereTextureIndex], true );
+
+        std::wstring ToonName;
+        if (material.bDefaultToon)
+            ToonName = std::wstring(L"toon") + std::to_wstring(material.DeafultToon) + std::wstring(L".bmp");
+        else if (material.Toon >= 0)
+            ToonName = pmx.m_Textures[material.Toon];
+        if (!ToonName.empty())
+            mesh.Texture[kTextureToon] = LoadTexture( Archive, ToonName, true );
+
 		if (mesh.Texture[kTextureToon])
 			mat.bUseToon = TRUE;
 		if (mesh.Texture[kTextureDiffuse])
@@ -359,33 +201,38 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
 			mat.SphereOperation = material.SphereOperation;
 
 		mesh.Material = mat;
-		mesh.bEdgeFlag = material.EdgeFlag > 0;
+		mesh.EdgeSize = material.EdgeSize;
+		mesh.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
 
         // if motion is not registered, bounding box is used to viewpoint culling
-        mesh.Sphere = ComputeBoundingSphereFromVertices(
+        mesh.BoundSphere = ComputeBoundingSphereFromVertices(
             m_VertexPos, m_Indices, mesh.IndexCount, mesh.IndexOffset );
 
 		m_Mesh.push_back(mesh);
 	}
 
-	size_t numBones = pmd.m_Bones.size();
+	size_t numBones = pmx.m_Bones.size();
 	SetBoneNum( numBones );
+    ASSERT( numBones > 0 );
 	for (auto i = 0; i < numBones; i++)
 	{
-		auto& boneData = pmd.m_Bones[i];
+		auto& boneData = pmx.m_Bones[i];
 
 		m_Bones[i].Name = boneData.Name;
 		m_BoneParent[i] = boneData.ParentBoneIndex;
-		if (boneData.ParentBoneIndex < numBones)
+		if (boneData.ParentBoneIndex >= 0)
 			m_BoneChild[boneData.ParentBoneIndex].push_back( i );
 
-		Vector3 headPos = boneData.BoneHeadPosition;
-		auto parentPos = Vector3( 0.0f, 0.0f, 0.0f );
+		Vector3 origin = boneData.Position;
+		Vector3 parentOrigin = Vector3( 0.0f, 0.0f, 0.0f );
 
-		if( boneData.ParentBoneIndex < numBones )
-			parentPos = pmd.m_Bones[boneData.ParentBoneIndex].BoneHeadPosition;
+		if( boneData.ParentBoneIndex >= 0)
+			parentOrigin = pmx.m_Bones[boneData.ParentBoneIndex].Position;
 
-		m_Bones[i].Translate = headPos - parentPos;
+		m_Bones[i].Translate = origin - parentOrigin;
+        m_Bones[i].Position = origin;
+        m_Bones[i].DestinationIndex = boneData.DestinationOriginIndex;
+        m_Bones[i].DestinationOffset = boneData.DestinationOriginOffset;
 
 		m_BoneIndex[boneData.Name] = i;
 	}
@@ -395,12 +242,13 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
     for ( auto i = 0; i < numBones; i++)
         m_SkinningDual[i] = OrthogonalTransform();
 
-	m_IKs = pmd.m_IKs;
+    /*
+	m_IKs = pmx.m_IKs;
 
-	m_MorphMotions.resize( pmd.m_Faces.size() );
-	for ( auto i = 0; i < pmd.m_Faces.size(); i++ )
+	m_MorphMotions.resize( pmx.m_Faces.size() );
+	for ( auto i = 0; i < pmx.m_Faces.size(); i++ )
 	{
-		auto& morph = pmd.m_Faces[i];
+		auto& morph = pmx.m_Faces[i];
 		m_MorphIndex[morph.Name] = i;
         auto numVertices = morph.FaceVertices.size();
 
@@ -415,9 +263,16 @@ void MikuModel::LoadPmd( Utility::ArchivePtr archive, fs::path pmdKey, bool bRig
 	}
     if (m_MorphMotions.size() > 0)
         m_MorphDelta.resize( m_MorphMotions[kMorphBase].m_MorphIndices.size() );
+    */
+
+    SetVisualizeSkeleton();
+    SetBoundingBox();
+    SetBoundingSphere();
+
+    return true;
 }
 
-void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
+bool Model::LoadMotion( const std::wstring& motionPath )
 {
 	using namespace std;
 	using namespace Animation;
@@ -426,8 +281,9 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 	Utility::ByteStream bs(ba);
 
 	Vmd::VMD vmd;
-	vmd.Fill( bs, bRightHand );
-	ASSERT( vmd.IsValid() );
+	vmd.Fill( bs, m_bRightHand );
+	if (!vmd.IsValid())
+        return false;
 
     LoadBoneMotion( vmd.BoneFrames );
 
@@ -471,16 +327,10 @@ void MikuModel::LoadVmd( const std::wstring& motionPath, bool bRightHand )
 
 		m_CameraMotion.InsertKeyFrame( keyFrame );
 	}
+    return true;
 }
 
-void MikuModel::SetBoneNum( size_t numBones )
-{
-	m_BoneParent.resize( numBones );
-	m_BoneChild.resize( numBones );
-	m_Bones.resize( numBones );
-}
-
-void MikuModel::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
+void Model::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
 {
     if (frames.size() <= 0)
         return;
@@ -564,53 +414,118 @@ void MikuModel::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
 		bone.SortKeyFrame();
 }
 
-void MikuModel::SetVisualizeSkeleton()
+
+void Model::SetBoneNum( size_t numBones )
+{
+	m_BoneParent.resize( numBones );
+	m_BoneChild.resize( numBones );
+	m_Bones.resize( numBones );
+}
+
+void Model::SetModel( const std::wstring& model )
+{
+    m_ModelPath = model;
+}
+
+void Model::SetMotion( const std::wstring& motion )
+{
+    m_MotionPath = motion;
+}
+
+void Model::SetBoundingSphere( void )
+{
+    ASSERT(m_Bones.size() > 0);
+
+    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), []( const Bone& Bone ) {
+        return Bone.Name.compare( L"センター" ) == 0;
+    } );
+    if (it == m_Bones.end())
+        it = m_Bones.begin();
+
+    Vector3 Center = it->Translate;
+    Scalar Radius( 0.f );
+
+    for (auto& vert : m_VertexPos) {
+        Scalar R = LengthSquare( Center - Vector3( vert ) );
+        if (ModelBase::s_bExcludeSkyBox)
+            if (R > ModelBase::s_ExcludeRange*ModelBase::s_ExcludeRange)
+                continue;
+        Radius = Max( Radius, R );
+    }
+    m_BoundingSphere = BoundingSphere( Center, Sqrt(Radius) );
+    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
+}
+
+void Model::SetBoundingBox( void )
+{
+    ASSERT(m_Bones.size() > 0);
+
+    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){
+        return Bone.Name.compare( L"センター" ) == 0;
+    });
+    if (it == m_Bones.end())
+        it = m_Bones.begin();
+
+    Vector3 Center = it->Translate;
+
+    Vector3 MinV( FLT_MAX ), MaxV( FLT_MIN );
+    for (auto& vert : m_VertexPos)
+    {
+        if (ModelBase::s_bExcludeSkyBox)
+        {
+            Scalar R = Dot( Vector3( 1.f ), Abs( Center - Vector3( vert ) ) );
+            if (R > ModelBase::s_ExcludeRange)
+                continue;
+        }
+        MinV = Min( MinV, vert );
+        MaxV = Max( MaxV, vert );
+    }
+
+    m_BoundingBox = BoundingBox( MinV, MaxV );
+    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
+}
+
+void Model::SetVisualizeSkeleton()
 {
 	auto numBone = m_Bones.size();
 
-	std::vector<Vector3> GlobalPosition( numBone );
 	m_BoneAttribute.resize( numBone );
 
 	for ( auto i = 0; i < numBone; i++ )
 	{
-		auto parentIndex = m_BoneParent[i];
-		Vector3 ParentPos = Vector3( kZero );
-		if (parentIndex < numBone)
-			ParentPos = GlobalPosition[parentIndex];
+		auto DestinationIndex = m_Bones[i].DestinationIndex;
+		Vector3 DestinationOffset = m_Bones[i].DestinationOffset;
+		if (DestinationIndex >= 0)
+			DestinationOffset = m_Bones[DestinationIndex].Position - m_Bones[i].Position;
 
-		Vector3 diff = m_Bones[i].Translate;
-		Scalar l = Length( diff );
-		XMMATRIX S = XMMatrixScaling( 0.05f, l, 0.05f );
+		Vector3 diff = DestinationOffset;
+		Scalar length = Length( diff );
 		Quaternion Q = RotationBetweenVectors( Vector3( 0.0f, 1.0f, 0.0f ), diff );
-		XMMATRIX R = XMMatrixRotationQuaternion( Q );
-		XMMATRIX Z = XMMatrixTranslation( 0.0f, 0.5f * l, 0.0f );
-		XMMATRIX T = XMMatrixTranslationFromVector( ParentPos );
-
-		GlobalPosition[i] = ParentPos + diff;
-		m_BoneAttribute[i] = XMMatrixMultiply( XMMatrixMultiply( XMMatrixMultiply( S, Z ), R ), T );
+		AffineTransform scale = AffineTransform::MakeScale( Vector3(0.05f, length, 0.05f) );
+        // Move primitive bottom to origin
+		AffineTransform alignToOrigin = AffineTransform::MakeTranslation( Vector3(0.0f, 0.5f * length, 0.0f) );
+		m_BoneAttribute[i] = AffineTransform(Q, m_Bones[i].Position) * alignToOrigin * scale;
 	}
 }
 
-void MikuModel::Clear()
+void Model::Clear()
 {
 	m_AttributeBuffer.Destroy();
 	m_PositionBuffer.Destroy();
 	m_IndexBuffer.Destroy();
 }
 
-void MikuModel::UpdateChildPose( int32_t idx )
+void Model::UpdateChildPose( int32_t idx )
 {
-	auto numBone = m_BoneMotions.size();
 	auto parentIndex = m_BoneParent[idx];
-
-	if (parentIndex < numBone)
+	if (parentIndex >= 0)
 		m_Pose[idx] = m_Pose[parentIndex] * m_LocalPose[idx];
 
 	for (auto c : m_BoneChild[idx])
 		UpdateChildPose( c );
 }
 
-void MikuModel::Update( float kFrameTime )
+void Model::Update( float kFrameTime )
 {
 	if (m_BoneMotions.size() > 0)
 	{
@@ -621,15 +536,13 @@ void MikuModel::Update( float kFrameTime )
 		for (auto i = 0; i < numBones; i++)
 		{
 			auto parentIndex = m_BoneParent[i];
-
 			if (parentIndex < numBones)
 				m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
 			else
 				m_Pose[i] = m_LocalPose[i];
 		}
 
-		for (auto& ik : m_IKs)
-			UpdateIK( ik );
+		// for (auto& ik : m_IKs) UpdateIK( ik );
 
 		for (auto i = 0; i < numBones; i++)
 			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
@@ -685,7 +598,8 @@ void MikuModel::Update( float kFrameTime )
 // http://d.hatena.ne.jp/edvakf/20111102/1320268602
 // Game programming gems 3 Constrained Inverse Kinematics - Jason Weber
 //
-void MikuModel::UpdateIK(const Pmd::IK& ik)
+/*
+void Model::UpdateIK(const Pmd::IK& ik)
 {
 	auto GetPosition = [&]( int32_t index ) -> Vector3
 	{
@@ -750,8 +664,8 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 				//
 				// MMD-Agent PMDIK
 				//
-				/* when this is the first iteration, we force rotating to the maximum angle toward limited direction */
-				/* this will help convergence the whole IK step earlier for most of models, especially for legs */
+				// when this is the first iteration, we force rotating to the maximum angle toward limited direction
+				// this will help convergence the whole IK step earlier for most of models, especially for legs
 				if (n == 0)
 				{
 					if (theta < 0.0f)
@@ -779,13 +693,14 @@ void MikuModel::UpdateIK(const Pmd::IK& ik)
 		}
 	}
 }
+*/
 
-void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
+void Model::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
     if (Filter & kOverlay)
     {
-        DrawBone( gfxContext );
-        DrawBoundingSphere( gfxContext );
+        DrawBone();
+        DrawBoundingSphere();
         return;
     }
 
@@ -799,6 +714,7 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
     auto& SkinData = m_SkinningDual;
 #endif
     auto numByte = GetVectorSize(SkinData);
+
     gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
     gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
@@ -809,9 +725,9 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 	{
 		bool bOpaque = Filter & kOpaque && !mesh.isTransparent();
 		bool bTransparent = Filter & kTransparent && mesh.isTransparent();
-		if (!bOpaque && !bTransparent) continue;
-
-        if (mesh.LoadTexture( gfxContext ))
+		if (!bOpaque && !bTransparent)
+            continue;
+        if (mesh.SetTexture( gfxContext ))
             continue;
 
 		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
@@ -819,55 +735,36 @@ void MikuModel::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 	}
 }
 
-void MikuModel::DrawBone( GraphicsContext& gfxContext )
+void Model::DrawBone()
 {
-    if (!s_EnableDrawBone)
+    if (!ModelBase::s_bEnableDrawBone)
         return;
-
-	gfxContext.SetPipelineState( m_BonePSO );
-	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	gfxContext.SetVertexBuffer( 0, m_GeometryVertexBuffer.VertexBufferView() );
-	gfxContext.SetIndexBuffer( m_GeometryIndexBuffer.IndexBufferView() );
-
 	auto numBones = m_BoneAttribute.size();
-
 	for (auto i = 0; i < numBones; i++)
-	{
-		XMMATRIX mat = m_ModelTransform * Matrix4(m_Skinning[i]) * Matrix4(m_BoneAttribute[i]);
-		gfxContext.SetDynamicConstantBufferView( 1, sizeof(mat), &mat, { kBindVertex } );
-		gfxContext.DrawIndexed( m_BoneMesh.IndexCount, m_BoneMesh.IndexOffset, m_BoneMesh.VertexOffset );
-	}
+        ModelBase::Append( ModelBase::kBoneMesh, m_ModelTransform * m_Skinning[i] * m_BoneAttribute[i] );
 }
 
-void MikuModel::DrawBoundingSphere( GraphicsContext& gfxContext )
+void Model::DrawBoundingSphere()
 {
-    if (!s_EnableDrawBoundingSphere)
+    if (!ModelBase::s_bEnableDrawBoundingSphere)
         return;
-
-	gfxContext.SetPipelineState( m_BonePSO );
-	gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	gfxContext.SetVertexBuffer( 0, m_GeometryVertexBuffer.VertexBufferView() );
-	gfxContext.SetIndexBuffer( m_GeometryIndexBuffer.IndexBufferView() );
 
     BoundingSphere sphere = GetBoundingSphere();
     AffineTransform scale = AffineTransform::MakeScale( float(sphere.GetRadius()) );
     AffineTransform center = AffineTransform::MakeTranslation( sphere.GetCenter() );
-    Matrix4 mat = center * scale;
-    gfxContext.SetDynamicConstantBufferView( 1, sizeof( mat ), &mat, { kBindVertex } );
-    gfxContext.DrawIndexed( m_SphereMesh.IndexCount, m_SphereMesh.IndexOffset, m_SphereMesh.VertexOffset );
+    ModelBase::Append( ModelBase::kSphereMesh, center*scale );
 }
 
-BoundingSphere MikuModel::GetBoundingSphere()
+BoundingSphere Model::GetBoundingSphere()
 {
 	if (m_BoneMotions.size() > 0)
         return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingSphere;
     return m_ModelTransform * m_BoundingSphere;
 }
 
-BoundingBox MikuModel::GetBoundingBox()
+BoundingBox Model::GetBoundingBox()
 {
 	if (m_BoneMotions.size() > 0)
         return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingBox;
     return m_ModelTransform * m_BoundingBox;
 }
-

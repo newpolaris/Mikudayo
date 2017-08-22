@@ -9,14 +9,6 @@ struct SkinData
 #endif
 };
 
-struct SkinInput
-{
-    float3 position;
-    float3 normal;
-	float boneWeight;
-    uint2  boneID;
-};
-
 float2x4 GetBoneDualQuaternion( SkinData data, uint boneIndex )
 {
 #ifdef SKINNING_DLB
@@ -37,21 +29,32 @@ float2x4 GetBlendedDualQuaternion( SkinData skin, uint2 boneIndices, float weigh
     return blendedDQ / normDQ;
 }
 
+//
+// Use code from http://dev.theomader.com/dual-quaternion-skinning/
+//
 float3 transformPositionDualQuat( float3 position, float4 realDQ, float4 dualDQ )
 {
     return position +
         2 * cross( realDQ.xyz, cross(realDQ.xyz, position) + realDQ.w*position ) +
-        2 * (realDQ.w * dualDQ.xyz - dualDQ.w * realDQ.xyz + 
+        2 * (realDQ.w * dualDQ.xyz - dualDQ.w * realDQ.xyz +
             cross( realDQ.xyz, dualDQ.xyz));
 }
- 
+
 float3 transformNormalDualQuat( float3 normal, float4 realDQ, float4 dualDQ )
 {
-    return normal + 2.0 * cross( realDQ.xyz, cross( realDQ.xyz, normal ) + 
+    return normal + 2.0 * cross( realDQ.xyz, cross( realDQ.xyz, normal ) +
                           realDQ.w * normal );
 }
 
-void Skinning( SkinInput input, SkinData skin, out float3 pos, out float3 normal )
+struct PmdSkinInput
+{
+    float3 position;
+    float3 normal;
+	float boneWeight;
+    uint2  boneID;
+};
+
+void PmdSkinning( PmdSkinInput input, SkinData skin, out float3 pos, out float3 normal )
 {
 #ifdef SKINNING_DLB
 	float w0 = 1.0 - float(input.boneWeight) / 100.0f;
@@ -72,3 +75,31 @@ void Skinning( SkinInput input, SkinData skin, out float3 pos, out float3 normal
 #endif
 }
 
+struct PmxSkinInput
+{
+    float3 position;
+    float3 normal;
+	float4 boneWeight;
+    uint4  boneID;
+};
+
+void PmxSkinning( PmxSkinInput input, SkinData skin, out float3 pos, out float3 normal )
+{
+#if SKINNING_DLB
+	float w0 = 1.0 - float(input.boneWeight) / 100.0f;
+    float2x4 blended = GetBlendedDualQuaternion( skin, input.boneID.xy, w0 );
+    pos = transformPositionDualQuat( input.position, blended[0], blended[1] );
+    normal = transformNormalDualQuat( input.normal, blended[0], blended[1] );
+#elif SKINNING_LBS
+    const int kWeight = 4;
+    pos = float3(0, 0, 0);
+    for (int i = 0; i < kWeight; i++)
+	    pos += input.boneWeight[i] * mul( skin.boneMatrix[input.boneID[i]], float4(input.position, 1.0) ).xyz;
+    normal = float3(0, 0, 0);
+    for (int k = 0; k < kWeight; k++)
+	    normal += input.boneWeight[k] * mul( (float3x3)skin.boneMatrix[input.boneID[k]], input.normal );
+#else
+    pos = input.position;
+    normal = input.normal;
+#endif
+}

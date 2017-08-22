@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author(s):  James Stanard 
+// Author(s):  James Stanard
 //             Alex Nankervis
 //
 
@@ -225,33 +225,57 @@ bool Texture::CreateWICFromMemory( const void* memBuffer, size_t bufferSize, boo
 {
 	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_DEFAULT;
     GraphicsContext& gfxContext = GraphicsContext::Begin();
-	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx( 
+    // Load texture and generate mips at the same time
+	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx(
         Graphics::g_Device,
         gfxContext.m_CommandList,
-		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT, 
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, 
-		0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag, 
+		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT,
+		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
+		0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag,
 		m_pResource.GetAddressOf(), m_SRV.GetAddressOf());
     gfxContext.Finish();
-	return SUCCEEDED(hr);
+
+	return SUCCEEDED( hr );
 }
+
+/*
+bool Texture::CreateTGAFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
+{
+	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_DEFAULT;
+    GraphicsContext& gfxContext = GraphicsContext::Begin();
+    // Load texture and generate mips at the same time
+	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx(
+        Graphics::g_Device,
+        gfxContext.m_CommandList,
+		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT,
+		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
+		0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag,
+		m_pResource.GetAddressOf(), m_SRV.GetAddressOf());
+    gfxContext.Finish();
+
+	return SUCCEEDED( hr );
+
+
+    LoadFromTGAMemory - Loads image data from a TGA file in memory
+        LoadFromTGAFile - Loads image data from a TGA file on disk
+}
+*/
 
 bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
 {
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV;
 	HRESULT hr = DirectX::CreateDDSTextureFromMemoryEx( Graphics::g_Device,
-		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT, 
-		D3D11_BIND_SHADER_RESOURCE, 
-		0, 0, sRGB, 
-		m_pResource.GetAddressOf(), SRV.GetAddressOf());
-	
+		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT,
+		D3D11_BIND_SHADER_RESOURCE,
+		0, 0, sRGB,
+		m_pResource.GetAddressOf(), m_SRV.GetAddressOf());
+
 	if (SUCCEEDED(hr))
 	{
+        // Can't generate mips error happens
+        //
 		// GraphicsContext& gfxContext = GraphicsContext::Begin( L"MipMap" );
 		// gfxContext.GenerateMips( SRV.Get() );
 		// gfxContext.Finish();
-
-		m_SRV.Swap(SRV);
 	}
 	return SUCCEEDED(hr);
 }
@@ -356,7 +380,7 @@ namespace TextureManager
 
 ManagedTexture::~ManagedTexture()
 {
-    if (m_LoadThread.joinable()) 
+    if (m_LoadThread.joinable())
         m_LoadThread.join();
     if (m_Future.valid())
         m_Future.get();
@@ -372,7 +396,7 @@ void ManagedTexture::SetTask( Task&& task )
 void ManagedTexture::WaitForLoad( void ) const
 {
     auto pointer = const_cast<ManagedTexture*>(this);
-    if (m_LoadThread.joinable()) 
+    if (m_LoadThread.joinable())
         pointer->m_LoadThread.join();
     if (m_Future.valid())
         pointer->m_Future.get();
@@ -496,7 +520,7 @@ const ManagedTexture* TextureManager::LoadFromStream( const std::wstring& key, s
     const std::string& s = ss.str();
     std::vector<char> buf( s.begin(), s.end() );
 
-    ManagedTexture::Task task( [cbuf = std::move(buf), sRGB, ManTex, key] 
+    ManagedTexture::Task task( [cbuf = std::move(buf), sRGB, ManTex, key]
     {
         if (cbuf.size() == 0 ||
             !(ManTex->CreateDDSFromMemory( cbuf.data(), cbuf.size(), sRGB ) ||

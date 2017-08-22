@@ -53,7 +53,7 @@ void GroundPlane::Clear()
 
 void GroundPlane::Draw( GraphicsContext& gfxContext, eObjectFilter Filter )
 {
-    if (Filter & kGroundPlane)
+    if (Filter & kOpaque)
     {
         gfxContext.SetVertexBuffer( 0, m_VertexBuffer.VertexBufferView() );
         gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );

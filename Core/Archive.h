@@ -8,7 +8,7 @@
 
 #include "FileUtility.h"
 
-namespace Utility 
+namespace Utility
 {
 	namespace fs = boost::filesystem;
 
@@ -20,11 +20,8 @@ namespace Utility
 		kArchiveFile,
 	};
 
-	class Archive;
-	using ArchivePtr = std::shared_ptr<Utility::Archive>;
-
 	//
-	// File read access abstraction layer 
+	// File read access abstraction layer
 	//
 	class Archive
 	{
@@ -64,7 +61,7 @@ namespace Utility
 		virtual fs::path GetKeyName( fs::path name ) const override;
 		virtual Utility::ByteArray GetFile( fs::path name ) override;
 
-		std::vector<std::string> GetFileList() const
+		const std::vector<std::string>& GetFileList() const
 		{
 			return m_PathList;
 		}
