@@ -98,7 +98,7 @@ namespace Math
 	INLINE bool Near( Scalar v1, Scalar v2, Scalar eps ) { return XMVector3NearEqual( v1, v2, eps ); }
 	INLINE bool Near( Vector3 v1, Vector3 v2, Vector3 eps ) { return XMVector3NearEqual( v1, v2, eps ); }
 	INLINE bool Near( Vector4 v1, Vector4 v2, Vector4 eps ) { return XMVector4NearEqual( v1, v2, eps ); }
-
+        INLINE bool Near( XMFLOAT2 v1, XMFLOAT2 v2, Scalar eps ) { XMVECTOR vec1 = XMLoadFloat2( &v1 ), vec2 = XMLoadFloat2( &v2 ); return XMVector2NearEqual( vec1, vec2, eps ); }
 	INLINE Matrix3 Transpose( const Matrix3& mat ) { return Matrix3(XMMatrixTranspose(mat)); }
 
 	// inline Matrix3 Inverse( const Matrix3& mat ) { TBD }

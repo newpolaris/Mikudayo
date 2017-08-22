@@ -82,6 +82,7 @@ namespace Math
 		INLINE explicit AffineTransform( const XMMATRIX& mat )
 			: m_basis(mat), m_translation(mat.r[3]) {}
 
+        // Note that the value of the last member variable is 0
 		INLINE operator XMMATRIX() const { return (XMMATRIX&)*this; }
 
 		INLINE void SetX(Vector3 x) { m_basis.SetX(x); }

@@ -24,9 +24,9 @@ struct AttributeInput
 {
 	float3 normal : NORMAL;
 	float2 uv : TEXTURE;
-	uint2 boneID : BONE_ID;
-	uint boneWeight : BONE_WEIGHT;
-	uint boneFloat : EDGE_FLAT;
+	uint4 boneID : BONE_ID;
+	float4 boneWeight : BONE_WEIGHT;
+	float boneFloat : EDGE_FLAT;
 };
 
 // Per-pixel color data passed through the pixel shader.
@@ -54,13 +54,13 @@ PixelShaderInput main(AttributeInput input, float3 position : POSITION)
 	PixelShaderInput output;
 
     float3 pos, normal;
-    SkinInput skinInput = { position, input.normal, input.boneWeight, input.boneID };
-    Skinning( skinInput, skinData, pos, normal );
+    PmxSkinInput skinInput = { position, input.normal, input.boneWeight, input.boneID };
+    PmxSkinning( skinInput, skinData, pos, normal );
 
     // Transform the vertex position into projected space.
 	matrix modelview = mul( view, model );
 	float4 posV = mul( modelview, float4(pos, 1.0) );
-	output.posV = posV.xyz; 
+	output.posV = posV.xyz;
 	output.posH = mul( projection, posV );
 	output.normalV = mul( (float3x3)modelview, normal );
 	output.uv = input.uv;

@@ -17,5 +17,5 @@ namespace PrimitiveBatch
     void Initialize();
     void Shutdown();
     void Append( ShapeType Type, const AffineTransform& Transform, const Vector3& Size, const Frustum& CameraFrustum );
-    void Flush( GraphicsContext& UiContext );
+    void Flush( GraphicsContext& Context );
 }

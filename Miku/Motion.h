@@ -12,7 +12,7 @@ namespace Math
 
 namespace Graphics
 {
-	class Motion 
+	class Motion
 	{
 	public:
 		Motion( bool bRightHand = true );

@@ -12,6 +12,12 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{8c1469bb-4680-43af-98da-628d635433c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Pmx">
+      <UniqueIdentifier>{4db346b6-f9be-4347-be7a-72e144ea2dac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Pmd">
+      <UniqueIdentifier>{d249a8a9-c0a1-4fe3-9662-070378e702e3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vmd.h">
@@ -24,9 +30,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="GeometryGenerator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MikuModel.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MikuCamera.h">
@@ -47,6 +50,21 @@
     <ClInclude Include="GroundPlane.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Pmx\Model.h">
+      <Filter>Source Files\Pmx</Filter>
+    </ClInclude>
+    <ClInclude Include="Pmd\Model.h">
+      <Filter>Source Files\Pmd</Filter>
+    </ClInclude>
+    <ClInclude Include="IModel.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelLoader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KeyFrameAnimation.cpp">
@@ -59,9 +77,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Vmd.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MikuModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MikuCamera.cpp">
@@ -79,12 +94,24 @@
     <ClCompile Include="GroundPlane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Pmx\Model.cpp">
+      <Filter>Source Files\Pmx</Filter>
+    </ClCompile>
+    <ClCompile Include="Pmd\Model.cpp">
+      <Filter>Source Files\Pmd</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\BonePS.hlsl">
+    <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\BoneVS.hlsl">
+    <FxCompile Include="Shaders\ModelPrimitivePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

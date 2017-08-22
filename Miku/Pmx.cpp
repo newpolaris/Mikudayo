@@ -31,6 +31,27 @@ namespace Pmx
         }
     }
 
+    uint32_t ReadIndexUnsigned( bufferstream& is, uint8_t byteSize )
+    {
+		uint8_t i8;
+		uint16_t i16;
+		uint32_t i32;
+
+        switch (byteSize)
+        {
+		case 1:
+            Read( is, i8 );
+            return i8;
+		case 2:
+            Read( is, i16 );
+            return i16;
+		case 4:
+            Read( is, i32 );
+            return i32;
+		}
+        return 0;
+    }
+
     int32_t ReadIndex( bufferstream& is, uint8_t byteSize )
     {
 		int8_t i8;
@@ -144,8 +165,8 @@ namespace Pmx
         NameEnglish = ReadText( is, bUtf16 );
 
 		Read( is, Diffuse );
-		Read( is, SpecularPower );
 		Read( is, Specular );
+		Read( is, SpecularPower );
 		Read( is, Ambient );
 		Read( is, BitFlag );
 		Read( is, EdgeColor );
@@ -168,8 +189,8 @@ namespace Pmx
 	}
 
 	enum {
-        kJointIndex                = 0x1,
-        kRotatetable               = 0x2,
+        kHasDestinationOriginIndex = 0x1,
+        kRotatable                 = 0x2,
         kMovable                   = 0x4,
         kVisible                   = 0x8,
         kInteractive               = 0x10,
@@ -187,11 +208,11 @@ namespace Pmx
         Position = XMFLOAT3( 0.f, 0.f, 0.f );
         ParentBoneIndex = -1;
 
-        JointIndex = -1;
-        JointOffset = XMFLOAT3( 0.f, 0.f, 0.f );
+        DestinationOriginIndex = -1;
+        DestinationOriginOffset = XMFLOAT3( 0.f, 0.f, 0.f );
 
-        ParentInherentBoneIndex = 0;
-        ParentInherentBoneCoefficent = XMFLOAT3( 0.f, 0.f, 0.f );
+        ParentInherentBoneIndex = -1;
+        ParentInherentBoneCoefficent = 0.f;
 
         bFixedAxis = false;
         FixedAxis = XMFLOAT3( 0.f, 0.f, 0.f );
@@ -211,21 +232,21 @@ namespace Pmx
         NameEnglish = ReadText( is, bUtf16 );
         ReadPosition( is, Position, bRH );
 		ParentBoneIndex = ReadIndex( is, boneIndexByteSize );
-		Read( is, ParentBoneIndex );
 		Read( is, MoprhHierarchy );
 		Read( is, BitFlag );
 
         // bone has destination
-        if (BitFlag & kJointIndex)
-            JointIndex = ReadIndex( is, boneIndexByteSize );
+        if (BitFlag & kHasDestinationOriginIndex)
+            DestinationOriginIndex = ReadIndex( is, boneIndexByteSize );
         else
-            Read( is, JointOffset );
+            Read( is, DestinationOriginOffset );
 
         // bone has additional bias
         if (BitFlag & kHasInherentRotation || BitFlag & kHasInherentTranslation)
-            ParentBoneIndex = ReadIndex( is, boneIndexByteSize );
-        else
+        {
+            ParentInherentBoneIndex = ReadIndex( is, boneIndexByteSize );
             Read( is, ParentInherentBoneCoefficent );
+        }
 
         // axis of bone is fixed
         if (BitFlag & kHasFixedAxis)
@@ -263,7 +284,7 @@ namespace Pmx
 
     void Ik::Fill( bufferstream& is, bool bRH, uint8_t boneIndexByteSize )
     {
-        ReadIndex( is, boneIndexByteSize );
+        BoneIndex = ReadIndex( is, boneIndexByteSize );
         Read( is, NumIteration );
         Read( is, LimitedRadian );
         uint32_t NumLink;
@@ -285,9 +306,10 @@ namespace Pmx
     {
         BoneIndex = ReadIndex( is, boneIndexByteSize );
         Read( is, bLimit );
-        if (bLimit)
+        if (bLimit) {
             ReadRotation( is, MinLimit, bRH );
             ReadRotation( is, MaxLimit, bRH );
+        }
     }
 /*
 	void Face::FaceVertex::Fill( bufferstream & is, bool bRH )
@@ -407,7 +429,7 @@ namespace Pmx
 		uint32_t NumIndices = ReadUint( is );
 		m_Indices.resize( NumIndices );
         for (auto& i : m_Indices)
-            i = ReadIndex( is, GetByteSize( kVertIndx ));
+            i = ReadIndexUnsigned( is, GetByteSize( kVertIndex ));
 		if (bRightHand)
 		{
 			for (uint32_t i = 0; i < NumIndices; i += 3)
@@ -424,12 +446,10 @@ namespace Pmx
 		for (uint32_t i = 0; i < NumMaterial; i++)
 			m_Materials[i].Fill( is, isUtf16(), GetByteSize( kTexIndex ) );
 
-		uint16_t NumBones = ReadShort( is );
+		uint32_t NumBones = ReadUint( is );
 		m_Bones.resize( NumBones );
-		for (uint16_t i = 0; i < NumBones; i++)
-		{
+		for (uint32_t i = 0; i < NumBones; i++)
 			m_Bones[i].Fill( is, bRightHand, isUtf16(), GetByteSize( kBoneIndex ) );
-		}
 
         /*
 		uint16_t NumIK = ReadShort( is );

@@ -61,7 +61,7 @@ GraphicsPSO::GraphicsPSO()
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>();
 }
 
-ComputePSO::ComputePSO( const ComputePSO & PSO )
+ComputePSO::ComputePSO( const ComputePSO& PSO )
 {
 	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
 }

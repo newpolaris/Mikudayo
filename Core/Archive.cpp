@@ -7,7 +7,7 @@
 
 using namespace Utility;
 
-namespace Utility 
+namespace Utility
 {
 	bool isZip( fs::path path )
 	{
@@ -48,7 +48,7 @@ bool ZipArchive::IsExist( fs::path name ) const
 }
 
 //
-// Returns path similar to zipname/name 
+// Returns path similar to zipname/name
 // which can be use as GetFile argument
 //
 fs::path ZipArchive::GetKeyName( fs::path name ) const

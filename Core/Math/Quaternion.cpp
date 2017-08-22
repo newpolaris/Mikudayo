@@ -5,10 +5,10 @@
 
 using namespace Math;
 
-// 
+//
 // Wikipedia
 //
-Vector3 Quaternion::toEuler( void ) const 
+Vector3 Quaternion::toEuler( void ) const
 {
 	XMFLOAT4 q;
 	DirectX::XMStoreFloat4( &q, *this );
@@ -27,7 +27,7 @@ Vector3 Quaternion::toEuler( void ) const
 
 	// yaw (z-axis rotation)
 	float t3 = +2.0f * (q.w * q.z + q.x * q.y);
-	float t4 = +1.0f - 2.0f * (ysqr + q.z * q.z);  
+	float t4 = +1.0f - 2.0f * (ysqr + q.z * q.z);
 	float yaw = std::atan2(t3, t4);
 
 	return Vector3( roll, pitch, yaw );
@@ -54,7 +54,7 @@ Quaternion Math::RotationBetweenVectors( Vector3 start, Vector3 dest )
             rotationAxis = Cross( Vector3( 1.0f, 0.0f, 0.0f ), start );
 
         rotationAxis = Normalize( rotationAxis );
-        return Quaternion( rotationAxis, 180.0f );
+        return Quaternion( rotationAxis, XM_PI );
     }
 
     // Implementation from Stan Melax's Game Programming Gems 1 article

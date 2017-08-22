@@ -62,13 +62,24 @@
     <Import Project="..\PropertySheets\Release.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AssemblerListingLocation>$(IntDir))/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir))/%(RelativeDir)/</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir))/%(RelativeDir)/</XMLDocumentationFileName>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -76,6 +87,9 @@
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AssemblerListingLocation>$(IntDir))/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir))/%(RelativeDir)/</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir))/%(RelativeDir)/</XMLDocumentationFileName>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -86,6 +100,9 @@
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AssemblerListingLocation>$(IntDir))/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir))/%(RelativeDir)/</ObjectFileName>
+      <XMLDocumentationFileName>$(IntDir))/%(RelativeDir)/</XMLDocumentationFileName>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -95,14 +112,22 @@
   <ItemGroup>
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="GroundPlane.h" />
+    <ClInclude Include="IModel.h" />
     <ClInclude Include="IRenderObject.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="MikuCamera.h" />
     <ClInclude Include="MikuCameraController.h" />
-    <ClInclude Include="MikuModel.h" />
+    <ClInclude Include="ModelBase.h" />
+    <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="Pmd.h" />
     <ClInclude Include="Motion.h" />
+    <ClInclude Include="Pmd\Model.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Pmx.h" />
+    <ClInclude Include="Pmx\Model.h" />
     <ClInclude Include="Vmd.h" />
   </ItemGroup>
   <ItemGroup>
@@ -111,23 +136,32 @@
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="MikuCamera.cpp" />
     <ClCompile Include="MikuCameraController.cpp" />
-    <ClCompile Include="MikuModel.cpp" />
+    <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="Pmd.cpp" />
     <ClCompile Include="Motion.cpp" />
+    <ClCompile Include="Pmd\Model.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Pmx.cpp" />
+    <ClCompile Include="Pmx\Model.cpp" />
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\BonePS.hlsl">
+    <FxCompile Include="Shaders\ModelPrimitivePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\BoneVS.hlsl">
+    <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ModelBase.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

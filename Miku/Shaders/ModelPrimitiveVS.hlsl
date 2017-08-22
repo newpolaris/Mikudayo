@@ -6,7 +6,7 @@ cbuffer VSConstants: register(b0)
 
 cbuffer Constants : register(b1)
 {
-	matrix model;
+	matrix model[64];
 };
 
 // Per-vertex data used as input to the vertex shader.
@@ -19,8 +19,8 @@ struct VertexShaderInput
 };
 
 // Simple shader to do vertex processing on the GPU.
-float4 main(VertexShaderInput input) : SV_POSITION
+float4 main(VertexShaderInput input, uint instanceID : SV_InstanceID ) : SV_POSITION
 {
 	float4 pos = float4(input.pos, 1.0f);
-	return mul(mul(projection, mul(view, model)), pos);
+	return mul(mul(projection, mul(view, model[instanceID])), pos);
 }

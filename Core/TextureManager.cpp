@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author(s):  James Stanard 
+// Author(s):  James Stanard
 //             Alex Nankervis
 //
 
@@ -19,6 +19,7 @@
 #include "CommandContext.h"
 #include "WICTextureLoader.h"
 #include "DDSTextureLoader.h"
+#include "DirectXTex.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -29,158 +30,9 @@
 using namespace std;
 using namespace Graphics;
 
-//--------------------------------------------------------------------------------------
-// Return the BPP for a particular format
-//--------------------------------------------------------------------------------------
-size_t BitsPerPixel( _In_ DXGI_FORMAT fmt )
-{
-    switch( fmt )
-    {
-    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-    case DXGI_FORMAT_R32G32B32A32_FLOAT:
-    case DXGI_FORMAT_R32G32B32A32_UINT:
-    case DXGI_FORMAT_R32G32B32A32_SINT:
-        return 128;
-
-    case DXGI_FORMAT_R32G32B32_TYPELESS:
-    case DXGI_FORMAT_R32G32B32_FLOAT:
-    case DXGI_FORMAT_R32G32B32_UINT:
-    case DXGI_FORMAT_R32G32B32_SINT:
-        return 96;
-
-    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-    case DXGI_FORMAT_R16G16B16A16_FLOAT:
-    case DXGI_FORMAT_R16G16B16A16_UNORM:
-    case DXGI_FORMAT_R16G16B16A16_UINT:
-    case DXGI_FORMAT_R16G16B16A16_SNORM:
-    case DXGI_FORMAT_R16G16B16A16_SINT:
-    case DXGI_FORMAT_R32G32_TYPELESS:
-    case DXGI_FORMAT_R32G32_FLOAT:
-    case DXGI_FORMAT_R32G32_UINT:
-    case DXGI_FORMAT_R32G32_SINT:
-    case DXGI_FORMAT_R32G8X24_TYPELESS:
-    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-    case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-    case DXGI_FORMAT_Y416:
-    case DXGI_FORMAT_Y210:
-    case DXGI_FORMAT_Y216:
-        return 64;
-
-    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-    case DXGI_FORMAT_R10G10B10A2_UNORM:
-    case DXGI_FORMAT_R10G10B10A2_UINT:
-    case DXGI_FORMAT_R11G11B10_FLOAT:
-    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-    case DXGI_FORMAT_R8G8B8A8_UNORM:
-    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-    case DXGI_FORMAT_R8G8B8A8_UINT:
-    case DXGI_FORMAT_R8G8B8A8_SNORM:
-    case DXGI_FORMAT_R8G8B8A8_SINT:
-    case DXGI_FORMAT_R16G16_TYPELESS:
-    case DXGI_FORMAT_R16G16_FLOAT:
-    case DXGI_FORMAT_R16G16_UNORM:
-    case DXGI_FORMAT_R16G16_UINT:
-    case DXGI_FORMAT_R16G16_SNORM:
-    case DXGI_FORMAT_R16G16_SINT:
-    case DXGI_FORMAT_R32_TYPELESS:
-    case DXGI_FORMAT_D32_FLOAT:
-    case DXGI_FORMAT_R32_FLOAT:
-    case DXGI_FORMAT_R32_UINT:
-    case DXGI_FORMAT_R32_SINT:
-    case DXGI_FORMAT_R24G8_TYPELESS:
-    case DXGI_FORMAT_D24_UNORM_S8_UINT:
-    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-    case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-    case DXGI_FORMAT_R8G8_B8G8_UNORM:
-    case DXGI_FORMAT_G8R8_G8B8_UNORM:
-    case DXGI_FORMAT_B8G8R8A8_UNORM:
-    case DXGI_FORMAT_B8G8R8X8_UNORM:
-    case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
-    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-    case DXGI_FORMAT_B8G8R8X8_TYPELESS:
-    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-    case DXGI_FORMAT_AYUV:
-    case DXGI_FORMAT_Y410:
-    case DXGI_FORMAT_YUY2:
-        return 32;
-
-    case DXGI_FORMAT_P010:
-    case DXGI_FORMAT_P016:
-        return 24;
-
-    case DXGI_FORMAT_R8G8_TYPELESS:
-    case DXGI_FORMAT_R8G8_UNORM:
-    case DXGI_FORMAT_R8G8_UINT:
-    case DXGI_FORMAT_R8G8_SNORM:
-    case DXGI_FORMAT_R8G8_SINT:
-    case DXGI_FORMAT_R16_TYPELESS:
-    case DXGI_FORMAT_R16_FLOAT:
-    case DXGI_FORMAT_D16_UNORM:
-    case DXGI_FORMAT_R16_UNORM:
-    case DXGI_FORMAT_R16_UINT:
-    case DXGI_FORMAT_R16_SNORM:
-    case DXGI_FORMAT_R16_SINT:
-    case DXGI_FORMAT_B5G6R5_UNORM:
-    case DXGI_FORMAT_B5G5R5A1_UNORM:
-    case DXGI_FORMAT_A8P8:
-    case DXGI_FORMAT_B4G4R4A4_UNORM:
-        return 16;
-
-    case DXGI_FORMAT_NV12:
-    case DXGI_FORMAT_420_OPAQUE:
-    case DXGI_FORMAT_NV11:
-        return 12;
-
-    case DXGI_FORMAT_R8_TYPELESS:
-    case DXGI_FORMAT_R8_UNORM:
-    case DXGI_FORMAT_R8_UINT:
-    case DXGI_FORMAT_R8_SNORM:
-    case DXGI_FORMAT_R8_SINT:
-    case DXGI_FORMAT_A8_UNORM:
-    case DXGI_FORMAT_AI44:
-    case DXGI_FORMAT_IA44:
-    case DXGI_FORMAT_P8:
-        return 8;
-
-    case DXGI_FORMAT_R1_UNORM:
-        return 1;
-
-    case DXGI_FORMAT_BC1_TYPELESS:
-    case DXGI_FORMAT_BC1_UNORM:
-    case DXGI_FORMAT_BC1_UNORM_SRGB:
-    case DXGI_FORMAT_BC4_TYPELESS:
-    case DXGI_FORMAT_BC4_UNORM:
-    case DXGI_FORMAT_BC4_SNORM:
-        return 4;
-
-    case DXGI_FORMAT_BC2_TYPELESS:
-    case DXGI_FORMAT_BC2_UNORM:
-    case DXGI_FORMAT_BC2_UNORM_SRGB:
-    case DXGI_FORMAT_BC3_TYPELESS:
-    case DXGI_FORMAT_BC3_UNORM:
-    case DXGI_FORMAT_BC3_UNORM_SRGB:
-    case DXGI_FORMAT_BC5_TYPELESS:
-    case DXGI_FORMAT_BC5_UNORM:
-    case DXGI_FORMAT_BC5_SNORM:
-    case DXGI_FORMAT_BC6H_TYPELESS:
-    case DXGI_FORMAT_BC6H_UF16:
-    case DXGI_FORMAT_BC6H_SF16:
-    case DXGI_FORMAT_BC7_TYPELESS:
-    case DXGI_FORMAT_BC7_UNORM:
-    case DXGI_FORMAT_BC7_UNORM_SRGB:
-        return 8;
-
-    default:
-        return 0;
-    }
-}
-
 static UINT BytesPerPixel( DXGI_FORMAT Format )
 {
-	return (UINT)BitsPerPixel(Format) / 8;
+	return (UINT)DirectX::BitsPerPixel(Format) / 8;
 };
 
 void Texture::Create( size_t Width, size_t Height, DXGI_FORMAT Format, const void* InitialData )
@@ -225,33 +77,48 @@ bool Texture::CreateWICFromMemory( const void* memBuffer, size_t bufferSize, boo
 {
 	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_DEFAULT;
     GraphicsContext& gfxContext = GraphicsContext::Begin();
-	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx( 
+    // Load texture and generate mips at the same time
+	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx(
         Graphics::g_Device,
         gfxContext.m_CommandList,
-		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT, 
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, 
-		0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag, 
+		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT,
+		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
+		0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag,
 		m_pResource.GetAddressOf(), m_SRV.GetAddressOf());
     gfxContext.Finish();
-	return SUCCEEDED(hr);
+
+	return SUCCEEDED( hr );
+}
+
+bool Texture::CreateTGAFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
+{
+    DirectX::ScratchImage image, mipChain;
+    HRESULT hr = DirectX::LoadFromTGAMemory( memBuffer, bufferSize, nullptr, image );
+    if (SUCCEEDED(hr))
+        hr = DirectX::GenerateMipMaps( image.GetImages(), image.GetImageCount(), image.GetMetadata(), TEX_FILTER_DEFAULT, 0, mipChain );
+    if (SUCCEEDED(hr))
+        hr = DirectX::CreateShaderResourceViewEx( Graphics::g_Device, mipChain.GetImages(),
+            mipChain.GetImageCount(), mipChain.GetMetadata(),
+            D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE,
+            0, 0, sRGB, m_pResource.GetAddressOf(), m_SRV.GetAddressOf() );
+	return SUCCEEDED( hr );
 }
 
 bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
 {
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV;
 	HRESULT hr = DirectX::CreateDDSTextureFromMemoryEx( Graphics::g_Device,
-		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT, 
-		D3D11_BIND_SHADER_RESOURCE, 
-		0, 0, sRGB, 
-		m_pResource.GetAddressOf(), SRV.GetAddressOf());
-	
+		(uint8_t*)(memBuffer), bufferSize, 0, D3D11_USAGE_DEFAULT,
+		D3D11_BIND_SHADER_RESOURCE,
+		0, 0, sRGB,
+		m_pResource.GetAddressOf(), m_SRV.GetAddressOf());
+
 	if (SUCCEEDED(hr))
 	{
+        // Can't generate mips error happens
+        //
 		// GraphicsContext& gfxContext = GraphicsContext::Begin( L"MipMap" );
 		// gfxContext.GenerateMips( SRV.Get() );
 		// gfxContext.Finish();
-
-		m_SRV.Swap(SRV);
 	}
 	return SUCCEEDED(hr);
 }
@@ -356,7 +223,7 @@ namespace TextureManager
 
 ManagedTexture::~ManagedTexture()
 {
-    if (m_LoadThread.joinable()) 
+    if (m_LoadThread.joinable())
         m_LoadThread.join();
     if (m_Future.valid())
         m_Future.get();
@@ -372,7 +239,7 @@ void ManagedTexture::SetTask( Task&& task )
 void ManagedTexture::WaitForLoad( void ) const
 {
     auto pointer = const_cast<ManagedTexture*>(this);
-    if (m_LoadThread.joinable()) 
+    if (m_LoadThread.joinable())
         pointer->m_LoadThread.join();
     if (m_Future.valid())
         pointer->m_Future.get();
@@ -383,24 +250,27 @@ const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, boo
 	fs::path path( fileName );
 	if (path.has_extension())
 	{
-		auto ext = path.extension().generic_wstring();
-
+		auto ext = boost::to_lower_copy(path.extension().generic_wstring());
 		const ManagedTexture* Tex = nullptr;
-		if (boost::to_lower_copy(ext) == L".dds" )
+		if ( ext == L".dds" )
 			Tex = LoadDDSFromFile( fileName, sRGB );
-		else
+        else if ( ext == L".tga" )
+			Tex = LoadTGAFromFile( fileName, sRGB );
+        else
 			Tex = LoadWISFromFile( fileName, sRGB );
 		return Tex;
 	}
 	else
 	{
-		path.replace_extension( L".dds" );
 		const ManagedTexture* Tex = nullptr;
-        auto t = fs::current_path();
-        if (fs::exists(path) || fs::exists(s_RootPath / path))
+		path.replace_extension( L".dds" );
+        if (fs::exists(path) || fs::exists(s_RootPath/path))
             Tex = LoadDDSFromFile( path.generic_wstring(), sRGB );
-        else
-			Tex = LoadWISFromFile( path.generic_wstring(), sRGB );
+		path.replace_extension( L".tga" );
+        if (fs::exists(path) || fs::exists(s_RootPath/path))
+            Tex = LoadTGAFromFile( path.generic_wstring(), sRGB );
+		path.replace_extension( L".png" );
+        Tex = LoadWISFromFile( path.generic_wstring(), sRGB );
 		return Tex;
 	}
 }
@@ -442,6 +312,40 @@ const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, 
     });
     ManTex->SetTask( std::move( task ));
     return ManTex;
+}
+
+const ManagedTexture* TextureManager::LoadTGAFromFile( const wstring& fileName, bool sRGB )
+{
+	auto ManagedTex = FindOrLoadTexture( fileName );
+
+	ManagedTexture* ManTex = ManagedTex.first;
+	const bool RequestsLoad = ManagedTex.second;
+
+	if (!RequestsLoad)
+	{
+		ManTex->WaitForLoad();
+		return ManTex;
+	}
+
+    ManagedTexture::Task task( [=]
+    {
+        Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+        if (ba->size() == 0)
+        {
+            fs::path path( s_RootPath );
+            path /= fileName;
+
+            ba = Utility::ReadFileSync( path.generic_wstring() );
+        }
+
+        if (ba->size() == 0 || !ManTex->CreateTGAFromMemory( ba->data(), ba->size(), sRGB ))
+            ManTex->SetToInvalidTexture();
+        else
+            SetName( ManTex->GetResource(), fileName );
+    });
+    ManTex->SetTask( std::move(task) );
+
+	return ManTex;
 }
 
 const ManagedTexture* TextureManager::LoadWISFromFile( const wstring& fileName, bool sRGB )
@@ -496,7 +400,7 @@ const ManagedTexture* TextureManager::LoadFromStream( const std::wstring& key, s
     const std::string& s = ss.str();
     std::vector<char> buf( s.begin(), s.end() );
 
-    ManagedTexture::Task task( [cbuf = std::move(buf), sRGB, ManTex, key] 
+    ManagedTexture::Task task( [cbuf = std::move(buf), sRGB, ManTex, key]
     {
         if (cbuf.size() == 0 ||
             !(ManTex->CreateDDSFromMemory( cbuf.data(), cbuf.size(), sRGB ) ||
@@ -526,7 +430,8 @@ const ManagedTexture* TextureManager::LoadFromMemory( const std::wstring& key, U
     {
         if (ba->size() == 0 ||
             !(ManTex->CreateDDSFromMemory( ba->data(), ba->size(), sRGB ) ||
-                ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB )))
+                ManTex->CreateWICFromMemory( ba->data(), ba->size(), sRGB ) ||
+                ManTex->CreateTGAFromMemory( ba->data(), ba->size(), sRGB )))
             ManTex->SetToInvalidTexture();
         else
             SetName( ManTex->GetResource(), key );
