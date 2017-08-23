@@ -312,19 +312,19 @@ void SoftbodyExample::Startup( void )
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
 
-    // m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) } ) ) );
+    m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) } ) ) );
 
     {
         const btScalar s = 4; // size of cloth patch
         const int NUM_X = 31; // vertices on X axis
         const int NUM_Z = 31; // vertices on Z axis
-        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(0, 25, 0 ) );
+        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(0, 0, 0 ) );
     }
     {
         const btScalar s = 4; // size of cloth patch
         const int NUM_X = 31; // vertices on X axis
         const int NUM_Z = 31; // vertices on Z axis
-        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(15, 25, 0) );
+        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(15, 0, 0) );
     }
 }
 

@@ -106,6 +106,9 @@
     <ProjectReference Include="..\..\..\Core\Core_VS14.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Miku\Miku_VS14.vcxproj">
+      <Project>{2229c8e4-2050-451d-9126-b800f35a4b79}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Bullet.vcxproj">
       <Project>{ff4d1578-70e5-4953-9889-d99c88bba923}</Project>
     </ProjectReference>
