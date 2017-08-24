@@ -153,6 +153,7 @@
     <None Include="Shaders\FXAAPS.hlsli" />
     <None Include="Shaders\FXAARootSignature.hlsli" />
     <None Include="Shaders\MotionBlurRS.hlsli" />
+    <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\PixelPacking.hlsli" />
     <None Include="Shaders\PixelPacking_LUV.hlsli" />
     <None Include="Shaders\PixelPacking_R11G11B10.hlsli" />
@@ -160,6 +161,8 @@
     <None Include="Shaders\PixelPacking_RGBM.hlsli" />
     <None Include="Shaders\PixelPacking_Velocity.hlsli" />
     <None Include="Shaders\ShaderUtility.hlsli" />
+    <None Include="Shaders\Shadow.hlsli" />
+    <None Include="Shaders\ShadowDefine.hlsli" />
     <None Include="Shaders\TemporalRS.hlsli" />
     <None Include="Shaders\TextRS.hlsli" />
   </ItemGroup>

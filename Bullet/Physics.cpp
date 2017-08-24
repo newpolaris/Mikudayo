@@ -4,6 +4,7 @@
 #include "GameCore.h"
 #include "EngineTuning.h"
 #include "Utility.h"
+#include "VectorMath.h"
 #define BT_THREADSAFE 1
 #define BT_NO_SIMD_OPERATOR_OVERLOADS 1
 #include "Physics.h"
@@ -14,13 +15,15 @@
 #include "LinearMath/btThreads.h"
 #include "LinearMath/btQuickprof.h"
 #include "TextUtility.h"
-
-using namespace Math;
+#include "BulletSoftBody/btSoftBodyHelpers.h"
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
+#include "BulletDynamics/Dynamics/InplaceSolverIslandCallbackMt.h"
 
 namespace Physics
 {
     BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
-    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
+    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
 
     // bullet needs to define BT_THREADSAFE and (BT_USE_OPENMP || BT_USE_PPL || BT_USE_TBB)
     const bool bMultithreadCapable = true;
@@ -33,17 +36,30 @@ namespace Physics
         // SOLVER_USE_2_FRICTION_DIRECTIONS |
         0;
 
-	btDynamicsWorld* g_DynamicsWorld = nullptr;
+	btSoftRigidDynamicsWorld* g_DynamicsWorld = nullptr;
 
     std::unique_ptr<btDefaultCollisionConfiguration> Config;
     std::unique_ptr<btBroadphaseInterface> Broadphase;
     std::unique_ptr<btCollisionDispatcher> Dispatcher;
     std::unique_ptr<btConstraintSolver> Solver;
-    std::unique_ptr<btDiscreteDynamicsWorld> DynamicsWorld;
+    std::unique_ptr<btSoftRigidDynamicsWorld> DynamicsWorld;
     std::unique_ptr<BulletDebug::DebugDraw> DebugDrawer;
-
+    btSoftBodyWorldInfo SoftBodyWorldInfo;
+    btSoftBodyWorldInfo* g_SoftBodyWorldInfo = &SoftBodyWorldInfo;
     btConstraintSolver* CreateSolverByType( SolverType t );
 };
+
+using namespace Physics;
+
+void EnterProfileZoneDefault(const char* name)
+{
+    PushProfilingMarker( Utility::MakeWStr(std::string(name)), nullptr );
+}
+
+void LeaveProfileZoneDefault()
+{
+    PopProfilingMarker( nullptr );
+}
 
 btConstraintSolver* Physics::CreateSolverByType( SolverType t )
 {
@@ -70,16 +86,6 @@ btConstraintSolver* Physics::CreateSolverByType( SolverType t )
     return NULL;
 }
 
-void EnterProfileZoneDefault(const char* name)
-{
-    PushProfilingMarker( Utility::MakeWStr(std::string(name)), nullptr );
-}
-
-void LeaveProfileZoneDefault()
-{
-    PopProfilingMarker( nullptr );
-}
-
 void Physics::Initialize( void )
 {
     BulletDebug::Initialize();
@@ -93,7 +99,7 @@ void Physics::Initialize( void )
         btDefaultCollisionConstructionInfo cci;
         cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
         cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
-        Config = std::make_unique<btDefaultCollisionConfiguration>( cci );
+        Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration >( cci );
 
 #if USE_PARALLEL_NARROWPHASE
         Dispatcher = std::make_unique<MyCollisionDispatcher>( Config.get() );
@@ -114,8 +120,7 @@ void Physics::Initialize( void )
 #else
         Solver.reset( CreateSolverByType( m_SolverType ) );
 #endif //#if USE_PARALLEL_ISLAND_SOLVER
-
-        DynamicsWorld = std::make_unique<MyDiscreteDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+        DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
 
 #if USE_PARALLEL_ISLAND_SOLVER
         if ( btSimulationIslandManagerMt* islandMgr = dynamic_cast<btSimulationIslandManagerMt*>( DynamicsWorld->getSimulationIslandManager() ) )
@@ -124,13 +129,18 @@ void Physics::Initialize( void )
     }
     else
     {
-        Config = std::make_unique<btDefaultCollisionConfiguration>();
+        Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration>();
         Broadphase = std::make_unique<btDbvtBroadphase>();
         Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
         Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
         Solver.reset( CreateSolverByType( m_SolverType ) );
-        DynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+        DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
     }
+    SoftBodyWorldInfo.m_broadphase = Broadphase.get();
+    SoftBodyWorldInfo.m_dispatcher = Dispatcher.get();
+    SoftBodyWorldInfo.m_gravity = DynamicsWorld->getGravity();
+    SoftBodyWorldInfo.m_sparsesdf.Initialize();
+
     ASSERT( DynamicsWorld != nullptr );
     DynamicsWorld->setGravity( btVector3( 0, -EarthGravity, 0 ) );
     DynamicsWorld->setInternalTickCallback( profileBeginCallback, NULL, true );
@@ -139,6 +149,7 @@ void Physics::Initialize( void )
 
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
+        // btIDebugDraw::DBG_DrawAabb |
         // btIDebugDraw::DBG_DrawConstraints |
         // btIDebugDraw::DBG_DrawConstraintLimits |
         btIDebugDraw::DBG_DrawWireframe
@@ -151,8 +162,16 @@ void Physics::Initialize( void )
 void Physics::Shutdown( void )
 {
     gTaskMgr.shutdown();
+    SoftBodyWorldInfo.m_sparsesdf.Reset();
     BulletDebug::Shutdown();
 
+    int Len = (int)DynamicsWorld->getSoftBodyArray().size();
+    for (int i = Len -1; i >= 0; i--)
+    {
+        btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
+        DynamicsWorld->removeSoftBody( psb );
+        delete psb;
+    }
     ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
         "Remove all rigidbody objects from world");
 
@@ -167,18 +186,25 @@ void Physics::Update( float deltaT )
     DynamicsWorld->stepSimulation( deltaT, 1 );
 }
 
-void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
+void Physics::Render( GraphicsContext& Context, const Math::Matrix4& ClipToWorld )
 {
     ASSERT( DynamicsWorld.get() != nullptr );
     if (s_bDebugDraw)
     {
         DynamicsWorld->debugDrawWorld();
+        for (int i = 0; i < DynamicsWorld->getSoftBodyArray().size(); i++)
+		{
+            btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
+            btSoftBodyHelpers::DrawFrame( psb, DynamicsWorld->getDebugDrawer() );
+            btSoftBodyHelpers::Draw( psb, DynamicsWorld->getDebugDrawer(), DynamicsWorld->getDrawFlags() );
+		}
         DebugDrawer->flush( Context, ClipToWorld );
     }
 }
 
 void Physics::Profile( ProfileStatus& Status )
 {
+    Status.NumIslands = gNumIslands;
     Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
     int numContacts = 0;
     int numManifolds = Dispatcher->getNumManifolds();
@@ -193,7 +219,6 @@ void Physics::Profile( ProfileStatus& Status )
     Status.InternalTimeStep = gProfiler.getAverageTime( Profiler::kRecordInternalTimeStep )*0.001f;
     if (bMultithreadCapable)
     {
-        Status.NumIslands = gNumIslands;
         Status.DispatchAllCollisionPairs = gProfiler.getAverageTime( Profiler::kRecordDispatchAllCollisionPairs )*0.001f;
         Status.DispatchIslands = gProfiler.getAverageTime( Profiler::kRecordDispatchIslands )*0.001f;
         Status.PredictUnconstrainedMotion = gProfiler.getAverageTime( Profiler::kRecordPredictUnconstrainedMotion )*0.001f;
@@ -201,3 +226,4 @@ void Physics::Profile( ProfileStatus& Status )
         Status.IntegrateTransforms = gProfiler.getAverageTime( Profiler::kRecordIntegrateTransforms )*0.001f;
     }
 }
+

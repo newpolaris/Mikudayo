@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include "GameCore.h"
 #include "GraphicsCore.h"
@@ -14,261 +14,40 @@
 #include "GameInput.h"
 #include "Physics.h"
 #include "TextureManager.h"
+#include "ModelBase.h"
+#include "ModelLoader.h"
 #include "PhysicsPrimitive.h"
 #include "PrimitiveBatch.h"
-
-#include "GameCore.h"
-#include "EngineTuning.h"
-#include "Utility.h"
-#define BT_THREADSAFE 1
-#define BT_NO_SIMD_OPERATOR_OVERLOADS 1
-#include "btBulletDynamicsCommon.h"
-#include "BaseRigidBody.h"
-#include "BulletDebugDraw.h"
-#include "MultiThread.inl"
-#include "LinearMath/btThreads.h"
+#include "Pmx.h"
+#include "BulletSoftBody/btSoftBody.h"
 #include "BulletSoftBody/btSoftBodyHelpers.h"
-#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
-#include "BulletDynamics/Dynamics/InplaceSolverIslandCallbackMt.h"
+
+#include "CompiledShaders/PmxOpaqueVS.h"
+#include "CompiledShaders/PmxOpaquePS.h"
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <boost/filesystem/path.hpp>
 
 using namespace Math;
-
-namespace Physics
-{
-    BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
-    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
-
-    // bullet needs to define BT_THREADSAFE and (BT_USE_OPENMP || BT_USE_PPL || BT_USE_TBB)
-    const bool bMultithreadCapable = true;
-    const float EarthGravity = 9.8f;
-    SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
-    int m_SolverMode = SOLVER_SIMD |
-        SOLVER_USE_WARMSTARTING |
-        // SOLVER_RANDMIZE_ORDER |
-        // SOLVER_INTERLEAVE_CONTACT_AND_FRICTION_CONSTRAINTS |
-        // SOLVER_USE_2_FRICTION_DIRECTIONS |
-        0;
-
-	btDynamicsWorld* g_DynamicsWorld = nullptr;
-
-    std::unique_ptr<btDefaultCollisionConfiguration> Config;
-    std::unique_ptr<btBroadphaseInterface> Broadphase;
-    std::unique_ptr<btCollisionDispatcher> Dispatcher;
-    std::unique_ptr<btConstraintSolver> Solver;
-    std::unique_ptr<btSoftRigidDynamicsWorld> DynamicsWorld;
-    std::unique_ptr<BulletDebug::DebugDraw> DebugDrawer;
-    btSoftBodyWorldInfo SoftBodyWorldInfo;
-
-    btConstraintSolver* CreateSolverByType( SolverType t );
-};
-
-void EnterProfileZoneDefault(const char* name)
-{
-    PushProfilingMarker( Utility::MakeWStr(std::string(name)), nullptr );
-}
-
-void LeaveProfileZoneDefault()
-{
-    PopProfilingMarker( nullptr );
-}
-
-btConstraintSolver* Physics::CreateSolverByType( SolverType t )
-{
-    btMLCPSolverInterface* mlcpSolver = NULL;
-    switch (t)
-    {
-    case SOLVER_TYPE_SEQUENTIAL_IMPULSE:
-        return new btSequentialImpulseConstraintSolver();
-    case SOLVER_TYPE_NNCG:
-        return new btNNCGConstraintSolver();
-    case SOLVER_TYPE_MLCP_PGS:
-        mlcpSolver = new btSolveProjectedGaussSeidel();
-        break;
-    case SOLVER_TYPE_MLCP_DANTZIG:
-        mlcpSolver = new btDantzigSolver();
-        break;
-    case SOLVER_TYPE_MLCP_LEMKE:
-        mlcpSolver = new btLemkeSolver();
-        break;
-    default: {}
-    }
-    if (mlcpSolver)
-        return new btMLCPSolver( mlcpSolver );
-    return NULL;
-}
-
-void Physics::Initialize( void )
-{
-    BulletDebug::Initialize();
-    gTaskMgr.init(4);
-
-    btSetCustomEnterProfileZoneFunc(EnterProfileZoneDefault);
-    btSetCustomLeaveProfileZoneFunc(LeaveProfileZoneDefault);
-
-    if (bMultithreadCapable)
-    {
-        btDefaultCollisionConstructionInfo cci;
-        cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
-        cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
-        Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration >( cci );
-
-#if USE_PARALLEL_NARROWPHASE
-        Dispatcher = std::make_unique<MyCollisionDispatcher>( Config.get() );
-#else
-        Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
-#endif //USE_PARALLEL_NARROWPHASE
-
-        Broadphase = std::make_unique<btDbvtBroadphase>();
-
-#if USE_PARALLEL_ISLAND_SOLVER
-        {
-            btConstraintSolver* solvers[ BT_MAX_THREAD_COUNT ];
-            int maxThreadCount = btMin( int(BT_MAX_THREAD_COUNT), TaskManager::getMaxNumThreads() );
-            for ( int i = 0; i < maxThreadCount; ++i )
-                solvers[ i ] = CreateSolverByType( m_SolverType );
-            Solver.reset( new MyConstraintSolverPool( solvers, maxThreadCount ) );
-        }
-#else
-        Solver.reset( CreateSolverByType( m_SolverType ) );
-#endif //#if USE_PARALLEL_ISLAND_SOLVER
-
-        // DynamicsWorld = std::make_unique<MySoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
-        DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
-
-#if USE_PARALLEL_ISLAND_SOLVER
-        if ( btSimulationIslandManagerMt* islandMgr = dynamic_cast<btSimulationIslandManagerMt*>( DynamicsWorld->getSimulationIslandManager() ) )
-            islandMgr->setIslandDispatchFunction( parallelIslandDispatch );
-#endif //#if USE_PARALLEL_ISLAND_SOLVER
-    }
-    else
-    {
-        Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration>();
-        Broadphase = std::make_unique<btDbvtBroadphase>();
-        Dispatcher = std::make_unique<btCollisionDispatcher>( Config.get() );
-        Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
-        Solver.reset( CreateSolverByType( m_SolverType ) );
-        DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
-    }
-    SoftBodyWorldInfo.m_broadphase = Broadphase.get();
-    SoftBodyWorldInfo.m_dispatcher = Dispatcher.get();
-    SoftBodyWorldInfo.m_gravity = DynamicsWorld->getGravity();
-    SoftBodyWorldInfo.m_sparsesdf.Initialize();
-
-    ASSERT( DynamicsWorld != nullptr );
-    DynamicsWorld->setGravity( btVector3( 0, -EarthGravity, 0 ) );
-    DynamicsWorld->setInternalTickCallback( profileBeginCallback, NULL, true );
-    DynamicsWorld->setInternalTickCallback( profileEndCallback, NULL, false );
-    DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
-
-    DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
-    DebugDrawer->setDebugMode( btIDebugDraw::DBG_DrawWireframe );
-    DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
-
-    g_DynamicsWorld = DynamicsWorld.get();
-}
-
-void Physics::Shutdown( void )
-{
-    gTaskMgr.shutdown();
-    SoftBodyWorldInfo.m_sparsesdf.Reset();
-    BulletDebug::Shutdown();
-
-    int Len = (int)DynamicsWorld->getSoftBodyArray().size();
-    for (int i = Len -1; i >= 0; i--)
-    {
-        btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
-        DynamicsWorld->removeSoftBody( psb );
-        delete psb;
-    }
-    ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
-        "Remove all rigidbody objects from world");
-
-    DynamicsWorld.reset( nullptr );
-    g_DynamicsWorld = nullptr;
-}
-
-void Physics::Update( float deltaT )
-{
-    DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
-    ASSERT(DynamicsWorld.get() != nullptr);
-    DynamicsWorld->stepSimulation( deltaT, 1 );
-}
-
-void Physics::Render( GraphicsContext& Context, const Matrix4& ClipToWorld )
-{
-    ASSERT( DynamicsWorld.get() != nullptr );
-    if (s_bDebugDraw)
-    {
-        DynamicsWorld->debugDrawWorld();
-        for (int i = 0; i < DynamicsWorld->getSoftBodyArray().size(); i++)
-		{
-            btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
-            btSoftBodyHelpers::DrawFrame( psb, DynamicsWorld->getDebugDrawer() );
-            btSoftBodyHelpers::Draw( psb, DynamicsWorld->getDebugDrawer(), DynamicsWorld->getDrawFlags() );
-		}
-        DebugDrawer->flush( Context, ClipToWorld );
-    }
-}
-
-void Physics::Profile( ProfileStatus& Status )
-{
-    Status.NumIslands = gNumIslands;
-    Status.NumCollisionObjects = DynamicsWorld->getNumCollisionObjects();
-    int numContacts = 0;
-    int numManifolds = Dispatcher->getNumManifolds();
-    for (int i = 0; i < numManifolds; ++i)
-    {
-        const btPersistentManifold* man = Dispatcher->getManifoldByIndexInternal( i );
-        numContacts += man->getNumContacts();
-    }
-    Status.NumManifolds = numManifolds;
-    Status.NumContacts = numContacts;
-    Status.NumThread = gTaskMgr.getNumThreads();
-    Status.InternalTimeStep = gProfiler.getAverageTime( Profiler::kRecordInternalTimeStep )*0.001f;
-    if (bMultithreadCapable)
-    {
-        Status.DispatchAllCollisionPairs = gProfiler.getAverageTime( Profiler::kRecordDispatchAllCollisionPairs )*0.001f;
-        Status.DispatchIslands = gProfiler.getAverageTime( Profiler::kRecordDispatchIslands )*0.001f;
-        Status.PredictUnconstrainedMotion = gProfiler.getAverageTime( Profiler::kRecordPredictUnconstrainedMotion )*0.001f;
-        Status.CreatePredictiveContacts = gProfiler.getAverageTime( Profiler::kRecordCreatePredictiveContacts )*0.001f;
-        Status.IntegrateTransforms = gProfiler.getAverageTime( Profiler::kRecordIntegrateTransforms )*0.001f;
-    }
-}
-
-namespace {
-    std::vector<Primitive::PhysicsPrimitivePtr> m_Models;
-};
-
-void CreateSoftBody(const btScalar s,
-    const int numX,
-    const int numY,
-    const int fixed = 1+2,
-    btVector3 offset = btVector3(0, 0, 0))
-{
-    btSoftBody* cloth = btSoftBodyHelpers::CreatePatch(
-        Physics::SoftBodyWorldInfo,
-        btVector3( -s / 2, s + 1, 0 ) + offset,
-        btVector3( +s / 2, s + 1, 0 ) + offset,
-        btVector3( -s / 2, s + 1, +s ) + offset,
-        btVector3( +s / 2, s + 1, +s ) + offset,
-        numX, numY,
-        fixed, true );
-
-	cloth->m_cfg.piterations = 5;
-	cloth->getCollisionShape()->setMargin(0.001f);
-	cloth->generateBendingConstraints(2,cloth->appendMaterial());
-	cloth->setTotalMass(10);
-	cloth->m_cfg.citerations = 10;
-    cloth->m_cfg.diterations = 10;
-	cloth->m_cfg.kDP = 0.005f;
-
-	Physics::DynamicsWorld->addSoftBody(cloth);
-}
 
 using namespace GameCore;
 using namespace Graphics;
 using namespace Math;
+
+namespace Pmx {
+	std::vector<InputDesc> InputDescriptor
+	{
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+}
 
 class SoftbodyExample : public GameCore::IGameApp
 {
@@ -286,6 +65,9 @@ public:
 
 private:
 
+    void RenderObjects( GraphicsContext& gfxContext, const Matrix4 & ViewMat, const Matrix4 & ProjMat, eObjectFilter Filter );
+    void LoadObjectFile( const std::string& Name, const std::string& Filename );
+
     Camera m_Camera;
     std::auto_ptr<CameraController> m_CameraController;
 
@@ -295,16 +77,57 @@ private:
     D3D11_VIEWPORT m_MainViewport;
     D3D11_RECT m_MainScissor;
 
-    GraphicsPSO m_DepthPSO;
-    GraphicsPSO m_CutoutDepthPSO;
     GraphicsPSO m_ModelPSO;
+    GraphicsPSO m_BlendPSO;
+
+    using BasicGeometry = std::pair<std::vector<btVector3>, std::vector<uint32_t>>;
+    std::map<std::string, BasicGeometry> m_BasicGeometry;
+    std::vector<std::shared_ptr<Graphics::IRenderObject>> m_Models;
+    std::vector<Primitive::PhysicsPrimitivePtr> m_Primitive;
 };
 
 CREATE_APPLICATION( SoftbodyExample )
 
+btSoftBody* GetSoftBody(btScalar* Vertices, int* Indices, size_t FaceCount)
+{
+	btSoftBody* psb = btSoftBodyHelpers::CreateFromTriMesh(
+        *Physics::g_SoftBodyWorldInfo, Vertices, Indices, FaceCount );
+
+    btSoftBody::Material* pm = psb->appendMaterial();
+    pm->m_kLST = 1.0;
+    pm->m_kAST = 1.0;
+    pm->m_kVST = 1.0;
+    pm->m_flags -= btSoftBody::fMaterial::DebugDraw;
+    psb->generateBendingConstraints( 2, pm );
+    psb->m_cfg.kVCF = 1.0; // Velocities correction factor (Baumgarte)
+    psb->m_cfg.kDP = 0.0; // Damping coefficient [0,1]
+    psb->m_cfg.kDG = 0.0; // Drag coefficient [0,+inf]
+    psb->m_cfg.kLF = 0.0; // Lift coefficient [0,+inf]
+    psb->m_cfg.kPR = 0.5;
+    psb->m_cfg.kVC = 0.001;
+    psb->m_cfg.kDF = 0.5;
+    psb->m_cfg.kMT = 0.5;
+    psb->m_cfg.kCHR = 1.0; // Rigid contacts hardness [0,1]
+    psb->m_cfg.kKHR = 0.1; // Kinetic contacts hardness [0,1]
+    psb->m_cfg.kSHR = 1.0; // Soft contacts hardness [0,1]
+    psb->m_cfg.kAHR = 0.7; // Anchors hardness [0,1]
+    psb->m_cfg.viterations = 0; // Velocities solver iterations
+    psb->m_cfg.piterations = 1; // Positions solver iterations
+    psb->m_cfg.diterations = 0; // Drift solver iterations
+    psb->m_cfg.citerations = 1; // Cluster solver iterations
+    psb->m_cfg.collisions |= btSoftBody::fCollision::VF_SS;//SB同士のコリジョン
+    psb->randomizeConstraints();
+    psb->generateClusters( 3 );
+    psb->scale( btVector3(0.5, 0.5, 0.5) );
+    psb->setTotalMass( 10.f, true );
+    psb->setPose( true, true );
+    return psb;
+}
+
 void SoftbodyExample::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
+    ModelBase::Initialize();
     Physics::Initialize();
     PrimitiveBatch::Initialize();
 
@@ -312,30 +135,59 @@ void SoftbodyExample::Startup( void )
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
 
-    m_Models.push_back( std::move( Primitive::CreatePhysicsPrimitive( { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) } ) ) );
+    std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
+        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, 0, 0 ) },
+        { Physics::kBoxShape, 20.f, Vector3( 19,1,19 ), Vector3( 0, 2, 0 ) },
+    };
 
+    for (auto& info : primitves)
+        m_Primitive.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
+
+	LoadObjectFile("mikudayo", "Models/mikudayo-LOD2.obj");
+    auto& data = m_BasicGeometry["mikudayo"];
+    for (auto k : { 10, 40, 80, 100 })
     {
-        const btScalar s = 4; // size of cloth patch
-        const int NUM_X = 31; // vertices on X axis
-        const int NUM_Z = 31; // vertices on Z axis
-        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(0, 0, 0 ) );
+        auto psb = GetSoftBody( (btScalar*)data.first.data(), (int*)data.second.data(), data.second.size() / 3 );
+        psb->translate( btVector3( -.1, k, 0.1 ) );
+        Physics::g_DynamicsWorld->addSoftBody( psb );
     }
+
+    /*
+    ModelLoader Loader( L"Models/mikudayo-3_6_.pmx", L"", XMFLOAT3( 15, 0, 0 ) );
+    auto model = Loader.Load();
+    if (model)
     {
-        const btScalar s = 4; // size of cloth patch
-        const int NUM_X = 31; // vertices on X axis
-        const int NUM_Z = 31; // vertices on Z axis
-        CreateSoftBody( s, NUM_X, NUM_Z, 1|2, btVector3(15, 0, 0) );
+        m_Models.push_back( model );
     }
+    */
+
+	m_ModelPSO.SetRasterizerState( RasterizerDefault );
+	m_ModelPSO.SetBlendState( BlendDisable );
+	m_ModelPSO.SetInputLayout( static_cast<UINT>(Pmx::InputDescriptor.size()), Pmx::InputDescriptor.data() );
+    m_ModelPSO.SetDepthStencilState( DepthStateReadWrite );
+    m_ModelPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxOpaqueVS ) );
+    m_ModelPSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxOpaquePS ) );
+    m_ModelPSO.Finalize();
+
+    m_BlendPSO = m_ModelPSO;
+    m_BlendPSO.SetRasterizerState( RasterizerDefault );
+    m_BlendPSO.SetBlendState( BlendTraditional );
+    m_BlendPSO.Finalize();
 }
 
 void SoftbodyExample::Cleanup( void )
 {
-    for (auto& model : m_Models)
+    m_ModelPSO.Destroy();
+    m_BlendPSO.Destroy();
+
+    for (auto& model : m_Primitive)
         model->Destroy();
+    m_Primitive.clear();
     m_Models.clear();
 
     PrimitiveBatch::Shutdown();
     Physics::Shutdown();
+    ModelBase::Shutdown();
 }
 
 void SoftbodyExample::Update( float deltaT )
@@ -363,6 +215,20 @@ void SoftbodyExample::Update( float deltaT )
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 }
 
+void SoftbodyExample::RenderObjects( GraphicsContext& gfxContext, const Matrix4& ViewMat, const Matrix4& ProjMat, eObjectFilter Filter )
+{
+    struct VSConstants
+    {
+        Matrix4 view;
+        Matrix4 projection;
+    } vsConstants;
+    vsConstants.view = ViewMat;
+    vsConstants.projection = ProjMat;
+	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
+    for (auto& model : m_Models)
+        model->Draw( gfxContext, Filter );
+}
+
 void SoftbodyExample::RenderScene( void )
 {
     struct {
@@ -382,9 +248,12 @@ void SoftbodyExample::RenderScene( void )
     gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
     gfxContext.SetDynamicConstantBufferView( 0, sizeof(psConstants), &psConstants, { kBindPixel } );
     {
-        ScopedTimer _prof( L"Primitive Draw", gfxContext );
-        for (auto& model : m_Models)
-            model->Draw(m_Camera.GetWorldSpaceFrustum());
+        gfxContext.SetPipelineState( m_ModelPSO );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOpaque );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kOverlay );
+        ModelBase::Flush( gfxContext );
+        gfxContext.SetPipelineState( m_BlendPSO );
+        RenderObjects( gfxContext, m_ViewMatrix, m_ProjMatrix, kTransparent );
         PrimitiveBatch::Flush( gfxContext );
     }
     gfxContext.Finish();
@@ -425,4 +294,86 @@ void SoftbodyExample::RenderUI( GraphicsContext& Context )
     DebugAttribute(CreatePredictiveContacts);
     DebugAttribute(IntegrateTransforms);
 #undef DebugAttribute
+}
+
+void SoftbodyExample::LoadObjectFile(const std::string& Name, const std::string& Filename)
+{
+    Assimp::Importer importer;
+
+    // remove unused data
+    importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS,
+        aiComponent_COLORS | aiComponent_LIGHTS | aiComponent_CAMERAS);
+
+    // max triangles and vertices per mesh, splits above this threshold
+    importer.SetPropertyInteger(AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, INT_MAX);
+    importer.SetPropertyInteger(AI_CONFIG_PP_SLM_VERTEX_LIMIT, 0xfffe); // avoid the primitive restart index
+
+    // remove points and lines
+    importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
+    const aiScene *scene = importer.ReadFile(Filename,
+        aiProcess_CalcTangentSpace |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_Triangulate |
+        aiProcess_RemoveComponent |
+        aiProcess_GenSmoothNormals |
+        aiProcess_SplitLargeMeshes |
+        aiProcess_ValidateDataStructure |
+        aiProcess_ImproveCacheLocality |
+        aiProcess_RemoveRedundantMaterials |
+        aiProcess_SortByPType |
+        aiProcess_FindInvalidData |
+        aiProcess_GenUVCoords |
+        aiProcess_TransformUVCoords |
+        aiProcess_OptimizeMeshes |
+        aiProcess_OptimizeGraph);
+
+    unsigned int meshCount = scene->mNumMeshes;
+    unsigned int vertexCount = 0;
+    unsigned int indexCount = 0;
+
+    // first pass, count everything
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
+    {
+        const aiMesh *srcMesh = scene->mMeshes[meshIndex];
+        assert(srcMesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE);
+        // color rendering
+        vertexCount += srcMesh->mNumVertices;
+        indexCount += srcMesh->mNumFaces * 3;
+    }
+    // allocate storage
+    std::vector<btVector3> VertexStore(vertexCount);
+    std::vector<uint32_t> IndexStore(indexCount);
+
+    unsigned int vertexStride = sizeof(float) * 3;
+    unsigned char* pVertexData = (unsigned char*)VertexStore.data();
+    unsigned int indexStride = sizeof(uint32_t);
+    unsigned char* pIndexData = (unsigned char*) IndexStore.data();
+
+    // second pass, fill in vertex and index data
+    float *dstPos = (float*)(pVertexData);
+    uint32_t *dstIndex = (uint32_t*)(pIndexData);
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
+    {
+        const aiMesh *srcMesh = scene->mMeshes[meshIndex];
+        for (unsigned int v = 0; v < srcMesh->mNumVertices; v++)
+        {
+            if (srcMesh->mVertices)
+            {
+                dstPos[0] = srcMesh->mVertices[v].x;
+                dstPos[1] = srcMesh->mVertices[v].y;
+                dstPos[2] = srcMesh->mVertices[v].z;
+            }
+            dstPos += 3;
+        }
+        for (unsigned int f = 0; f < srcMesh->mNumFaces; f++)
+        {
+            assert(srcMesh->mFaces[f].mNumIndices == 3);
+
+            *dstIndex++ = srcMesh->mFaces[f].mIndices[0];
+            *dstIndex++ = srcMesh->mFaces[f].mIndices[1];
+            *dstIndex++ = srcMesh->mFaces[f].mIndices[2];
+        }
+    }
+    m_BasicGeometry.insert({Name, { VertexStore, IndexStore}});
 }
