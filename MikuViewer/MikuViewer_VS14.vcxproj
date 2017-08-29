@@ -61,13 +61,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
-    <IncludePath>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Core;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Core;$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Miku;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Core;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Core;$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Miku;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Core;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Core;$(SolutionDir)..\Build_VS14\$(Platform)\$(Configuration)\Output\Miku;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -125,46 +125,6 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\PmdDepthViewerVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmdOpaquePS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmdOpaqueVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmxDepthViewerVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\GroundOpaquePS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\GroundOpaqueVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmxOpaqueVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmxOpaquePS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\3rdParty\zlib-win64\ZLib_VS14.vcxproj">
@@ -178,12 +138,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\PCFKernels.hlsli" />
-    <None Include="Shaders\Shadow.hlsli" />
-    <None Include="Shaders\Skinning.hlsli" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Shaders\ShadowDefine.hlsli" />
     <ClInclude Include="Shadow.h" />
   </ItemGroup>
   <ItemGroup>

@@ -36,10 +36,10 @@ namespace Primitive
     public:
         PhysicsPrimitive();
 
-        virtual void Create( const PhysicsPrimitiveInfo& Info );
-        virtual void Destroy();
-        virtual void Draw( const Math::Frustum& CameraFrustum );
-        virtual void UpdateTransform();
+        void Create( const PhysicsPrimitiveInfo& Info );
+        void Destroy();
+        void Draw( const Math::Frustum& CameraFrustum );
+        void UpdateTransform();
 
         ShapeType m_Type;
         ObjectType m_Kind;

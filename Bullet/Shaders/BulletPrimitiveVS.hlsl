@@ -20,7 +20,7 @@ cbuffer CB0 : register(b0)
 
 cbuffer CB1 : register(b1)
 {
-	matrix World[64];
+	matrix World[1024];
 };
 
 PS_INPUT main( VS_INPUT input, uint instanceID : SV_InstanceID )

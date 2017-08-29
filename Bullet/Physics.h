@@ -1,7 +1,8 @@
 #pragma once
 
 class GraphicsContext;
-class btDynamicsWorld;
+class btSoftBodyWorldInfo;
+class btSoftRigidDynamicsWorld;
 
 namespace Math
 {
@@ -35,7 +36,8 @@ namespace Physics
         float IntegrateTransforms = 0.f;
     };
 
-	extern btDynamicsWorld* g_DynamicsWorld;
+	extern btSoftRigidDynamicsWorld* g_DynamicsWorld;
+    extern btSoftBodyWorldInfo* g_SoftBodyWorldInfo;
 
     void Initialize( void );
     void Shutdown( void );

@@ -129,8 +129,7 @@ private:
     Vector3 m_SunColor;
     ShadowCamera m_SunShadow;
 
-    using IRenderObjectPtr = std::shared_ptr<Graphics::IRenderObject>;
-    std::vector<IRenderObjectPtr> m_Models;
+    std::vector<std::shared_ptr<Graphics::IRenderObject>> m_Models;
 	Graphics::Motion m_Motion;
 
 	GraphicsPSO m_DepthPSO[kModelMAX];

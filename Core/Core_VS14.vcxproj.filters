@@ -35,6 +35,9 @@
     <Filter Include="Shaders\MotionBlur">
       <UniqueIdentifier>{63a6a6ac-bfa2-40e8-a19c-6bd1fc742331}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Shadow">
+      <UniqueIdentifier>{d50d1eb2-3f4d-4059-bd48-9897b2d84265}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -448,6 +451,15 @@
     </None>
     <None Include="Shaders\FXAAPS.hlsli">
       <Filter>Shaders\FXAA</Filter>
+    </None>
+    <None Include="Shaders\PCFKernels.hlsli">
+      <Filter>Shaders\Shadow</Filter>
+    </None>
+    <None Include="Shaders\Shadow.hlsli">
+      <Filter>Shaders\Shadow</Filter>
+    </None>
+    <None Include="Shaders\ShadowDefine.hlsli">
+      <Filter>Shaders\Shadow</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
