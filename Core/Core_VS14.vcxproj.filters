@@ -321,9 +321,6 @@
     <ClCompile Include="GameInput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MotionBlur.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
@@ -400,6 +397,9 @@
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="DepthStencilState.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="MotionBlur.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
