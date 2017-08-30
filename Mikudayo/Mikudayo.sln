@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mikudayo", "Mikudayo\Mikudayo.vcxproj", "{70EA1ADD-A0DD-428F-BE50-4CA71CF0DBE8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mikudayo", "Mikudayo.vcxproj", "{70EA1ADD-A0DD-428F-BE50-4CA71CF0DBE8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{AB949DFB-5AFF-432F-AC31-73BD1C61B8A6} = {AB949DFB-5AFF-432F-AC31-73BD1C61B8A6}
 	EndProjectSection

@@ -1,0 +1,25 @@
+#pragma once
+
+#include <iostream>
+#include <algorithm>
+#include <regex>
+#include <codecvt>
+#include <locale>
+#include "GameCore.h"
+#include "GraphicsCore.h"
+#include "PipelineState.h"
+#include "CommandContext.h"
+#include "GpuBuffer.h"
+#include "InputLayout.h"
+#include "ColorBuffer.h"
+#include "BufferManager.h"
+#include "Camera.h"
+#include "CameraController.h"
+#include "SamplerManager.h"
+#include "GameInput.h"
+#include "TextureManager.h"
+#include "FileUtility.h"
+#include "Utility.h"
+#include "Math/BoundingBox.h"
+#include "GeometryGenerator.h"
+#include "boost/filesystem.hpp"

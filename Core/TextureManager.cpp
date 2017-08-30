@@ -165,7 +165,7 @@ namespace TextureManager
 		return make_pair(NewTexture, true);
 	}
 
-    const Texture& GetBlackTex2D(void)
+    const ManagedTexture& GetBlackTex2D(void)
     {
         auto ManagedTex = FindOrLoadTexture(L"DefaultBlackTexture");
 
@@ -183,7 +183,7 @@ namespace TextureManager
         return *ManTex;
     }
 
-    const Texture& GetWhiteTex2D(void)
+    const ManagedTexture& GetWhiteTex2D(void)
     {
         auto ManagedTex = FindOrLoadTexture(L"DefaultWhiteTexture");
 

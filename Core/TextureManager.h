@@ -110,6 +110,7 @@ namespace TextureManager
 		return LoadWISFromFile(Utility::MakeWStr(fileName), sRGB);
 	}
 
-	const Texture& GetBlackTex2D(void);
-	const Texture& GetWhiteTex2D(void);
+	const ManagedTexture& GetBlackTex2D(void);
+	const ManagedTexture& GetWhiteTex2D(void);
+    const ManagedTexture& GetMagentaTex2D(void);
 }
