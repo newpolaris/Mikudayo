@@ -34,6 +34,15 @@ namespace {
 		kTextureMax
 	};
 
+	struct VertexProperty
+	{
+		XMFLOAT3 Normal;
+		XMFLOAT2 UV;
+        uint32_t BoneID[4] = {0, };
+        float    Weight[4] = {0.f };
+		float    EdgeSize;
+	};
+
 	struct Mesh
 	{
 		bool isTransparent() const { return Material.Diffuse.w < 1.f; }
@@ -47,6 +56,18 @@ namespace {
 		float EdgeSize;
         Color EdgeColor;
 	};
+
+    bool Mesh::SetTexture( GraphicsContext& gfxContext )
+    {
+        D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
+        for (auto i = 0; i < _countof( Texture ); i++)
+        {
+            if (Texture[i] == nullptr) continue;
+            SRV[i] = Texture[i]->GetSRV();
+        }
+        gfxContext.SetDynamicDescriptors( 1, _countof(SRV), SRV, { kBindPixel } );
+        return false;
+    }
 
 	struct Bone
 	{
@@ -69,54 +90,57 @@ struct PmxModel::Private final
     Private();
     ~Private();
 
-    bool LoadFromFile( const std::wstring& FilePath );
-
     void Clear( void );
     void Draw( GraphicsContext& gfxContext );
-    bool LoadMotion( const std::wstring& FilePath );
-
-    BoundingSphere GetBoundingSphere();
-    BoundingBox GetBoundingBox();
-
-    void SetModel( const std::wstring& model );
-    void SetMotion( const std::wstring& model );
-    void SetPosition( const Vector3& postion );
-    void SetBoundingSphere( void );
-    void SetBoundingBox( void );
-    void Update( float kFrameTime );
-
     void DrawBone( void );
     void DrawBoundingSphere( void );
-    void SetVisualizeSkeleton();
-    void SetBoneNum( size_t numBones );
+
+    BoundingSphere GetBoundingSphere() const;
+    BoundingBox GetBoundingBox() const;
+    const std::vector<XMFLOAT3>& GetVertices( void ) const;
+    const std::vector<uint32_t>& GetIndices( void ) const;
+    bool LoadFromFile( const std::wstring& FilePath );
+    bool LoadMotion( const std::wstring& FilePath );
+
+    void SetPosition( const Vector3& postion );
+    void SetVertices( const std::vector<XMFLOAT3>& vertices );
+    void SetupBoundingBox( void );
+    void SetupBoundingSphere( void );
+    void SetupVisualizeSkeleton();
+    void SetupSkeleton( const std::vector<Pmx::Bone>& Bones );
+
+    void Update( float kFrameTime );
 
 protected:
 
-    // void UpdateIK( const Pmx::IK& ik );
-    void UpdateChildPose( int32_t idx );
     void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
+	const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );
 
     bool m_bRightHand;
-    std::wstring m_ModelPath;
-    std::wstring m_MotionPath;
-
+    std::wstring m_Name;
+    std::wstring m_TextureRoot;
+    Matrix4 m_ModelTransform;
     std::vector<Mesh> m_Mesh;
-    std::vector<Bone> m_Bones;
+
+    // Skinning
     std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
     std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
     std::vector<OrthogonalTransform> m_Pose; // cumulative transfrom matrix from root
     std::vector<OrthogonalTransform> m_Skinning; // final skinning transform
     std::vector<DualQuaternion> m_SkinningDual; // final skinning transform
+
+    // Bone
+    std::vector<Bone> m_Bones;
     std::vector<int32_t> m_BoneParent; // parent index
     std::vector<std::vector<int32_t>> m_BoneChild; // child indices
     std::map<std::wstring, uint32_t> m_BoneIndex;
+    std::vector<Animation::BoneMotion> m_BoneMotions;
+    std::vector<AffineTransform> m_BoneAttribute;
+
     std::map<std::wstring, uint32_t> m_MorphIndex;
     std::vector<Vector3> m_MorphDelta; // tempolar space to store morphed position delta
-    std::vector<Animation::BoneMotion> m_BoneMotions;
     enum { kMorphBase = 0 }; // m_MorphMotions's first slot is reserved as base (original) position data
-    std::vector<AffineTransform> m_BoneAttribute;
     std::vector<Animation::MorphMotion> m_MorphMotions;
-    Animation::CameraMotion m_CameraMotion;
 
     std::vector<XMFLOAT3> m_VertexPos; // original vertex position
     std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
@@ -126,10 +150,7 @@ protected:
     VertexBuffer m_PositionBuffer;
     IndexBuffer m_IndexBuffer;
 
-    Matrix4 m_ModelTransform;
-    std::wstring m_Name;
-
-    uint32_t m_RootBoneIndex; // named as center
+    uint32_t m_RootBoneIndex; // model center
     BoundingSphere m_BoundingSphere;
     BoundingBox m_BoundingBox;
 
@@ -139,6 +160,95 @@ protected:
 
 PmxModel::Private::Private() : m_bRightHand(true), m_ModelTransform(kIdentity)
 {
+}
+
+PmxModel::Private::~Private()
+{
+    Clear();
+}
+
+void PmxModel::Private::Clear()
+{
+    m_ColorPSO.Destroy();
+
+	m_AttributeBuffer.Destroy();
+	m_PositionBuffer.Destroy();
+	m_IndexBuffer.Destroy();
+}
+void PmxModel::Private::Draw( GraphicsContext& gfxContext )
+{
+    DrawBone();
+    DrawBoundingSphere();
+
+#define SKINNING_LBS
+#ifdef SKINNING_LBS
+    std::vector<Matrix4> SkinData;
+    SkinData.reserve( m_Skinning.size() );
+    for (auto& orth : m_Skinning)
+        SkinData.emplace_back( orth );
+#else // SKINNING_DLB
+    auto& SkinData = m_SkinningDual;
+#endif
+    auto numByte = GetVectorSize(SkinData);
+
+    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
+	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
+	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
+    gfxContext.SetPipelineState( m_ColorPSO );
+
+	for (auto& mesh: m_Mesh)
+	{
+        if (mesh.SetTexture( gfxContext ))
+            continue;
+		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
+		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
+	}
+}
+
+void PmxModel::Private::DrawBone()
+{
+    if (!Model::s_bEnableDrawBone)
+        return;
+	auto numBones = m_BoneAttribute.size();
+	for (auto i = 0; i < numBones; i++)
+        Model::Append( Model::kBoneMesh, m_ModelTransform * m_Skinning[i] * m_BoneAttribute[i] );
+}
+
+void PmxModel::Private::DrawBoundingSphere()
+{
+    if (!Model::s_bEnableDrawBoundingSphere)
+        return;
+
+    BoundingSphere sphere = GetBoundingSphere();
+    AffineTransform scale = AffineTransform::MakeScale( float(sphere.GetRadius()) );
+    AffineTransform center = AffineTransform::MakeTranslation( sphere.GetCenter() );
+    Model::Append( Model::kSphereMesh, center*scale );
+}
+
+BoundingSphere PmxModel::Private::GetBoundingSphere() const
+{
+	if (m_BoneMotions.size() > 0)
+        return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingSphere;
+    return m_ModelTransform * m_BoundingSphere;
+}
+
+BoundingBox PmxModel::Private::GetBoundingBox() const
+{
+	if (m_BoneMotions.size() > 0)
+        return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingBox;
+    return m_ModelTransform * m_BoundingBox;
+}
+
+const std::vector<XMFLOAT3>& PmxModel::Private::GetVertices( void ) const
+{
+    return m_VertexMorphedPos;
+}
+
+const std::vector<uint32_t>& PmxModel::Private::GetIndices( void ) const
+{
+    return m_Indices;
 }
 
 bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
@@ -155,34 +265,8 @@ bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
     if (!pmx.IsValid())
         return false;
 
-    const Path textureRoot = Path(FilePath).parent_path();
-	auto LoadTexture = [textureRoot]( std::wstring ImageName, bool bSRGB ) -> const ManagedTexture*
-	{
-        const Path imagePath = textureRoot / ImageName;
-        bool bExist = boost::filesystem::exists( imagePath );
-        if (bExist)
-        {
-            auto wstrPath = imagePath.generic_wstring();
-            auto ia = ReadFileSync( wstrPath );
-            return TextureManager::LoadFromMemory( wstrPath, ia, bSRGB );
-        }
-        const std::wregex toonPattern( L"toon[0-9]{1,2}.bmp", std::regex_constants::icase );
-        if (std::regex_match( ImageName.begin(), ImageName.end(), toonPattern ))
-        {
-            auto toonPath = Path( "toon" ) / ImageName;
-            return TextureManager::LoadFromFile( toonPath.generic_wstring(), bSRGB );
-        }
-        return &TextureManager::GetMagentaTex2D();
-	};
-
-	struct VertexProperty
-	{
-		XMFLOAT3 Normal;
-		XMFLOAT2 UV;
-        uint32_t BoneID[4] = {0, };
-        float    Weight[4] = {0.f };
-		float    EdgeSize;
-	};
+	m_Name = pmx.m_Description.Name;
+    m_TextureRoot = Path(FilePath).parent_path().generic_wstring();
 
 	std::vector<VertexProperty> vertProperty( pmx.m_Vertices.size() );
 	m_VertexPos.resize( pmx.m_Vertices.size() );
@@ -218,8 +302,6 @@ bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
 		vertProperty[i].EdgeSize = pmx.m_Vertices[i].EdgeSize;
 	}
 	m_VertexMorphedPos = m_VertexPos;
-
-	m_Name = pmx.m_Description.Name;
     std::copy(pmx.m_Indices.begin(), pmx.m_Indices.end(), std::back_inserter(m_Indices));
 
 	m_AttributeBuffer.Create( m_Name + L"_AttrBuf",
@@ -282,63 +364,7 @@ bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
 		m_Mesh.push_back(mesh);
 	}
 
-	size_t numBones = pmx.m_Bones.size();
-	SetBoneNum( numBones );
-    ASSERT( numBones > 0 );
-	for (auto i = 0; i < numBones; i++)
-	{
-		auto& boneData = pmx.m_Bones[i];
-
-		m_Bones[i].Name = boneData.Name;
-		m_BoneParent[i] = boneData.ParentBoneIndex;
-		if (boneData.ParentBoneIndex >= 0)
-			m_BoneChild[boneData.ParentBoneIndex].push_back( i );
-
-		Vector3 origin = boneData.Position;
-		Vector3 parentOrigin = Vector3( 0.0f, 0.0f, 0.0f );
-
-		if( boneData.ParentBoneIndex >= 0)
-			parentOrigin = pmx.m_Bones[boneData.ParentBoneIndex].Position;
-
-		m_Bones[i].Translate = origin - parentOrigin;
-        m_Bones[i].Position = origin;
-        m_Bones[i].DestinationIndex = boneData.DestinationOriginIndex;
-        m_Bones[i].DestinationOffset = boneData.DestinationOriginOffset;
-
-		m_BoneIndex[boneData.Name] = i;
-	}
-
-    m_Skinning.resize( numBones );
-    m_SkinningDual.resize( numBones );
-    for ( auto i = 0; i < numBones; i++)
-        m_SkinningDual[i] = OrthogonalTransform();
-
-    /*
-	m_IKs = pmx.m_IKs;
-
-	m_MorphMotions.resize( pmx.m_Faces.size() );
-	for ( auto i = 0; i < pmx.m_Faces.size(); i++ )
-	{
-		auto& morph = pmx.m_Faces[i];
-		m_MorphIndex[morph.Name] = i;
-        auto numVertices = morph.FaceVertices.size();
-
-        auto& motion = m_MorphMotions[i];
-        motion.m_MorphVertices.reserve( numVertices );
-        motion.m_MorphVertices.reserve( numVertices );
-		for (auto& vert : morph.FaceVertices)
-        {
-			motion.m_MorphIndices.push_back( vert.Index );
-			motion.m_MorphVertices.push_back( vert.Position );
-        }
-	}
-    if (m_MorphMotions.size() > 0)
-        m_MorphDelta.resize( m_MorphMotions[kMorphBase].m_MorphIndices.size() );
-
-    SetVisualizeSkeleton();
-    SetBoundingBox();
-    SetBoundingSphere();
-    */
+	SetupSkeleton( pmx.m_Bones );
 
 	std::vector<InputDesc> InputDescriptor
 	{
@@ -366,28 +392,6 @@ bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
     return true;
 }
 
-void PmxModel::Private::SetPosition( const Vector3& postion )
-{
-    m_ModelTransform = Matrix4::MakeTranslate( postion );
-}
-
-bool Mesh::SetTexture( GraphicsContext& gfxContext )
-{
-    D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
-    for (auto i = 0; i < _countof( Texture ); i++)
-    {
-        if (Texture[i] == nullptr) continue;
-        SRV[i] = Texture[i]->GetSRV();
-    }
-    gfxContext.SetDynamicDescriptors( 1, _countof(SRV), SRV, { kBindPixel } );
-    return false;
-}
-
-PmxModel::Private::~Private()
-{
-    Clear();
-}
-
 bool PmxModel::Private::LoadMotion( const std::wstring& motionPath )
 {
 	using namespace std;
@@ -409,8 +413,7 @@ bool PmxModel::Private::LoadMotion( const std::wstring& motionPath )
 		key.Frame = frame.Frame;
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
-
-        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: " + m_ModelPath);
+        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: ");
         if (m_MorphIndex.count(frame.FaceName) > 0)
         {
             auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
@@ -418,31 +421,8 @@ bool PmxModel::Private::LoadMotion( const std::wstring& motionPath )
             motion.InsertKeyFrame( key );
         }
 	}
-
 	for (auto& face : m_MorphMotions )
 		face.SortKeyFrame();
-
-	for (auto& frame : vmd.CameraFrames)
-	{
-		CameraKeyFrame keyFrame;
-		keyFrame.Frame = frame.Frame;
-		keyFrame.Data.bPerspective = frame.TurnOffPerspective == 0;
-		keyFrame.Data.Distance = frame.Distance;
-		keyFrame.Data.FovY = frame.ViewAngle / XM_PI;
-		keyFrame.Data.Rotation = Quaternion( frame.Rotation.y, frame.Rotation.x, frame.Rotation.z );
-		keyFrame.Data.Position = frame.Position;
-
-		//
-		// http://harigane.at.webry.info/201103/article_1.html
-		//
-		auto interp = reinterpret_cast<const char*>(&frame.Interpolation[0]);
-		float scale = 1.0f / 127.0f;
-
-		for (auto i = 0; i < 6; i++)
-			keyFrame.BezierCoeff[i] = Vector4( interp[i], interp[i+2], interp[i+1], interp[i+3] ) * scale;
-
-		m_CameraMotion.InsertKeyFrame( keyFrame );
-	}
     return true;
 }
 
@@ -452,32 +432,10 @@ void PmxModel::Private::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frame
         return;
 
     int32_t numBones = static_cast<int32_t>(m_Bones.size());
-
     m_BoneMotions.resize( numBones );
     m_Pose.resize( numBones );
     m_LocalPose.resize( numBones );
     m_toRoot.resize( numBones );
-    m_Skinning.resize( numBones );
-    m_SkinningDual.resize( numBones );
-
-    for (auto i = 0; i < numBones; i++)
-    {
-        auto& bone = m_Bones[i];
-        auto& meshBone = m_BoneMotions[i];
-
-        meshBone.bLimitXAngle = false;
-
-        //
-        // In PMD Model minIK, maxIK is not manually given.
-        // But, bone name that contains 'knee'('ひざ') has constraint
-        // that can move only in x axis and outer angle (just like human knee)
-        // If this constraint is not given, knee goes forward just like
-        // the following vmd motion. http://www.nicovideo.jp/watch/sm18737664
-        //
-        if (std::string::npos != bone.Name.find( L"ひざ" ))
-            meshBone.bLimitXAngle = true;
-    }
-
     for (auto i = 0; i < m_Bones.size(); i++)
         m_LocalPose[i].SetTranslation( m_Bones[i].Translate );
 
@@ -530,25 +488,89 @@ void PmxModel::Private::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frame
 		bone.SortKeyFrame();
 }
 
-
-void PmxModel::Private::SetBoneNum( size_t numBones )
+const ManagedTexture * PmxModel::Private::LoadTexture( std::wstring ImageName, bool bSRGB )
 {
+    using Path = boost::filesystem::path;
+
+    const Path imagePath = Path(m_TextureRoot) / ImageName;
+    bool bExist = boost::filesystem::exists( imagePath );
+    if (bExist)
+    {
+        auto wstrPath = imagePath.generic_wstring();
+        auto ia = ReadFileSync( wstrPath );
+        return TextureManager::LoadFromMemory( wstrPath, ia, bSRGB );
+    }
+    const std::wregex toonPattern( L"toon[0-9]{1,2}.bmp", std::regex_constants::icase );
+    if (std::regex_match( ImageName.begin(), ImageName.end(), toonPattern ))
+    {
+        auto toonPath = Path( "toon" ) / ImageName;
+        return TextureManager::LoadFromFile( toonPath.generic_wstring(), bSRGB );
+    }
+    return &TextureManager::GetMagentaTex2D();
+};
+
+void PmxModel::Private::SetPosition( const Vector3& postion )
+{
+    m_ModelTransform = Matrix4::MakeTranslate( postion );
+}
+
+void PmxModel::Private::SetVertices( const std::vector<XMFLOAT3>& vertices )
+{
+	m_PositionBuffer.Create( m_Name + L"_PosBuf",
+		static_cast<uint32_t>(vertices.size()),
+		sizeof( XMFLOAT3 ),
+		vertices.data() );
+}
+
+void PmxModel::Private::SetupSkeleton( const std::vector<Pmx::Bone>& Bones )
+{
+    size_t numBones = Bones.size();
+
 	m_BoneParent.resize( numBones );
 	m_BoneChild.resize( numBones );
 	m_Bones.resize( numBones );
-}
 
-void PmxModel::Private::SetBoundingSphere( void )
-{
-    ASSERT(m_Bones.size() > 0);
+	for (auto i = 0; i < numBones; i++)
+	{
+		auto& boneData = Bones[i];
+		m_Bones[i].Name = boneData.Name;
+		m_BoneParent[i] = boneData.ParentBoneIndex;
+		if (boneData.ParentBoneIndex >= 0)
+			m_BoneChild[boneData.ParentBoneIndex].push_back( i );
 
-    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), []( const Bone& Bone ) {
+		Vector3 origin = boneData.Position;
+		Vector3 parentOrigin = Vector3( 0.0f, 0.0f, 0.0f );
+
+		if( boneData.ParentBoneIndex >= 0)
+			parentOrigin = Bones[boneData.ParentBoneIndex].Position;
+
+		m_Bones[i].Translate = origin - parentOrigin;
+        m_Bones[i].Position = origin;
+        m_Bones[i].DestinationIndex = boneData.DestinationOriginIndex;
+        m_Bones[i].DestinationOffset = boneData.DestinationOriginOffset;
+
+		m_BoneIndex[boneData.Name] = i;
+	}
+
+    // find root bone
+    ASSERT( numBones > 0 );
+    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){
         return Bone.Name.compare( L"センター" ) == 0;
-    } );
+    });
     if (it == m_Bones.end())
         it = m_Bones.begin();
+    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 
-    Vector3 Center = it->Translate;
+    // set default skinning matrix
+    m_Skinning.resize( numBones );
+    m_SkinningDual.resize( numBones );
+    for ( auto i = 0; i < numBones; i++)
+        m_SkinningDual[i] = OrthogonalTransform();
+}
+
+void PmxModel::Private::SetupBoundingSphere( void )
+{
+    Vector3 Center = m_Bones[m_RootBoneIndex].Translate;
     Scalar Radius( 0.f );
 
     for (auto& vert : m_VertexPos) {
@@ -559,20 +581,11 @@ void PmxModel::Private::SetBoundingSphere( void )
         Radius = Max( Radius, R );
     }
     m_BoundingSphere = BoundingSphere( Center, Sqrt(Radius) );
-    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 }
 
-void PmxModel::Private::SetBoundingBox( void )
+void PmxModel::Private::SetupBoundingBox( void )
 {
-    ASSERT(m_Bones.size() > 0);
-
-    auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){
-        return Bone.Name.compare( L"センター" ) == 0;
-    });
-    if (it == m_Bones.end())
-        it = m_Bones.begin();
-
-    Vector3 Center = it->Translate;
+    Vector3 Center = m_Bones[m_RootBoneIndex].Translate;
 
     Vector3 MinV( FLT_MAX ), MaxV( FLT_MIN );
     for (auto& vert : m_VertexPos)
@@ -588,10 +601,9 @@ void PmxModel::Private::SetBoundingBox( void )
     }
 
     m_BoundingBox = BoundingBox( MinV, MaxV );
-    m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 }
 
-void PmxModel::Private::SetVisualizeSkeleton()
+void PmxModel::Private::SetupVisualizeSkeleton()
 {
 	auto numBone = m_Bones.size();
 
@@ -614,25 +626,6 @@ void PmxModel::Private::SetVisualizeSkeleton()
 	}
 }
 
-void PmxModel::Private::Clear()
-{
-    m_ColorPSO.Destroy();
-
-	m_AttributeBuffer.Destroy();
-	m_PositionBuffer.Destroy();
-	m_IndexBuffer.Destroy();
-}
-
-void PmxModel::Private::UpdateChildPose( int32_t idx )
-{
-	auto parentIndex = m_BoneParent[idx];
-	if (parentIndex >= 0)
-		m_Pose[idx] = m_Pose[parentIndex] * m_LocalPose[idx];
-
-	for (auto c : m_BoneChild[idx])
-		UpdateChildPose( c );
-}
-
 void PmxModel::Private::Update( float kFrameTime )
 {
 	if (m_BoneMotions.size() > 0)
@@ -649,9 +642,6 @@ void PmxModel::Private::Update( float kFrameTime )
 			else
 				m_Pose[i] = m_LocalPose[i];
 		}
-
-		// for (auto& ik : m_IKs) UpdateIK( ik );
-
 		for (auto i = 0; i < numBones; i++)
 			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
 
@@ -699,176 +689,6 @@ void PmxModel::Private::Update( float kFrameTime )
 	}
 }
 
-//
-// Solve Constrainted IK
-// Cyclic-Coordinate-Descent（CCD）
-//
-// http://d.hatena.ne.jp/edvakf/20111102/1320268602
-// Game programming gems 3 Constrained Inverse Kinematics - Jason Weber
-//
-/*
-void Model::UpdateIK(const Pmd::IK& ik)
-{
-	auto GetPosition = [&]( int32_t index ) -> Vector3
-	{
-		return Vector3(m_Pose[index].GetTranslation());
-	};
-
-	// "effector" (Fixed)
-	const auto ikBonePos = GetPosition( ik.IkBoneIndex );
-
-	for (int n = 0; n < ik.IkNumIteration; n++)
-	{
-		// "effected" bone list in order
-		for (auto k = 0; k < ik.IkLinkBondIndexList.size(); k++)
-		{
-			auto childIndex = ik.IkLinkBondIndexList[k];
-			auto ikTargetBonePos = GetPosition( ik.IkTargetBonIndex );
-			auto invLinkMtx = Invert( m_Pose[childIndex] );
-
-			//
-			// transform to child bone's local coordinate.
-			// note that even if pos is vector3 type, it is calcurated by affine tranform.
-			//
-			auto ikTargetVec = Vector3( invLinkMtx * ikTargetBonePos );
-			auto ikBoneVec = Vector3( invLinkMtx * ikBonePos );
-
-			auto axis = Cross( ikBoneVec, ikTargetVec );
-			auto axisLen = Length( axis );
-			auto sinTheta = axisLen / Length( ikTargetVec ) / Length( ikBoneVec );
-			if (sinTheta < 1.0e-3f)
-				continue;
-
-			// angle to move in one iteration
-			auto maxAngle = (k + 1) * ik.IkLimitedRadian * 4;
-			auto theta = ASin( sinTheta );
-			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
-				theta = XM_PI - theta;
-			if (theta > maxAngle)
-				theta = maxAngle;
-
-			auto rotBase = m_LocalPose[childIndex].GetRotation();
-			auto translate = m_LocalPose[childIndex].GetTranslation();
-
-			// To apply base coordinate system which it is base on, inverted theta direction
-			Quaternion rotNext( axis, -theta );
-			auto rotFinish = rotBase * rotNext;
-
-			// Constraint IK, restrict rotation angle
-			if (m_BoneMotions[childIndex].bLimitXAngle)
-			{
-#ifndef EXPERIMENT_IK
-				// c = cos(theta / 2)
-				auto c = XMVectorGetW( rotFinish );
-				// s = sin(theta / 2)
-				auto s = Sqrt( 1.0f - c*c );
-				rotFinish = Quaternion( Vector4( s, 0, 0, c ) );
-				if (!m_bRightHand)
-				{
-					auto a = -std::asin( s );
-					rotFinish = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
-				}
-#else
-				//
-				// MMD-Agent PMDIK
-				//
-				// when this is the first iteration, we force rotating to the maximum angle toward limited direction
-				// this will help convergence the whole IK step earlier for most of models, especially for legs
-				if (n == 0)
-				{
-					if (theta < 0.0f)
-						theta = -theta;
-					rotFinish = rotBase * Quaternion( Vector3( 1.0f, 0.f, 0.f ), theta );
-				}
-				else
-				{
-					//
-					// Needed to stable IK result (esp. Ankle)
-					// The value obtained from the test
-					//
-					const Scalar PMDMinRotX = 0.10f;
-					auto next = rotNext.toEuler();
-					auto base = rotBase.toEuler();
-
-					auto sum = Clamp( next.GetX() + base.GetX(), PMDMinRotX, Scalar(XM_PI) );
-					next = Vector3( sum - base.GetX(), 0.f, 0.f );
-					rotFinish = rotBase * Quaternion( next.GetX(), next.GetY(), next.GetZ() );
-				}
-#endif
-			}
-			m_LocalPose[childIndex] = OrthogonalTransform( rotFinish, translate );
-			UpdateChildPose( childIndex );
-		}
-	}
-}
-*/
-
-void PmxModel::Private::Draw( GraphicsContext& gfxContext )
-{
-    DrawBone();
-    DrawBoundingSphere();
-
-#define SKINNING_LBS
-#ifdef SKINNING_LBS
-    std::vector<Matrix4> SkinData;
-    SkinData.reserve( m_Skinning.size() );
-    for (auto& orth : m_Skinning)
-        SkinData.emplace_back( orth );
-#else // SKINNING_DLB
-    auto& SkinData = m_SkinningDual;
-#endif
-    auto numByte = GetVectorSize(SkinData);
-
-    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
-    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
-	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
-	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
-	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
-    gfxContext.SetPipelineState( m_ColorPSO );
-
-	for (auto& mesh: m_Mesh)
-	{
-        if (mesh.SetTexture( gfxContext ))
-            continue;
-		gfxContext.SetDynamicConstantBufferView( 0, sizeof(mesh.Material), &mesh.Material, { kBindPixel } );
-		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
-	}
-}
-
-void PmxModel::Private::DrawBone()
-{
-    if (!Model::s_bEnableDrawBone)
-        return;
-	auto numBones = m_BoneAttribute.size();
-	for (auto i = 0; i < numBones; i++)
-        Model::Append( Model::kBoneMesh, m_ModelTransform * m_Skinning[i] * m_BoneAttribute[i] );
-}
-
-void PmxModel::Private::DrawBoundingSphere()
-{
-    if (!Model::s_bEnableDrawBoundingSphere)
-        return;
-
-    BoundingSphere sphere = GetBoundingSphere();
-    AffineTransform scale = AffineTransform::MakeScale( float(sphere.GetRadius()) );
-    AffineTransform center = AffineTransform::MakeTranslation( sphere.GetCenter() );
-    Model::Append( Model::kSphereMesh, center*scale );
-}
-
-BoundingSphere PmxModel::Private::GetBoundingSphere()
-{
-	if (m_BoneMotions.size() > 0)
-        return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingSphere;
-    return m_ModelTransform * m_BoundingSphere;
-}
-
-BoundingBox PmxModel::Private::GetBoundingBox()
-{
-	if (m_BoneMotions.size() > 0)
-        return m_ModelTransform * m_Skinning[m_RootBoneIndex] * m_BoundingBox;
-    return m_ModelTransform * m_BoundingBox;
-}
-
 PmxModel::PmxModel() :
     m_Context(std::make_shared<Private>())
 {
@@ -879,12 +699,28 @@ void PmxModel::Clear()
     m_Context->Clear();
 }
 
-bool PmxModel::LoadFromFile( const std::wstring& FilePath )
+const std::vector<XMFLOAT3>& Rendering::PmxModel::GetVertices( void ) const
 {
-    return m_Context->LoadFromFile( FilePath );
+    return m_Context->GetVertices();
+}
+
+const std::vector<uint32_t>& Rendering::PmxModel::GetIndices( void ) const
+{
+    return m_Context->GetIndices();
 }
 
 void PmxModel::DrawColor( GraphicsContext& Context )
 {
     m_Context->Draw( Context );
 }
+
+bool PmxModel::LoadFromFile( const std::wstring& FilePath )
+{
+    return m_Context->LoadFromFile( FilePath );
+}
+
+void PmxModel::SetVertices( const std::vector<XMFLOAT3>& vertices )
+{
+    m_Context->SetVertices( vertices );
+}
+

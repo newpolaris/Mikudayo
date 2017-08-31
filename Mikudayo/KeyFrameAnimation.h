@@ -23,7 +23,6 @@ namespace Animation
 	class BoneMotion
 	{
 	public:
-		bool bLimitXAngle;
 		std::vector<BoneKeyFrame> m_KeyFrames;
 
 		void InsertKeyFrame( const BoneKeyFrame& frame );

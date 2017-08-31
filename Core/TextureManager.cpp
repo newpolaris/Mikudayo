@@ -214,7 +214,7 @@ namespace TextureManager
             return *ManTex;
         }
 
-        uint32_t MagentaPixel = 0x00FF00FF;
+        uint32_t MagentaPixel = 0xFFFF00FF;
         ManTex->Create(1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, &MagentaPixel);
         return *ManTex;
     }
@@ -283,6 +283,7 @@ void ManagedTexture::SetToInvalidTexture( void )
 
 const ManagedTexture* TextureManager::LoadDDSFromFile( const wstring& fileName, bool sRGB )
 {
+    ASSERT( !s_RootPath.empty() );
 	auto ManagedTex = FindOrLoadTexture( fileName );
 
 	ManagedTexture* ManTex = ManagedTex.first;

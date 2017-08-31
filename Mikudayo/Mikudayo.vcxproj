@@ -65,12 +65,14 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -79,6 +81,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -86,13 +89,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bullet\BaseRigidBody.cpp" />
+    <ClCompile Include="Bullet\BulletDebugDraw.cpp" />
+    <ClCompile Include="Bullet\Physics.cpp" />
+    <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
+    <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Pmx.cpp" />
-    <ClCompile Include="PmxLoader.cpp" />
     <ClCompile Include="PmxModel.cpp" />
+    <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -101,16 +109,43 @@
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bullet\BaseRigidBody.h" />
+    <ClInclude Include="Bullet\BulletDebugDraw.h" />
+    <ClInclude Include="Bullet\IRigidBody.h" />
+    <ClInclude Include="Bullet\LinearMath.h" />
+    <ClInclude Include="Bullet\Physics.h" />
+    <ClInclude Include="Bullet\PhysicsPrimitive.h" />
+    <ClInclude Include="Bullet\PrimitiveBatch.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Pmx.h" />
-    <ClInclude Include="PmxLoader.h" />
     <ClInclude Include="PmxModel.h" />
+    <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Vmd.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\BulletLinePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\BulletLineVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\BulletPrimitivePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\BulletPrimitiveVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\ModelPrimitivePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -133,17 +168,41 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\Shadow.hlsli" />
     <None Include="Shaders\ShadowDefine.hlsli" />
     <None Include="Shaders\Skinning.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\BulletCollision\BulletCollision.vcxproj">
+      <Project>{3331592d-b9fa-3fe3-82e0-55341c2496e9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\BulletDynamics\BulletDynamics.vcxproj">
+      <Project>{94a39064-cba0-3029-bf08-195b7839dc23}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\BulletSoftBody\BulletSoftBody.vcxproj">
+      <Project>{04a343d3-15da-31b0-adfc-23ba3ae9d419}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\LinearMath\LinearMath.vcxproj">
+      <Project>{83d0fb92-3b9b-3ef9-92a0-71521f9d16d3}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Core_VS14.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
+    <Import Project="packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" />
+    <Import Project="packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets" Condition="Exists('packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
+    <Error Condition="!Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
+    <Error Condition="!Exists('packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets'))" />
+  </Target>
 </Project>
