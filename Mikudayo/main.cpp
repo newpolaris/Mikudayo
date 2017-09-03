@@ -32,6 +32,9 @@ private:
     Camera m_Camera, m_SecondCamera;
     std::auto_ptr<CameraController> m_CameraController, m_SecondCameraController;
 
+    Vector3 m_SunColor;
+    Vector3 m_SunDirection;
+
     Matrix4 m_ViewMatrix;
     Matrix4 m_ProjMatrix;
     Matrix4 m_ViewProjMatrix;
@@ -51,6 +54,14 @@ enum { kCameraMain, kCameraVirtual };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
 
+// Default values in MMD. Due to RH coord, z is inverted.
+NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
+
 void Mikudayo::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
@@ -69,7 +80,7 @@ void Mikudayo::Startup( void )
 
     auto vertices = m_Mikudayo.GetVertices();
     auto indices = m_Mikudayo.GetIndices();
-#if 1
+#if 0
     SoftBodyGeometry Geo { vertices, indices };
     m_SoftBody = manager.LoadFromGeometry( Geo );
     m_SoftBody->translate( btVector3( 0, 2, 0 ) );
@@ -103,6 +114,9 @@ void Mikudayo::Update( float deltaT )
         m_CameraController->Update( deltaT );
     else
         m_SecondCameraController->Update( deltaT );
+
+    m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
+    m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
 
     m_ViewMatrix = GetCamera().GetViewMatrix();
     m_ProjMatrix = GetCamera().GetProjMatrix();
@@ -182,6 +196,16 @@ void Mikudayo::RenderScene( void )
     vsConstants.view = m_ViewMatrix;
     vsConstants.projection = m_ProjMatrix;
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
+
+    __declspec(align(16)) struct
+    {
+        Vector3 LightDirection;
+        Vector3 LightColor;
+    } psConstants;
+
+    psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
+    psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
+	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );

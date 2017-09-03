@@ -9,11 +9,6 @@ cbuffer VSConstants : register(b0)
     matrix shadow[MaxSplit]; // T*P*V
 };
 
-cbuffer SkinningConstants : register(b1)
-{
-    SkinData skinData;
-}
-
 cbuffer Model : register(b2)
 {
 	matrix model;
@@ -34,28 +29,17 @@ struct PixelShaderInput
 {
 	float4 posH : SV_POSITION;
 	float3 posV : POSITION0;
-    float4 shadowPosH[MaxSplit] : POSITION1;
 	float3 normalV : NORMAL;
 	float2 uv : TEXTURE;
 };
-
-void GetShadowData( float3 position, out float4 shadowPosH[MaxSplit] )
-{
-    for ( uint i = 0; i < MaxSplit; i++ )
-    {
-        matrix shadowTransform = mul( shadow[i], model );
-        shadowPosH[i] = mul( shadowTransform, float4(position, 1.0) );
-    }
-}
 
 // Simple shader to do vertex processing on the GPU.
 PixelShaderInput main(AttributeInput input, float3 position : POSITION)
 {
 	PixelShaderInput output;
 
-    float3 pos, normal;
-    PmxSkinInput skinInput = { position, input.normal, input.boneWeight, input.boneID };
-    PmxSkinning( skinInput, skinData, pos, normal );
+    float3 pos = BoneSkinning( position, input.boneWeight, input.boneID );
+    float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
 
     // Transform the vertex position into projected space.
 	matrix modelview = mul( view, model );
@@ -64,7 +48,6 @@ PixelShaderInput main(AttributeInput input, float3 position : POSITION)
 	output.posH = mul( projection, posV );
 	output.normalV = mul( (float3x3)modelview, normal );
 	output.uv = input.uv;
-    GetShadowData( pos, output.shadowPosH );
 
 	return output;
 }

@@ -83,6 +83,19 @@ namespace {
     {
         return sizeof( T ) * vec.size();
     }
+
+    const std::wstring ToonList[10] = {
+        L"toon01.bmp",
+        L"toon02.bmp",
+        L"toon03.bmp",
+        L"toon04.bmp",
+        L"toon05.bmp",
+        L"toon06.bmp",
+        L"toon07.bmp",
+        L"toon08.bmp",
+        L"toon09.bmp",
+        L"toon10.bmp"
+    };
 }
 
 struct PmxModel::Private final
@@ -340,7 +353,7 @@ bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
 
         std::wstring ToonName;
         if (material.bDefaultToon)
-            ToonName = std::wstring(L"toon") + std::to_wstring(material.DeafultToon) + std::wstring(L".bmp");
+            ToonName = ToonList[material.DeafultToon];
         else if (material.Toon >= 0)
             ToonName = pmx.m_Textures[material.Toon];
         if (!ToonName.empty())
@@ -488,7 +501,7 @@ void PmxModel::Private::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frame
 		bone.SortKeyFrame();
 }
 
-const ManagedTexture * PmxModel::Private::LoadTexture( std::wstring ImageName, bool bSRGB )
+const ManagedTexture* PmxModel::Private::LoadTexture( std::wstring ImageName, bool bSRGB )
 {
     using Path = boost::filesystem::path;
 

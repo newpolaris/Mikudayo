@@ -1,11 +1,8 @@
-#include "ShadowDefine.hlsli"
-
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
 	float4 posH : SV_POSITION;
 	float3 posV : POSITION0;
-    float4 shadowPosH[MaxSplit] : POSITION1;
 	float3 normalV : NORMAL;
 	float2 uv : TEXTURE;
 };
@@ -47,7 +44,6 @@ SamplerState sampler1 : register(s1);
 SamplerComparisonState samplerShadow : register(s2);
 
 static const float Bias = 0.f;
-#include "Shadow.hlsli"
 
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
@@ -89,8 +85,9 @@ float4 main(PixelShaderInput input) : SV_TARGET
 		texColor += texSphere.Sample( sampler0, sphereCoord );
 	else if (sphereOperation == kSphereMul)
 		texColor *= texSphere.Sample( sampler0, sphereCoord );
-
 	float3 color = texColor * (ambient + diffuse) + specular;
+    if (bUseToon)
+        color *= texToon.Sample( sampler0, toonCoord );
 	float alpha = texAlpha * material.alpha;
 	return float4(color, alpha);
 }
