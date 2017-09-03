@@ -147,29 +147,26 @@ void Mikudayo::Update( float deltaT )
     };
 
     using namespace GameInput;
-    static bool bDown = false;
-    if (IsFirstPressed( DigitalInput::kMouse0 ))
-    {
-        static float sx = 0, sy = 0;
-        if (m_CameraType == kCameraMain)
-            sx = GetMousePosition( 0 ), sy = GetMousePosition( 1 );
-
-        Vector3 rayFrom = m_Camera.GetPosition();
-        Vector3 rayTo = GetRayTo( sx, sy ) * 300 + rayFrom;
-        Physics::PickBody( Convert(rayFrom), Convert(rayTo), Convert(m_Camera.GetForwardVec()) );
-        bDown = true;
-    }
+    static bool bMouseDrag = false;
     if (IsFirstReleased( DigitalInput::kMouse0 ))
     {
-        bDown = false;
+        bMouseDrag = false;
         Physics::ReleasePickBody();
     }
-    if (bDown)
+    if (IsFirstPressed( DigitalInput::kMouse0 ) || bMouseDrag)
     {
-        float sx = GetMousePosition( 0 ), sy = GetMousePosition( 1 );
+        float sx = (float)GetMousePosition( 0 ), sy = (float)GetMousePosition( 1 );
         Vector3 rayFrom = m_Camera.GetPosition();
         Vector3 rayTo = GetRayTo( sx, sy ) * m_Camera.GetFarClip() + rayFrom;
-        Physics::MovePickBody( Convert(rayFrom), Convert(rayTo), Convert(m_Camera.GetForwardVec()) );
+        if (!bMouseDrag)
+        {
+            Physics::PickBody( Convert( rayFrom ), Convert( rayTo ), Convert( m_Camera.GetForwardVec() ) );
+            bMouseDrag = true;
+        }
+        else
+        {
+            Physics::MovePickBody( Convert( rayFrom ), Convert( rayTo ), Convert( m_Camera.GetForwardVec() ) );
+        }
     }
 }
 
