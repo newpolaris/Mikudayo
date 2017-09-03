@@ -339,6 +339,7 @@ bool PmxModel::Private::LoadFromFile( const std::wstring& FilePath )
 
 		MaterialCB mat = {};
 		mat.Diffuse = material.Diffuse;
+		mat.Specular = material.Specular;
 		mat.SpecularPower = material.SpecularPower;
 		mat.Ambient = material.Ambient;
 
