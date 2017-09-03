@@ -27,9 +27,10 @@ public:
     virtual void RenderUI( GraphicsContext& Context ) override;
 
 private:
+    const Camera& GetCamera();
 
-    Camera m_Camera;
-    std::auto_ptr<CameraController> m_CameraController;
+    Camera m_Camera, m_SecondCamera;
+    std::auto_ptr<CameraController> m_CameraController, m_SecondCameraController;
 
     Matrix4 m_ViewMatrix;
     Matrix4 m_ProjMatrix;
@@ -46,15 +47,21 @@ CREATE_APPLICATION( Mikudayo )
 
 SoftBodyManager manager;
 
+enum { kCameraMain, kCameraVirtual };
+const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
+EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
+
 void Mikudayo::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
     Model::Initialize();
 
-    const Vector3 eye = Vector3(62.0f, 18.0f, -15.0f);
+    const Vector3 eye = Vector3(0.0f, 18.0f, -15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
+    m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
+    m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     Rendering::PmxModel mikudayo;
     mikudayo.LoadFromFile( L"Model/Mikudayo/mikudayo-3_6.pmx" );
@@ -62,9 +69,11 @@ void Mikudayo::Startup( void )
 
     auto vertices = m_Mikudayo.GetVertices();
     auto indices = m_Mikudayo.GetIndices();
+#if 1
     SoftBodyGeometry Geo { vertices, indices };
     m_SoftBody = manager.LoadFromGeometry( Geo );
-    m_SoftBody->translate( btVector3( 0, 10, 0 ) );
+    m_SoftBody->translate( btVector3( 0, 2, 0 ) );
+#endif
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
         { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
@@ -90,10 +99,14 @@ void Mikudayo::Update( float deltaT )
 {
     ScopedTimer _prof( L"Update" );
 
-    m_CameraController->Update( deltaT );
-    m_ViewMatrix = m_Camera.GetViewMatrix();
-    m_ProjMatrix = m_Camera.GetProjMatrix();
-    m_ViewProjMatrix = m_Camera.GetViewProjMatrix();
+    if (m_CameraType == kCameraMain)
+        m_CameraController->Update( deltaT );
+    else
+        m_SecondCameraController->Update( deltaT );
+
+    m_ViewMatrix = GetCamera().GetViewMatrix();
+    m_ProjMatrix = GetCamera().GetProjMatrix();
+    m_ViewProjMatrix = GetCamera().GetViewProjMatrix();
 
 	m_MainViewport.Width = (float)g_SceneColorBuffer.GetWidth();
 	m_MainViewport.Height = (float)g_SceneColorBuffer.GetHeight();
@@ -121,6 +134,43 @@ void Mikudayo::Update( float deltaT )
             m_Mikudayo.SetVertices( vertices );
         }
     }
+
+    auto GetRayTo = [&]( float x, float y) {
+        auto& invView = m_Camera.GetCameraToWorld();
+        auto& proj = m_Camera.GetProjMatrix();
+        auto p00 = proj.GetX().GetX();
+        auto p11 = proj.GetY().GetY();
+        float vx = (+2.f * x / m_MainViewport.Width - 1.f) / p00;
+        float vy = (-2.f * y / m_MainViewport.Height + 1.f) / p11;
+        Vector3 Dir(XMVector3TransformNormal( Vector3( vx, vy, -1 ), Matrix4(invView) ));
+        return Normalize(Dir);
+    };
+
+    using namespace GameInput;
+    static bool bDown = false;
+    if (IsFirstPressed( DigitalInput::kMouse0 ))
+    {
+        static float sx = 0, sy = 0;
+        if (m_CameraType == kCameraMain)
+            sx = GetMousePosition( 0 ), sy = GetMousePosition( 1 );
+
+        Vector3 rayFrom = m_Camera.GetPosition();
+        Vector3 rayTo = GetRayTo( sx, sy ) * 300 + rayFrom;
+        Physics::PickBody( Convert(rayFrom), Convert(rayTo), Convert(m_Camera.GetForwardVec()) );
+        bDown = true;
+    }
+    if (IsFirstReleased( DigitalInput::kMouse0 ))
+    {
+        bDown = false;
+        Physics::ReleasePickBody();
+    }
+    if (bDown)
+    {
+        float sx = GetMousePosition( 0 ), sy = GetMousePosition( 1 );
+        Vector3 rayFrom = m_Camera.GetPosition();
+        Vector3 rayTo = GetRayTo( sx, sy ) * m_Camera.GetFarClip() + rayFrom;
+        Physics::MovePickBody( Convert(rayFrom), Convert(rayTo), Convert(m_Camera.GetForwardVec()) );
+    }
 }
 
 void Mikudayo::RenderScene( void )
@@ -132,8 +182,8 @@ void Mikudayo::RenderScene( void )
         Matrix4 view;
         Matrix4 projection;
     } vsConstants;
-    vsConstants.view = m_Camera.GetViewMatrix();
-    vsConstants.projection = m_Camera.GetProjMatrix();
+    vsConstants.view = m_ViewMatrix;
+    vsConstants.projection = m_ProjMatrix;
 	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
@@ -149,8 +199,8 @@ void Mikudayo::RenderScene( void )
         m_Mikudayo.DrawColor( gfxContext );
         Model::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
-            primitive->Draw( m_Camera.GetWorldSpaceFrustum() );
-        Physics::Render( gfxContext, m_Camera.GetViewProjMatrix() );
+            primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
+        Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
     }
     gfxContext.SetRenderTarget( nullptr );
 	gfxContext.Finish();
@@ -158,4 +208,12 @@ void Mikudayo::RenderScene( void )
 
 void Mikudayo::RenderUI( GraphicsContext & Context )
 {
+}
+
+const Camera& Mikudayo::GetCamera()
+{
+    if (m_CameraType == kCameraVirtual)
+        return m_SecondCamera;
+    else
+        return m_Camera;
 }

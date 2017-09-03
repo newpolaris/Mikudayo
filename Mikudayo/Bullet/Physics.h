@@ -11,6 +11,7 @@ namespace Math
 
 namespace Physics
 {
+    using namespace Math;
     enum SolverType
     {
         SOLVER_TYPE_SEQUENTIAL_IMPULSE,
@@ -27,5 +28,8 @@ namespace Physics
     void Initialize( void );
     void Shutdown( void );
     void Update( float deltaT );
-    void Render( GraphicsContext& Context, const Math::Matrix4& WorldToClip );
+    bool MovePickBody(const btVector3& From, const btVector3& To, const btVector3& Forward );
+    bool PickBody( const btVector3& From, const btVector3& To, const btVector3& Forward );
+    void ReleasePickBody();
+    void Render( GraphicsContext& Context, const Matrix4& WorldToClip );
 };

@@ -353,6 +353,14 @@ namespace GameCore
                 Graphics::Resize((UINT)(UINT64)lParam & 0xFFFF, (UINT)(UINT64)lParam >> 16);
                 break;
 
+            case WM_MOUSEMOVE:
+            case WM_LBUTTONUP:
+            case WM_LBUTTONDOWN:
+            case WM_RBUTTONUP:
+            case WM_RBUTTONDOWN:
+			    GameInput::SetMouseAbsoultePosition(LOWORD(lParam), HIWORD( lParam ));
+                break;
+
             case WM_DESTROY:
                 PostQuitMessage(0);
                 break;

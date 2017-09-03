@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -191,5 +191,9 @@ namespace GameInput
 
 #if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_TV_TITLE | WINAPI_PARTITION_DESKTOP)
 	void SetKeyState(Windows::System::VirtualKey key, bool IsDown);
+#endif
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+    void SetMouseAbsoultePosition( int x, int y );
+    int GetMousePosition( int a );
 #endif
 }

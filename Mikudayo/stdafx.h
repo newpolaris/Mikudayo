@@ -6,6 +6,7 @@
 #include <codecvt>
 #include <locale>
 #include "GameCore.h"
+#include "GameInput.h"
 #include "GraphicsCore.h"
 #include "PipelineState.h"
 #include "CommandContext.h"

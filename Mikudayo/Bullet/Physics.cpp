@@ -1,7 +1,7 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 
 #include "Physics.h"
-
+#include "LinearMath.h"
 #include "BulletDebugDraw.h"
 #include "PrimitiveBatch.h"
 #include "TextUtility.h"
@@ -31,6 +31,21 @@ namespace Physics
     btSoftBodyWorldInfo SoftBodyWorldInfo;
     btSoftBodyWorldInfo* g_SoftBodyWorldInfo = &SoftBodyWorldInfo;
     btConstraintSolver* CreateSolverByType( SolverType t );
+
+    // Picking
+	btScalar m_PickingDist;
+	btVector3 m_PickingPos;
+	btVector3 m_CameraPos;
+    btVector3 m_Goal;
+	btVector3 m_Impact;
+    btVector3 m_CameraFoward;
+	btSoftBody::Node* m_Node = nullptr;
+	btRigidBody* m_PickedBody = nullptr;
+	btPoint2PointConstraint* m_PickedConstraint = nullptr;
+};
+
+struct BulletPicking
+{
 };
 
 using namespace Physics;
@@ -43,6 +58,33 @@ void EnterProfileZoneDefault(const char* name)
 void LeaveProfileZoneDefault()
 {
     PopProfilingMarker( nullptr );
+}
+
+void PickingPreTickCallback(btDynamicsWorld *world, btScalar timeStep)
+{
+    //
+    // Used bullet's Softbody example code
+    //
+    if (m_Node)
+    {
+        const btVector3	rayDir = (m_PickingPos - m_CameraPos).normalized();
+        const btScalar O = btDot( m_Impact, m_CameraFoward );
+        const btScalar den = btDot( m_CameraFoward, rayDir );
+        if ((den*den) > 0)
+		{
+            const btScalar num = O - btDot( m_CameraFoward, m_CameraPos );
+            const btScalar hit = num / den;
+            if ((hit > 0) && (hit < 1500))
+                m_Goal = m_CameraPos + rayDir*hit;
+        }
+        btVector3 delta = m_Goal - m_Node->m_x;
+        static const btScalar maxdrag = 800, factor = 8;
+        if (delta.length2() > ( maxdrag*maxdrag ))
+        {
+            delta = delta.normalized()*maxdrag;
+        }
+        m_Node->m_v += delta * factor / timeStep;
+	}
 }
 
 btConstraintSolver* Physics::CreateSolverByType( SolverType t )
@@ -101,8 +143,9 @@ void Physics::Initialize( void )
         btIDebugDraw::DBG_DrawWireframe
     );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
-
+    DynamicsWorld->setInternalTickCallback( PickingPreTickCallback, nullptr, true );
     g_DynamicsWorld = DynamicsWorld.get();
+
 }
 
 void Physics::Shutdown( void )
@@ -132,7 +175,7 @@ void Physics::Update( float deltaT )
     DynamicsWorld->stepSimulation( deltaT, 1 );
 }
 
-void Physics::Render( GraphicsContext& Context, const Math::Matrix4& WorldToClip )
+void Physics::Render( GraphicsContext& Context, const Matrix4& WorldToClip )
 {
     ASSERT( DynamicsWorld.get() != nullptr );
     PrimitiveBatch::Flush( Context, WorldToClip );
@@ -147,4 +190,105 @@ void Physics::Render( GraphicsContext& Context, const Math::Matrix4& WorldToClip
 		}
         DebugDrawer->flush( Context, WorldToClip );
     }
+}
+
+bool Physics::PickBody( const btVector3& From, const btVector3& To, const btVector3& Forward )
+{
+    m_CameraFoward = Forward;
+
+	ReleasePickBody();
+    btCollisionWorld::ClosestRayResultCallback rayCallback( From, To );
+    DynamicsWorld->rayTest( From, To, rayCallback );
+	if (!rayCallback.hasHit())
+        return false;
+
+    btVector3 pickPos = rayCallback.m_hitPointWorld;
+	const btRigidBody* rb = btRigidBody::upcast(rayCallback.m_collisionObject);
+    if (rb && !(rb->isStaticObject() || rb->isKinematicObject()))
+    {
+		m_PickedBody = const_cast<btRigidBody*>(rb);
+		m_PickedBody->setActivationState(DISABLE_DEACTIVATION);
+		btVector3 localPivot = rb->getCenterOfMassTransform().inverse() * pickPos;
+		btPoint2PointConstraint* p2p = new btPoint2PointConstraint(*m_PickedBody, localPivot);
+        DynamicsWorld->addConstraint( p2p, true );
+		m_PickedConstraint = p2p;
+		btScalar mousePickClamping = 30.f;
+		p2p->m_setting.m_impulseClamp = mousePickClamping;
+		//very weak constraint for picking
+		p2p->m_setting.m_tau = 0.001f;
+        m_Impact = pickPos;
+	}
+	const btSoftBody* csb = btSoftBody::upcast(rayCallback.m_collisionObject);
+    if (csb)
+    {
+        btSoftBody* sb = const_cast<btSoftBody*>(csb);
+		btSoftBody::sRayCast raycast;
+        if (!sb->rayTest( From, To, raycast ))
+            return false;
+        m_Node = nullptr;
+        m_Impact = From + (To - From)*raycast.fraction;
+        if (raycast.feature == btSoftBody::eFeature::Tetra)
+        {
+            btSoftBody::Tetra& tet = raycast.body->m_tetras[raycast.index];
+            m_Node = tet.m_n[0];
+            for (int i = 1; i < 4; ++i)
+                if ((m_Node->m_x - m_Impact).length2() > ( tet.m_n[i]->m_x - m_Impact ).length2())
+                    m_Node = tet.m_n[i];
+        }
+        else if (raycast.feature == btSoftBody::eFeature::Face)
+        {
+            btSoftBody::Face& f = raycast.body->m_faces[raycast.index];
+            m_Node = f.m_n[0];
+            for (int i = 1; i < 3; ++i)
+                if ((m_Node->m_x - m_Impact).length2() > ( f.m_n[i]->m_x - m_Impact ).length2())
+                    m_Node = f.m_n[i];
+        }
+        if (m_Node)
+            m_Goal = m_Node->m_x;
+    }
+    m_CameraPos = From;
+    m_PickingPos = To;
+    m_PickingDist = (pickPos - From).length();
+
+	return true;
+}
+
+bool Physics::MovePickBody(const btVector3& From, const btVector3& To, const btVector3& Forward )
+{
+    m_CameraFoward = Forward;
+    if (m_PickedBody && m_PickedConstraint)
+    {
+        btPoint2PointConstraint* pickCon = static_cast<btPoint2PointConstraint*>(m_PickedConstraint);
+        if (pickCon)
+        {
+            //keep it at the same picking distance
+            btVector3 dir = To - From;
+            dir.normalize();
+            dir *= m_PickingDist;
+
+            btVector3 newPivotB = From + dir;
+            pickCon->setPivotB( newPivotB );
+        }
+    }
+    m_CameraPos = From;
+    m_PickingPos = To;
+	return true;
+}
+
+void Physics::ReleasePickBody()
+{
+    if (m_PickedBody)
+    {
+        m_PickedBody->forceActivationState( ACTIVE_TAG );
+        m_PickedBody->setDeactivationTime( 0.f );
+    }
+    if (m_PickedConstraint)
+    {
+        DynamicsWorld->removeConstraint( m_PickedConstraint );
+        delete m_PickedConstraint;
+        m_PickedConstraint = nullptr;
+    }
+    m_Node = nullptr;
+	m_PickedBody = nullptr;
+	m_PickedConstraint = nullptr;
 }

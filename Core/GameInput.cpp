@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -55,6 +55,7 @@ namespace
 	float s_AnalogsTC[GameInput::kNumAnalogInputs];
 
 #ifdef USE_KEYBOARD_MOUSE
+    int s_MousePosition[2];
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 	IDirectInput8A* s_DI;
@@ -64,7 +65,7 @@ namespace
 
 	DIMOUSESTATE2 s_MouseState;
 	unsigned char s_Keybuffer[256];
-	unsigned char s_DXKeyMapping[GameInput::kNumKeys]; // map DigitalInput enum to DX key codes 
+	unsigned char s_DXKeyMapping[GameInput::kNumKeys]; // map DigitalInput enum to DX key codes
 
 #endif
 
@@ -409,6 +410,21 @@ void GameInput::SetKeyState(Windows::System::VirtualKey key, bool IsDown)
 {
 	s_Keybuffer[(unsigned char)key] = IsDown ? 0x80 : 0x00;
 	//DEBUGPRINT("%d key is %s", (unsigned int)key, IsDown ? "down" : "up");
+}
+#endif
+
+// TODO: replace with accumulative mouse position and custom cursor drawing
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+void GameInput::SetMouseAbsoultePosition( int x, int y )
+{
+    s_MousePosition[0] = x;
+    s_MousePosition[1] = y;
+}
+
+int GameInput::GetMousePosition( int a )
+{
+    ASSERT(a < 2);
+    return s_MousePosition[a];
 }
 #endif
 
