@@ -70,7 +70,8 @@ bool PmxModel::GenerateResource( void )
         for (auto i = 0; i < material.TexturePathes.size(); i++)
         {
             auto& tex = material.TexturePathes[i];
-            material.Textures[i] = LoadTexture( tex.Path, tex.bSRGB );
+            if (!tex.Path.empty())
+                material.Textures[i] = LoadTexture( tex.Path, tex.bSRGB );
             if (material.Textures[kTextureToon])
                 material.CB.bUseToon = TRUE;
             if (material.Textures[kTextureDiffuse])
@@ -222,14 +223,14 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 const ManagedTexture* PmxModel::LoadTexture( std::wstring ImageName, bool bSRGB )
 {
     using Path = boost::filesystem::path;
+    ASSERT(!ImageName.empty());
 
     const Path imagePath = Path(m_TextureRoot) / ImageName;
     bool bExist = boost::filesystem::exists( imagePath );
     if (bExist)
     {
         auto wstrPath = imagePath.generic_wstring();
-        auto ia = ReadFileSync( wstrPath );
-        return TextureManager::LoadFromMemory( wstrPath, ia, bSRGB );
+        return TextureManager::LoadFromFile( wstrPath, bSRGB );
     }
     const std::wregex toonPattern( L"toon[0-9]{1,2}.bmp", std::regex_constants::icase );
     if (std::regex_match( ImageName.begin(), ImageName.end(), toonPattern ))

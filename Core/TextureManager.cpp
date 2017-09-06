@@ -114,7 +114,7 @@ bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, boo
 
 	if (SUCCEEDED(hr))
 	{
-        // Can't generate mips error happens
+        // Can't generate mips. Fail to create resource
         //
 		// GraphicsContext& gfxContext = GraphicsContext::Begin( L"MipMap" );
 		// gfxContext.GenerateMips( SRV.Get() );

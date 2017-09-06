@@ -57,6 +57,8 @@ enum { kCameraMain, kCameraVirtual };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
 
+NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
+
 // Default values in MMD. Due to RH coord, z is inverted.
 NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
@@ -96,6 +98,8 @@ void Mikudayo::Startup( void )
     {
         const auto& model = ModelManager::GetModel( info.Name );
         m_Model = std::make_shared<PmxInstant>(model);
+        m_Model->LoadModel();
+        m_Model->LoadMotion( L"Motion/nekomimi_lat.vmd" );
     }
 
     /*
@@ -164,7 +168,9 @@ void Mikudayo::Update( float deltaT )
         Physics::Update( deltaT );
         for (auto& primitive : m_Primitives)
             primitive->Update();
+        m_Frame = m_Frame + deltaT * 30.f;
     }
+    m_Model->Update( m_Frame );
 
     auto GetRayTo = [&]( float x, float y) {
         auto& invView = m_Camera.GetCameraToWorld();

@@ -1,12 +1,9 @@
 #include "Skinning.hlsli"
 
-static const uint MaxSplit = 4;
-
 cbuffer VSConstants : register(b0)
 {
 	matrix view;
 	matrix projection;
-    matrix shadow[MaxSplit]; // T*P*V
 };
 
 cbuffer Model : register(b2)
