@@ -3,6 +3,8 @@
 #include <iostream>
 #include <algorithm>
 #include <regex>
+#include <map>
+#include <vector>
 #include <codecvt>
 #include <locale>
 #include "GameCore.h"

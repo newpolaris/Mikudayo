@@ -1,26 +1,42 @@
 #pragma once
 
-class BoolVar;
-class NumVar;
+using namespace Math;
 
-class GraphicsContext;
+enum EModelType
+{
+    kModelPMX
+};
 
-namespace Graphics {
-namespace Model {
-    enum PrimtiveMeshType {
-        kBoneMesh,
-        kSphereMesh,
-        kBatchMax
-    };
+struct TextureInfo
+{
+    uint32_t Slot;
+    std::wstring Path;
+};
 
-    extern BoolVar s_bEnableDrawBone;
-    extern BoolVar s_bEnableDrawBoundingSphere;
-    extern BoolVar s_bExcludeSkyBox;
-    extern NumVar s_ExcludeRange;
+struct CustomShaderInfo
+{
+    std::wstring Name;
+    std::vector<std::wstring> MaterialNames;
+    std::vector<TextureInfo> Textures;
+};
 
-    void Initialize();
-    void Shutdown();
-    void Append( PrimtiveMeshType Type, const class Math::Matrix4& Transform );
-    void Flush( GraphicsContext& GfxContext );
-}
-}
+struct ModelInfo
+{
+    EModelType Type;
+    std::wstring Name;
+    std::wstring File;
+    CustomShaderInfo Shader;
+};
+
+class Model
+{
+public:
+
+    Model();
+    ~Model();
+    void Clear();
+
+    virtual bool Load( const ModelInfo& Info ) = 0;
+
+protected:
+};

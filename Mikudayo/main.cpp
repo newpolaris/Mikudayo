@@ -1,11 +1,13 @@
 ﻿#include "stdafx.h"
-#include "Model.h"
-#include "PmxModel.h"
+#include "PrimitiveUtility.h"
 #include "Bullet/LinearMath.h"
 #include "Bullet/Physics.h"
 #include "Bullet/PhysicsPrimitive.h"
 #include "Bullet/PrimitiveBatch.h"
 #include "SoftBodyManager.h"
+#include "ModelManager.h"
+
+#include "PmxInstant.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -42,8 +44,9 @@ private:
     D3D11_RECT m_MainScissor;
 
     btSoftBody* m_SoftBody;
-    Rendering::PmxModel m_Mikudayo;
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
+
+    std::shared_ptr<PmxInstant> m_Model;
 };
 
 CREATE_APPLICATION( Mikudayo )
@@ -66,25 +69,14 @@ void Mikudayo::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
-    Model::Initialize();
+    PrimitiveUtility::Initialize();
+    ModelManager::Initialize();
 
     const Vector3 eye = Vector3(0.0f, 18.0f, -15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
-
-    Rendering::PmxModel mikudayo;
-    mikudayo.LoadFromFile( L"Model/Mikudayo/mikudayo-3_6.pmx" );
-    m_Mikudayo = std::move(mikudayo);
-
-    auto vertices = m_Mikudayo.GetVertices();
-    auto indices = m_Mikudayo.GetIndices();
-#if 0
-    SoftBodyGeometry Geo { vertices, indices };
-    m_SoftBody = manager.LoadFromGeometry( Geo );
-    m_SoftBody->translate( btVector3( 0, 2, 0 ) );
-#endif
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
         { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
@@ -95,11 +87,46 @@ void Mikudayo::Startup( void )
     };
     for (auto& info : primitves)
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
+
+    ModelInfo info;
+    info.Type = kModelPMX;
+    info.Name = L"mikudayo";
+    info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
+    if (ModelManager::Load( info ))
+    {
+        const auto& model = ModelManager::GetModel( info.Name );
+        m_Model = std::make_shared<PmxInstant>(model);
+    }
+
+    /*
+    LOAD_MODEL "mikudayo";
+        MD_PMX_PATH "data\mikudayo\mikudayo-3_4.pmx";
+        MD_TEXTURE_PATH "data\mikudayo\";
+        MD_SHADER "mkdy_fur";
+            MDSH_MATERIAL "髪","ツインテールL","ツインテールR","顔","手";
+            MDSH_TEXTURE 3, "a_tex_fur_mkdy-3.tga",  "a_tex_fur_mkdy-3.tga";
+        _MD_SHADER;
+        MD_OUTLINE_FORCE_ON "01";//mat"01"無効
+    _LOAD_MODEL;
+    */
+
+    // Rendering::PmxInstant mikudayo;
+    // mikudayo.LoadFromFile( L"Model/Mikudayo/mikudayo-3_6.pmx" );
+    // m_Mikudayo = std::move(mikudayo);
+
+#if 0
+    auto vertices = m_Mikudayo.GetVertices();
+    auto indices = m_Mikudayo.GetIndices();
+    SoftBodyGeometry Geo { vertices, indices };
+    m_SoftBody = manager.LoadFromGeometry( Geo );
+    m_SoftBody->translate( btVector3( 0, 2, 0 ) );
+#endif
 }
 
 void Mikudayo::Cleanup( void )
 {
-    Model::Shutdown();
+    ModelManager::Shutdown();
+    PrimitiveUtility::Shutdown();
     for (auto& model : m_Primitives)
         model->Destroy();
     m_Primitives.clear();
@@ -137,16 +164,6 @@ void Mikudayo::Update( float deltaT )
         Physics::Update( deltaT );
         for (auto& primitive : m_Primitives)
             primitive->Update();
-
-        if (m_SoftBody)
-        {
-            auto& nodes = m_SoftBody->m_nodes;
-            auto numNodes = nodes.size();
-            std::vector<XMFLOAT3> vertices( numNodes );
-            for (auto i = 0; i < numNodes; i++)
-                vertices[i] = *reinterpret_cast<XMFLOAT3*>(&Convert( nodes[i].m_x ));
-            m_Mikudayo.SetVertices( vertices );
-        }
     }
 
     auto GetRayTo = [&]( float x, float y) {
@@ -217,8 +234,8 @@ void Mikudayo::RenderScene( void )
 
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-        m_Mikudayo.DrawColor( gfxContext );
-        Model::Flush( gfxContext );
+        m_Model->DrawColor( gfxContext );
+        PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
@@ -227,7 +244,7 @@ void Mikudayo::RenderScene( void )
 	gfxContext.Finish();
 }
 
-void Mikudayo::RenderUI( GraphicsContext & Context )
+void Mikudayo::RenderUI( GraphicsContext& Context )
 {
 }
 

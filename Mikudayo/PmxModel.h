@@ -1,25 +1,114 @@
 #pragma once
 
-#include <memory>
 #include <string>
+#include <vector>
+#include "Math/BoundingBox.h"
+#include "Model.h"
 
-namespace Rendering
-{
-    class PmxModel
-    {
-    public:
+using namespace Math;
 
-        PmxModel();
-        void Clear();
-        void DrawColor( GraphicsContext& Context );
-        const std::vector<XMFLOAT3>& GetVertices( void ) const;
-        const std::vector<uint32_t>& GetIndices( void ) const;
-        bool LoadFromFile( const std::wstring& FilePath );
-        void SetVertices( const std::vector<XMFLOAT3>& vertices );
-
-    private:
-
-        struct Private;
-        std::shared_ptr<Private> m_Context;
-    };
+namespace Pmx {
+    struct Bone;
 }
+
+class PmxModel : public Model
+{
+public:
+
+    struct VertexAttribute
+    {
+        XMFLOAT3 Normal;
+        XMFLOAT2 UV;
+        uint32_t BoneID[4] = { 0, };
+        float    Weight[4] = { 0.f };
+        float    EdgeSize = 0.f;
+    };
+
+    enum ETextureType
+    {
+        kTextureDiffuse,
+        kTextureSphere,
+        kTextureToon,
+        kTextureMax
+    };
+
+    struct TexturePath
+    {
+        bool bSRGB;
+        std::wstring Path;
+    };
+
+	__declspec(align(16))
+    struct MaterialCB
+	{
+		XMFLOAT4 Diffuse;
+		XMFLOAT3 Specular;
+		float SpecularPower;
+		XMFLOAT3 Ambient;
+		int32_t SphereOperation;
+		int32_t bUseTexture;
+		int32_t bUseToon;
+	};
+
+    struct Material
+    {
+        std::wstring Name;
+        std::wstring ShaderName;
+        MaterialCB CB;
+        float EdgeSize;
+        Color EdgeColor;
+        std::vector<TexturePath> TexturePathes;
+        const ManagedTexture* Textures[kTextureMax];
+        bool SetTexture( GraphicsContext& gfxContext ) const;
+    };
+
+	struct Mesh
+	{
+        uint32_t MaterialIndex;
+        int32_t IndexOffset;
+		uint32_t IndexCount;
+        BoundingSphere BoundSphere;
+		float EdgeSize;
+        Color EdgeColor;
+	};
+
+    struct Bone
+    {
+        std::wstring Name;
+        Vector3 Translate; // Offset from parent
+        Vector3 Position;
+        int32_t DestinationIndex;
+        Vector3 DestinationOffset;
+    };
+
+    std::wstring m_Name;
+    std::wstring m_TextureRoot;
+    std::vector<XMFLOAT3> m_VertexPosition;
+    std::vector<VertexAttribute> m_VertexAttribute;
+    std::vector<uint32_t> m_Indices;
+    std::vector<Material> m_Materials;
+    std::vector<Mesh> m_Mesh;
+
+    // Bone
+    uint32_t m_RootBoneIndex; // model center
+    std::vector<Bone> m_Bones;
+    std::vector<int32_t> m_BoneParent; // parent index
+    std::vector<std::vector<int32_t>> m_BoneChild; // child indices
+
+    std::map<std::wstring, uint32_t> m_MaterialIndex;
+    std::map<std::wstring, uint32_t> m_BoneIndex;
+
+    IndexBuffer m_IndexBuffer;
+
+    PmxModel();
+    virtual ~PmxModel();
+    void Clear();
+    bool Load( const ModelInfo& Info );
+
+protected:
+
+    bool GenerateResource( void );
+    bool LoadFromFile( const std::wstring& FilePath );
+    const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );
+    bool SetCustomShader( const CustomShaderInfo& Data );
+};
