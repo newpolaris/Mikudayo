@@ -79,6 +79,8 @@ public:
         Vector3 Position;
         int32_t DestinationIndex;
         Vector3 DestinationOffset;
+        int32_t Parent;
+        std::vector<int32_t> Child;
     };
 
     std::wstring m_Name;
@@ -92,8 +94,6 @@ public:
     // Bone
     uint32_t m_RootBoneIndex; // model center
     std::vector<Bone> m_Bones;
-    std::vector<int32_t> m_BoneParent; // parent index
-    std::vector<std::vector<int32_t>> m_BoneChild; // child indices
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;

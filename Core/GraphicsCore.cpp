@@ -676,8 +676,7 @@ void Graphics::Shutdown( void )
     GpuTimeManager::Shutdown();
 	ConvertLDRToDisplayPS.Destroy();
 	SharpeningUpsamplePS.Destroy();
-
-	s_BlendUIPSO.Destroy();
+    PSO::DestroyAll();
 
 	Shader::DestroyAll();
 	BlendState::DestroyAll();

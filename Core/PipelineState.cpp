@@ -20,6 +20,7 @@
 #include "DepthStencilState.h"
 #include "RasterizerState.h"
 #include "InputLayout.h"
+#include "Hash.h"
 #include <map>
 #include <thread>
 
@@ -27,10 +28,14 @@ using Microsoft::WRL::ComPtr;
 using Graphics::g_Device;
 using namespace std;
 
+static map< size_t, std::shared_ptr<GraphicsPipelineState>> s_GraphicsPSOHashMap;
+static map< size_t, std::shared_ptr<ComputePipelineState>> s_ComputePSOHashMap;
+
 struct ComputePipelineStateDesc
 {
 public:
     ComputePipelineStateDesc() {}
+    size_t Hash() const;
     ShaderByteCode CS;
 };
 
@@ -38,6 +43,7 @@ struct GraphicsPipelineStateDesc
 {
 public:
 	GraphicsPipelineStateDesc() : TopologyType(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) {}
+    size_t Hash() const;
 
     D3D_PRIMITIVE_TOPOLOGY TopologyType;
 	std::vector<InputDesc> InputDescList;
@@ -51,34 +57,44 @@ public:
 	RasterizerDesc Rasterizer;
 };
 
-ComputePSO::ComputePSO()
+void PSO::DestroyAll(void)
+{
+    s_GraphicsPSOHashMap.clear();
+    s_ComputePSOHashMap.clear();
+}
+
+ComputePSO::ComputePSO() : m_PSOState(nullptr)
 {
 	m_PSODesc = std::make_unique<ComputePipelineStateDesc>();
 }
 
-GraphicsPSO::GraphicsPSO()
+GraphicsPSO::GraphicsPSO() : m_PSOState(nullptr)
 {
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>();
 }
 
 ComputePSO::ComputePSO( const ComputePSO& PSO )
 {
+    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
 }
 
 GraphicsPSO::GraphicsPSO( const GraphicsPSO& PSO )
 {
+    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>(*PSO.m_PSODesc);
 }
 
 ComputePSO& ComputePSO::operator=( const ComputePSO& PSO )
 {
+    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
 	return *this;
 }
 
 GraphicsPSO& GraphicsPSO::operator=( const GraphicsPSO& PSO )
 {
+    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>(*PSO.m_PSODesc);
 	return *this;
 }
@@ -105,7 +121,7 @@ void GraphicsPSO::Destroy()
 	m_PSOState = nullptr;
 }
 
-std::shared_ptr<ComputePipelineState> ComputePSO::GetState()
+ComputePipelineState* ComputePSO::GetState()
 {
 	ASSERT( m_LoadingState != kStateUnloaded, L"Not Finalized Yet" );
     while (m_LoadingState == kStateLoading)
@@ -114,7 +130,7 @@ std::shared_ptr<ComputePipelineState> ComputePSO::GetState()
 	return m_PSOState;
 }
 
-std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState()
+GraphicsPipelineState* GraphicsPSO::GetState()
 {
 	ASSERT( m_LoadingState != kStateUnloaded, L"Not Finalized Yet" );
     while (m_LoadingState == kStateLoading)
@@ -169,17 +185,17 @@ void GraphicsPSO::SetInputLayout( UINT NumElements, const InputDesc* pInputEleme
 	}
 }
 
-void GraphicsPSO::SetVertexShader( const std::string& Name, const void * Binary, size_t Size )
+void GraphicsPSO::SetVertexShader( const std::string& Name, const void* Binary, size_t Size )
 {
 	m_PSODesc->VS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
 
-void GraphicsPSO::SetPixelShader( const std::string & Name, const void * Binary, size_t Size )
+void GraphicsPSO::SetPixelShader( const std::string & Name, const void* Binary, size_t Size )
 {
 	m_PSODesc->PS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
 
-void ComputePSO::SetComputeShader( const std::string & Name, const void * Binary, size_t Size )
+void ComputePSO::SetComputeShader( const std::string & Name, const void* Binary, size_t Size )
 {
 	m_PSODesc->CS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
@@ -187,22 +203,33 @@ void ComputePSO::SetComputeShader( const std::string & Name, const void * Binary
 void GraphicsPSO::Finalize()
 {
 	ASSERT(m_LoadingState != kStateLoaded, L"Already Finalized");
-
     m_LoadingState.store( kStateLoading );
-	auto sync = std::async(std::launch::async, [=]{
-		auto State = std::make_shared<GraphicsPipelineState>();
-		State->TopologyType = m_PSODesc->TopologyType;
-		State->InputLayout = InputLayout::Create( m_PSODesc->InputDescList, m_PSODesc->VS );
-		State->BlendState = BlendState::Create( m_PSODesc->Blend );
-		State->DepthStencilState = DepthStencilState::Create( m_PSODesc->DepthStencil );
-		State->RasterizerState = RasterizerState::Create( m_PSODesc->Rasterizer );
-		State->VertexShader = Shader::Create( kVertexShader, m_PSODesc->VS );
-		State->PixelShader = Shader::Create( kPixelShader, m_PSODesc->PS );
-		State->GeometryShader = Shader::Create( kGeometryShader, m_PSODesc->GS );
-		State->DomainShader = Shader::Create( kDomainShader, m_PSODesc->DS );
-		State->HullShader = Shader::Create( kDomainShader, m_PSODesc->HS );
 
-		m_PSOState.swap(State);
+    static mutex s_HashMapMutex;
+	auto sync = std::async(std::launch::async, [=]{
+        size_t HashCode = m_PSODesc->Hash();
+        lock_guard<mutex> CS(s_HashMapMutex);
+        auto iter = s_GraphicsPSOHashMap.find(HashCode);
+        if (iter == s_GraphicsPSOHashMap.end())
+        {
+            auto State = std::make_shared<GraphicsPipelineState>();
+            State->TopologyType = m_PSODesc->TopologyType;
+            State->InputLayout = InputLayout::Create( m_PSODesc->InputDescList, m_PSODesc->VS );
+            State->BlendState = BlendState::Create( m_PSODesc->Blend );
+            State->DepthStencilState = DepthStencilState::Create( m_PSODesc->DepthStencil );
+            State->RasterizerState = RasterizerState::Create( m_PSODesc->Rasterizer );
+            State->VertexShader = Shader::Create( kVertexShader, m_PSODesc->VS );
+            State->PixelShader = Shader::Create( kPixelShader, m_PSODesc->PS );
+            State->GeometryShader = Shader::Create( kGeometryShader, m_PSODesc->GS );
+            State->DomainShader = Shader::Create( kDomainShader, m_PSODesc->DS );
+            State->HullShader = Shader::Create( kDomainShader, m_PSODesc->HS );
+            s_GraphicsPSOHashMap[HashCode] = State;
+            m_PSOState = State.get();
+        }
+        else
+        {
+            m_PSOState = iter->second.get();
+        }
         m_LoadingState.store( kStateLoaded );
 	});
 }
@@ -212,10 +239,22 @@ void ComputePSO::Finalize()
 	ASSERT(m_LoadingState != kStateLoaded, L"Already Finalized");
 
     m_LoadingState.store( kStateLoading );
+    static mutex s_HashMapMutex;
 	auto sync = std::async(std::launch::async, [=]{
-		auto State = std::make_shared<ComputePipelineState>();
-		State->ComputeShader = Shader::Create( kComputeShader, m_PSODesc->CS );
-		m_PSOState.swap(State);
+        size_t HashCode = m_PSODesc->Hash();
+        lock_guard<mutex> CS(s_HashMapMutex);
+        auto iter = s_ComputePSOHashMap.find(HashCode);
+        if (iter == s_ComputePSOHashMap.end())
+        {
+            auto State = std::make_shared<ComputePipelineState>();
+            State->ComputeShader = Shader::Create( kComputeShader, m_PSODesc->CS );
+            s_ComputePSOHashMap[HashCode] = State;
+            m_PSOState = State.get();
+        }
+        else
+        {
+            m_PSOState = iter->second.get();
+        }
         m_LoadingState.store( kStateLoaded );
 	});
 }
@@ -248,4 +287,24 @@ void ComputePipelineState::Bind( ID3D11DeviceContext * Context )
 {
 	if (ComputeShader)
 		ComputeShader->Bind( Context );
+}
+
+size_t GraphicsPipelineStateDesc::Hash() const
+{
+    size_t HashCode = Utility::HashState(&TopologyType);
+    HashCode = Utility::HashState(InputDescList.data(), InputDescList.size(), HashCode);
+    HashCode = Utility::HashState(&VS, 1, HashCode);
+    HashCode = Utility::HashState(&PS, 1, HashCode);
+    HashCode = Utility::HashState(&DS, 1, HashCode);
+    HashCode = Utility::HashState(&HS, 1, HashCode);
+    HashCode = Utility::HashState(&GS, 1, HashCode);
+    HashCode = Utility::HashState(&Blend, 1, HashCode);
+    HashCode = Utility::HashState(&DepthStencil, 1, HashCode);
+    HashCode = Utility::HashState(&Rasterizer, 1, HashCode);
+    return HashCode;
+}
+
+size_t ComputePipelineStateDesc::Hash() const
+{
+    return Utility::HashState(&CS);
 }

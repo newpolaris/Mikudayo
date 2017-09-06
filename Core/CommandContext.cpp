@@ -83,11 +83,11 @@ void CommandContext::DestroyAllContexts(void)
 	g_ContextManager.DestroyAllContexts();
 }
 
-ComputeContext::ComputeContext() : CommandContext( kComputeContext )
+ComputeContext::ComputeContext() : CommandContext( kComputeContext ), m_PSOState(nullptr)
 {
 }
 
-GraphicsContext::GraphicsContext() : CommandContext( kGraphicsContext )
+GraphicsContext::GraphicsContext() : CommandContext( kGraphicsContext ), m_PSOState(nullptr)
 {
 }
 
@@ -570,13 +570,17 @@ void GraphicsContext::SetDynamicVB( UINT Slot, size_t NumVertices, size_t Vertex
 void ComputeContext::SetPipelineState( ComputePSO& PSO )
 {
 	m_PSOState = PSO.GetState();
-	m_PSOState->Bind( m_CommandList );
+    ASSERT(m_PSOState != nullptr);
+    if (m_PSOState)
+        m_PSOState->Bind( m_CommandList );
 }
 
 void GraphicsContext::SetPipelineState( GraphicsPSO& PSO )
 {
 	m_PSOState = PSO.GetState();
-	m_PSOState->Bind( m_CommandList );
+    ASSERT(m_PSOState != nullptr);
+    if (m_PSOState)
+        m_PSOState->Bind( m_CommandList );
 }
 
 #ifdef GRAPHICS_DEBUG

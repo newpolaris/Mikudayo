@@ -70,7 +70,6 @@ void BulletDebug::Initialize()
 
 void BulletDebug::Shutdown()
 {
-    BulletDebugLinePSO.Destroy();
 }
 
 using namespace BulletDebug;

@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -64,6 +64,7 @@ public:
     };
 
 	PSO() : m_LoadingState(kStateUnloaded) {}
+    static void DestroyAll( void );
 	virtual ~PSO() {}
 
     std::atomic<ELoadingState> m_LoadingState;
@@ -82,7 +83,7 @@ public:
 	virtual ~GraphicsPSO();
 	void Destroy();
 
-	std::shared_ptr<GraphicsPipelineState> GraphicsPSO::GetState();
+	GraphicsPipelineState* GetState();
 
 	void SetBlendState( const D3D11_BLEND_DESC& BlendDesc );
 	void SetRasterizerState( const D3D11_RASTERIZER_DESC& RasterizerDesc );
@@ -104,7 +105,7 @@ public:
 
 private:
 	std::unique_ptr<GraphicsPipelineStateDesc> m_PSODesc;
-	std::shared_ptr<GraphicsPipelineState> m_PSOState;
+	GraphicsPipelineState* m_PSOState;
 };
 
 class ComputePSO : public PSO
@@ -118,7 +119,7 @@ public:
     virtual ~ComputePSO();
 	void Destroy();
 
-	std::shared_ptr<ComputePipelineState> ComputePSO::GetState();
+	ComputePipelineState* GetState();
 
 	void SetComputeShader( const std::string& Name, const void* Binary, size_t Size );
 	void Finalize();
@@ -126,5 +127,5 @@ public:
 private:
 
 	std::unique_ptr<ComputePipelineStateDesc> m_PSODesc;
-	std::shared_ptr<ComputePipelineState> m_PSOState;
+	ComputePipelineState* m_PSOState;
 };

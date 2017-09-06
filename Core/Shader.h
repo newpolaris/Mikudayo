@@ -1,11 +1,11 @@
 //--------------------------------------------------------------------------------
 // This file is a portion of the Hieroglyph 3 Rendering Engine.  It is distributed
-// under the MIT License, available in the root of this distribution and 
+// under the MIT License, available in the root of this distribution and
 // at the following URL:
 //
 // http://www.opensource.org/licenses/mit-license.php
 //
-// Copyright (c) Jason Zink 
+// Copyright (c) Jason Zink
 //--------------------------------------------------------------------------------
 
 #pragma once
@@ -18,7 +18,7 @@ enum ShaderType : uint8_t
 	kHullShader,
 	kDomainShader,
 	kGeometryShader,
-	kPixelShader, 
+	kPixelShader,
 	kComputeShader,
 	kShaderCount,
 };
@@ -86,7 +86,7 @@ public:
 class Shader
 {
 public:
-	static std::shared_ptr<Shader> Create( ShaderType Type, const ShaderByteCode& ByteCode ); 
+	static std::shared_ptr<Shader> Create( ShaderType Type, const ShaderByteCode& ByteCode );
 	static void DestroyAll();
 	bool ShaderCheckResource( D3D_SHADER_INPUT_TYPE inputType, UINT slot, std::string name );
 	void Bind( ID3D11DeviceContext* pContext );

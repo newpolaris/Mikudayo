@@ -226,7 +226,7 @@ void Shader::Bind( ID3D11DeviceContext* pContext )
     }
 }
 
-ShaderByteCode::ShaderByteCode( const std::string & name, void * pBytecode, size_t length ) :
+ShaderByteCode::ShaderByteCode( const std::string& name, void* pBytecode, size_t length ) :
 	pShaderBytecode(pBytecode), Length(length)
 {
 	Name = Utility::MakeWStr(name);

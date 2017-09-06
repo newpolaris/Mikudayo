@@ -208,7 +208,7 @@ public:
     void Dispatch3D( size_t ThreadCountX, size_t ThreadCountY, size_t ThreadCountZ, size_t GroupSizeX, size_t GroupSizeY, size_t GroupSizeZ );
     void DispatchIndirect( GpuBuffer& ArgumentBuffer, size_t ArgumentBufferOffset = 0 );
 
-	std::shared_ptr<ComputePipelineState> m_PSOState;
+	ComputePipelineState* m_PSOState;
 };
 
 class GraphicsContext : public CommandContext
@@ -261,7 +261,7 @@ public:
 	void DrawIndirect( GpuBuffer& ArgumentBuffer, size_t ArgumentBufferOffset = 0 );
 	void SetPipelineState( GraphicsPSO& PSO );
 
-	std::shared_ptr<GraphicsPipelineState> m_PSOState;
+	GraphicsPipelineState* m_PSOState;
 };
 
 inline void CommandContext::ClearState()

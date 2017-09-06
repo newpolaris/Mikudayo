@@ -61,10 +61,8 @@ protected:
 
     // Skinning
     std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
-    std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
-    std::vector<OrthogonalTransform> m_Pose; // cumulative transfrom matrix from root
+    std::vector<OrthogonalTransform> m_Pose; // offset matrix
     std::vector<OrthogonalTransform> m_Skinning; // final skinning transform
-    std::vector<DualQuaternion> m_SkinningDual; // final skinning transform
 
     // Bone
     std::vector<Animation::BoneMotion> m_BoneMotions;
@@ -96,8 +94,6 @@ PmxInstant::Context::~Context()
 
 void PmxInstant::Context::Clear()
 {
-    m_ColorPSO.Destroy();
-
 	m_AttributeBuffer.Destroy();
 	m_PositionBuffer.Destroy();
 }
@@ -211,19 +207,18 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
     int32_t numBones = static_cast<int32_t>(bones.size());
     m_BoneMotions.resize( numBones );
     m_Pose.resize( numBones );
-    m_LocalPose.resize( numBones );
     m_toRoot.resize( numBones );
     for (auto i = 0; i < bones.size(); i++)
-        m_LocalPose[i].SetTranslation( bones[i].Translate );
+        m_Pose[i].SetTranslation( bones[i].Translate );
 
     std::vector<OrthogonalTransform> RestPose( numBones );
     for (auto i = 0; i < numBones; i++)
     {
         auto& bone = bones[i];
-        auto& parent = m_Model.m_BoneParent[i];
+        auto parentIndex = bone.Parent;
         RestPose[i].SetTranslation( bone.Translate );
-        if (parent >= 0)
-            RestPose[i] = RestPose[parent] * RestPose[i];
+        if (parentIndex >= 0)
+            RestPose[i] = RestPose[parentIndex] * RestPose[i];
     }
 
     for (auto i = 0; i < numBones; i++)
@@ -275,9 +270,6 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 
     // set default skinning matrix
     m_Skinning.resize( numBones );
-    m_SkinningDual.resize( numBones );
-    for ( auto i = 0; i < numBones; i++)
-        m_SkinningDual[i] = OrthogonalTransform();
 }
 
 void PmxInstant::Context::Update( float kFrameTime )
@@ -286,21 +278,20 @@ void PmxInstant::Context::Update( float kFrameTime )
 	{
 		size_t numBones = m_BoneMotions.size();
 		for (auto i = 0; i < numBones; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+			m_BoneMotions[i].Interpolate( kFrameTime, m_Pose[i] );
 
+        std::vector<OrthogonalTransform> Pose;
+        Pose.resize( numBones );
 		for (auto i = 0; i < numBones; i++)
 		{
-			auto parentIndex = m_Model.m_BoneParent[i];
+			auto parentIndex = m_Model.m_Bones[i].Parent;
 			if (parentIndex < numBones)
-				m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
+				Pose[i] = Pose[parentIndex] * m_Pose[i];
 			else
-				m_Pose[i] = m_LocalPose[i];
+				Pose[i] = m_Pose[i];
 		}
 		for (auto i = 0; i < numBones; i++)
-			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
-
-		for (auto i = 0; i < numBones; i++)
-            m_SkinningDual[i] = m_Skinning[i];
+			m_Skinning[i] = Pose[i] * m_toRoot[i];
 	}
 
     if (m_MorphMotions.size() > 0)

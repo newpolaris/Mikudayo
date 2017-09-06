@@ -119,7 +119,6 @@ void PrimitiveBatch::Initialize()
 
 void PrimitiveBatch::Shutdown()
 {
-    m_PrimitivePSO.Destroy();
     m_GeometryIndexBuffer.Destroy();
     m_GeometryVertexBuffer.Destroy();
 }

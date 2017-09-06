@@ -183,29 +183,25 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
     const auto& Bones = pmx.m_Bones;
     size_t numBones = Bones.size();
-	m_BoneParent.resize( numBones );
-	m_BoneChild.resize( numBones );
 	m_Bones.resize( numBones );
 	for (auto i = 0; i < numBones; i++)
 	{
-		auto& boneData = Bones[i];
-		m_Bones[i].Name = boneData.Name;
-		m_BoneParent[i] = boneData.ParentBoneIndex;
-		if (boneData.ParentBoneIndex >= 0)
-			m_BoneChild[boneData.ParentBoneIndex].push_back( i );
+        auto& src = Bones[i];
+        auto& dst = m_Bones[i];
 
-		Vector3 origin = boneData.Position;
+        dst.Name = src.Name;
+        dst.Parent = src.ParentBoneIndex;
+		if (src.ParentBoneIndex >= 0)
+			m_Bones[src.ParentBoneIndex].Child.push_back( i );
+		Vector3 origin = src.Position;
 		Vector3 parentOrigin = Vector3( 0.0f, 0.0f, 0.0f );
-
-		if( boneData.ParentBoneIndex >= 0)
-			parentOrigin = Bones[boneData.ParentBoneIndex].Position;
-
-		m_Bones[i].Translate = origin - parentOrigin;
-        m_Bones[i].Position = origin;
-        m_Bones[i].DestinationIndex = boneData.DestinationOriginIndex;
-        m_Bones[i].DestinationOffset = boneData.DestinationOriginOffset;
-
-		m_BoneIndex[boneData.Name] = i;
+		if( src.ParentBoneIndex >= 0)
+			parentOrigin = Bones[src.ParentBoneIndex].Position;
+		dst.Translate = origin - parentOrigin;
+        dst.Position = origin;
+        dst.DestinationIndex = src.DestinationOriginIndex;
+        dst.DestinationOffset = src.DestinationOriginOffset;
+		m_BoneIndex[src.Name] = i;
 	}
 
     // Find root bone
