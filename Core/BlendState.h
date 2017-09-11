@@ -4,7 +4,7 @@ struct BlendDesc
 {
 public:
 
-	BlendDesc() : Desc(D3D11_DEFAULT), SampleMask(0xFFFFFFFF) 
+	BlendDesc() : Desc(D3D11_DEFAULT), SampleMask(0xFFFFFFFF)
 	{
 		for (UINT i = 0; i < 4; i++)
 			BlendFactor[i] = 1.0f;
@@ -19,7 +19,7 @@ class BlendState
 {
 public:
 
-	static std::shared_ptr<BlendState> Create(const BlendDesc& desc); 
+	static std::shared_ptr<BlendState> Create(const BlendDesc& desc);
 	static void DestroyAll();
 	void Bind( ID3D11DeviceContext* pContext );
 

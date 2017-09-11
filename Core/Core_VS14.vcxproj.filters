@@ -244,6 +244,9 @@
     <ClInclude Include="OrthographicCamera.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="BlendDesc.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -461,6 +464,7 @@
     <None Include="Shaders\ShadowDefine.hlsli">
       <Filter>Shaders\Shadow</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">

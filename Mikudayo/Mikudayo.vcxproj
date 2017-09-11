@@ -110,6 +110,7 @@
     <ClCompile Include="Pmx.cpp" />
     <ClCompile Include="PmxModel.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
+    <ClCompile Include="Source.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -208,6 +209,8 @@
     <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
     <Import Project="packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" />
     <Import Project="packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets" Condition="Exists('packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" />
+    <Import Project="packages\boost.1.65.1.0\build\native\boost.targets" Condition="Exists('packages\boost.1.65.1.0\build\native\boost.targets')" />
+    <Import Project="packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets" Condition="Exists('packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -216,5 +219,7 @@
     <Error Condition="!Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
     <Error Condition="!Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
     <Error Condition="!Exists('packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets'))" />
+    <Error Condition="!Exists('packages\boost.1.65.1.0\build\native\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost.1.65.1.0\build\native\boost.targets'))" />
+    <Error Condition="!Exists('packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets'))" />
   </Target>
 </Project>
