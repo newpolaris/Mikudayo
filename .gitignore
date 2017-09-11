@@ -6,5 +6,6 @@
 *.user
 *.VC.db
 Build_VS14
+Build_VS15
 packages
 .vs

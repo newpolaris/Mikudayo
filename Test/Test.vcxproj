@@ -45,18 +45,18 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\PropertySheets\VS14.props" />
+    <Import Project="..\PropertySheets\VS15.props" />
     <Import Project="..\PropertySheets\Win32.props" />
     <Import Project="..\PropertySheets\Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\PropertySheets\VS14.props" />
+    <Import Project="..\PropertySheets\VS15.props" />
     <Import Project="..\PropertySheets\Win32.props" />
     <Import Project="..\PropertySheets\Release.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
-    <Import Project="..\PropertySheets\VS14.props" />
+    <Import Project="..\PropertySheets\VS15.props" />
     <Import Project="..\PropertySheets\Win32.props" />
     <Import Project="..\PropertySheets\Profile.props" />
   </ImportGroup>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -23,19 +23,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -46,17 +46,17 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\PropertySheets\VS14.props" />
+    <Import Project="..\PropertySheets\VS15.props" />
     <Import Project="..\PropertySheets\Debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\PropertySheets\VS14.props" />
+    <Import Project="..\PropertySheets\VS15.props" />
     <Import Project="..\PropertySheets\Profile.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\PropertySheets\VS14.props" />
+    <Import Project="..\PropertySheets\VS15.props" />
     <Import Project="..\PropertySheets\Release.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -110,7 +110,6 @@
     <ClCompile Include="Pmx.cpp" />
     <ClCompile Include="PmxModel.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
-    <ClCompile Include="Source.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -210,7 +209,9 @@
     <Import Project="packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" />
     <Import Project="packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets" Condition="Exists('packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" />
     <Import Project="packages\boost.1.65.1.0\build\native\boost.targets" Condition="Exists('packages\boost.1.65.1.0\build\native\boost.targets')" />
-    <Import Project="packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets" Condition="Exists('packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets')" />
+    <Import Project="packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets" Condition="Exists('packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets')" />
+    <Import Project="packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets" Condition="Exists('packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets')" />
+    <Import Project="packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets" Condition="Exists('packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -220,6 +221,8 @@
     <Error Condition="!Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
     <Error Condition="!Exists('packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets'))" />
     <Error Condition="!Exists('packages\boost.1.65.1.0\build\native\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost.1.65.1.0\build\native\boost.targets'))" />
-    <Error Condition="!Exists('packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_locale-vc140.1.65.1.0\build\native\boost_locale-vc140.targets'))" />
+    <Error Condition="!Exists('packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets'))" />
+    <Error Condition="!Exists('packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets'))" />
+    <Error Condition="!Exists('packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets'))" />
   </Target>
 </Project>
