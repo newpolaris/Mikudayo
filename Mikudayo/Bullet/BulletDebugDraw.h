@@ -16,8 +16,8 @@ namespace Math
 
 namespace BulletDebug
 {
-    extern void Initialize();
-    extern void Shutdown();
+    void Initialize();
+    void Shutdown();
 
     class DebugDraw : public btIDebugDraw
     {

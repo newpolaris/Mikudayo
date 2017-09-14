@@ -48,9 +48,6 @@ namespace BulletDebug
     using LineStorage = std::vector<Vertex>;
 #endif
 
-    void Initialize();
-    void Shutdown();
-
 	GraphicsPSO BulletDebugLinePSO;
 }
 
