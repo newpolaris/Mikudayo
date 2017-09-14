@@ -10,7 +10,7 @@ using namespace Math;
 namespace Pmx {
     struct Bone;
 }
-
+class FxContainer;
 class PmxModel : public Model
 {
 public:
@@ -53,10 +53,10 @@ public:
     struct Material
     {
         std::wstring Name;
-        std::wstring ShaderName;
         MaterialCB CB;
         float EdgeSize;
         Color EdgeColor;
+        FxContainer* Techniques;
         std::vector<TexturePath> TexturePathes;
         const ManagedTexture* Textures[kTextureMax];
         bool SetTexture( GraphicsContext& gfxContext ) const;

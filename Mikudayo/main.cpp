@@ -6,6 +6,7 @@
 #include "Bullet/PrimitiveBatch.h"
 #include "SoftBodyManager.h"
 #include "ModelManager.h"
+#include "FxManager.h"
 
 #include "PmxInstant.h"
 
@@ -89,6 +90,14 @@ void Mikudayo::Startup( void )
     };
     for (auto& info : primitves)
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
+
+    std::vector<FxInfo> shaders = {
+        { "pmx", L"Shaders/pmx.fx" },
+        // { "pmx", L"data/shader/pmx.fx" },
+        // { "mkdy_fur", L"data/shader/mkdy_fur.fx" },
+        // { "outline", L"data/shader/outline.fx" },
+    };
+    FxManager::Load(shaders);
 
     ModelInfo info;
     info.Type = kModelPMX;
@@ -225,10 +234,9 @@ void Mikudayo::RenderScene( void )
         Vector3 LightDirection;
         Vector3 LightColor;
     } psConstants;
-
     psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
-	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
+	gfxContext.SetDynamicConstantBufferView( 4, sizeof(psConstants), &psConstants, { kBindPixel } );
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );

@@ -69,6 +69,18 @@
     <ClCompile Include="PmxInstant.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FxParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FxContainer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Include.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FxManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -125,6 +137,18 @@
     <ClInclude Include="PmxInstant.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="FxParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FxContainer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FxManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">
@@ -149,6 +173,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\BulletPrimitiveVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\pmx.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -3,6 +3,7 @@
 #include "KeyFrameAnimation.h"
 #include "Model.h"
 #include "Pmx.h"
+#include "FxManager.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
@@ -141,7 +142,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 		Material mat = {};
         mat.Name = material.Name;
-        mat.ShaderName = L"PMX";
+        mat.Techniques = FxManager::GetFx( "pmx" );
         mat.TexturePathes.resize(kTextureMax);
         if (material.DiffuseTexureIndex >= 0)
             mat.TexturePathes[kTextureDiffuse] = { true, pmx.m_Textures[material.DiffuseTexureIndex] };
@@ -245,7 +246,7 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
             return false;
         auto index = m_MaterialIndex[matName];
         auto& mat = m_Materials[index];
-        mat.ShaderName = Data.Name;
+        mat.Techniques = FxManager::GetFx( Data.Name );
         for (auto& texture : Data.Textures)
         {
             if ( mat.TexturePathes.size() < texture.Slot )
@@ -264,6 +265,6 @@ bool PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
         if (Textures[i] == nullptr) continue;
         SRV[i] = Textures[i]->GetSRV();
     }
-    gfxContext.SetDynamicDescriptors( 1, _countof( SRV ), SRV, { kBindPixel } );
-    return false;
+    gfxContext.SetDynamicDescriptors( 0, _countof( SRV ), SRV, { kBindPixel } );
+    return true;
 }

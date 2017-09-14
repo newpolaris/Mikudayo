@@ -100,7 +100,11 @@
     <ClCompile Include="Bullet\Physics.cpp" />
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
+    <ClCompile Include="FxContainer.cpp" />
+    <ClCompile Include="FxManager.cpp" />
+    <ClCompile Include="FxParser.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="Include.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -125,7 +129,11 @@
     <ClInclude Include="Bullet\Physics.h" />
     <ClInclude Include="Bullet\PhysicsPrimitive.h" />
     <ClInclude Include="Bullet\PrimitiveBatch.h" />
+    <ClInclude Include="FxContainer.h" />
+    <ClInclude Include="FxManager.h" />
+    <ClInclude Include="FxParser.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="Include.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelManager.h" />
@@ -167,6 +175,17 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\pmx.fx">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">false</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Shaders\PmxColorPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

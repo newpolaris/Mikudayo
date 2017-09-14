@@ -15,7 +15,7 @@ struct TextureInfo
 
 struct CustomShaderInfo
 {
-    std::wstring Name;
+    std::string Name;
     std::vector<std::wstring> MaterialNames;
     std::vector<TextureInfo> Textures;
 };

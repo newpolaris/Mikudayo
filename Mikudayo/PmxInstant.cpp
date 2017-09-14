@@ -3,6 +3,7 @@
 #include "PmxInstant.h"
 #include "Vmd.h"
 #include "KeyFrameAnimation.h"
+#include "FxContainer.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
@@ -41,7 +42,7 @@ struct PmxInstant::Context final
     Context( const PmxModel& model );
     ~Context();
     void Clear( void );
-    void Draw( GraphicsContext& gfxContext );
+    void Draw( GraphicsContext& gfxContext, const std::string& technique );
 
     bool LoadModel();
     bool LoadMotion( const std::wstring& FilePath );
@@ -98,7 +99,7 @@ void PmxInstant::Context::Clear()
 	m_PositionBuffer.Destroy();
 }
 
-void PmxInstant::Context::Draw( GraphicsContext& gfxContext )
+void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& technique )
 {
     std::vector<Matrix4> SkinData;
     SkinData.reserve( m_Skinning.size() );
@@ -111,15 +112,21 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext )
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
-    gfxContext.SetPipelineState( m_ColorPSO );
-
-	for (auto& mesh: m_Model.m_Mesh)
+	for (auto& mesh : m_Model.m_Mesh)
 	{
         auto& material = m_Model.m_Materials[mesh.MaterialIndex];
-        if (material.SetTexture( gfxContext ))
+        if (!material.SetTexture( gfxContext ))
             continue;
-		gfxContext.SetDynamicConstantBufferView( 0, sizeof(material.CB), &material.CB, { kBindPixel } );
-		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
+        if (!material.Techniques)
+            continue;
+        material.Techniques->SetSampler( gfxContext );
+        auto numPass = material.Techniques->FindTechnique(technique);
+        for (auto i = 0U; i < numPass; i++)
+        {
+            material.Techniques->SetPass( gfxContext, technique, i );
+            gfxContext.SetDynamicConstantBufferView( 3, sizeof(material.CB), &material.CB, { kBindPixel } );
+            gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
+        }
 	}
 }
 
@@ -185,7 +192,8 @@ bool PmxInstant::Context::LoadMotion( const std::wstring& motionPath )
 		key.Frame = frame.Frame;
 		key.Weight = frame.Weight;
 		key.Weight = frame.Weight;
-        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: ");
+        WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0,
+            L"Can't find target morph " + frame.FaceName + L" on model: " + m_Model.m_Name );
         if (m_MorphIndex.count(frame.FaceName) > 0)
         {
             auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
@@ -356,5 +364,5 @@ void PmxInstant::Update( float deltaT )
 
 void PmxInstant::DrawColor( GraphicsContext& Context )
 {
-    m_Context->Draw( Context );
+    m_Context->Draw( Context, "t0");
 }
