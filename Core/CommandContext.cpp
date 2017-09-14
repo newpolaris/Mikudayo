@@ -299,9 +299,9 @@ void ComputeContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11
 }
 
 void CommandContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle,
-	EPipelineBind Bind )
+	BindList Binds )
 {
-	SetDynamicSamplers( Offset, 1, &Handle, { Bind } );
+	SetDynamicSamplers( Offset, 1, &Handle, Binds );
 }
 
 void CommandContext::SetDynamicSamplers( UINT Offset, UINT Count,

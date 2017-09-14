@@ -148,7 +148,7 @@ public:
 	void SetDynamicConstantBufferView( UINT Slot, size_t BufferSize, const void* BufferData, BindList Binds );
 	void SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle, BindList Binds );
 	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[], BindList Binds );
-    void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, EPipelineBind Bind );
+    void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, BindList Binds );
     void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[], BindList Binds );
 
 	void UpdateBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
