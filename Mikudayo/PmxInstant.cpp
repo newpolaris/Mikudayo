@@ -5,21 +5,11 @@
 #include "KeyFrameAnimation.h"
 #include "FxContainer.h"
 
-#include "CompiledShaders/PmxColorVS.h"
-#include "CompiledShaders/PmxColorPS.h"
-
 using namespace Utility;
 using namespace Math;
 using namespace Graphics;
 
 namespace {
-	enum ETextureType
-	{
-		kTextureDiffuse,
-		kTextureSphere,
-		kTextureToon,
-		kTextureMax
-	};
 
 	struct VertexProperty
 	{
@@ -108,7 +98,7 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& 
     auto numByte = GetVectorSize(SkinData);
 
     gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
-    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex, kBindGeometry } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
@@ -144,29 +134,6 @@ bool PmxInstant::Context::LoadModel()
 		m_Model.m_VertexPosition.data() );
 
 	SetupSkeleton( m_Model.m_Bones );
-
-	std::vector<InputDesc> InputDescriptor
-	{
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-	// Depth-only (2x rate)
-	m_DepthPSO.SetRasterizerState( RasterizerDefault );
-	m_DepthPSO.SetBlendState( BlendNoColorWrite );
-	m_DepthPSO.SetInputLayout( static_cast<UINT>(InputDescriptor.size()), InputDescriptor.data() );
-	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-    m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
-
-    m_ColorPSO = m_DepthPSO;
-    m_ColorPSO.SetBlendState( BlendDisable );
-    m_ColorPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_ColorPSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
-    m_ColorPSO.Finalize();
 
     return true;
 }

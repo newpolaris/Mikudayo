@@ -3,7 +3,7 @@
 struct Material
 {
 	float3 diffuse;
-	float alpha; // difuse alpha
+	float alpha; // diffuse alpha
 	float3 specular;
 	float specularPower;
 	float3 ambient;

@@ -157,12 +157,6 @@
     <FxCompile Include="Shaders\ModelPrimitivePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PmxColorPS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmxColorVS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\BulletLinePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -176,6 +170,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\pmx.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\mkdy_fur.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

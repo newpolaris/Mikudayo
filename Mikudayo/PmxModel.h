@@ -29,7 +29,7 @@ public:
         kTextureDiffuse,
         kTextureSphere,
         kTextureToon,
-        kTextureMax
+        kTextureDefaultCount,
     };
 
     struct TexturePath
@@ -56,9 +56,9 @@ public:
         MaterialCB CB;
         float EdgeSize;
         Color EdgeColor;
-        FxContainer* Techniques;
+        FxContainer* Techniques = nullptr;
         std::vector<TexturePath> TexturePathes;
-        const ManagedTexture* Textures[kTextureMax];
+        std::vector<const ManagedTexture*> Textures;
         bool SetTexture( GraphicsContext& gfxContext ) const;
     };
 

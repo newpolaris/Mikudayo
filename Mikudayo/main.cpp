@@ -93,8 +93,7 @@ void Mikudayo::Startup( void )
 
     std::vector<FxInfo> shaders = {
         { "pmx", L"Shaders/pmx.fx" },
-        // { "pmx", L"data/shader/pmx.fx" },
-        // { "mkdy_fur", L"data/shader/mkdy_fur.fx" },
+        { "mkdy_fur", L"Shaders/mkdy_fur.fx" },
         // { "outline", L"data/shader/outline.fx" },
     };
     FxManager::Load(shaders);
@@ -103,6 +102,11 @@ void Mikudayo::Startup( void )
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
     info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
+#if 1
+    info.Shader.Name = "mkdy_fur";
+    info.Shader.MaterialNames = { L"髪", L"ツインテールL", L"ツインテールR", L"顔", L"手" };
+    info.Shader.Textures = { {4, L"a_tex_fur_mkdy-3.tga"} };
+#endif
     if (ModelManager::Load( info ))
     {
         const auto& model = ModelManager::GetModel( info.Name );
@@ -140,6 +144,7 @@ void Mikudayo::Cleanup( void )
 {
     ModelManager::Shutdown();
     PrimitiveUtility::Shutdown();
+    FxManager::Shutdown();
     for (auto& model : m_Primitives)
         model->Destroy();
     m_Primitives.clear();
@@ -227,7 +232,7 @@ void Mikudayo::RenderScene( void )
     } vsConstants;
     vsConstants.view = m_ViewMatrix;
     vsConstants.projection = m_ProjMatrix;
-	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
+	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex, kBindGeometry } );
 
     __declspec(align(16)) struct
     {

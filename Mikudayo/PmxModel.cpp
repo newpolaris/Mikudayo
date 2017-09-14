@@ -5,9 +5,6 @@
 #include "Pmx.h"
 #include "FxManager.h"
 
-#include "CompiledShaders/PmxColorVS.h"
-#include "CompiledShaders/PmxColorPS.h"
-
 using namespace Utility;
 using namespace Graphics;
 
@@ -71,15 +68,14 @@ bool PmxModel::GenerateResource( void )
         for (auto i = 0; i < material.TexturePathes.size(); i++)
         {
             auto& tex = material.TexturePathes[i];
-            if (!tex.Path.empty())
-                material.Textures[i] = LoadTexture( tex.Path, tex.bSRGB );
-            if (material.Textures[kTextureToon])
-                material.CB.bUseToon = TRUE;
-            if (material.Textures[kTextureDiffuse])
-                material.CB.bUseTexture = TRUE;
-            material.EdgeSize = material.EdgeSize;
-            material.EdgeColor = Color( Vector4( material.EdgeColor ) ).FromSRGB();
+            material.Textures.push_back( LoadTexture( tex.Path, tex.bSRGB ) );
         }
+        if (material.Textures[kTextureToon])
+            material.CB.bUseToon = TRUE;
+        if (material.Textures[kTextureDiffuse])
+            material.CB.bUseTexture = TRUE;
+        material.EdgeSize = material.EdgeSize;
+        material.EdgeColor = Color( Vector4( material.EdgeColor ) ).FromSRGB();
 	}
     return true;
 }
@@ -143,7 +139,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 		Material mat = {};
         mat.Name = material.Name;
         mat.Techniques = FxManager::GetFx( "pmx" );
-        mat.TexturePathes.resize(kTextureMax);
+        mat.TexturePathes.resize(kTextureDefaultCount);
         if (material.DiffuseTexureIndex >= 0)
             mat.TexturePathes[kTextureDiffuse] = { true, pmx.m_Textures[material.DiffuseTexureIndex] };
         if (material.SphereTextureIndex >= 0)
@@ -219,8 +215,9 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 const ManagedTexture* PmxModel::LoadTexture( std::wstring ImageName, bool bSRGB )
 {
+    if (ImageName.empty())
+        return nullptr;
     using Path = boost::filesystem::path;
-    ASSERT(!ImageName.empty());
 
     const Path imagePath = Path(m_TextureRoot) / ImageName;
     bool bExist = boost::filesystem::exists( imagePath );
@@ -243,15 +240,18 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
     for (auto& matName : Data.MaterialNames)
     {
         if (m_MaterialIndex.count( matName ) == 0)
-            return false;
+        {
+            Utility::PrintSubMessage( L"Can't find matarial " + matName );
+            continue;
+        }
         auto index = m_MaterialIndex[matName];
+        ASSERT(index < m_Materials.size());
         auto& mat = m_Materials[index];
         mat.Techniques = FxManager::GetFx( Data.Name );
         for (auto& texture : Data.Textures)
         {
-            if ( mat.TexturePathes.size() < texture.Slot )
-                return false;
-            mat.TexturePathes.push_back( { true, texture.Path } );
+            ASSERT(mat.TexturePathes.size() < texture.Slot, "Slot alread used");
+            mat.TexturePathes.push_back( { false, texture.Path } );
         }
     }
     return true;
@@ -259,12 +259,12 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
 
 bool PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
 {
-    D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
-    for (auto i = 0; i < _countof( Textures ); i++)
+    std::vector<D3D11_SRV_HANDLE> SRV(Textures.size());
+    for (auto i = 0U; i < Textures.size(); i++)
     {
         if (Textures[i] == nullptr) continue;
         SRV[i] = Textures[i]->GetSRV();
     }
-    gfxContext.SetDynamicDescriptors( 0, _countof( SRV ), SRV, { kBindPixel } );
+    gfxContext.SetDynamicDescriptors( 0, (UINT)SRV.size(), SRV.data(), { kBindPixel } );
     return true;
 }
