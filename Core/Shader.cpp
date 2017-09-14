@@ -187,6 +187,8 @@ void Shader::FillReflection()
 		pReflector->GetResourceBindingDesc( i, &resource_desc );
 		m_ResourceDescrition.push_back({ resource_desc });
 	}
+    // To maintain D3D11_SIGNATURE_PARAMETER_DESC's internal LPCTSTR
+    m_Reflect = pReflector;
 }
 
 bool Shader::ShaderCheckResource(D3D_SHADER_INPUT_TYPE inputType, UINT slot, std::string name)
@@ -231,4 +233,3 @@ ShaderByteCode::ShaderByteCode( const std::string& name, void* pBytecode, size_t
 {
 	Name = Utility::MakeWStr(name);
 }
-

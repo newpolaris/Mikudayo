@@ -88,9 +88,9 @@ class Shader
 public:
 	static std::shared_ptr<Shader> Create( ShaderType Type, const ShaderByteCode& ByteCode );
 	static void DestroyAll();
-	bool ShaderCheckResource( D3D_SHADER_INPUT_TYPE inputType, UINT slot, std::string name );
-	void Bind( ID3D11DeviceContext* pContext );
 	~Shader();
+	void Bind( ID3D11DeviceContext* pContext );
+	bool ShaderCheckResource( D3D_SHADER_INPUT_TYPE inputType, UINT slot, std::string name );
 
 private:
     Shader( ShaderType Type );
@@ -106,6 +106,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3DBlob> m_Blob;
 	Microsoft::WRL::ComPtr<ID3D11DeviceChild> m_Shader;
+    Microsoft::WRL::ComPtr<ID3D11ShaderReflection> m_Reflect;
 
 	std::vector<D3D11_SIGNATURE_PARAMETER_DESC> m_InputSignatureParameters;
 	std::vector<D3D11_SIGNATURE_PARAMETER_DESC> m_OutputSignatureParameters;
