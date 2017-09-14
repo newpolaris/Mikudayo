@@ -32,6 +32,21 @@ void SamplerDesc::DestroyAll()
 	s_SamplerCache.clear();
 }
 
+SamplerDesc::SamplerDesc( const D3D11_SAMPLER_DESC& Desc )
+{
+    Filter = Desc.Filter;
+    AddressU = Desc.AddressU;
+    AddressV = Desc.AddressV;
+    AddressW = Desc.AddressW;
+    MipLODBias = Desc.MipLODBias;
+    MaxAnisotropy = Desc.MaxAnisotropy;
+    ComparisonFunc = Desc.ComparisonFunc;
+    for (auto i = 0; i < 4; i++)
+        BorderColor[i] = Desc.BorderColor[i];
+    MinLOD = Desc.MinLOD;
+    MaxLOD = D3D11_FLOAT32_MAX;
+}
+
 D3D11_SAMPLER_HANDLE SamplerDesc::CreateDescriptor()
 {
 	size_t HashCode = Utility::HashState(this);

@@ -39,6 +39,8 @@ public:
 		MaxLOD = D3D11_FLOAT32_MAX;
 	}
 
+    SamplerDesc( const D3D11_SAMPLER_DESC& Desc );
+
 	void SetTextureAddressMode( D3D11_TEXTURE_ADDRESS_MODE AddressMode )
 	{
 		AddressU = AddressMode;
