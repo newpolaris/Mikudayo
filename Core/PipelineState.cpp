@@ -75,36 +75,34 @@ GraphicsPSO::GraphicsPSO() : m_PSOState(nullptr)
 
 ComputePSO::ComputePSO( const ComputePSO& PSO )
 {
-    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
 }
 
 GraphicsPSO::GraphicsPSO( const GraphicsPSO& PSO )
 {
-    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>(*PSO.m_PSODesc);
 }
 
 ComputePSO& ComputePSO::operator=( const ComputePSO& PSO )
 {
-    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<ComputePipelineStateDesc>(*PSO.m_PSODesc);
 	return *this;
 }
 
 GraphicsPSO& GraphicsPSO::operator=( const GraphicsPSO& PSO )
 {
-    m_PSOState = PSO.m_PSOState;
 	m_PSODesc = std::make_unique<GraphicsPipelineStateDesc>(*PSO.m_PSODesc);
 	return *this;
 }
 
 ComputePSO::~ComputePSO()
 {
+    Destroy();
 }
 
 GraphicsPSO::~GraphicsPSO()
 {
+    Destroy();
 }
 
 void ComputePSO::Destroy()
@@ -154,6 +152,12 @@ void GraphicsPSO::SetDepthStencilState( const D3D11_DEPTH_STENCIL_DESC& DepthSte
 	m_PSODesc->DepthStencil.Desc = CD3D11_DEPTH_STENCIL_DESC(DepthStencilDesc);
 }
 
+void GraphicsPSO::SetBlendFactor( FLOAT BlendFactor[4] )
+{
+    for (int i = 0; i < _countof(m_PSODesc->Blend.BlendFactor); i++)
+        m_PSODesc->Blend.BlendFactor[i] = BlendFactor[i];
+}
+
 void GraphicsPSO::SetSampleMask( UINT SampleMask )
 {
 	m_PSODesc->Blend.SampleMask = SampleMask;
@@ -195,6 +199,21 @@ void GraphicsPSO::SetPixelShader( const std::string & Name, const void* Binary, 
 	m_PSODesc->PS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
 
+void GraphicsPSO::SetGeometryShader( const std::string & Name, const void * Binary, size_t Size )
+{
+	m_PSODesc->GS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
+}
+
+void GraphicsPSO::SetHullShader( const std::string & Name, const void * Binary, size_t Size )
+{
+	m_PSODesc->HS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
+}
+
+void GraphicsPSO::SetDomainShader( const std::string & Name, const void * Binary, size_t Size )
+{
+	m_PSODesc->DS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
+}
+
 void ComputePSO::SetComputeShader( const std::string & Name, const void* Binary, size_t Size )
 {
 	m_PSODesc->CS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
@@ -207,7 +226,7 @@ void GraphicsPSO::Finalize()
 
     static mutex s_HashMapMutex;
 	auto sync = std::async(std::launch::async, [=]{
-        size_t HashCode = m_PSODesc->Hash();
+        const size_t HashCode = m_PSODesc->Hash();
         lock_guard<mutex> CS(s_HashMapMutex);
         auto iter = s_GraphicsPSOHashMap.find(HashCode);
         if (iter == s_GraphicsPSOHashMap.end())

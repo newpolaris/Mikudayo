@@ -88,6 +88,7 @@ public:
 	void SetBlendState( const D3D11_BLEND_DESC& BlendDesc );
 	void SetRasterizerState( const D3D11_RASTERIZER_DESC& RasterizerDesc );
 	void SetDepthStencilState( const D3D11_DEPTH_STENCIL_DESC& DepthStencilDesc );
+    void SetBlendFactor( FLOAT BlendFactor[4] );
 	void SetSampleMask( UINT SampleMask );
 	void SetStencilRef( UINT StencilRef );
 	void SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY TopologyType );
