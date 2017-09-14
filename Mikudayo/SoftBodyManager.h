@@ -2,6 +2,8 @@
 
 #include <memory>
 
+class btSoftBody;
+
 struct SoftBodyGeometry
 {
     std::vector<XMFLOAT3> Positions;
