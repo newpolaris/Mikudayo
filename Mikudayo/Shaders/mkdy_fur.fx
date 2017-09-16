@@ -1,24 +1,5 @@
 // Copyright notice (2nd)
-/*
-    Program source code are licensed under the zlib license, except source code of external library.
-
-    Zerogram Sample Program
-    http://zerogram.info/
-
-    This software is provided 'as-is', without any express or implied warranty.
-    In no event will the authors be held liable for any damages arising from the use of this software.
-
-    Permission is granted to anyone to use this software for any purpose,
-    including commercial applications, and to alter it and redistribute it freely,
-    subject to the following restrictions:
-
-    1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
-
-    2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
-
-    3. This notice may not be removed or altered from any source distribution.
-*/
-// Original Copyright notice (1st)
+// Original Copyright notice
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //  FurShader
 //     毛皮シェーダー
@@ -115,7 +96,15 @@ struct PixelShaderInput
 	float3 posV : POSITION0;
 	float3 normalV : NORMAL;
 	float2 uv : TEXTURE;
-    float4 fur : FUR_PARAM;
+};
+
+struct FurPixelShaderInput
+{
+	float4 posH : SV_POSITION;
+	float3 posV : POSITION0;
+	float3 normalV : NORMAL;
+	float2 uv : TEXTURE;
+    uint fur : FUR_PARAM;
 };
 
 // Simple shader to do vertex processing on the GPU.
@@ -133,7 +122,6 @@ PixelShaderInput vsBasic(AttributeInput input, float3 position : POSITION)
 	output.posH = mul( projection, posV );
 	output.normalV = mul( (float3x3)modelview, normal );
 	output.uv = input.uv;
-    output.fur = float4(0, 0, 0, 1);
 
 	return output;
 }
@@ -153,38 +141,43 @@ GeometryShaderInput vsFur(AttributeInput input, float3 position : POSITION)
 [maxvertexcount(30)]
 void gsFur( triangle GeometryShaderInput input[3],
 			uint primID : SV_PrimitiveID,
-			inout TriangleStream<PixelShaderInput> Stream )
+			inout TriangleStream<FurPixelShaderInput> Stream )
 {
 	matrix modelview = mul( view, model );
-	const int FurCount = 10;
-	const float FurStep = 0.003;
-	for(int f=0;f<FurCount;++f){
-		for(int i=0;i<3;++i){
-			PixelShaderInput pin;
-			float4 pos = float4(input[i].posW, 1.0);
+
+	const uint FurCount = 5;
+	const float FurStep = 1/200.f;
+    for (uint f = 0; f < FurCount; ++f) 
+    {
+        for (uint i = 0; i < 3; ++i) 
+        {
+            FurPixelShaderInput pin = (FurPixelShaderInput)0;
+            float4 pos = float4(input[i].posW, 1.0);
 			float3 normal = input[i].normalW;
+            pin.uv = input[i].uv;
 			pos.xyz += normalize(normal)*FurStep*(float)f;
             pos = mul( modelview, pos );
 			pin.posV = pos.xyz;
 	        pin.posH = mul( projection, pos );
             pin.normalV = mul( (float3x3)modelview, normal );
-			pin.fur = float4(0,0,0,((float)FurCount-(float)f-1)/(float)FurCount);
-            pin.uv = input[i].uv;
+			pin.fur = f;
 			Stream.Append(pin);
 		}
 		Stream.RestartStrip();
 	}
 }
 
-
-//----------------------------
-float4 psBasicFur( PixelShaderInput input ) : SV_Target
+// A pass-through function for the (interpolated) color data.
+float4 psBasic(PixelShaderInput input) : SV_TARGET
 {
 	float3 lightVecV = normalize( -SunDirection );
 	float3 normalV = normalize( input.normalV );
 	float intensity = dot( lightVecV, normalV ) * 0.5 + 0.5;
+	float2 toonCoord = float2(0.5, 1.0 - intensity);
+
 	float3 toEyeV = -input.posV;
 	float3 halfV = normalize( toEyeV + lightVecV );
+
 	float NdotH = dot( normalV, halfV );
 	float specularFactor = pow( max(NdotH, 0.001f), material.specularPower );
 
@@ -200,18 +193,60 @@ float4 psBasicFur( PixelShaderInput input ) : SV_Target
 		texColor = tex.xyz;
 		texAlpha = tex.w;
 	}
-	float3 color = texColor;
+    static const int kSphereNone = 0;
+    static const int kSphereMul = 1;
+    static const int kSphereAdd = 2;
+
+	float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalV.xy;
+	if (sphereOperation == kSphereAdd)
+		texColor += texSphere.Sample( samSphere, sphereCoord );
+	else if (sphereOperation == kSphereMul)
+		texColor *= texSphere.Sample( samSphere, sphereCoord );
+	float3 color = texColor * (ambient + diffuse) + specular;
+    if (bUseToon)
+        color *= texToon.Sample( samToon, toonCoord );
 	float alpha = texAlpha * material.alpha;
-    if (input.fur.w < 0.999f) 
-    {
-		float2 dir = float2(1,0)*(1.0-input.fur.w)*0.02;
-		float2 bump = float2(0.002, 0.002)*input.fur.w;//バンプもどきで自己遮蔽っぽい
-        float ss = (1.0 - input.fur.w)*(1.0 - texFur.Sample( samLinear, input.uv + bump + dir ).x);
-		alpha *= input.fur.w*texFur.Sample( samLinear, input.uv + dir).x;
-		color *= (1-0.3*ss);
-	}
-    color = color*((ambient + diffuse) + specular);
-    return float4(color, alpha);
+	return float4(color, alpha);
+}
+
+float4 psBasicFur( FurPixelShaderInput input ) : SV_Target
+{
+    const int FurShellCount = 5; // FurShellの枚数
+    const float FurSupecularPower = 2; // 毛の光る範囲
+    const float2 FurFlowScale = float2(15,1); // 毛の流れる量
+    const float3 FurColor = float3(0.8, 0.8, 0.8); // 毛の色
+
+    const float3 lightAmbient = float3(1, 1, 1);
+    const float3 lightSpecular = float3(1, 1, 1);
+    const float3 materialEmmisive = float3(0, 0, 0);
+
+	float3 diffuse = material.diffuse * SunColor;
+	float3 ambient = saturate(material.ambient * lightAmbient + materialEmmisive);
+	float3 specular = lightSpecular * material.specular;
+
+	float3 lightVecV = normalize( -SunDirection );
+	float3 normalV = normalize( input.normalV );
+
+    float4 color = float4(ambient, 1.0);
+    if (!bUseToon) {
+        color.rgb += max( 0, dot( normalV, lightVecV ) ) * diffuse;
+    }
+    color.a = material.alpha;
+    color = saturate( color );
+
+	float3 toEyeV = -input.posV;
+	float3 halfV = normalize( toEyeV + lightVecV );
+	float NdotH = dot( normalV, halfV );
+	specular = 1.0 - pow( max(NdotH, 0.001f), FurSupecularPower ) * float3(1, 1, 1);
+
+    float fFur = (float)input.fur;
+    float4 texColor = texDiffuse.Sample( samLinear, input.uv ) * color;
+    float2 furDir = float2(1.0, 0.0);
+    color.rgb = lerp( texColor.rgb, FurColor, specular.r); // Specular.rによってTexColor -> FurColorに変化させる
+    // color.rgb = lerp( float3(0, 0, 0), FurColor, specular.r ); // 最初の版はこっち
+    float2 uv = (input.uv - furDir / FurFlowScale * fFur);
+    color.w = texFur.Sample( samLinear, uv ).r * (1.0 - fFur / (FurShellCount - 1.0));
+    return color;
 }
 
 void psShadow( PixelShaderInput input )
@@ -262,7 +297,8 @@ BlendState BlendShadow {
 VertexShader vs_main = CompileShader( vs_5_0, vsBasic() );
 VertexShader vs_fur = CompileShader( vs_5_0, vsFur() );
 GeometryShader gs_fur = CompileShader( gs_5_0, gsFur() );
-PixelShader ps_main = CompileShader( ps_5_0, psBasicFur() );
+PixelShader ps_main = CompileShader( ps_5_0, psBasic() );
+PixelShader ps_fur = CompileShader( ps_5_0, psBasicFur() );
 PixelShader ps_shadow = CompileShader( ps_5_0, psShadow() );
 
 // テクニック
@@ -287,7 +323,7 @@ technique11 t0 {
 		// シェーダ
 		SetVertexShader( vs_fur );
 		SetGeometryShader( gs_fur );
-		SetPixelShader( ps_main );
+		SetPixelShader( ps_fur );
 	}
 }
 

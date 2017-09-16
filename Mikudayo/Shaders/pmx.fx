@@ -106,14 +106,6 @@ float4 psBasic(PixelShaderInput input) : SV_TARGET
 	float3 lightVecV = normalize( -SunDirection );
 	float3 normalV = normalize( input.normalV );
 	float intensity = dot( lightVecV, normalV ) * 0.5 + 0.5;
-	//
-	// Toon texture :
-	//
-	// For v, from 0.0 to 1.0 which means from bright to dark.
-	// For u, can't find valid equation. Usually, it is ignored in various model.
-	//
-	// http://trackdancer.deviantart.com/art/MMD-PMD-Tutorial-Toon-Shaders-Primer-394445914
-	//
 	float2 toonCoord = float2(0.5, 1.0 - intensity);
 
 	float3 toEyeV = -input.posV;
