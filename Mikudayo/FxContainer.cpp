@@ -4,18 +4,119 @@
 #include "TextUtility.h"
 #include "Include.h"
 #include "SamplerManager.h"
+#include "Hash.h"
+#include "FileUtility.h"
 
 using Microsoft::WRL::ComPtr;
 using Path = boost::filesystem::path;
 
-struct FxParseError : std::runtime_error
-{
-	FxParseError(const std::string& Message);
-};
+namespace {
+    struct FxParseError : std::runtime_error
+    {
+        FxParseError( const std::string& Message );
+    };
 
-FxParseError::FxParseError( const std::string& Message ) :
-    std::runtime_error( Message )
-{
+    FxParseError::FxParseError( const std::string& Message ) :
+        std::runtime_error( Message )
+    {
+    }
+
+    size_t HashBytes( void* Pointer, size_t Length )
+    {
+        size_t* pointer = reinterpret_cast<size_t*>(Pointer);
+        size_t size = Length / 8;
+        size_t hashCode = Utility::HashState( pointer, size );
+        size_t remain = 0;
+        for (size_t k = size * 8; k < Length; k++)
+        {
+            remain <<= 8;
+            remain += reinterpret_cast<uint8_t*>(pointer)[k];
+        }
+        return Utility::HashState( &hashCode, 1, remain );
+    }
+
+    ComPtr<ID3DBlob> CompileShader(
+        const std::string& Name,
+        const std::string& EntryPoint,
+        const std::string& Profile,
+        const void* Pointer,
+        size_t Length )
+    {
+        UINT flags = 0;
+#ifdef _DEBUG
+        flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+        ComPtr<ID3DBlob> byteCode;
+        ComPtr<ID3DBlob> errors;
+
+        ASSERT_SUCCEEDED( D3DCompile(
+            Pointer, Length,
+            Name.c_str(), nullptr, nullptr,
+            EntryPoint.c_str(), Profile.c_str(), flags, 0,
+            byteCode.GetAddressOf(), errors.GetAddressOf() ) );
+
+        if (errors)
+        {
+            // The message is a 'error/warning' from the HLSL compiler.
+            char const* message = static_cast<char const*>(errors->GetBufferPointer());
+            std::string output( message );
+            std::wstring woutput = Utility::MakeWStr( output );
+            OutputDebugString( woutput.c_str() );
+        }
+        return byteCode;
+    }
+
+    ComPtr<ID3DBlob> CheckShaderCache(
+        const std::string& Name,
+        const std::string& EntryPoint,
+        const std::string& Profile,
+        const void* Pointer,
+        size_t Length,
+        size_t HashCode )
+    {
+        std::string postfix;
+#ifdef _DEBUG
+        postfix = "_D";
+#endif
+        const std::string tag = Name + "_" + EntryPoint + "_" + Profile + postfix + ".cache";
+        const std::wstring fileName = Utility::MakeWStr( tag );
+
+        Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+        if (ba->size() > 0)
+        {
+            Utility::ByteStream bs( ba );
+            size_t refHashCode;
+            Read( bs, refHashCode );
+            if (refHashCode == HashCode)
+            {
+                DEBUGPRINT( "Use shader cache %s", tag.c_str() );
+                size_t ShaderLength;
+                Read( bs, ShaderLength );
+                ASSERT( ba->size() == sizeof( size_t ) * 2 + ShaderLength );
+                ComPtr<ID3DBlob> blob;
+                ASSERT_SUCCEEDED( D3DCreateBlob( ShaderLength, blob.GetAddressOf() ) );
+                bs.read( (char*)blob->GetBufferPointer(), blob->GetBufferSize() );
+                return blob;
+            }
+            DEBUGPRINT( "Shader cache hash mis-matched recompile shader %s", tag.c_str() );
+        }
+        auto blob = CompileShader( Name, EntryPoint, Profile, Pointer, Length );
+        if (!blob)
+            return nullptr;
+        const size_t ShaderLength = blob->GetBufferSize();
+        const char* ShaderPointer = reinterpret_cast<char*>(blob->GetBufferPointer());
+        std::ofstream outputFile;
+        outputFile.open( fileName, std::ios::binary );
+        if (!outputFile.is_open())
+            return nullptr;
+        Utility::Write( outputFile, HashCode );
+        Utility::Write( outputFile, ShaderLength );
+        outputFile.write( ShaderPointer, ShaderLength );
+        outputFile.flush();
+        return blob;
+    }
+
 }
 
 namespace client { namespace ast {
@@ -83,41 +184,26 @@ eval::eval( ComPtr<ID3DBlob>& Blob, Include& Inc, const std::string SourceName )
 
 void eval::operator()( const shader_compiler_desc& desc )
 {
-    UINT flags = 0;
-#ifdef _DEBUG
-    flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
+    const size_t hashCode = HashBytes( m_Blob->GetBufferPointer(), m_Blob->GetBufferSize() );
 
-    ComPtr<ID3DBlob> byteCode;
-    ComPtr<ID3DBlob> errors;
+    ComPtr<ID3DBlob> byteCode = CheckShaderCache( 
+        m_SourceName, desc.entrypoint, desc.profile,
+        m_Blob->GetBufferPointer(), m_Blob->GetBufferSize(), 
+        hashCode);
 
-    ASSERT_SUCCEEDED(D3DCompile( 
-        m_Blob->GetBufferPointer(), m_Blob->GetBufferSize(),
-        m_SourceName.c_str(), nullptr, &m_Include,
-        desc.entrypoint.c_str(), desc.profile.c_str(), flags, 0,
-        byteCode.GetAddressOf(), errors.GetAddressOf()));
-
-    if (errors)
-    {
-        // The message is a 'error/warning' from the HLSL compiler.
-        char const* message = static_cast<char const*>(errors->GetBufferPointer());
-        std::string output(message);
-        std::wstring woutput = Utility::MakeWStr(output);
-        OutputDebugString(woutput.c_str());
-    }
     if (byteCode)
         m_ShaderByteCode[desc.name] = byteCode;
 }
 
-    std::vector<InputDesc> InputDescriptor
-    {
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
+std::vector<InputDesc> InputDescriptor
+{
+    { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+};
 
 void eval::operator()( const technique_desc& tech )
 {
@@ -214,16 +300,17 @@ bool FxContainer::Load()
     client::ast::program program;
     if (!FxParse( str, program ))
         return false;
-
-	ComPtr<ID3DBlob> blob;
-	ASSERT_SUCCEEDED(D3DCreateBlob(str.length(), blob.GetAddressOf()));
-	memcpy(blob->GetBufferPointer(), str.data(), str.length());
-
     auto path = Path(m_FilePath);
     auto source = path.filename().generic_string();
     auto parent = path.parent_path().generic_wstring();
+
     Include include;
     include.AddPath( parent );
+
+	ComPtr<ID3DBlob> blob, error;
+    ASSERT_SUCCEEDED(D3DPreprocess( 
+        str.data(), str.length(), source.c_str(), nullptr, &include,
+        blob.GetAddressOf(), error.GetAddressOf() ));
 
     try 
     {

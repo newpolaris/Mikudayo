@@ -97,11 +97,17 @@ namespace Utility
 	uint16_t ReadShort( bufferstream & is );
 
 	template <typename T>
-	T Read( bufferstream & is )
+	T Read( bufferstream& is )
 	{
 		T t;
 		Read( is, t );
 		return t;
+	}
+
+	template <typename T, typename R>
+	void Write( basic_ostream<T, char_traits<T>>& is, const R& t )
+	{
+		is.write( reinterpret_cast<const T*>(&t), sizeof( R ) );
 	}
 
 } // namespace Utility
