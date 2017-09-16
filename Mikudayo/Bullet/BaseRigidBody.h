@@ -1,7 +1,7 @@
 //
 // Used MMDAI's RigidBody code
 //
-// Original Boilerplate:
+// Original Copyright notice:
 //
 /**
 
@@ -89,8 +89,8 @@ namespace Physics
         const btTransform CreateTransform() const;
 
         void syncLocalTransform();
-        void JoinWorld( void *value );
-        void LeaveWorld( void *value );
+        void JoinWorld( btDynamicsWorld *value );
+        void LeaveWorld( btDynamicsWorld *value );
 
     protected:
         ObjectType m_Type;

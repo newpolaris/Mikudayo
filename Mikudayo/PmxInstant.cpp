@@ -4,6 +4,9 @@
 #include "Vmd.h"
 #include "KeyFrameAnimation.h"
 #include "FxContainer.h"
+#include "SoftBodyManager.h"
+#include "Bullet/Physics.h"
+#include "Bullet/BaseSoftBody.h"
 
 using namespace Utility;
 using namespace Math;
@@ -52,7 +55,8 @@ protected:
 
     // Skinning
     std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
-    std::vector<OrthogonalTransform> m_Pose; // offset matrix
+    std::vector<OrthogonalTransform> m_LocalPose; // local offset
+    std::vector<OrthogonalTransform> m_Pose; // hieracical offset
     std::vector<OrthogonalTransform> m_Skinning; // final skinning transform
 
     // Bone
@@ -65,12 +69,10 @@ protected:
     std::vector<Animation::MorphMotion> m_MorphMotions;
 
     std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
-
     VertexBuffer m_AttributeBuffer;
     VertexBuffer m_PositionBuffer;
 
-    GraphicsPSO m_DepthPSO;
-    GraphicsPSO m_ColorPSO;
+    std::shared_ptr<Physics::BaseSoftBody> m_SoftBody;
 };
 
 PmxInstant::Context::Context(const PmxModel& model) :
@@ -87,6 +89,9 @@ void PmxInstant::Context::Clear()
 {
 	m_AttributeBuffer.Destroy();
 	m_PositionBuffer.Destroy();
+
+    if (m_SoftBody)
+        m_SoftBody->LeaveWorld( Physics::g_DynamicsWorld );
 }
 
 void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& technique )
@@ -135,6 +140,10 @@ bool PmxInstant::Context::LoadModel()
 
 	SetupSkeleton( m_Model.m_Bones );
 
+    m_SoftBody = SoftBodyManager::GetInstance(m_Model.m_SoftBodyName);
+    if (m_SoftBody)
+        m_SoftBody->JoinWorld( Physics::g_DynamicsWorld );
+
     return true;
 }
 
@@ -181,23 +190,9 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
     auto bones = m_Model.m_Bones;
     int32_t numBones = static_cast<int32_t>(bones.size());
     m_BoneMotions.resize( numBones );
-    m_Pose.resize( numBones );
-    m_toRoot.resize( numBones );
-    for (auto i = 0; i < bones.size(); i++)
-        m_Pose[i].SetTranslation( bones[i].Translate );
-
-    std::vector<OrthogonalTransform> RestPose( numBones );
-    for (auto i = 0; i < numBones; i++)
-    {
-        auto& bone = bones[i];
-        auto parentIndex = bone.Parent;
-        RestPose[i].SetTranslation( bone.Translate );
-        if (parentIndex >= 0)
-            RestPose[i] = RestPose[parentIndex] * RestPose[i];
-    }
-
-    for (auto i = 0; i < numBones; i++)
-        m_toRoot[i] = ~RestPose[i];
+    m_LocalPose = m_Model.m_LocalPose;
+    m_Pose = m_Model.m_Pose;
+    m_toRoot = m_Model.m_toRoot;
 
 	for (auto& frame : frames)
 	{
@@ -241,7 +236,7 @@ void PmxInstant::Context::SetPosition( const Vector3& postion )
 
 void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bones )
 {
-    size_t numBones = Bones.size();
+    const size_t numBones = Bones.size();
 
     // set default skinning matrix
     m_Skinning.resize( numBones );
@@ -253,20 +248,16 @@ void PmxInstant::Context::Update( float kFrameTime )
 	{
 		size_t numBones = m_BoneMotions.size();
 		for (auto i = 0; i < numBones; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_Pose[i] );
-
-        std::vector<OrthogonalTransform> Pose;
-        Pose.resize( numBones );
+			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+        m_Pose = m_LocalPose;
 		for (auto i = 0; i < numBones; i++)
 		{
-			auto parentIndex = m_Model.m_Bones[i].Parent;
-			if (parentIndex < numBones)
-				Pose[i] = Pose[parentIndex] * m_Pose[i];
-			else
-				Pose[i] = m_Pose[i];
+			const auto parentIndex = m_Model.m_Bones[i].Parent;
+			if (parentIndex >= 0)
+				m_Pose[i] = m_Pose[parentIndex] * m_Pose[i];
 		}
 		for (auto i = 0; i < numBones; i++)
-			m_Skinning[i] = Pose[i] * m_toRoot[i];
+			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
 	}
 
     if (m_MorphMotions.size() > 0)

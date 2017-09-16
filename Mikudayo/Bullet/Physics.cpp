@@ -264,12 +264,14 @@ void Physics::Shutdown( void )
     BulletDebug::Shutdown();
 
     int Len = (int)DynamicsWorld->getSoftBodyArray().size();
+#if 0
     for (int i = Len -1; i >= 0; i--)
     {
         btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
         DynamicsWorld->removeSoftBody( psb );
         delete psb;
     }
+#endif
     ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
         "Remove all rigidbody objects from world");
 

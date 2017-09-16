@@ -81,6 +81,9 @@
     <ClCompile Include="FxManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Bullet\BaseSoftBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -148,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="FxManager.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\BaseSoftBody.h">
+      <Filter>Source Files\Bullet</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

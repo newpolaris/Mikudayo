@@ -4,6 +4,8 @@
 #include "Model.h"
 #include "Pmx.h"
 #include "FxManager.h"
+#include "SoftBodyManager.h"
+#include "Bullet/BaseSoftBody.h"
 
 using namespace Utility;
 using namespace Graphics;
@@ -52,6 +54,8 @@ bool PmxModel::Load( const ModelInfo& Info )
     if (!LoadFromFile( Info.File ))
         return false;
     if (!SetCustomShader( Info.Shader ))
+        return false;
+    if (!SetPhysicsBody( Info.SoftBodySetting ))
         return false;
     if (!GenerateResource())
         return false;
@@ -210,6 +214,20 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         it = m_Bones.begin();
     m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 
+    m_LocalPose.resize( numBones );
+    for (auto i = 0; i < numBones; i++)
+        m_LocalPose[i].SetTranslation( m_Bones[i].Translate );
+    m_Pose = m_LocalPose;
+    for (auto i = 0; i < numBones; i++)
+    {
+        const auto parentIndex = m_Bones[i].Parent;
+        if (parentIndex >= 0)
+            m_Pose[i] = m_Pose[parentIndex] * m_Pose[i];
+    }
+    m_toRoot.resize( numBones );
+    for (auto i = 0; i < numBones; i++)
+        m_toRoot[i] = ~m_Pose[i];
+
     return true;
 }
 
@@ -252,6 +270,30 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
         {
             ASSERT(mat.TexturePathes.size() < texture.Slot, "Slot alread used");
             mat.TexturePathes.push_back( { false, texture.Path } );
+        }
+    }
+    return true;
+}
+
+bool PmxModel::SetPhysicsBody( const std::string& SoftBodyName )
+{
+    m_SoftBodyName = SoftBodyName;
+
+    auto Body = SoftBodyManager::GetInstance( m_SoftBodyName );
+    if (Body)
+    {
+        std::vector<XMUINT4> indices;
+        std::vector<XMFLOAT4> weights;
+        Body->GetSoftBodyPose( m_VertexPosition, indices, weights );
+        for (uint32_t i = 0; i < m_VertexAttribute.size(); i++)
+        {
+            auto* idx = reinterpret_cast<uint32_t*>(&indices[i]);
+            auto* wtx = reinterpret_cast<float*>(&weights[i]);
+            for (uint32_t k = 0; k < 4; k++)
+            {
+                // m_VertexAttribute[i].BoneID[k] = idx[k];
+                // m_VertexAttribute[i].Weight[k] = wtx[k];
+            }
         }
     }
     return true;

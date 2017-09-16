@@ -84,16 +84,14 @@ btTransform BaseRigidBody::GetTransfrom() const
     return transform;
 }
 
-void BaseRigidBody::JoinWorld( void* value )
+void BaseRigidBody::JoinWorld( btDynamicsWorld* value )
 {
-    auto DynamicsWorld = reinterpret_cast<btDynamicsWorld*>( value );
-    DynamicsWorld->addRigidBody( m_Body.get() );
+    value->addRigidBody( m_Body.get() );
 }
 
-void BaseRigidBody::LeaveWorld( void* value )
+void BaseRigidBody::LeaveWorld( btDynamicsWorld* value )
 {
-    auto DynamicsWorld = reinterpret_cast<btDynamicsWorld*>( value );
-    DynamicsWorld->removeRigidBody( m_Body.get() );
+    value->removeRigidBody( m_Body.get() );
 }
 
 void BaseRigidBody::SetAngularDamping( float value )

@@ -10,7 +10,9 @@ using namespace Math;
 namespace Pmx {
     struct Bone;
 }
+struct CustomShaderInfo;
 class FxContainer;
+struct SoftBodySetting;
 class PmxModel : public Model
 {
 public:
@@ -84,6 +86,7 @@ public:
     };
 
     std::wstring m_Name;
+    std::string m_SoftBodyName;
     std::wstring m_TextureRoot;
     std::vector<XMFLOAT3> m_VertexPosition;
     std::vector<VertexAttribute> m_VertexAttribute;
@@ -94,6 +97,9 @@ public:
     // Bone
     uint32_t m_RootBoneIndex; // model center
     std::vector<Bone> m_Bones;
+    std::vector<OrthogonalTransform> m_Pose;
+    std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
+    std::vector<OrthogonalTransform> m_toRoot;
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;
@@ -111,4 +117,5 @@ protected:
     bool LoadFromFile( const std::wstring& FilePath );
     const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );
     bool SetCustomShader( const CustomShaderInfo& Data );
+    bool SetPhysicsBody( const std::string& SoftBodyName );
 };

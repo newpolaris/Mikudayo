@@ -7,7 +7,6 @@
 #include "SoftBodyManager.h"
 #include "ModelManager.h"
 #include "FxManager.h"
-
 #include "PmxInstant.h"
 
 using namespace Math;
@@ -52,8 +51,6 @@ private:
 
 CREATE_APPLICATION( Mikudayo )
 
-SoftBodyManager manager;
-
 enum { kCameraMain, kCameraVirtual };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
@@ -68,10 +65,12 @@ NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f
 NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
 
+
 void Mikudayo::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
+    SoftBodyManager::Initialize();
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
 
@@ -98,15 +97,32 @@ void Mikudayo::Startup( void )
     };
     FxManager::Load(shaders);
 
+    SoftBodyConfig sbCfg;
+    sbCfg.BendConst.Distance = 2;
+    sbCfg.BendConst.kLST = 0.3f;
+    sbCfg.kDF = 0.5f;
+    sbCfg.kMT = 0.001f;
+    sbCfg.piterations = 6;
+    sbCfg.Mass = 10.f;
+	sbCfg.bSetPose = true;
+    sbCfg.bSetPoseFrame = true;
+    sbCfg.bRandomConst = true;
+
+    SoftBodySetting sbSetting {
+        "sb0", L"Model/Mikudayo/sb_miku.obj", sbCfg
+    };
+    SoftBodyManager::Load( sbSetting );
+
     ModelInfo info;
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
     info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
 #if 1
     info.Shader.Name = "mkdy_fur";
-    info.Shader.MaterialNames = { L"髪", L"ツインテールL", L"ツインテールR", L"顔", L"手" };
+    info.Shader.MaterialNames = { L"髪", L"ツインテール", L"顔", L"手" };
     info.Shader.Textures = { {4, L"a_tex_fur_mkdy-3.tga"} };
 #endif
+    info.SoftBodySetting = "sb0";
     if (ModelManager::Load( info ))
     {
         const auto& model = ModelManager::GetModel( info.Name );
@@ -126,22 +142,11 @@ void Mikudayo::Startup( void )
         MD_OUTLINE_FORCE_ON "01";//mat"01"無効
     _LOAD_MODEL;
     */
-
-    // Rendering::PmxInstant mikudayo;
-    // mikudayo.LoadFromFile( L"Model/Mikudayo/mikudayo-3_6.pmx" );
-    // m_Mikudayo = std::move(mikudayo);
-
-#if 0
-    auto vertices = m_Mikudayo.GetVertices();
-    auto indices = m_Mikudayo.GetIndices();
-    SoftBodyGeometry Geo { vertices, indices };
-    m_SoftBody = manager.LoadFromGeometry( Geo );
-    m_SoftBody->translate( btVector3( 0, 2, 0 ) );
-#endif
 }
 
 void Mikudayo::Cleanup( void )
 {
+    m_Model = nullptr;
     ModelManager::Shutdown();
     PrimitiveUtility::Shutdown();
     FxManager::Shutdown();
@@ -149,6 +154,7 @@ void Mikudayo::Cleanup( void )
         model->Destroy();
     m_Primitives.clear();
     Physics::Shutdown();
+    SoftBodyManager::Shutdown();
 }
 
 void Mikudayo::Update( float deltaT )

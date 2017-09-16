@@ -96,6 +96,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Bullet\BaseRigidBody.cpp" />
+    <ClCompile Include="Bullet\BaseSoftBody.cpp" />
     <ClCompile Include="Bullet\BulletDebugDraw.cpp" />
     <ClCompile Include="Bullet\Physics.cpp" />
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
@@ -123,6 +124,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bullet\BaseRigidBody.h" />
+    <ClInclude Include="Bullet\BaseSoftBody.h" />
     <ClInclude Include="Bullet\BulletDebugDraw.h" />
     <ClInclude Include="Bullet\IRigidBody.h" />
     <ClInclude Include="Bullet\LinearMath.h" />
