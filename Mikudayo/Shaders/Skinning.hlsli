@@ -1,6 +1,6 @@
 cbuffer SkinningConstants : register(b1)
 {
-    matrix boneMatrix[256];
+    matrix boneMatrix[1024];
 }
 
 static const int kWeight = 4;

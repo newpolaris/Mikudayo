@@ -224,10 +224,6 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         if (parentIndex >= 0)
             m_Pose[i] = m_Pose[parentIndex] * m_Pose[i];
     }
-    m_toRoot.resize( numBones );
-    for (auto i = 0; i < numBones; i++)
-        m_toRoot[i] = ~m_Pose[i];
-
     return true;
 }
 
@@ -284,17 +280,19 @@ bool PmxModel::SetPhysicsBody( const std::string& SoftBodyName )
     {
         std::vector<XMUINT4> indices;
         std::vector<XMFLOAT4> weights;
-        Body->GetSoftBodyPose( m_VertexPosition, indices, weights );
+        std::vector<AffineTransform> pose;
+        Body->GetSoftBodySkinning( m_VertexPosition, pose, indices, weights );
         for (uint32_t i = 0; i < m_VertexAttribute.size(); i++)
         {
             auto* idx = reinterpret_cast<uint32_t*>(&indices[i]);
             auto* wtx = reinterpret_cast<float*>(&weights[i]);
             for (uint32_t k = 0; k < 4; k++)
             {
-                // m_VertexAttribute[i].BoneID[k] = idx[k];
-                // m_VertexAttribute[i].Weight[k] = wtx[k];
+                m_VertexAttribute[i].BoneID[k] = idx[k];
+                m_VertexAttribute[i].Weight[k] = wtx[k];
             }
         }
+        m_Pose = pose;
     }
     return true;
 }

@@ -97,9 +97,8 @@ public:
     // Bone
     uint32_t m_RootBoneIndex; // model center
     std::vector<Bone> m_Bones;
-    std::vector<OrthogonalTransform> m_Pose;
-    std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
-    std::vector<OrthogonalTransform> m_toRoot;
+    std::vector<AffineTransform> m_Pose;
+    std::vector<AffineTransform> m_LocalPose; // offset matrix
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;

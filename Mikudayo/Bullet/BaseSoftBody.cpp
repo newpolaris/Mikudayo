@@ -86,15 +86,37 @@ bool BaseSoftBody::Build( const SoftBodyInfo& Info )
     return true;
 }
 
-void BaseSoftBody::GetSoftBodyPose( 
-    const std::vector<XMFLOAT3>& Position,
-    std::vector<XMUINT4>& indices,
-    std::vector<XMFLOAT4>& weights )
+void BaseSoftBody::GetSoftBodyPose( std::vector<AffineTransform>& Pose )
 {
     if (!m_Body)
         return;
     uint32_t numFace = m_Body->m_faces.size();
-    std::vector<AffineTransform> pose(numFace);
+    if (numFace > 1024)
+        numFace = 1024;
+    Pose.resize(numFace);
+    for (uint32_t i = 0; i < numFace; i++)
+    {
+        const auto& f = m_Body->m_faces[i];
+        TriangleFace face { 
+            f.m_n[0]->m_x, f.m_n[1]->m_x,
+            f.m_n[2]->m_x, f.m_normal 
+        };
+        Pose[i] = TriPose(face);
+    }
+}
+
+void BaseSoftBody::GetSoftBodySkinning( 
+    const std::vector<XMFLOAT3>& Position,
+    std::vector<AffineTransform>& Pose,
+    std::vector<XMUINT4>& Indices,
+    std::vector<XMFLOAT4>& Weights )
+{
+    if (!m_Body)
+        return;
+    uint32_t numFace = m_Body->m_faces.size();
+    if (numFace > 1024)
+        numFace = 1024;
+    Pose.resize(numFace);
     std::vector<TriangleFace> tri(numFace);
     for (uint32_t i = 0; i < numFace; i++)
     {
@@ -103,7 +125,7 @@ void BaseSoftBody::GetSoftBodyPose(
             f.m_n[0]->m_x, f.m_n[1]->m_x,
             f.m_n[2]->m_x, f.m_normal 
         };
-        pose[i] = TriPose(face);
+        Pose[i] = TriPose(face);
         tri[i] = face;
     }
 
@@ -112,8 +134,8 @@ void BaseSoftBody::GetSoftBodyPose(
         float dist;
     };
 
-    indices.resize(Position.size());
-    weights.resize(Position.size());
+    Indices.resize(Position.size());
+    Weights.resize(Position.size());
 
     for (uint32_t p = 0; p < Position.size(); p++ )
     {
@@ -128,8 +150,8 @@ void BaseSoftBody::GetSoftBodyPose(
         }
         float weightSum = 1.f + (dist[0].dist / dist[1].dist);
         float w0 = 1/weightSum;
-        indices[p] = { dist[0].ind, dist[1].ind, 0, 0 };
-        weights[p] = { w0, 1 - w0, 0, 0 };
+        Indices[p] = { dist[0].ind, dist[1].ind, 0, 0 };
+        Weights[p] = { w0, 1 - w0, 0, 0 };
     }
 }
 

@@ -101,7 +101,7 @@ void Mikudayo::Startup( void )
     sbCfg.BendConst.Distance = 2;
     sbCfg.BendConst.kLST = 0.3f;
     sbCfg.kDF = 0.5f;
-    sbCfg.kMT = 0.001f;
+    sbCfg.kMT = 0.1f;
     sbCfg.piterations = 6;
     sbCfg.Mass = 10.f;
 	sbCfg.bSetPose = true;
@@ -128,7 +128,7 @@ void Mikudayo::Startup( void )
         const auto& model = ModelManager::GetModel( info.Name );
         m_Model = std::make_shared<PmxInstant>(model);
         m_Model->LoadModel();
-        m_Model->LoadMotion( L"Motion/nekomimi_lat.vmd" );
+        // m_Model->LoadMotion( L"Motion/nekomimi_lat.vmd" );
     }
 
     /*

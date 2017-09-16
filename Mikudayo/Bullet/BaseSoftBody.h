@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "Math/Transform.h"
 
 class btSoftBody;
 class btSoftRigidDynamicsWorld;
@@ -9,6 +10,8 @@ struct SoftBodyGeometry;
 
 namespace Physics
 {
+    using Math::AffineTransform;
+
     class BaseSoftBody
     {
     public:
@@ -16,9 +19,10 @@ namespace Physics
         BaseSoftBody( void );
 
         bool Build( const SoftBodyInfo& Info );
-        void GetSoftBodyPose();
-        void GetSoftBodyPose( const std::vector<XMFLOAT3>& Position,
-            std::vector<XMUINT4>& indices, std::vector<XMFLOAT4>& weights );
+        void GetSoftBodyPose( std::vector<AffineTransform>& Pose );
+        void GetSoftBodySkinning( const std::vector<XMFLOAT3>& Position, 
+            std::vector<AffineTransform>& Pose,
+            std::vector<XMUINT4>& Indices, std::vector<XMFLOAT4>& Weights );
         void JoinWorld( btSoftRigidDynamicsWorld* value );
         void LeaveWorld( btSoftRigidDynamicsWorld* value );
         void syncLocalTransform();
