@@ -69,18 +69,6 @@
     <ClCompile Include="PmxInstant.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FxParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FxContainer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Include.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FxManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Bullet\BaseSoftBody.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -138,18 +126,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="PmxInstant.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FxParser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FxContainer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Include.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FxManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\BaseSoftBody.h">

@@ -272,6 +272,8 @@ void Physics::Shutdown( void )
 
 void Physics::Update( float deltaT )
 {
+    DebugDrawer->setDebugMode( s_bDebugDraw );
+
     DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
     ASSERT(DynamicsWorld.get() != nullptr);
     DynamicsWorld->stepSimulation( deltaT, 1 );

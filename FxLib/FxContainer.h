@@ -13,7 +13,7 @@ class FxContainer
 {
 public:
 
-    FxContainer( const std::wstring& FileName );
+    FxContainer( const std::wstring& FilePath );
 
     bool Load();
     uint32_t FindTechnique( const std::string& TechName ) const;

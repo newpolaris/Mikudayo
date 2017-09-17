@@ -41,8 +41,8 @@ namespace BulletDebug
         XMFLOAT3 color;
     };
 
-#define FAST_LINE_DRAW 1
-#ifdef FAST_LINE_DRAW
+#define FAST_LINE_DRAW 0
+#if FAST_LINE_DRAW
     using LineStorage = Array<Vertex, 1 << 20>; // Slightly faster but have limit size
 #else
     using LineStorage = std::vector<Vertex>;
@@ -124,7 +124,7 @@ void DebugDraw::flush( GraphicsContext& UiContext, const Matrix4& WorldToClip )
         UiContext.SetDynamicVB( 0, Lines.size(), sizeof(Vertex), Lines.data() );
         UiContext.Draw( static_cast<UINT>(Lines.size()), 0 );
     }
-    Lines.resize( 0 );
+    Lines.clear();
 
     // Print reportErrorWarning
     const XMFLOAT2 WarningPos( 10.f, 100.f );

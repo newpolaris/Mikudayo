@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 17
-VisualStudioVersion = 15.0.26430.16
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mikudayo", "Mikudayo.vcxproj", "{70EA1ADD-A0DD-428F-BE50-4CA71CF0DBE8}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -21,6 +21,12 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LinearMath", "..\3rdParty\bullet3-2.86.1\src\LinearMath\LinearMath.vcxproj", "{83D0FB92-3B9B-3EF9-92A0-71521F9D16D3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTex", "..\3rdParty\DirectXTex\DirectXTex_Desktop_2017_Win10.vcxproj", "{371B9FA9-4C90-4AC6-A123-ACED756D6C77}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FxPreprocessor", "..\FxPreprocessor\FxPreprocessor.vcxproj", "{26D4B373-6724-4E21-B0FF-219201EB9EEE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FxLib", "..\FxLib\FxLib.vcxproj", "{FF24EC3B-172B-4120-8F21-435502FA2F4E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FxLibrary", "..\FxLibrary\FxLibrary.vcxproj", "{685EA746-BCDA-4650-874D-8AA320F10016}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -107,8 +113,38 @@ Global
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.Build.0 = Release|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x86.ActiveCfg = Release|Win32
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x86.Build.0 = Release|Win32
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Debug|x64.ActiveCfg = Debug|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Debug|x64.Build.0 = Debug|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Debug|x86.ActiveCfg = Debug|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Profile|x64.ActiveCfg = Profile|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Profile|x64.Build.0 = Profile|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Profile|x86.ActiveCfg = Profile|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Release|x64.ActiveCfg = Release|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Release|x64.Build.0 = Release|x64
+		{26D4B373-6724-4E21-B0FF-219201EB9EEE}.Release|x86.ActiveCfg = Release|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Debug|x64.ActiveCfg = Debug|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Debug|x64.Build.0 = Debug|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Debug|x86.ActiveCfg = Debug|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Profile|x64.ActiveCfg = Profile|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Profile|x64.Build.0 = Profile|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Profile|x86.ActiveCfg = Profile|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Release|x64.ActiveCfg = Release|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Release|x64.Build.0 = Release|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Release|x86.ActiveCfg = Release|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Debug|x64.ActiveCfg = Debug|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Debug|x64.Build.0 = Debug|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Debug|x86.ActiveCfg = Debug|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Profile|x64.ActiveCfg = Profile|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Profile|x64.Build.0 = Profile|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Profile|x86.ActiveCfg = Profile|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Release|x64.ActiveCfg = Release|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Release|x64.Build.0 = Release|x64
+		{685EA746-BCDA-4650-874D-8AA320F10016}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ABFDB186-A47C-4608-B30D-8C922A83ACFB}
 	EndGlobalSection
 EndGlobal

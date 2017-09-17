@@ -65,7 +65,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\FxLib;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
     </ClCompile>
@@ -74,7 +74,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\FxLib;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
     </ClCompile>
@@ -85,7 +85,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\FxLib;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
     </ClCompile>
@@ -101,11 +101,7 @@
     <ClCompile Include="Bullet\Physics.cpp" />
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
-    <ClCompile Include="FxContainer.cpp" />
-    <ClCompile Include="FxManager.cpp" />
-    <ClCompile Include="FxParser.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
-    <ClCompile Include="Include.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -131,11 +127,7 @@
     <ClInclude Include="Bullet\Physics.h" />
     <ClInclude Include="Bullet\PhysicsPrimitive.h" />
     <ClInclude Include="Bullet\PrimitiveBatch.h" />
-    <ClInclude Include="FxContainer.h" />
-    <ClInclude Include="FxManager.h" />
-    <ClInclude Include="FxParser.h" />
     <ClInclude Include="GeometryGenerator.h" />
-    <ClInclude Include="Include.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelManager.h" />
@@ -217,6 +209,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Core\Core_VS14.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FxLib\FxLib.vcxproj">
+      <Project>{ff24ec3b-172b-4120-8f21-435502fa2f4e}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

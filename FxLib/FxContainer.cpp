@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "Mapping.h"
 #include "FxContainer.h"
 #include "FxParser.h"
 #include "TextUtility.h"
@@ -6,6 +7,8 @@
 #include "SamplerManager.h"
 #include "Hash.h"
 #include "FileUtility.h"
+#include "InputLayout.h"
+#include <boost/filesystem.hpp>
 
 using Microsoft::WRL::ComPtr;
 using Path = boost::filesystem::path;
@@ -75,14 +78,18 @@ namespace {
         size_t Length,
         size_t HashCode )
     {
+        namespace fs = boost::filesystem;
+
         std::string postfix;
 #ifdef _DEBUG
         postfix = "_D";
 #endif
+        const std::wstring FolderName = L"ShaderCache";
         const std::string tag = Name + "_" + EntryPoint + "_" + Profile + postfix + ".cache";
-        const std::wstring fileName = Utility::MakeWStr( tag );
+        const fs::path path = fs::path(fs::path(FolderName) / tag);
+        const std::wstring filePath = path.generic_wstring();
 
-        Utility::ByteArray ba = Utility::ReadFileSync( fileName );
+        Utility::ByteArray ba = Utility::ReadFileSync( filePath );
         if (ba->size() > 0)
         {
             Utility::ByteStream bs( ba );
@@ -106,8 +113,10 @@ namespace {
             return nullptr;
         const size_t ShaderLength = blob->GetBufferSize();
         const char* ShaderPointer = reinterpret_cast<char*>(blob->GetBufferPointer());
+        if (!fs::exists(FolderName))
+            fs::create_directory(FolderName);
         std::ofstream outputFile;
-        outputFile.open( fileName, std::ios::binary );
+        outputFile.open( filePath, std::ios::binary );
         if (!outputFile.is_open())
             return nullptr;
         Utility::Write( outputFile, HashCode );
