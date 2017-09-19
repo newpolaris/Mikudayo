@@ -157,7 +157,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         if (!ToonName.empty())
             mat.TexturePathes[kTextureToon] = { true, ToonName };
 
-        MaterialCB cb;
+        MaterialCB cb = {};
 		cb.Diffuse = material.Diffuse;
 		cb.Specular = material.Specular;
 		cb.SpecularPower = material.SpecularPower;
@@ -178,7 +178,6 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 		IndexOffset += material.NumVertex;
         m_MaterialIndex[mat.Name] = (uint32_t)m_MaterialIndex.size();
-		m_Materials.push_back(mat);
 	}
 
     const auto& Bones = pmx.m_Bones;
