@@ -6,6 +6,7 @@ class PmxInstant
 public:
 
     PmxInstant( const Model& model );
+
     void DrawColor( GraphicsContext& Context );
     bool LoadModel();
     bool LoadMotion( const std::wstring& motionPath );

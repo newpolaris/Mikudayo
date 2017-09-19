@@ -107,6 +107,7 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& 
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
+
 	for (auto& mesh : m_Model.m_Mesh)
 	{
         auto& material = m_Model.m_Materials[mesh.MaterialIndex];
