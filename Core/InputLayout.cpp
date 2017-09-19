@@ -9,11 +9,11 @@ using namespace std;
 
 static map<size_t, ComPtr<ID3D11InputLayout>> s_InputLayoutHashMap;
 
-std::size_t hash_value( const InputDesc & Desc )
+std::size_t hash_value( const InputDesc& Desc )
 {
 	using namespace boost;
 
-	// Offset is fixedd by Format
+	// Offset is fixed by Format
 	size_t HashCode = hash_value( Desc.SemanticName );
 	hash_combine( HashCode, Desc.SemanticIndex );
 	hash_combine( HashCode, Desc.Format );

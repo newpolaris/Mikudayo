@@ -63,13 +63,14 @@ SamplerState samSphere : register(s2)
 };
 
 // Per-vertex data used as input to the vertex shader.
-struct AttributeInput
+struct VertexInput
 {
 	float3 normal : NORMAL;
 	float2 uv : TEXTURE;
 	uint4 boneID : BONE_ID;
 	float4 boneWeight : BONE_WEIGHT;
 	float boneFloat : EDGE_FLAT;
+    float3 position : POSITION;
 };
 
 // Per-pixel color data passed through the pixel shader.
@@ -82,11 +83,11 @@ struct PixelShaderInput
 };
 
 // Simple shader to do vertex processing on the GPU.
-PixelShaderInput vsBasic(AttributeInput input, float3 position : POSITION)
+PixelShaderInput vsBasic(VertexInput input)
 {
 	PixelShaderInput output;
 
-    float3 pos = BoneSkinning( position, input.boneWeight, input.boneID );
+    float3 pos = BoneSkinning( input.position, input.boneWeight, input.boneID );
     float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
 
     // Transform the vertex position into projected space.
