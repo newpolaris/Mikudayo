@@ -2,11 +2,11 @@
 
 struct Material
 {
-	float3 diffuse;
-	float alpha; // diffuse alpha
-	float3 specular;
-	float specularPower;
-	float3 ambient;
+    float3 diffuse;
+    float alpha; // diffuse alpha
+    float3 specular;
+    float specularPower;
+    float3 ambient;
 };
 
 // vertex shader
@@ -26,8 +26,10 @@ cbuffer MaterialConstants : register(b3)
 {
 	Material material;
 	int sphereOperation;
-	int bUseTexture;
-	int bUseToon;
+    bool bUseTexture;
+    bool bUseToon;
+    float EdgeSize;
+    float4 EdgeColor;
 };
 
 cbuffer PassConstants : register(b4)
@@ -69,7 +71,7 @@ struct VertexInput
 	float2 uv : TEXTURE;
 	uint4 boneID : BONE_ID;
 	float4 boneWeight : BONE_WEIGHT;
-	float boneFloat : EDGE_FLAT;
+	float edgeScale : EDGE_FLAT;
     float3 position : POSITION;
 };
 
@@ -99,6 +101,13 @@ PixelShaderInput vsBasic(VertexInput input)
 	output.uv = input.uv;
 
 	return output;
+}
+
+PixelShaderInput vsOutline(VertexInput input)
+{
+    const float outline = 0.05f;
+    input.position.xzy += input.normal * outline;
+    return vsBasic(input);
 }
 
 // A pass-through function for the (interpolated) color data.
@@ -143,6 +152,11 @@ float4 psBasic(PixelShaderInput input) : SV_TARGET
 	return float4(color, alpha);
 }
 
+float4 psOutline(PixelShaderInput input) : SV_TARGET
+{	
+    return float4(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
 void psShadow(PixelShaderInput input)
 {
 	float3 diffuse = material.diffuse;
@@ -170,10 +184,18 @@ DepthStencilState DepthTestOn {
 	DepthWriteMask = All;
 	DepthFunc = LESS_EQUAL;
 };
+DepthStencilState DepthTestOff {
+	DepthEnable = False;	
+};
 
 RasterizerState RasterSolid {
 	FillMode = Solid;
 	CullMode = Back;
+	FrontCounterClockwise = True;
+};
+RasterizerState RasterOutline {
+	FillMode = Solid;
+	CullMode = Front;
 	FrontCounterClockwise = True;
 };
 BlendState BlendShadow {
@@ -187,7 +209,9 @@ RasterizerState RasterShadow {
 };
 
 VertexShader vs_main = CompileShader( vs_5_0, vsBasic() );
+VertexShader vs_outline = CompileShader( vs_5_0, vsOutline() );
 PixelShader ps_main = CompileShader( ps_5_0, psBasic() );
+PixelShader ps_outline = CompileShader( ps_5_0, psOutline() );
 PixelShader ps_shadow = CompileShader( ps_5_0, psShadow() );
 
 technique11 t0 {
@@ -199,6 +223,13 @@ technique11 t0 {
 		SetVertexShader( vs_main );
 		SetPixelShader( ps_main );
 	}
+    pass p1 {
+		SetDepthStencilState( DepthTestOn, 0 );
+		SetRasterizerState( RasterOutline );
+
+		SetVertexShader( vs_outline );
+		SetPixelShader( ps_outline );
+    }
 }
 
 technique11 shadow_cast {

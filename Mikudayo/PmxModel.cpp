@@ -131,7 +131,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
             }
             break;
         }
-		m_VertexAttribute[i].EdgeSize = pmx.m_Vertices[i].EdgeSize;
+		m_VertexAttribute[i].EdgeSize = pmx.m_Vertices[i].EdgeScale;
 	}
     std::copy(pmx.m_Indices.begin(), pmx.m_Indices.end(), std::back_inserter(m_Indices));
 
@@ -163,10 +163,9 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 		cb.SpecularPower = material.SpecularPower;
 		cb.Ambient = material.Ambient;
         cb.SphereOperation = material.SphereOperation;
-
+		cb.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
+		cb.EdgeSize = material.EdgeSize;
         mat.CB = cb;
-		mat.EdgeSize = material.EdgeSize;
-		mat.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
         m_Materials.push_back(mat);
 
         Mesh mesh;

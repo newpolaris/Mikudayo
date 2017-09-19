@@ -112,7 +112,7 @@ namespace Pmx
         default: ASSERT(FALSE); break;
         }
 
-        Read( is, EdgeSize );
+        Read( is, EdgeScale );
 	}
 
     void Bdef1Unit::Fill( bufferstream& is, uint8_t byteSize )

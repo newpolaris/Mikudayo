@@ -50,6 +50,8 @@ public:
 		int32_t SphereOperation;
 		int32_t bUseTexture;
 		int32_t bUseToon;
+        float EdgeSize;
+        Color EdgeColor;
 	};
 
     struct Material
@@ -70,8 +72,6 @@ public:
         int32_t IndexOffset;
 		uint32_t IndexCount;
         BoundingSphere BoundSphere;
-		float EdgeSize;
-        Color EdgeColor;
 	};
 
     struct Bone

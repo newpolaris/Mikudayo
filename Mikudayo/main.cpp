@@ -92,7 +92,8 @@ void Mikudayo::Startup( void )
 
     std::vector<FxInfo> shaders = {
         { "pmx", L"Shaders/pmx.fx" },
-        { "mkdy_fur", L"Shaders/mkdy_fur.fx" },
+        // { "outline", L"Shaders/mkdy_fur.fx" },
+        // { "mkdy_fur", L"Shaders/mkdy_fur.fx" },
         // { "outline", L"data/shader/outline.fx" },
     };
     FxManager::Load(shaders);
@@ -117,7 +118,7 @@ void Mikudayo::Startup( void )
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
     info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
-#if 1
+#if 0
     info.Shader.Name = "mkdy_fur";
     info.Shader.MaterialNames = { L"髪", L"ツインテール", L"顔", L"手" };
     info.Shader.Textures = { {4, L"a_tex_fur_mkdy-3.tga"} };
