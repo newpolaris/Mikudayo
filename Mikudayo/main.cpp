@@ -93,7 +93,7 @@ void Mikudayo::Startup( void )
     ModelInfo info;
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
-    info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
+    info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
     if (ModelManager::Load( info ))
     {
         const auto& model = ModelManager::GetModel( info.Name );
