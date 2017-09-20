@@ -7,6 +7,18 @@
 
 #include "Skinning.hlsli"
 
+static const uint FurCount = 5;
+static const float FurStep = 1 / 200.f;
+
+static const int FurShellCount = 5; // FurShellの枚数
+static const float FurSupecularPower = 2; // 毛の光る範囲
+static const float2 FurFlowScale = float2(15,1); // 毛の流れる量
+static const float3 FurColor = float3(0.8, 0.8, 0.8); // 毛の色
+
+static const float3 lightAmbient = float3(1, 1, 1);
+static const float3 lightSpecular = float3(1, 1, 1);
+static const float3 materialEmmisive = float3(0, 0, 0);
+
 struct Material
 {
 	float3 diffuse;
@@ -27,6 +39,10 @@ cbuffer Model : register(b2)
 {
 	matrix model;
 }
+
+static const int kSphereNone = 0;
+static const int kSphereMul = 1;
+static const int kSphereAdd = 2;
 
 // pixel shader
 cbuffer MaterialConstants : register(b3)
@@ -142,9 +158,6 @@ void gsFur( triangle GeometryShaderInput input[3],
 			inout TriangleStream<FurPixelShaderInput> Stream )
 {
 	matrix modelview = mul( view, model );
-
-	const uint FurCount = 5;
-	const float FurStep = 1/200.f;
     for (uint f = 0; f < FurCount; ++f) 
     {
         for (uint i = 0; i < 3; ++i) 
@@ -191,10 +204,6 @@ float4 psBasic(PixelShaderInput input) : SV_TARGET
 		texColor = tex.xyz;
 		texAlpha = tex.w;
 	}
-    static const int kSphereNone = 0;
-    static const int kSphereMul = 1;
-    static const int kSphereAdd = 2;
-
 	float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalV.xy;
 	if (sphereOperation == kSphereAdd)
 		texColor += texSphere.Sample( samSphere, sphereCoord );
@@ -209,15 +218,6 @@ float4 psBasic(PixelShaderInput input) : SV_TARGET
 
 float4 psBasicFur( FurPixelShaderInput input ) : SV_Target
 {
-    const int FurShellCount = 5; // FurShellの枚数
-    const float FurSupecularPower = 2; // 毛の光る範囲
-    const float2 FurFlowScale = float2(15,1); // 毛の流れる量
-    const float3 FurColor = float3(0.8, 0.8, 0.8); // 毛の色
-
-    const float3 lightAmbient = float3(1, 1, 1);
-    const float3 lightSpecular = float3(1, 1, 1);
-    const float3 materialEmmisive = float3(0, 0, 0);
-
 	float3 diffuse = material.diffuse * SunColor;
 	float3 ambient = saturate(material.ambient * lightAmbient + materialEmmisive);
 	float3 specular = lightSpecular * material.specular;

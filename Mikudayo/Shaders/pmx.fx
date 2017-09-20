@@ -21,6 +21,10 @@ cbuffer Model : register(b2)
 	matrix model;
 }
 
+static const int kSphereNone = 0;
+static const int kSphereMul = 1;
+static const int kSphereAdd = 2;
+
 // pixel shader
 cbuffer MaterialConstants : register(b3)
 {
@@ -136,10 +140,6 @@ float4 psBasic(PixelShaderInput input) : SV_TARGET
 		texColor = tex.xyz;
 		texAlpha = tex.w;
 	}
-    static const int kSphereNone = 0;
-    static const int kSphereMul = 1;
-    static const int kSphereAdd = 2;
-
 	float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalV.xy;
 	if (sphereOperation == kSphereAdd)
 		texColor += texSphere.Sample( samSphere, sphereCoord );
