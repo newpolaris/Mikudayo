@@ -102,6 +102,11 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\Mikudayo\Shaders\mkdy_fur.fx">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\Mikudayo\packages\boost.1.65.1.0\build\native\boost.targets" Condition="Exists('..\Mikudayo\packages\boost.1.65.1.0\build\native\boost.targets')" />

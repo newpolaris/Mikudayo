@@ -86,7 +86,7 @@ namespace {
 #endif
         const std::wstring FolderName = L"ShaderCache";
         const std::string tag = Name + "_" + EntryPoint + "_" + Profile + postfix + ".cache";
-        const fs::path path = fs::path(fs::path(FolderName) / tag);
+        const fs::path path = fs::path(FolderName) / tag;
         const std::wstring filePath = path.generic_wstring();
 
         Utility::ByteArray ba = Utility::ReadFileSync( filePath );

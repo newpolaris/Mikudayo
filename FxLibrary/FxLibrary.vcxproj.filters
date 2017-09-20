@@ -7,11 +7,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\Mikudayo\Shaders\pmx.fx">
-      <Filter>Source Files</Filter>
-    </FxCompile>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <CustomBuild Include="..\Mikudayo\Shaders\pmx.fx" />
+    <CustomBuild Include="..\Mikudayo\Shaders\mkdy_fur.fx">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

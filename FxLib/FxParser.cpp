@@ -680,7 +680,7 @@ namespace client { namespace parser {
         >> x3::no_skip[x3::space]
         >> identifier
         >> char_('(')
-        >> x3::no_skip[+(char_ - ')')]
+        >> -x3::no_skip[+(char_ - ')')]
         >> char_(')')
         >> *(char_ - "{")
         >> block

@@ -74,7 +74,7 @@ void Mikudayo::Startup( void )
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
 
-    const Vector3 eye = Vector3(0.0f, 18.0f, -15.0f);
+    const Vector3 eye = Vector3(0.0f, 25.0f, 15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );

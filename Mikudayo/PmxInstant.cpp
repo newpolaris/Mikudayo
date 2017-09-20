@@ -114,8 +114,8 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& 
         auto& material = m_Model.m_Materials[mesh.MaterialIndex];
         if (!material.SetTexture(gfxContext))
             continue;
+        gfxContext.SetDynamicConstantBufferView(3, sizeof(material.CB), &material.CB, { kBindVertex, kBindPixel });
         std::function<void(GraphicsContext&)> Call = [&](GraphicsContext& gfxContext) {
-            gfxContext.SetDynamicConstantBufferView(3, sizeof(material.CB), &material.CB, { kBindPixel });
             gfxContext.DrawIndexed(mesh.IndexCount, mesh.IndexOffset, 0);
         };
         if (material.m_TechniqueColor)

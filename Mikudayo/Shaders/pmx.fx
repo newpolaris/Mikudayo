@@ -107,11 +107,12 @@ PixelShaderInput vsBasic(VertexInput input)
 	return output;
 }
 
-PixelShaderInput vsOutline(VertexInput input)
+float4 vsOutline(VertexInput input) : SV_POSITION
 {
-    const float outline = 0.01f;
-    input.position.xzy += input.normal * outline;
-    return vsBasic(input);
+    float3 pos = input.position + input.normal * EdgeSize * 0.01;
+    matrix clipToProj = mul(projection, mul(view, model));
+    pos = BoneSkinning( pos, input.boneWeight, input.boneID );
+    return mul(clipToProj, float4(pos, 1.0));
 }
 
 // A pass-through function for the (interpolated) color data.
@@ -152,9 +153,9 @@ float4 psBasic(PixelShaderInput input) : SV_TARGET
 	return float4(color, alpha);
 }
 
-float4 psOutline(PixelShaderInput input) : SV_TARGET
+float4 psOutline(float4 Position : SV_POSITION) : SV_TARGET
 {	
-    return float4(0.0f, 0.0f, 0.0f, 1.0f);
+    return EdgeColor;
 }
 
 void psShadow(PixelShaderInput input)
