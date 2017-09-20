@@ -4,6 +4,7 @@
 #include "Vmd.h"
 #include "KeyFrameAnimation.h"
 #include "FxContainer.h"
+#include "FxTechnique.h"
 #include "SoftBodyManager.h"
 #include "Bullet/Physics.h"
 #include "Bullet/BaseSoftBody.h"
@@ -113,16 +114,12 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& 
         auto& material = m_Model.m_Materials[mesh.MaterialIndex];
         if (!material.SetTexture( gfxContext ))
             continue;
-        if (!material.Techniques)
-            continue;
-        material.Techniques->SetSampler( gfxContext );
-        auto numPass = material.Techniques->FindTechnique(technique);
-        for (auto i = 0U; i < numPass; i++)
-        {
-            material.Techniques->SetPass( gfxContext, technique, i );
-            gfxContext.SetDynamicConstantBufferView( 3, sizeof(material.CB), &material.CB, { kBindPixel } );
-            gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
-        }
+        std::function<void(GraphicsContext&)> Call = [&](GraphicsContext& gfxContext){
+            gfxContext.SetDynamicConstantBufferView(3, sizeof(material.CB), &material.CB, { kBindPixel });
+            gfxContext.DrawIndexed(mesh.IndexCount, mesh.IndexOffset, 0);
+        };
+        if (material.m_TechniqueColor)
+            material.m_TechniqueColor->Render(gfxContext, Call);
 	}
 }
 

@@ -4,6 +4,7 @@
 #include "Model.h"
 #include "Pmx.h"
 #include "FxManager.h"
+#include "FxTechniqueSet.h"
 #include "SoftBodyManager.h"
 #include "Bullet/BaseSoftBody.h"
 
@@ -142,7 +143,12 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 		Material mat = {};
         mat.Name = material.Name;
-        mat.Techniques = FxManager::GetFx( "pmx" );
+        auto techniques = FxManager::GetTechniques("pmx");
+        if (techniques)
+        {
+            mat.m_TechniqueColor = techniques->RequestTechnique("t0", InputDescriptor);
+            mat.m_TechniqueShadow = techniques->RequestTechnique("shadow_cast", InputDescriptor);
+        }
         mat.TexturePathes.resize(kTextureDefaultCount);
         if (material.DiffuseTexureIndex >= 0)
             mat.TexturePathes[kTextureDiffuse] = { true, pmx.m_Textures[material.DiffuseTexureIndex] };
@@ -259,7 +265,12 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
         auto index = m_MaterialIndex[matName];
         ASSERT(index < m_Materials.size());
         auto& mat = m_Materials[index];
-        mat.Techniques = FxManager::GetFx( Data.Name );
+        auto techniques = FxManager::GetTechniques( Data.Name );
+        if (techniques)
+        {
+            mat.m_TechniqueColor = techniques->RequestTechnique("t0", InputDescriptor);
+            mat.m_TechniqueShadow = techniques->RequestTechnique("shadow_cast", InputDescriptor);
+        }
         for (auto& texture : Data.Textures)
         {
             ASSERT(mat.TexturePathes.size() < texture.Slot, "Slot alread used");

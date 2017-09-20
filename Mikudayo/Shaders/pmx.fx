@@ -223,6 +223,7 @@ technique11 t0 {
 		SetVertexShader( vs_main );
 		SetPixelShader( ps_main );
 	}
+    /*
     pass p1 {
 		SetDepthStencilState( DepthTestOn, 0 );
 		SetRasterizerState( RasterOutline );
@@ -230,6 +231,7 @@ technique11 t0 {
 		SetVertexShader( vs_outline );
 		SetPixelShader( ps_outline );
     }
+    */
 }
 
 technique11 shadow_cast {

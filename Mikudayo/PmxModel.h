@@ -11,8 +11,8 @@ namespace Pmx {
     struct Bone;
 }
 struct CustomShaderInfo;
-class FxContainer;
 struct SoftBodySetting;
+struct FxTechnique;
 class PmxModel : public Model
 {
 public:
@@ -60,9 +60,10 @@ public:
         MaterialCB CB;
         float EdgeSize;
         Color EdgeColor;
-        FxContainer* Techniques = nullptr;
         std::vector<TexturePath> TexturePathes;
         std::vector<const ManagedTexture*> Textures;
+        std::shared_ptr<FxTechnique> m_TechniqueColor;
+        std::shared_ptr<FxTechnique> m_TechniqueShadow;
         bool SetTexture( GraphicsContext& gfxContext ) const;
     };
 

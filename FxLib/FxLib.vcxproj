@@ -91,6 +91,7 @@
     <ClCompile Include="FxContainer.cpp" />
     <ClCompile Include="FxManager.cpp" />
     <ClCompile Include="FxParser.cpp" />
+    <ClCompile Include="FxTechnique.cpp" />
     <ClCompile Include="Include.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -102,10 +103,13 @@
     <ClInclude Include="FxContainer.h" />
     <ClInclude Include="FxManager.h" />
     <ClInclude Include="FxParser.h" />
+    <ClInclude Include="FxTechnique.h" />
+    <ClInclude Include="FxTechniqueSet.h" />
     <ClInclude Include="Include.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FxTechniqueSet.cpp" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

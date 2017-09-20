@@ -1,16 +1,19 @@
 #pragma once
 
+#include <memory>
+
 struct FxInfo
 {
     std::string Name;
     std::wstring FilePath;
 };
 
-class FxContainer;
+class FxTechniqueSet;
+
 namespace FxManager
 {
     void Initialize();
     void Shutdown();
-    FxContainer* GetFx( const std::string& Fx );
+    std::shared_ptr<FxTechniqueSet> GetTechniques(const std::string& Fx);
     void Load( const std::vector<FxInfo>& Fx );
 }

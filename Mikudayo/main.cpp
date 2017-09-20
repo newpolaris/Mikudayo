@@ -117,7 +117,8 @@ void Mikudayo::Startup( void )
     ModelInfo info;
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
-    info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
+	// info.File = L"Model/Mikudayo/mikudayo-3_6.pmx";
+    info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
 #if 0
     info.Shader.Name = "mkdy_fur";
     info.Shader.MaterialNames = { L"髪", L"ツインテール", L"顔", L"手" };

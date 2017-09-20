@@ -1,11 +1,13 @@
 #pragma once
 
 #include <string>
+#include "SamplerManager.h"
 
 struct FxSampler
 {
-    uint32_t slot;
-    D3D11_SAMPLER_HANDLE handle;
+    SamplerDesc desc;
+    D3D11_SAMPLER_HANDLE handle = nullptr;
+    uint32_t slot = 0;
 };
 class GraphicsPSO;
 class GraphicsContext;
@@ -16,14 +18,13 @@ public:
     FxContainer( const std::wstring& FilePath );
 
     bool Load();
-    uint32_t FindTechnique( const std::string& TechName ) const;
-    void SetPass( GraphicsContext& Context, const std::string& TechName, uint32_t Pass );
-    void SetSampler( GraphicsContext& Context );
+    std::vector<GraphicsPSO> FindTechnique( const std::string& TechName ) const;
+    std::vector<FxSampler> GetSampler() const;
 
 protected:
 
     std::wstring m_FilePath;   
     std::vector<FxSampler> m_Sampler;
     std::map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> m_ShaderByteCode;
-    std::map<std::string, std::vector<std::shared_ptr<GraphicsPSO>>> m_Technique;
+    std::map<std::string, std::vector<GraphicsPSO>> m_Technique;
 };

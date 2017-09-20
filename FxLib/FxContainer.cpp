@@ -136,9 +136,9 @@ struct eval
     void operator()( std::string const& ) {}
     void operator()( sampler_state const& x )
     {
-        FxSampler fx;
+        FxSampler fx = {};
         fx.slot = x.slot;
-        fx.handle = SamplerDesc( x.desc ).CreateDescriptor();
+        fx.desc = SamplerDesc(x.desc);
         m_Sampler.push_back( fx );
     }
 
@@ -183,7 +183,7 @@ struct eval
     std::map<std::string, D3D11_RASTERIZER_DESC> m_Raster;
 
     std::map<std::string, ComPtr<ID3DBlob>> m_ShaderByteCode;
-    std::map<std::string, std::vector<std::shared_ptr<GraphicsPSO>>> m_Technique;
+    std::map<std::string, std::vector<GraphicsPSO>> m_Technique;
 };
 
 eval::eval( ComPtr<ID3DBlob>& Blob, Include& Inc, const std::string SourceName ) :
@@ -204,28 +204,16 @@ void eval::operator()( const shader_compiler_desc& desc )
         m_ShaderByteCode[desc.name] = byteCode;
 }
 
-std::vector<InputDesc> InputDescriptor
-{
-    { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-};
-
 void eval::operator()( const technique_desc& tech )
 {
     for (auto& pass : tech.pass)
     {
-        auto pso = std::make_shared<GraphicsPSO>();
+        GraphicsPSO pso;
         auto with = [&]( auto&& config ) {
-            (*this)(config, *pso);
+            (*this)(config, pso);
         };
         for (auto const& config : pass.configs)
             boost::apply_visitor( with, config );
-        pso->SetInputLayout( static_cast<UINT>(InputDescriptor.size()), InputDescriptor.data() );
-        pso->Finalize();
         m_Technique[tech.name].push_back( std::move( pso ) );
     }
 }
@@ -338,23 +326,15 @@ bool FxContainer::Load()
     return true;
 }
 
-uint32_t FxContainer::FindTechnique( const std::string& TechName ) const
+std::vector<GraphicsPSO> FxContainer::FindTechnique(const std::string& TechName) const
 {
     auto it = m_Technique.find(TechName);
     if (it != m_Technique.end())
-        return (uint32_t)(it->second.size());
-    return 0;
+        return it->second;
+    return std::vector<GraphicsPSO>();
 }
 
-void FxContainer::SetPass( GraphicsContext& Context, const std::string& TechName, uint32_t Pass )
+std::vector<FxSampler> FxContainer::GetSampler() const
 {
-    auto it = m_Technique.find(TechName);
-    if (it != m_Technique.end())
-        Context.SetPipelineState( *it->second[Pass] );
-}
-
-void FxContainer::SetSampler( GraphicsContext& Context )
-{
-    for (auto& sampler : m_Sampler)
-        Context.SetDynamicSampler( sampler.slot, sampler.handle, { kBindVertex, kBindPixel, kBindGeometry } );
+    return m_Sampler;
 }
