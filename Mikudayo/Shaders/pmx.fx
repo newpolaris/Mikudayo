@@ -105,7 +105,7 @@ PixelShaderInput vsBasic(VertexInput input)
 
 PixelShaderInput vsOutline(VertexInput input)
 {
-    const float outline = 0.05f;
+    const float outline = 0.01f;
     input.position.xzy += input.normal * outline;
     return vsBasic(input);
 }
@@ -223,15 +223,6 @@ technique11 t0 {
 		SetVertexShader( vs_main );
 		SetPixelShader( ps_main );
 	}
-    /*
-    pass p1 {
-		SetDepthStencilState( DepthTestOn, 0 );
-		SetRasterizerState( RasterOutline );
-
-		SetVertexShader( vs_outline );
-		SetPixelShader( ps_outline );
-    }
-    */
 }
 
 technique11 shadow_cast {
@@ -243,4 +234,14 @@ technique11 shadow_cast {
 		SetVertexShader( vs_main );
 		SetPixelShader( ps_shadow );
 	}
+}
+
+technique11 outline {
+    pass p1 {
+		SetDepthStencilState( DepthTestOn, 0 );
+		SetRasterizerState( RasterOutline );
+
+		SetVertexShader( vs_outline );
+		SetPixelShader( ps_outline );
+    }
 }

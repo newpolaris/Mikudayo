@@ -79,8 +79,15 @@ bool PmxModel::GenerateResource( void )
             material.CB.bUseToon = TRUE;
         if (material.Textures[kTextureDiffuse])
             material.CB.bUseTexture = TRUE;
-        material.EdgeSize = material.EdgeSize;
-        material.EdgeColor = Color( Vector4( material.EdgeColor ) ).FromSRGB();
+
+        auto techniques = FxManager::GetTechniques( material.FxName );
+        if (techniques)
+        {
+            material.m_TechniqueColor = techniques->RequestTechnique("t0", InputDescriptor);
+            material.m_TechniqueShadow = techniques->RequestTechnique("shadow_cast", InputDescriptor);
+            if (material.bOutline)
+                material.m_TechniqueOutline = techniques->RequestTechnique("outline", InputDescriptor);
+        }
 	}
     return true;
 }
@@ -143,12 +150,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 		Material mat = {};
         mat.Name = material.Name;
-        auto techniques = FxManager::GetTechniques("pmx");
-        if (techniques)
-        {
-            mat.m_TechniqueColor = techniques->RequestTechnique("t0", InputDescriptor);
-            mat.m_TechniqueShadow = techniques->RequestTechnique("shadow_cast", InputDescriptor);
-        }
+        mat.FxName = "pmx";
         mat.TexturePathes.resize(kTextureDefaultCount);
         if (material.DiffuseTexureIndex >= 0)
             mat.TexturePathes[kTextureDiffuse] = { true, pmx.m_Textures[material.DiffuseTexureIndex] };
@@ -162,6 +164,9 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
             ToonName = pmx.m_Textures[material.Toon];
         if (!ToonName.empty())
             mat.TexturePathes[kTextureToon] = { true, ToonName };
+
+        mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
+        mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
 
         MaterialCB cb = {};
 		cb.Diffuse = material.Diffuse;
@@ -265,12 +270,8 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
         auto index = m_MaterialIndex[matName];
         ASSERT(index < m_Materials.size());
         auto& mat = m_Materials[index];
-        auto techniques = FxManager::GetTechniques( Data.Name );
-        if (techniques)
-        {
-            mat.m_TechniqueColor = techniques->RequestTechnique("t0", InputDescriptor);
-            mat.m_TechniqueShadow = techniques->RequestTechnique("shadow_cast", InputDescriptor);
-        }
+        mat.FxName = Data.Name;
+
         for (auto& texture : Data.Textures)
         {
             ASSERT(mat.TexturePathes.size() < texture.Slot, "Slot alread used");

@@ -109,18 +109,20 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& 
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
 
-	for (auto& mesh : m_Model.m_Mesh)
-	{
+    for (auto& mesh : m_Model.m_Mesh)
+    {
         auto& material = m_Model.m_Materials[mesh.MaterialIndex];
-        if (!material.SetTexture( gfxContext ))
+        if (!material.SetTexture(gfxContext))
             continue;
-        std::function<void(GraphicsContext&)> Call = [&](GraphicsContext& gfxContext){
+        std::function<void(GraphicsContext&)> Call = [&](GraphicsContext& gfxContext) {
             gfxContext.SetDynamicConstantBufferView(3, sizeof(material.CB), &material.CB, { kBindPixel });
             gfxContext.DrawIndexed(mesh.IndexCount, mesh.IndexOffset, 0);
         };
         if (material.m_TechniqueColor)
             material.m_TechniqueColor->Render(gfxContext, Call);
-	}
+        if (material.m_TechniqueOutline)
+            material.m_TechniqueOutline->Render(gfxContext, Call);
+    }
 }
 
 bool PmxInstant::Context::LoadModel()

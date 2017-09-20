@@ -57,12 +57,14 @@ public:
     struct Material
     {
         std::wstring Name;
+        std::string FxName;
         MaterialCB CB;
-        float EdgeSize;
-        Color EdgeColor;
+        bool bOutline = false;
+        bool bCastShadowMap = false;
         std::vector<TexturePath> TexturePathes;
         std::vector<const ManagedTexture*> Textures;
         std::shared_ptr<FxTechnique> m_TechniqueColor;
+        std::shared_ptr<FxTechnique> m_TechniqueOutline;
         std::shared_ptr<FxTechnique> m_TechniqueShadow;
         bool SetTexture( GraphicsContext& gfxContext ) const;
     };
