@@ -17,6 +17,7 @@
 #include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
 #include "ModelAssimp.h"
+#include "TaskManager.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -89,6 +90,7 @@ BoolVar s_bDrawBone( "Application/Model/Draw Bone", false );
 
 void Mikudayo::Startup( void )
 {
+    TaskManager::Initialize();
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
     PrimitiveUtility::Initialize();
@@ -171,6 +173,7 @@ void Mikudayo::Cleanup( void )
     m_Primitives.clear();
     Physics::Shutdown();
     Lighting::Shutdown();
+    TaskManager::Shutdown();
 }
 
 void Mikudayo::Update( float deltaT )

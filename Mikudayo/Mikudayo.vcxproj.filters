@@ -141,6 +141,9 @@
     <ClCompile Include="ForwardLighting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TaskManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -276,6 +279,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ForwardLighting.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
