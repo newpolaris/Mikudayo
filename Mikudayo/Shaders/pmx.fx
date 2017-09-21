@@ -114,7 +114,7 @@ float4 vsOutline(VertexInput input) : SV_POSITION
     float3 pos = BoneSkinning( input.position, input.boneWeight, input.boneID );
     float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
     matrix toView = mul(view, model);
-    float3 posVS = mul(toView, float4(pos, 1));
+    float4 posVS = mul(toView, float4(pos, 1));
     float scale = length(posVS.xyz) / 1000 * edgeFactor;
     pos = pos + normal * EdgeSize * input.edgeScale * scale;
     matrix viewToClip = mul(projection, toView);

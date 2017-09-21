@@ -63,13 +63,132 @@ bool PmxModel::Load( const ModelInfo& Info )
     return true;
 }
 
+bool PmxModel::GenerateOutline( void )
+{
+    struct OLineTri
+    {
+        OLineTri(uint32_t a0 = 0, uint32_t a1 = 0, uint32_t a2 = 0)
+        {
+            vidx[0] = a0;
+            vidx[1] = a1;
+            vidx[2] = a2;
+            edge[0] = edge[1] = edge[2] = false;
+            adj_vidx[0] = adj_vidx[1] = adj_vidx[2] = 0;
+        }
+        uint32_t vidx[3];
+        bool edge[3];//辺　0-1 1-2 2-0の輪郭線登録済み
+        uint32_t adj_vidx[3];//隣接ポリゴンの頂点　シャドウボリューム用
+    };
+
+    // Generate Outline Geometry
+    // 共有辺の検索、輪郭線用indexの作成
+    std::vector<uint32_t> line_index;
+    {
+        std::vector<OLineTri> triangle;
+
+        //頂点を含むポリゴンのリスト　共有辺の検索高速化
+        std::map<uint32_t, std::vector<uint32_t>> vidxtri;
+
+        triangle.reserve(m_Indices.size() / 3);
+        for (uint32_t ii = 0; ii < m_Indices.size(); ii += 3) {
+            // ポリゴンリスト作成
+            triangle.push_back(OLineTri(m_Indices[ii], m_Indices[ii + 1], m_Indices[ii + 2]));
+        }
+
+        for (uint32_t ii = 0; ii < m_Indices.size(); ++ii) {
+            uint32_t tri_idx = ii / 3;
+
+            //頂点が構成するポリゴンindexリスト作成
+            std::map<uint32_t, std::vector<uint32_t>>::iterator it;
+            it = vidxtri.find(m_Indices[ii]);
+            if (it == vidxtri.end()) {
+                std::vector<uint32_t> tri;
+                tri.reserve(2);
+                tri.push_back(tri_idx);
+                vidxtri.insert(std::pair<uint32_t, std::vector<uint32_t>>(m_Indices[ii], tri));
+            }
+            else {
+                uint32_t i = 0;
+                for (i = 0; i < it->second.size(); ++i) {
+                    if (it->second[i] == tri_idx)
+                        break;//すでに追加済み
+                }
+                if (i == it->second.size()) {
+                    // 新規追加
+                    it->second.push_back(tri_idx);
+                }
+            }
+        }
+
+        uint32_t ti = 0;
+        for (auto& tri0 : triangle) {
+            for (uint32_t i = 0; i < 3; ++i) {
+                if (tri0.edge[i])continue;//済
+                uint32_t vidx0 = tri0.vidx[i];
+                uint32_t vidx1 = tri0.vidx[(i + 1) % 3];
+                uint32_t vidx2 = tri0.vidx[(i + 2) % 3];
+
+                // 辺vidx0-vidx1を共有しているポリゴンの検索
+                bool find_edge = false;
+                std::map<uint32_t, std::vector<uint32_t>>::iterator it;
+                it = vidxtri.find(vidx0);
+                if (it != vidxtri.end()) {
+                    for (auto& tidx : it->second) {
+                        if (tidx == ti)continue;//自分
+                        OLineTri& tri1 = triangle[tidx];
+                        //共有辺は逆回りなのでi0とi1が逆
+                        uint32_t i1;
+                        for (i1 = 0; i1 < 3; ++i1) {
+                            if (tri1.vidx[i1] == vidx0)
+                                break;
+                        }
+                        if (i1 == 3)continue;//ありえんけど
+                        uint32_t i0 = (i1 + 2) % 3; //(i-1)%3だけど符号なしなので(i-1+3)%3
+                        if (tri1.vidx[i0] != vidx1)
+                            continue;//違う
+
+                        if (tri1.edge[i0])continue;//済
+                        uint32_t i2 = (i1 + 1) % 3;
+
+                        line_index.push_back(vidx2);
+                        line_index.push_back(vidx0);
+                        line_index.push_back(vidx1);
+                        line_index.push_back(tri1.vidx[i2]);
+                        tri1.edge[i0] = true;
+                        find_edge = true;
+                        break;
+                    }
+                }
+                if (!find_edge) {
+                    //独立した辺
+                    line_index.push_back(vidx2);
+                    line_index.push_back(vidx0);
+                    line_index.push_back(vidx1);
+                    line_index.push_back(vidx2);
+                }
+                tri0.edge[i] = true;
+            }
+            ++ti;
+        }
+    }
+
+    m_LineCount = line_index.size();
+	m_LineBuffer.Create( m_Name + L"_LineBuf", 
+        static_cast<uint32_t>(line_index.size()),
+        sizeof( line_index[0] ), line_index.data() );
+
+    return true;
+}
+
 bool PmxModel::GenerateResource( void )
 {
-	m_IndexBuffer.Create( m_Name + L"_IndexBuf", static_cast<uint32_t>(m_Indices.size()),
+    GenerateOutline();
+
+    m_IndexBuffer.Create( m_Name + L"_IndexBuf", static_cast<uint32_t>(m_Indices.size()),
         sizeof( m_Indices[0] ), m_Indices.data() );
 
-	for (auto& material : m_Materials)
-	{
+    for (auto& material : m_Materials)
+    {
         for (auto i = 0; i < material.TexturePathes.size(); i++)
         {
             auto& tex = material.TexturePathes[i];
@@ -83,12 +202,16 @@ bool PmxModel::GenerateResource( void )
         auto techniques = FxManager::GetTechniques( material.FxName );
         if (techniques)
         {
-            material.m_TechniqueColor = techniques->RequestTechnique("t0", InputDescriptor);
-            material.m_TechniqueShadow = techniques->RequestTechnique("shadow_cast", InputDescriptor);
+            material.m_TechniqueColor = techniques->RequestTechnique( "t0", InputDescriptor );
+            material.m_TechniqueShadow = techniques->RequestTechnique( "shadow_cast", InputDescriptor );
             if (material.bOutline)
-                material.m_TechniqueOutline = techniques->RequestTechnique("outline", InputDescriptor);
+                material.m_TechniqueOutline = techniques->RequestTechnique( "outline", InputDescriptor );
         }
-	}
+    }
+
+    auto techniques = FxManager::GetTechniques( "outline" );
+    if (techniques)
+        m_TechniqueOutline = techniques->RequestTechnique( "t0", InputDescriptor );
     return true;
 }
 
@@ -233,6 +356,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         if (parentIndex >= 0)
             m_Pose[i] = m_Pose[parentIndex] * m_Pose[i];
     }
+    
     return true;
 }
 

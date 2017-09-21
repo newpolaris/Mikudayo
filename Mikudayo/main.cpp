@@ -94,7 +94,7 @@ void Mikudayo::Startup( void )
 
     std::vector<FxInfo> shaders = {
         { "pmx", L"Shaders/pmx.fx" },
-        // { "outline", L"Shaders/mkdy_fur.fx" },
+        { "outline", L"Shaders/outline.fx" },
         // { "mkdy_fur", L"Shaders/mkdy_fur.fx" },
         // { "outline", L"data/shader/outline.fx" },
     };
@@ -265,6 +265,8 @@ void Mikudayo::RenderScene( void )
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         m_Model->DrawColor( gfxContext );
+        D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
+        gfxContext.SetDynamicSamplers( 0, _countof( Sampler ), Sampler, { kBindPixel } );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

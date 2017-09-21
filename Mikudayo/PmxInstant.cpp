@@ -37,6 +37,7 @@ struct PmxInstant::Context final
     ~Context();
     void Clear( void );
     void Draw( GraphicsContext& gfxContext, const std::string& technique );
+    void DrawOutline( GraphicsContext& gfxContext );
 
     bool LoadModel();
     bool LoadMotion( const std::wstring& FilePath );
@@ -120,9 +121,30 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, const std::string& 
         };
         if (material.m_TechniqueColor)
             material.m_TechniqueColor->Render(gfxContext, Call);
-        if (material.m_TechniqueOutline)
-            material.m_TechniqueOutline->Render(gfxContext, Call);
     }
+    DrawOutline( gfxContext );
+}
+
+void PmxInstant::Context::DrawOutline( GraphicsContext& gfxContext )
+{
+    std::vector<Matrix4> SkinData;
+    SkinData.reserve( m_Skinning.size() );
+    for (auto& orth : m_Skinning)
+        SkinData.emplace_back( orth );
+    auto numByte = GetVectorSize(SkinData);
+
+    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex, kBindGeometry } );
+	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
+	gfxContext.SetIndexBuffer( m_Model.m_LineBuffer.IndexBufferView() );
+
+    std::function<void(GraphicsContext&)> Call = [&](GraphicsContext& gfxContext) {
+        gfxContext.SetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ );
+        gfxContext.DrawIndexed(m_Model.m_LineCount, 0, 0);
+    };
+    if (m_Model.m_TechniqueOutline)
+        m_Model.m_TechniqueOutline->Render(gfxContext, Call);
 }
 
 bool PmxInstant::Context::LoadModel()

@@ -106,6 +106,10 @@ public:
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;
 
+    uint32_t m_LineCount;
+    IndexBuffer m_LineBuffer;
+    std::shared_ptr<FxTechnique> m_TechniqueOutline;
+
     IndexBuffer m_IndexBuffer;
 
     PmxModel();
@@ -115,6 +119,7 @@ public:
 
 protected:
 
+    bool GenerateOutline( void );
     bool GenerateResource( void );
     bool LoadFromFile( const std::wstring& FilePath );
     const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );
