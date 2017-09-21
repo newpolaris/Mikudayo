@@ -1,5 +1,7 @@
 #include "Skinning.hlsli"
 
+static const float edgeFactor = 1.5;
+
 struct Material
 {
     float3 diffuse;
@@ -109,10 +111,14 @@ PixelShaderInput vsBasic(VertexInput input)
 
 float4 vsOutline(VertexInput input) : SV_POSITION
 {
-    float3 pos = input.position + input.normal * EdgeSize * 0.01;
-    matrix clipToProj = mul(projection, mul(view, model));
-    pos = BoneSkinning( pos, input.boneWeight, input.boneID );
-    return mul(clipToProj, float4(pos, 1.0));
+    float3 pos = BoneSkinning( input.position, input.boneWeight, input.boneID );
+    float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
+    matrix toView = mul(view, model);
+    float3 posVS = mul(toView, float4(pos, 1));
+    float scale = length(posVS.xyz) / 1000 * edgeFactor;
+    pos = pos + normal * EdgeSize * input.edgeScale * scale;
+    matrix viewToClip = mul(projection, toView);
+    return mul(viewToClip, float4(pos, 1.0));
 }
 
 // A pass-through function for the (interpolated) color data.
