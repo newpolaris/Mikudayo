@@ -2,6 +2,7 @@
 #include "BaseSoftBody.h"
 #include "Bullet/Physics.h"
 #include "SoftBodyManager.h"
+#include "TaskManager.h"
 
 using namespace Physics;
 
@@ -137,8 +138,7 @@ void BaseSoftBody::GetSoftBodySkinning(
     Indices.resize(Position.size());
     Weights.resize(Position.size());
 
-    for (uint32_t p = 0; p < Position.size(); p++ )
-    {
+    TaskManager::parallel_for(0, Position.size(), [&](size_t p) {
         Pair dist[2] = { {0, FLT_MAX}, {0, FLT_MAX} };
         for (uint32_t i = 0; i < numFace; i++)
         {
@@ -152,7 +152,8 @@ void BaseSoftBody::GetSoftBodySkinning(
         float w0 = 1/weightSum;
         Indices[p] = { dist[0].ind, dist[1].ind, 0, 0 };
         Weights[p] = { w0, 1 - w0, 0, 0 };
-    }
+
+    });
 }
 
 std::shared_ptr<btSoftBody> BaseSoftBody::Create( const SoftBodyGeometry& Geometry )

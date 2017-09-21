@@ -72,6 +72,9 @@
     <ClCompile Include="Bullet\BaseSoftBody.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TaskManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -130,6 +133,9 @@
     </ClInclude>
     <ClInclude Include="Bullet\BaseSoftBody.h">
       <Filter>Source Files\Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskManager.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

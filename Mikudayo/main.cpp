@@ -8,6 +8,7 @@
 #include "ModelManager.h"
 #include "FxManager.h"
 #include "PmxInstant.h"
+#include "TaskManager.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -68,6 +69,7 @@ NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f
 
 void Mikudayo::Startup( void )
 {
+    TaskManager::Initialize();
     TextureManager::Initialize( L"Textures" );
     Physics::Initialize();
     SoftBodyManager::Initialize();
@@ -157,6 +159,7 @@ void Mikudayo::Cleanup( void )
     m_Primitives.clear();
     Physics::Shutdown();
     SoftBodyManager::Shutdown();
+    TaskManager::Shutdown();
 }
 
 void Mikudayo::Update( float deltaT )

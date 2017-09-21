@@ -116,6 +116,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TaskManager.cpp" />
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +138,7 @@
     <ClInclude Include="PmxModel.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TaskManager.h" />
     <ClInclude Include="Vmd.h" />
   </ItemGroup>
   <ItemGroup>
