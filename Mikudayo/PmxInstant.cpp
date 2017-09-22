@@ -156,7 +156,7 @@ bool PmxInstant::Context::LoadModel()
     m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
 
     m_ColorPSO = m_DepthPSO;
-    m_ColorPSO.SetBlendState( BlendPreMultiplied );
+    m_ColorPSO.SetBlendState( BlendTraditional );
     m_ColorPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
     m_ColorPSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
     m_ColorPSO.Finalize();
