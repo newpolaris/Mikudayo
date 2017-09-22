@@ -69,6 +69,9 @@
     <ClCompile Include="PmxInstant.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DeferredLighting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -125,6 +128,9 @@
     <ClInclude Include="PmxInstant.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="DeferredLighting.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">
@@ -166,5 +172,8 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="Shaders\CommonInclude.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

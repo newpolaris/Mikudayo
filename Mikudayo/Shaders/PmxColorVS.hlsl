@@ -1,3 +1,4 @@
+#include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
 cbuffer VSConstants : register(b0)

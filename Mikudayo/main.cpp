@@ -6,6 +6,7 @@
 #include "Bullet/PrimitiveBatch.h"
 #include "SoftBodyManager.h"
 #include "ModelManager.h"
+#include "DeferredLighting.h"
 
 #include "PmxInstant.h"
 
@@ -73,6 +74,8 @@ void Mikudayo::Startup( void )
     Physics::Initialize();
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
+    Lighting::Initialize();
+    Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 50, 100 ) );
 
     const Vector3 eye = Vector3(0.0f, 18.0f, -15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
@@ -135,6 +138,7 @@ void Mikudayo::Cleanup( void )
         model->Destroy();
     m_Primitives.clear();
     Physics::Shutdown();
+    Lighting::Shutdown();
 }
 
 void Mikudayo::Update( float deltaT )
@@ -162,6 +166,8 @@ void Mikudayo::Update( float deltaT )
 	m_MainScissor.top = 0;
 	m_MainScissor.right = (LONG)g_SceneColorBuffer.GetWidth();
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
+
+    Lighting::UpdateLights(GetCamera());
 
     if (!EngineProfiling::IsPaused())
     {
@@ -228,7 +234,9 @@ void Mikudayo::RenderScene( void )
 
     psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
+
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
+    gfxContext.SetDynamicDescriptor( 5, Lighting::m_LightBuffer.GetSRV(), { kBindPixel }  );
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );

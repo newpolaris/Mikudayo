@@ -100,6 +100,7 @@
     <ClCompile Include="Bullet\Physics.cpp" />
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
+    <ClCompile Include="DeferredLighting.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
@@ -125,6 +126,7 @@
     <ClInclude Include="Bullet\Physics.h" />
     <ClInclude Include="Bullet\PhysicsPrimitive.h" />
     <ClInclude Include="Bullet\PrimitiveBatch.h" />
+    <ClInclude Include="DeferredLighting.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="Model.h" />
@@ -181,6 +183,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Shaders\CommonInclude.hlsli" />
     <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\Shadow.hlsli" />
     <None Include="Shaders\ShadowDefine.hlsli" />
@@ -212,6 +215,7 @@
     <Import Project="packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets" Condition="Exists('packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets')" />
     <Import Project="packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets" Condition="Exists('packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets')" />
     <Import Project="packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets" Condition="Exists('packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets')" />
+    <Import Project="packages\glm.0.9.8.4\build\native\glm.targets" Condition="Exists('packages\glm.0.9.8.4\build\native\glm.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -224,5 +228,6 @@
     <Error Condition="!Exists('packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets'))" />
     <Error Condition="!Exists('packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets'))" />
     <Error Condition="!Exists('packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets'))" />
+    <Error Condition="!Exists('packages\glm.0.9.8.4\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\glm.0.9.8.4\build\native\glm.targets'))" />
   </Target>
 </Project>
