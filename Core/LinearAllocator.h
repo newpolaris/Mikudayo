@@ -31,6 +31,7 @@
 // Constant blocks must be multiples of 16 constants @ 16 bytes each
 #define DEFAULT_ALIGN 256
 
+// Various types of allocations may contain NULL pointers.  Check before dereferencing if you are unsure.
 struct DynAlloc
 {
 	DynAlloc( GpuResource& BaseResource, size_t ThisOffset, size_t ThisSize )

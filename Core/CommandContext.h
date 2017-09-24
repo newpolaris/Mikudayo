@@ -7,6 +7,7 @@
 #include "Mapping.h"
 #include "ConstantBuffer.h"
 #include "LinearAllocator.h"
+#include <d3d12.h>
 
 class ColorBuffer;
 class DepthBuffer;
@@ -107,6 +108,15 @@ public:
 
 	static CommandContext& Begin( ContextType Type, const std::wstring ID = L"" );
 
+    void WriteBuffer( GpuResource& Dest, size_t DestOffset, const void* Data, size_t NumBytes );
+    void FillBuffer( GpuResource& Dest, size_t DestOffset, DWParam Value, size_t NumBytes );
+
+    void TransitionResource(GpuResource& Resource, D3D12_RESOURCE_STATES NewState, bool FlushImmediate = false);
+    void BeginResourceTransition(GpuResource& Resource, D3D12_RESOURCE_STATES NewState, bool FlushImmediate = false);
+    void InsertUAVBarrier(GpuResource& Resource, bool FlushImmediate = false);
+    void InsertAliasBarrier(GpuResource& Before, GpuResource& After, bool FlushImmediate = false);
+    inline void FlushResourceBarriers(void);
+
 	// Flush existing commands to the GPU but keep the context alive
 	uint64_t Flush( bool WaitForCompletion = false );
 
@@ -151,7 +161,7 @@ public:
     void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle, BindList Binds );
     void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[], BindList Binds );
 
-	void UpdateBuffer( D3D11_BUFFER_HANDLE Handle, void const* Data, size_t Size );
+	void WriteResource( ID3D11Resource* Handle, void const* Data, size_t Size );
 
 protected:
 	CommandListManager* m_OwningManager;
@@ -186,6 +196,9 @@ protected:
 public:
     static ComputeContext& Begin(const std::wstring& ID = L"");
 
+    void ClearUAV( GpuBuffer& Target );
+    void ClearUAV( ColorBuffer& Target );
+
 	void SetPipelineState( ComputePSO& PSO );
 
 	void SetConstants( UINT Slot, UINT NumConstants, const void* pConstants );
@@ -201,6 +214,7 @@ public:
 	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[] );
 	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_UAV_HANDLE Handles[], const UINT *pUAVInitialCounts = nullptr );
     void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle );
+    void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[] );
 
     void Dispatch( size_t GroupCountX = 1, size_t GroupCountY = 1, size_t GroupCountZ = 1 );
     void Dispatch1D( size_t ThreadCountX, size_t GroupSizeX = 64);
@@ -225,6 +239,8 @@ public:
 		return CommandContext::Begin(ContextType::kGraphicsContext, ID).GetGraphicsContext();
 	}
 
+    void ClearUAV( GpuBuffer& Target );
+    void ClearUAV( ColorBuffer& Target );
 	void ClearColor( ColorBuffer& Target );
 	void ClearDepth( DepthBuffer& Target );
 	void ClearDepth( DepthBuffer& Target, uint32_t Slice );

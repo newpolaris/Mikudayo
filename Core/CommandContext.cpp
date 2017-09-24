@@ -100,10 +100,49 @@ CommandContext& CommandContext::Begin( ContextType Type, const std::wstring ID )
 	return *NewContext;
 }
 
+void CommandContext::WriteBuffer( GpuResource& Dest, size_t DestOffset, const void* BufferData, size_t NumBytes )
+{
+    ASSERT(BufferData != nullptr && Math::IsAligned(BufferData, 16));
+    DynAlloc TempSpace = m_CpuLinearAllocator.Allocate( NumBytes, 512 );
+    SIMDMemCopy(TempSpace.DataPtr, BufferData, Math::DivideByMultiple(NumBytes, 16));
+    CopyBufferRegion(Dest, DestOffset, TempSpace.Buffer, TempSpace.FirstConstant*16, NumBytes );
+}
+
+
+void CommandContext::FillBuffer( GpuResource& Dest, size_t DestOffset, DWParam Value, size_t NumBytes )
+{
+    DynAlloc TempSpace = m_CpuLinearAllocator.Allocate( NumBytes, 512 );
+    __m128 VectorValue = _mm_set1_ps(Value.Float);
+    SIMDMemFill(TempSpace.DataPtr, VectorValue, Math::DivideByMultiple(NumBytes, 16));
+    CopyBufferRegion(Dest, DestOffset, TempSpace.Buffer, TempSpace.FirstConstant*16, NumBytes );
+}
+
+void CommandContext::TransitionResource(GpuResource& Resource, D3D12_RESOURCE_STATES NewState, bool FlushImmediate)
+{
+    (Resource); (NewState); (FlushImmediate);
+}
+
 ComputeContext& ComputeContext::Begin( const std::wstring& ID )
 {
     CommandContext& NewContext = CommandContext::Begin( kComputeContext, ID );
     return NewContext.GetComputeContext();
+}
+
+void ComputeContext::ClearUAV(GpuBuffer& Target)
+{
+    // After binding a UAV, we can get a GPU handle that is required to clear it as a UAV (because it essentially runs
+    // a shader to set all of the values).
+    const UINT ClearColor[4] = {};
+    m_CommandList->ClearUnorderedAccessViewUint(Target.GetUAV(), ClearColor);
+}
+
+void ComputeContext::ClearUAV(ColorBuffer& Target)
+{
+    // After binding a UAV, we can get a GPU handle that is required to clear it as a UAV (because it essentially runs
+    // a shader to set all of the values).
+    //TODO: My Nvidia card is not clearing UAVs with either Float or Uint variants.
+    const float* ClearColor = Target.GetClearColor().GetPtr();
+    m_CommandList->ClearUnorderedAccessViewFloat(Target.GetUAV(), ClearColor);
 }
 
 uint64_t CommandContext::Flush(bool WaitForCompletion)
@@ -237,6 +276,22 @@ void CommandContext::CopyBuffer( GpuResource& Dest, GpuResource& Src )
     m_CommandList->CopyResource( Dest.GetResource(), Src.GetResource() );
 }
 
+// DestOffset is in byte
+void CommandContext::CopyBufferRegion(GpuResource& Dest, size_t DestOffset, GpuResource& Src, size_t SrcOffset, size_t NumBytes)
+{
+    ASSERT(Dest.GetResource());
+    ASSERT(Src.GetResource());
+
+    D3D11_BOX SrcBox;
+    SrcBox.left = (UINT)SrcOffset;
+    SrcBox.right = (UINT)(SrcOffset + NumBytes);
+    SrcBox.top = 0;
+    SrcBox.bottom = 1;
+    SrcBox.front = 0;
+    SrcBox.back = 1;
+    m_CommandList->CopySubresourceRegion(Dest.GetResource(), 0, (UINT)DestOffset, 0, 0, Src.GetResource(), 0, &SrcBox);
+}
+
 void CommandContext::CopySubresource( GpuResource& Dest, UINT DestSubIndex, GpuResource& Src, UINT SrcSubIndex )
 {
     m_CommandList->CopySubresourceRegion( Dest.GetResource(), DestSubIndex, 0, 0, 0, Src.GetResource(), SrcSubIndex, nullptr );
@@ -327,6 +382,11 @@ void ComputeContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE 
 	m_CommandList->CSSetSamplers( Offset, 1, &Handle );
 }
 
+void ComputeContext::SetDynamicSamplers(UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[])
+{
+    m_CommandList->CSSetSamplers(Offset, Count, Handles);
+}
+
 void ComputeContext::SetConstantBuffers( UINT Offset, UINT Count, const D3D11_BUFFER_HANDLE Handle[] )
 {
 	m_CommandList->CSSetConstantBuffers( Offset, Count, Handle );
@@ -349,7 +409,7 @@ void CommandContext::SetConstantBuffers( UINT Offset, UINT Count,
 	}
 }
 
-void CommandContext::UpdateBuffer( D3D11_BUFFER_HANDLE Handle, const void* Data, size_t Size )
+void CommandContext::WriteResource( ID3D11Resource* Handle, const void* Data, size_t Size )
 {
 	D3D11_MAPPED_SUBRESOURCE MapData = {};
 	ASSERT_SUCCEEDED( m_CommandList->Map(
