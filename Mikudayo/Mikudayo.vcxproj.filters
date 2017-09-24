@@ -157,6 +157,9 @@
     <FxCompile Include="Shaders\BulletPrimitiveVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\GeometryPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Shadow.hlsli">

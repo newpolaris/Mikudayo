@@ -11,11 +11,12 @@
 // Author:  James Stanard 
 //
 
-#include "ShaderUtility.hlsli"
+#include "ToneMappingUtility.hlsli"
 #include "PostEffectsRS.hlsli"
 #include "PixelPacking.hlsli"
 
-Texture2D<float3> Bloom : register( t0 );
+StructuredBuffer<float> Exposure : register(t0);
+Texture2D<float3> Bloom : register(t1);
 #if SUPPORT_TYPED_UAV_LOADS
 RWTexture2D<float3> SrcColor : register(u0);
 #else
@@ -37,13 +38,11 @@ void main( uint3 DTid : SV_DispatchThreadID )
 {
     float2 TexCoord = (DTid.xy + 0.5) * g_RcpBufferDim;
 
-    // Load LDR and bloom
-    float3 ldrColor = SrcColor[DTid.xy];
+    // Load HDR and bloom
+    float3 hdrColor = SrcColor[DTid.xy] + g_BloomStrength * Bloom.SampleLevel(LinearSampler, TexCoord, 0);
 
-    ldrColor += g_BloomStrength * Bloom.SampleLevel(LinearSampler, TexCoord, 0);
-
-    // Load LDR value from HDR buffer
-    float luma = RGBToLuminance( ldrColor );
+    // Tone map to LDR and convert to greyscale
+    float luma = ToneMapLuma(RGBToLuminance(hdrColor) * Exposure[0]);
 
     float logLuma = LinearToLogLuminance(luma);
 

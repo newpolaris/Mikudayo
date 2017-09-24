@@ -47,7 +47,7 @@ private:
     btSoftBody* m_SoftBody;
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
 
-    std::shared_ptr<PmxInstant> m_Model;
+    std::shared_ptr<PmxInstant> m_Model, m_Stage;
 };
 
 CREATE_APPLICATION( Mikudayo )
@@ -75,16 +75,16 @@ void Mikudayo::Startup( void )
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
     Lighting::Initialize();
-    Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 50, 100 ) );
+    Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 100, 100 ) );
 
-    const Vector3 eye = Vector3(0.0f, 18.0f, -15.0f);
+    const Vector3 eye = Vector3(0.0f, 18.0f, 15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
-        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( kZero ) },
+        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
         { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
@@ -105,6 +105,17 @@ void Mikudayo::Startup( void )
         m_Model->LoadMotion( L"Motion/nekomimi_lat.vmd" );
     }
 
+    ModelInfo stage;
+    stage.Type = kModelPMX;
+    stage.Name = L"halloween";
+    // stage.File = L"Model/HalloweenStage/halloween.Pmx";
+    stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+    if (ModelManager::Load( stage ))
+    {
+        const auto& model = ModelManager::GetModel( stage.Name );
+        m_Stage = std::make_shared<PmxInstant>(model);
+        m_Stage->LoadModel();
+    }
     /*
     LOAD_MODEL "mikudayo";
         MD_PMX_PATH "data\mikudayo\mikudayo-3_4.pmx";
@@ -176,7 +187,8 @@ void Mikudayo::Update( float deltaT )
             primitive->Update();
         m_Frame = m_Frame + deltaT * 30.f;
     }
-    m_Model->Update( m_Frame );
+    m_Model->Update(m_Frame);
+    m_Stage->Update(m_Frame);
 
     auto GetRayTo = [&]( float x, float y) {
         auto& invView = m_Camera.GetCameraToWorld();
@@ -243,12 +255,13 @@ void Mikudayo::RenderScene( void )
 
     gfxContext.ClearColor( g_SceneColorBuffer );
     gfxContext.ClearDepth( g_SceneDepthBuffer );
+    gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
     {
         ScopedTimer _prof( L"Render Color", gfxContext );
 
-        gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         m_Model->DrawColor( gfxContext );
+        m_Stage->DrawColor( gfxContext );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

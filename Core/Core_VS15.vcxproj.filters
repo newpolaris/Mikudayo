@@ -465,6 +465,9 @@
       <Filter>Shaders\Shadow</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="Shaders\ToneMappingUtility.hlsli">
+      <Filter>Shaders\HDR</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
@@ -569,9 +572,6 @@
     <FxCompile Include="Shaders\FXAAPS.hlsl">
       <Filter>Shaders\FXAA</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\ApplyBloom3CS.hlsl">
-      <Filter>Shaders\HDR</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\DebugTexturePS.hlsl">
       <Filter>Shaders\Misc</Filter>
     </FxCompile>
@@ -580,6 +580,36 @@
     </FxCompile>
     <FxCompile Include="Shaders\PrimitivePS.hlsl">
       <Filter>Shaders\Misc</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ToneMapCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ToneMap2CS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ToneMapHDR2CS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ToneMapHDRCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugLuminanceHdr2CS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugLuminanceHdrCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ApplyBloom3CS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ExtractLumaCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\GenerateHistogramCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AdaptExposureCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

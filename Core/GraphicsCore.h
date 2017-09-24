@@ -26,6 +26,8 @@ namespace Graphics
 {
 	using namespace Microsoft::WRL;
 
+    extern uint32_t g_NativeWidth;
+    extern uint32_t g_NativeHeight;
 	extern uint32_t g_DisplayWidth;
 	extern uint32_t g_DisplayHeight;
 

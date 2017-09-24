@@ -11,5 +11,5 @@
 // Author:  James Stanard 
 //
 
-#define SUPPORT_TYPED_UAV_LOADS 1
-#include "ApplyBloomCS.hlsl"
+#define ENABLE_HDR_DISPLAY_MAPPING 1
+#include "ToneMapCS.hlsl"

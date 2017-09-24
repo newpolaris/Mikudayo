@@ -1,5 +1,6 @@
 #pragma once
 
+class GraphicsContext;
 namespace Math
 {
     class Vector3;
@@ -31,6 +32,7 @@ namespace Lighting
     void CreateRandomLights(const Math::Vector3 minBound, const Math::Vector3 maxBound);
 
     void Initialize( void );
+    void Render( GraphicsContext& gfxContext );
     void Shutdown( void );
     void UpdateLights( const Math::Camera& C );
 }
