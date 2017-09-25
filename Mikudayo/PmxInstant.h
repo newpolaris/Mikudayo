@@ -1,15 +1,17 @@
 #pragma once
 
+#include "SceneNode.h"
+
 class Model;
-class PmxInstant
+class PmxInstant : public SceneNode
 {
 public:
 
     PmxInstant( const Model& model );
-    void DrawColor( GraphicsContext& Context );
+    virtual void DrawColor( GraphicsContext& Context ) override;
     bool LoadModel();
     bool LoadMotion( const std::wstring& motionPath );
-    void Update( float deltaT );
+    virtual void Update( float deltaT ) override;
 
 protected:
 

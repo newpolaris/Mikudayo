@@ -72,6 +72,9 @@
     <ClCompile Include="DeferredLighting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SceneNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -129,6 +132,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="DeferredLighting.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneNode.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

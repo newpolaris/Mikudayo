@@ -110,6 +110,7 @@
     <ClCompile Include="PrimitiveUtility.cpp" />
     <ClCompile Include="Pmx.cpp" />
     <ClCompile Include="PmxModel.cpp" />
+    <ClCompile Include="SceneNode.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -135,6 +136,7 @@
     <ClInclude Include="PrimitiveUtility.h" />
     <ClInclude Include="Pmx.h" />
     <ClInclude Include="PmxModel.h" />
+    <ClInclude Include="SceneNode.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Vmd.h" />

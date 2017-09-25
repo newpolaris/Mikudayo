@@ -352,9 +352,13 @@ bool PmxInstant::LoadMotion( const std::wstring& motionPath )
 void PmxInstant::Update( float deltaT )
 {
     m_Context->Update( deltaT );
+    for ( auto child : m_Children )
+        child->Update( deltaT );
 }
 
 void PmxInstant::DrawColor( GraphicsContext& Context )
 {
     m_Context->Draw( Context );
+    for ( auto child : m_Children )
+        child->DrawColor( Context );
 }

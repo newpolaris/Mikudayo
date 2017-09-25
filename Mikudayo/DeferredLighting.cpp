@@ -122,8 +122,8 @@ void Lighting::Render(GraphicsContext& gfxContext)
         m_SpecularTexture.GetRTV(),
         m_NormalTexture.GetRTV() 
     };
-    gfxContext.SetRenderTargets( _countof(rtvs), rtvs, Graphics::g_SceneDepthBuffer.GetDSV());
-    gfxContext.SetPipelineState(m_GeometryPSO);
+    gfxContext.SetRenderTargets( _countof(rtvs), rtvs, Graphics::g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetPipelineState( m_GeometryPSO );
 
     // gfxContext.SetRenderTargets( _countof(rtvs), rtvs, Graphics::g_SceneDepthBuffer.GetDSV());
     // gfxContext.SetPipelineState(m_GeometryPSO);

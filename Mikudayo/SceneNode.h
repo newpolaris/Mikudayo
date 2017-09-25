@@ -1,15 +1,25 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+
+class GraphicsContext;
 
 class SceneNode : public std::enable_shared_from_this<SceneNode>
 {
 public:
 
     SceneNode();
-    void AddChild(std::shared_ptr<SceneNode> pNode);
-    void Update();
+
+    virtual void AddChild( std::shared_ptr<SceneNode> pNode );
+    virtual void Update( float Delta );
+    virtual void DrawColor( GraphicsContext& Context );
 
 protected:
-    std::vector<SceneNode> m_Child;
+
+    typedef std::vector< std::shared_ptr<SceneNode> > NodeList;
+    typedef std::multimap< std::string, std::shared_ptr<SceneNode> > NodeNameMap;
+
+    NodeList m_Children;
+    NodeNameMap m_ChildrenByName;
 };

@@ -6,7 +6,9 @@
 #include "Bullet/PrimitiveBatch.h"
 #include "SoftBodyManager.h"
 #include "ModelManager.h"
+
 #include "DeferredLighting.h"
+#include "SceneNode.h"
 
 #include "PmxInstant.h"
 
@@ -46,8 +48,7 @@ private:
 
     btSoftBody* m_SoftBody;
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
-
-    std::shared_ptr<PmxInstant> m_Model, m_Stage;
+    std::shared_ptr<SceneNode> m_Scene;
 };
 
 CREATE_APPLICATION( Mikudayo )
@@ -93,6 +94,8 @@ void Mikudayo::Startup( void )
     for (auto& info : primitves)
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 
+    m_Scene = std::make_shared<SceneNode>();
+
     ModelInfo info;
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
@@ -100,45 +103,23 @@ void Mikudayo::Startup( void )
     if (ModelManager::Load( info ))
     {
         const auto& model = ModelManager::GetModel( info.Name );
-        m_Model = std::make_shared<PmxInstant>(model);
-        m_Model->LoadModel();
-        m_Model->LoadMotion( L"Motion/nekomimi_lat.vmd" );
+        auto instant = std::make_shared<PmxInstant>(model);
+        instant->LoadModel();
+        instant->LoadMotion( L"Motion/nekomimi_lat.vmd" );
+        m_Scene->AddChild( instant );
     }
 
     ModelInfo stage;
     stage.Type = kModelPMX;
-    stage.Name = L"halloween";
-    // stage.File = L"Model/HalloweenStage/halloween.Pmx";
+    stage.Name = L"黒白";
     stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
     if (ModelManager::Load( stage ))
     {
         const auto& model = ModelManager::GetModel( stage.Name );
-        m_Stage = std::make_shared<PmxInstant>(model);
-        m_Stage->LoadModel();
+        auto instant = std::make_shared<PmxInstant>(model);
+        instant->LoadModel();
+        m_Scene->AddChild( instant );
     }
-    /*
-    LOAD_MODEL "mikudayo";
-        MD_PMX_PATH "data\mikudayo\mikudayo-3_4.pmx";
-        MD_TEXTURE_PATH "data\mikudayo\";
-        MD_SHADER "mkdy_fur";
-            MDSH_MATERIAL "髪","ツインテールL","ツインテールR","顔","手";
-            MDSH_TEXTURE 3, "a_tex_fur_mkdy-3.tga",  "a_tex_fur_mkdy-3.tga";
-        _MD_SHADER;
-        MD_OUTLINE_FORCE_ON "01";//mat"01"無効
-    _LOAD_MODEL;
-    */
-
-    // Rendering::PmxInstant mikudayo;
-    // mikudayo.LoadFromFile( L"Model/Mikudayo/mikudayo-3_6.pmx" );
-    // m_Mikudayo = std::move(mikudayo);
-
-#if 0
-    auto vertices = m_Mikudayo.GetVertices();
-    auto indices = m_Mikudayo.GetIndices();
-    SoftBodyGeometry Geo { vertices, indices };
-    m_SoftBody = manager.LoadFromGeometry( Geo );
-    m_SoftBody->translate( btVector3( 0, 2, 0 ) );
-#endif
 }
 
 void Mikudayo::Cleanup( void )
@@ -187,8 +168,8 @@ void Mikudayo::Update( float deltaT )
             primitive->Update();
         m_Frame = m_Frame + deltaT * 30.f;
     }
-    m_Model->Update(m_Frame);
-    m_Stage->Update(m_Frame);
+
+    m_Scene->Update( m_Frame );
 
     auto GetRayTo = [&]( float x, float y) {
         auto& invView = m_Camera.GetCameraToWorld();
@@ -260,8 +241,7 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof( L"Render Color", gfxContext );
 
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-        m_Model->DrawColor( gfxContext );
-        m_Stage->DrawColor( gfxContext );
+        m_Scene->DrawColor( gfxContext );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
