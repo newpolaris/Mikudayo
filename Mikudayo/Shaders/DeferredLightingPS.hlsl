@@ -4,6 +4,7 @@ SamplerState linearRepeat : register(s0);
 SamplerState linearClamp : register(s1);
 
 // Per-pixel color data passed through the pixel shader.
+#if 0
 struct PixelShaderInput
 {
 	float4 posHS : SV_POSITION;
@@ -11,6 +12,13 @@ struct PixelShaderInput
 	float3 normalVS : NORMAL;
 	float2 uv : TEXTURE;
 };
+#else
+struct PixelShaderInput
+{
+	float4 posHS : SV_Position;
+	float2 uv : TexCoords0;
+};
+#endif
 
 cbuffer LightIndexBuffer : register(b4)
 {
@@ -25,20 +33,22 @@ Texture2D SpecularTextureVS : register(t1);
 // The normal from the screen space texture.
 Texture2D NormalTextureVS : register(t2);
 // The depth from the screen space texture.
-Texture2D DepthTextureVS : register(t3);
+// Texture2D DepthTextureVS : register(t3);
+Texture2D PositionTextureVS : register(t3);
 
 // Deferred lighting pixel shader.
-#if 1
-[earlydepthstencil]
+#if 0
+// [earlydepthstencil]
 float4 main( PixelShaderInput input ) : SV_Target
 {
     // Everything is in view space.
     float4 eyePos = { 0, 0, 0, 1 };
 
     int2 texCoord = input.posHS.xy;
-    float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
+    // float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
 
-    float4 P = ScreenToView( float4( texCoord, depth, 1.0f ) );
+    // float4 P = ScreenToView( float4( texCoord, depth, 1.0f ) );
+    float4 P = PositionTextureVS.Load( int3(texCoord, 0) );
 
     // View vector
     float4 V = normalize( eyePos - P );
@@ -84,8 +94,8 @@ float4 main( PixelShaderInput input ) : SV_Target
 // Pixel shader to render a texture to the screen.
 float4 main( PixelShaderInput input ) : SV_Target
 {
-    return float4( input.uv, 0, 1 );
-    //return DiffuseTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
-    //return DebugTexture.Sample( LinearRepeatSampler, input.texCoord );
+    // return float4( input.uv, 0, 1 );
+    // return DiffuseTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
+    return SpecularTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
 }
 #endif
