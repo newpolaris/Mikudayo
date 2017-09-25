@@ -1,8 +1,5 @@
 #include "stdafx.h"
 
-#include "VectorMath.h"
-#include "Color.h"
-
 #include <random>
 #pragma warning(push)
 #pragma warning(disable: 4201)
@@ -15,14 +12,29 @@
 #include "PipelineState.h"
 #include "Camera.h"
 #include "GraphicsCore.h"
+#include "SceneNode.h"
+#include "VectorMath.h"
+#include "Color.h"
 
 #include "CompiledShaders/PmxColorVS.h"
-// #include "CompiledShaders/ScreenQuadVS.h"
+#include "CompiledShaders/DeferredGBufferPS.h"
+#include "CompiledShaders/DeferredLightingPS.h"
 
 using namespace Math;
 
 namespace Lighting
 {
+    struct LightData
+    {
+        Vector4 PositionWS;
+        Vector4 PositionVS;
+        Vector3 DirectionWS;
+        Vector3 DirectionVS;
+        Color Color;
+        float Range;
+        uint32_t Type;
+        float SpotlightAngle;
+    };
     LightData m_LightData[MaxLights];
 
     StructuredBuffer m_LightBuffer;
@@ -31,7 +43,7 @@ namespace Lighting
     ColorBuffer m_SpecularTexture;
     ColorBuffer m_NormalTexture;
 
-    GraphicsPSO m_GeometryPSO;
+    GraphicsPSO m_GBufferPSO;
     GraphicsPSO m_LightingPSO;
 }
 
@@ -89,10 +101,10 @@ void Lighting::Initialize( void )
 {
     const uint32_t width = Graphics::g_NativeWidth, height = Graphics::g_NativeHeight;
 
-    m_LightAccTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R32_UINT);
-    m_DiffuseTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R32_UINT);
-    m_SpecularTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R32_UINT);
-    m_NormalTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R32_UINT);
+    m_LightAccTexture.Create(L"LightAcc Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
+    m_DiffuseTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
+    m_SpecularTexture.Create(L"Specular Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
+    m_NormalTexture.Create( L"Normal Buffer", width, height, 1, DXGI_FORMAT_R32G32B32A32_FLOAT );
 
 	InputDesc Layout[] = {
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -103,17 +115,33 @@ void Lighting::Initialize( void )
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-    m_GeometryPSO.SetInputLayout(_countof(Layout), Layout);
-    m_GeometryPSO.SetVertexShader(MY_SHADER_ARGS(g_pPmxColorVS));
-    // m_GeometryPSO.SetPixelShader( MY_SHADER_ARGS( g_pBulletPrimitivePS ) );
-    m_GeometryPSO.SetDepthStencilState(Graphics::DepthStateReadWrite);
-    m_GeometryPSO.SetRasterizerState(Graphics::RasterizerDefault);
-    m_GeometryPSO.Finalize();
+    m_GBufferPSO.SetInputLayout( _countof( Layout ), Layout );
+    m_GBufferPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    m_GBufferPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
+    m_GBufferPSO.SetDepthStencilState( Graphics::DepthStateReadWrite );
+    m_GBufferPSO.SetRasterizerState( Graphics::RasterizerDefault );
+    m_GBufferPSO.Finalize();
 
-    // m_LightingPSO.SetVertexShader(MY_SHADER_ARGS(g_pScreenQuadVS));
+    m_LightingPSO.SetInputLayout( _countof( Layout ), Layout );
+    m_LightingPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    m_LightingPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingPS ) );
+    m_LightingPSO.SetDepthStencilState( Graphics::DepthStateReadOnly );
+    m_LightingPSO.SetRasterizerState( Graphics::RasterizerDefault );
+    m_LightingPSO.Finalize();
 }
 
-void Lighting::Render(GraphicsContext& gfxContext)
+#if 0
+void OpaquePass::Visit( Mesh& mesh )
+{
+    std::shared_ptr<Material> pMaterial = mesh.GetMaterial();
+    if ( pMaterial && !pMaterial->IsTransparent() )
+    {
+        mesh.Render( GetRenderEventArgs() );
+    }
+}
+#endif
+
+void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene )
 {
     ScopedTimer _prof(L"Geometry Pass", gfxContext);
     D3D11_RTV_HANDLE rtvs[] = { 
@@ -123,15 +151,32 @@ void Lighting::Render(GraphicsContext& gfxContext)
         m_NormalTexture.GetRTV() 
     };
     gfxContext.SetRenderTargets( _countof(rtvs), rtvs, Graphics::g_SceneDepthBuffer.GetDSV() );
-    gfxContext.SetPipelineState( m_GeometryPSO );
+    gfxContext.SetPipelineState( m_GBufferPSO );
+    scene->Render( gfxContext );
 
-    // gfxContext.SetRenderTargets( _countof(rtvs), rtvs, Graphics::g_SceneDepthBuffer.GetDSV());
-    // gfxContext.SetPipelineState(m_GeometryPSO);
+    D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
+    gfxContext.SetRenderTargets( _countof(rtvs), nullrtvs, nullptr );
+
+    D3D11_SRV_HANDLE srvs[] = { 
+        m_LightAccTexture.GetSRV(), 
+        m_DiffuseTexture.GetSRV(),
+        m_SpecularTexture.GetSRV(),
+        m_NormalTexture.GetSRV() 
+    };
+    gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
+    gfxContext.SetRenderTarget( Graphics::g_SceneColorBuffer.GetRTV(), Graphics::g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetPipelineState( m_LightingPSO );
+    scene->Render( gfxContext );
 }
 
 void Lighting::Shutdown( void )
 {
     m_LightBuffer.Destroy();
+
+    m_LightAccTexture.Destroy();
+    m_DiffuseTexture.Destroy();
+    m_SpecularTexture.Destroy();
+    m_NormalTexture.Destroy();
 }
 
 void Lighting::UpdateLights( const Camera& C )

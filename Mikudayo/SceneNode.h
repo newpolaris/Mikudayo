@@ -13,7 +13,7 @@ public:
 
     virtual void AddChild( std::shared_ptr<SceneNode> pNode );
     virtual void Update( float Delta );
-    virtual void DrawColor( GraphicsContext& Context );
+    virtual void Render( GraphicsContext& Context );
 
 protected:
 

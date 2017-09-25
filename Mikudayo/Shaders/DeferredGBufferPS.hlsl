@@ -43,6 +43,7 @@ Texture2D<float3> texToon : register(t3);
 SamplerState sampler0 : register(s0);
 SamplerState sampler1 : register(s1);
 
+[earlydepthstencil]
 PixelShaderOutput main( PixelShaderInput input )
 {
     PixelShaderOutput Out;

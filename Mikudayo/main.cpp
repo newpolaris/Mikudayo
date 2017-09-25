@@ -241,7 +241,17 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof( L"Render Color", gfxContext );
 
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-        m_Scene->DrawColor( gfxContext );
+
+        struct ScreenToViewParams
+        {
+            Matrix4 InverseProjectionMatrix;
+            Vector4 ScreenDimensions;
+        } psScreenToView;
+        psScreenToView.InverseProjectionMatrix = Invert( m_ViewMatrix );
+        psScreenToView.ScreenDimensions = Vector4( m_MainViewport.Width, m_MainViewport.Height, 0, 0 );
+        gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
+        Lighting::Render( gfxContext, m_Scene );
+
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

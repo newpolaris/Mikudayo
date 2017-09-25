@@ -4,9 +4,6 @@
 #include "Vmd.h"
 #include "KeyFrameAnimation.h"
 
-#include "CompiledShaders/PmxColorVS.h"
-#include "CompiledShaders/PmxColorPS.h"
-
 using namespace Utility;
 using namespace Math;
 using namespace Graphics;
@@ -77,9 +74,6 @@ protected:
 
     VertexBuffer m_AttributeBuffer;
     VertexBuffer m_PositionBuffer;
-
-    GraphicsPSO m_DepthPSO;
-    GraphicsPSO m_ColorPSO;
 };
 
 PmxInstant::Context::Context(const PmxModel& model) :
@@ -111,7 +105,6 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext )
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
-    gfxContext.SetPipelineState( m_ColorPSO );
 
 	for (auto& mesh: m_Model.m_Mesh)
 	{
@@ -147,20 +140,6 @@ bool PmxInstant::Context::LoadModel()
 		{ "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-
-	// Depth-only (2x rate)
-	m_DepthPSO.SetRasterizerState( RasterizerDefault );
-	m_DepthPSO.SetBlendState( BlendNoColorWrite );
-	m_DepthPSO.SetInputLayout( static_cast<UINT>(InputDescriptor.size()), InputDescriptor.data() );
-	m_DepthPSO.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-    m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
-
-    m_ColorPSO = m_DepthPSO;
-    m_ColorPSO.SetBlendState( BlendTraditional );
-    m_ColorPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_ColorPSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
-    m_ColorPSO.Finalize();
-
     return true;
 }
 
@@ -356,9 +335,9 @@ void PmxInstant::Update( float deltaT )
         child->Update( deltaT );
 }
 
-void PmxInstant::DrawColor( GraphicsContext& Context )
+void PmxInstant::Render( GraphicsContext& Context )
 {
     m_Context->Draw( Context );
     for ( auto child : m_Children )
-        child->DrawColor( Context );
+        child->Render( Context );
 }

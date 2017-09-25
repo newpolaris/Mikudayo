@@ -16,8 +16,8 @@ void SceneNode::Update( float Delta )
         child->Update( Delta );
 }
 
-void SceneNode::DrawColor( GraphicsContext& Context )
+void SceneNode::Render( GraphicsContext& Context )
 {
     for (auto child : m_Children)
-        child->DrawColor( Context );
+        child->Render( Context );
 }

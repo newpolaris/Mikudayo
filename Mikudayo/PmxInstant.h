@@ -8,9 +8,9 @@ class PmxInstant : public SceneNode
 public:
 
     PmxInstant( const Model& model );
-    virtual void DrawColor( GraphicsContext& Context ) override;
     bool LoadModel();
     bool LoadMotion( const std::wstring& motionPath );
+    virtual void Render( GraphicsContext& Context ) override;
     virtual void Update( float deltaT ) override;
 
 protected:
