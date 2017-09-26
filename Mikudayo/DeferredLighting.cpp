@@ -93,10 +93,37 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
         color = color * colorScale;
         light.Color = Color(color.GetX(), color.GetY(), color.GetZ());
 
-        light.Range = randFloat() * 80.f + 20.f;
+        light.Range = randFloat() * 100.f;
         light.SpotlightAngle = randFloat() * (60.f - 1.f) + 1.f;
         light.Type = (randFloat() > 0.5);
     }
+
+    m_LightData[0].Color = Color(1.f, 0.f, 0.f);
+    m_LightData[0].Range = 30;
+    m_LightData[0].Type = 0;
+    m_LightData[0].PositionWS = Vector4(0, 20, -20, 1);
+
+    m_LightData[1].Color = Color(0.f, 1.f, 0.f);
+    m_LightData[1].Range = 50;
+    m_LightData[1].Type = 0;
+    m_LightData[1].PositionWS = Vector4(0, 50, 10, 1);
+
+    m_LightData[2].Color = Color(0.f, 0.f, 1.f);
+    m_LightData[2].Range = 50;
+    m_LightData[2].Type = 1;
+    m_LightData[2].PositionWS = Vector4(25, 25, 10, 1);
+
+#if 0
+    m_LightData[3].Color = Color(0.5f, 0.5f, 0.f);
+    m_LightData[3].Range = 150;
+    m_LightData[3].Type = 0;
+    m_LightData[3].PositionWS = Vector4(25, 25, 25, 1);
+
+    m_LightData[4].Color = Color(1.0f, 0.0f, 0.f);
+    m_LightData[4].Range = 80;
+    m_LightData[4].Type = 0;
+    m_LightData[4].PositionWS = Vector4(-100, 30, 15, 1);
+#endif
 }
 
 void Lighting::Initialize( void )
@@ -193,34 +220,9 @@ void Lighting::UpdateLights( const Camera& C )
     const Matrix4& View = C.GetViewMatrix();
     for (uint32_t n = 0; n < MaxLights; n++)
     {
-        auto& light = Lighting::m_LightData[n];
+        auto& light = m_LightData[n];
         light.PositionVS = View * light.PositionWS;
         light.DirectionVS = View.Get3x3() * light.DirectionWS;
     }
-    m_LightData[0].Color = Color(1.f, 0.f, 0.f);
-    m_LightData[0].Range = 50;
-    m_LightData[0].Type = 0;
-    m_LightData[0].PositionWS = Vector4(0, 0, 0, 1);
-
-    m_LightData[1].Color = Color(0.f, 1.f, 0.f);
-    m_LightData[1].Range = 100;
-    m_LightData[1].Type = 0;
-    m_LightData[1].PositionWS = Vector4(0, 50, 0, 1);
-
-    m_LightData[2].Color = Color(1.f, 0.f, 0.f);
-    m_LightData[2].Range = 50;
-    m_LightData[2].Type = 0;
-    m_LightData[2].PositionWS = Vector4(25, 25, 0, 1);
-
-    m_LightData[3].Color = Color(0.5f, 0.5f, 0.f);
-    m_LightData[3].Range = 150;
-    m_LightData[3].Type = 0;
-    m_LightData[3].PositionWS = Vector4(25, 25, 25, 1);
-
-    m_LightData[4].Color = Color(1.0f, 0.0f, 0.f);
-    m_LightData[4].Range = 80;
-    m_LightData[4].Type = 0;
-    m_LightData[4].PositionWS = Vector4(-100, 30, 3, 1);
-
     m_LightBuffer.Create(L"m_LightBuffer", MaxLights, sizeof(LightData), m_LightData);
 }
