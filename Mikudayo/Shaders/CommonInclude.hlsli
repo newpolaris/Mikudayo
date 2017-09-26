@@ -1,4 +1,4 @@
-#define NumLights 12
+#define NumLights 128
 #define PointLight 0
 #define SpotLight 1
 #define DirectionalLight 2
@@ -62,7 +62,7 @@ float DoSpotCone( Light light, float3 L )
 LightingResult DoPointLight( Light light, Material mat, float3 V, float3 P, float3 N )
 {
     LightingResult ret;
-    float3 L = P - light.PositionVS.xyz;
+    float3 L = light.PositionVS.xyz - P;
     float distance = length( L );
     L /= distance;
     float attenuation = DoAttenuation( light, distance );
@@ -74,7 +74,7 @@ LightingResult DoPointLight( Light light, Material mat, float3 V, float3 P, floa
 LightingResult DoSpotLight( Light light, Material mat, float3 V, float3 P, float3 N )
 {
     LightingResult ret;
-    float3 L = P - light.PositionVS.xyz;
+    float3 L = light.PositionVS.xyz - P;
     float distance = length( L );
     L /= distance;
     float attenuation = DoAttenuation( light, distance );
