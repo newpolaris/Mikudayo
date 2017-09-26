@@ -26,18 +26,19 @@ cbuffer LightIndexBuffer : register(b4)
     uint LightIndex;
 }
 
+Texture2D AmbientTextureVS : register(t0);
 // The diffuse color from the view space texture.
-Texture2D DiffuseTextureVS : register(t0);
+Texture2D DiffuseTextureVS : register(t1);
 // The specular color from the screen space texture.
-Texture2D SpecularTextureVS : register(t1);
+Texture2D SpecularTextureVS : register(t2);
 // The normal from the screen space texture.
-Texture2D NormalTextureVS : register(t2);
+Texture2D NormalTextureVS : register(t3);
 // The depth from the screen space texture.
 // Texture2D DepthTextureVS : register(t3);
-Texture2D PositionTextureVS : register(t3);
+Texture2D PositionTextureVS : register(t4);
 
 // Deferred lighting pixel shader.
-#if 0
+#if 1
 // [earlydepthstencil]
 float4 main( PixelShaderInput input ) : SV_Target
 {
@@ -53,6 +54,7 @@ float4 main( PixelShaderInput input ) : SV_Target
     // View vector
     float4 V = normalize( eyePos - P );
 
+    float4 ambient = AmbientTextureVS.Load( int3( texCoord, 0 ) );
     float4 diffuse = DiffuseTextureVS.Load( int3( texCoord, 0 ) );
     float4 specular = SpecularTextureVS.Load( int3( texCoord, 0 ) );
     float4 N = NormalTextureVS.Load( int3( texCoord, 0 ) );
@@ -66,36 +68,15 @@ float4 main( PixelShaderInput input ) : SV_Target
     mat.specular = specular.xyz;
     mat.specularPower = specularPower;
 
-    LightingResult result = (LightingResult)0;
-    for (int i = 0; i < NumLights; i++)
-    {
-        LightingResult lit = (LightingResult)0;
-        Light light = Lights[i];
-
-        switch (light.Type)
-        {
-        case DirectionalLight:
-            lit = DoDirectionalLight( light, mat, V.xyz, N.xyz );
-            break;
-        case PointLight:
-            lit = DoPointLight( light, mat, V.xyz, P.xyz, N.xyz );
-            break;
-        case SpotLight:
-            lit = DoSpotLight( light, mat, V.xyz, P.xyz, N.xyz );
-            break;
-        }
-        result.Diffuse += lit.Diffuse;
-        result.Specular += lit.Specular;
-    }
-    return ( diffuse * result.Diffuse ) + ( specular * result.Specular );
+    LightingResult result = DoLighting(Lights, mat, P.xyz, N.xyz);
+    return diffuse * (result.Diffuse + ambient) + specular * result.Specular;
 }
-
 #else
 // Pixel shader to render a texture to the screen.
 float4 main( PixelShaderInput input ) : SV_Target
 {
     // return float4( input.uv, 0, 1 );
-    // return DiffuseTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
     return SpecularTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
+    // return SpecularTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
 }
 #endif

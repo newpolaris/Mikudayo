@@ -72,7 +72,7 @@ namespace PostEffects
     const float kInitialMaxLog = 4.0f;
 
     BoolVar EnableHDR("Graphics/HDR/Enable", true);
-    BoolVar EnableAdaptation("Graphics/HDR/Adaptive Exposure", false);
+    BoolVar EnableAdaptation("Graphics/HDR/Adaptive Exposure", true);
     ExpVar MinExposure("Graphics/HDR/Min Exposure", 1.0f / 64.0f, -8.0f, 0.0f, 0.25f);
     ExpVar MaxExposure("Graphics/HDR/Max Exposure", 64.0f, 0.0f, 8.0f, 0.25f);
     NumVar TargetLuminance("Graphics/HDR/Key", 0.08f, 0.01f, 0.99f, 0.01f);
