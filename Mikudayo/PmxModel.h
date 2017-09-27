@@ -4,6 +4,8 @@
 #include <vector>
 #include "Math/BoundingBox.h"
 #include "Model.h"
+#include "Mesh.h"
+#include "Material.h"
 
 using namespace Math;
 
@@ -50,7 +52,7 @@ public:
 		int32_t bUseToon;
 	};
 
-    struct Material
+    struct Material : public ::Material
     {
         std::wstring Name;
         std::wstring ShaderName;
@@ -59,10 +61,11 @@ public:
         Color EdgeColor;
         std::vector<TexturePath> TexturePathes;
         const ManagedTexture* Textures[kTextureMax];
-        bool SetTexture( GraphicsContext& gfxContext ) const;
+        bool IsTransparent() const override;
+        void SetTexture( GraphicsContext& gfxContext ) const;
     };
 
-	struct Mesh
+	struct Mesh : public ::Mesh
 	{
         uint32_t MaterialIndex;
         int32_t IndexOffset;

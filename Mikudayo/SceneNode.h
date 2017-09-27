@@ -4,6 +4,7 @@
 #include <vector>
 
 class GraphicsContext;
+class Visitor;
 
 class SceneNode : public std::enable_shared_from_this<SceneNode>
 {
@@ -13,7 +14,7 @@ public:
 
     virtual void AddChild( std::shared_ptr<SceneNode> pNode );
     virtual void Update( float Delta );
-    virtual void Render( GraphicsContext& Context );
+    virtual void Render( GraphicsContext& Context, Visitor& visitor );
 
 protected:
 

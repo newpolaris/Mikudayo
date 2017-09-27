@@ -3,10 +3,10 @@
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
-	float4 posHS : SV_POSITION;
-	float3 posVS : POSITION0;
-	float3 normalVS : NORMAL;
-	float2 uv : TEXTURE;
+    float4 posHS : SV_POSITION;
+    float3 posVS : POSITION0;
+    float3 normalVS : NORMAL;
+    float2 uv : TEXTURE;
 };
 
 struct PixelShaderOutput
@@ -24,17 +24,16 @@ static const int kSphereAdd = 2;
 
 cbuffer MaterialConstants : register(b0)
 {
-	Material material;
-	int sphereOperation;
-	int bUseTexture;
-	int bUseToon;
+    Material material;
+    int sphereOperation;
+    int bUseTexture;
+    int bUseToon;
 };
 
 cbuffer PassConstants : register(b1)
 {
     float3 SunDirectionVS;
     float3 SunColor;
-    float4 ShadowTexelSize;
 }
 
 Texture2D<float4> texDiffuse : register(t1);
@@ -49,26 +48,26 @@ PixelShaderOutput main( PixelShaderInput input )
 {
     PixelShaderOutput Out;
 
-	float3 lightVecVS = normalize( -SunDirectionVS );
-	float3 normalVS = normalize( input.normalVS );
-	float intensity = dot( lightVecVS, normalVS ) * 0.5 + 0.5;
-	float2 toonCoord = float2(0.5, 1.0 - intensity);
+    float3 lightVecVS = normalize( -SunDirectionVS );
+    float3 normalVS = normalize( input.normalVS );
+    float intensity = dot( lightVecVS, normalVS ) * 0.5 + 0.5;
+    float2 toonCoord = float2(0.5, 1.0 - intensity);
 
     float3 diffuse = material.diffuse;
     float3 ambient = material.ambient;
 
-	float3 texColor = float3(1.0, 1.0, 1.0);
-	if (bUseTexture)
-	{
-		float4 tex = texDiffuse.Sample( sampler0, input.uv );
-		texColor = tex.xyz;
-	}
+    float3 texColor = float3(1.0, 1.0, 1.0);
+    if (bUseTexture)
+    {
+        float4 tex = texDiffuse.Sample( sampler0, input.uv );
+        texColor = tex.xyz;
+    }
 
-	float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalVS.xy;
-	if (sphereOperation == kSphereAdd)
-		texColor += texSphere.Sample( sampler0, sphereCoord );
-	else if (sphereOperation == kSphereMul)
-		texColor *= texSphere.Sample( sampler0, sphereCoord );
+    float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalVS.xy;
+    if (sphereOperation == kSphereAdd)
+        texColor += texSphere.Sample( sampler0, sphereCoord );
+    else if (sphereOperation == kSphereMul)
+        texColor *= texSphere.Sample( sampler0, sphereCoord );
     if (bUseToon)
         texColor *= texToon.Sample( sampler0, toonCoord );
 

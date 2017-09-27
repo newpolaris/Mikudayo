@@ -255,7 +255,7 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
     return true;
 }
 
-bool PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
+void PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
 {
     D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
     for (auto i = 0; i < _countof( Textures ); i++)
@@ -264,5 +264,10 @@ bool PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
         SRV[i] = Textures[i]->GetSRV();
     }
     gfxContext.SetDynamicDescriptors( 1, _countof( SRV ), SRV, { kBindPixel } );
-    return false;
+}
+
+bool PmxModel::Material::IsTransparent() const
+{
+    bool bHasTransparentTexture = Textures[kTextureDiffuse] && Textures[kTextureDiffuse]->IsTransparent();
+    return CB.Diffuse.w < 1.0f || bHasTransparentTexture;
 }

@@ -15,8 +15,11 @@
 #include "SceneNode.h"
 #include "VectorMath.h"
 #include "Color.h"
+#include "OpaquePass.h"
+#include "TransparentPass.h"
 
 #include "CompiledShaders/PmxColorVS.h"
+#include "CompiledShaders/PmxColorPS.h"
 #include "CompiledShaders/ScreenQuadVS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredLightingPS.h"
@@ -47,6 +50,9 @@ namespace Lighting
 
     GraphicsPSO m_GBufferPSO;
     GraphicsPSO m_LightingPSO;
+    GraphicsPSO m_TransparentPSO;
+    OpaquePass m_OaquePass;
+    TransparentPass m_TransparentPass;
 }
 
 inline Vector3 Convert(const glm::vec3& v )
@@ -156,18 +162,14 @@ void Lighting::Initialize( void )
     m_LightingPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingPS ) );
     m_LightingPSO.SetDepthStencilState( Graphics::DepthStateDisabled );
     m_LightingPSO.Finalize();
-}
 
-#if 0
-void OpaquePass::Visit( Mesh& mesh )
-{
-    std::shared_ptr<Material> pMaterial = mesh.GetMaterial();
-    if ( pMaterial && !pMaterial->IsTransparent() )
-    {
-        mesh.Render( GetRenderEventArgs() );
-    }
+    m_TransparentPSO.SetInputLayout( _countof( Layout ), Layout );
+    m_TransparentPSO.SetBlendState( Graphics::BlendTraditional );
+    m_TransparentPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    m_TransparentPSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
+    m_TransparentPSO.SetRasterizerState( Graphics::RasterizerDefault );
+    m_TransparentPSO.Finalize();
 }
-#endif
 
 void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene )
 {
@@ -176,33 +178,42 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
     gfxContext.ClearColor( m_SpecularTexture );
     gfxContext.ClearColor( m_NormalTexture );
     gfxContext.ClearColor( m_PositionTexture );
-
-    ScopedTimer _prof(L"Geometry Pass", gfxContext);
-    D3D11_RTV_HANDLE rtvs[] = { 
-        m_LightAccTexture.GetRTV(), 
-        m_DiffuseTexture.GetRTV(),
-        m_SpecularTexture.GetRTV(),
-        m_NormalTexture.GetRTV(),
-        m_PositionTexture.GetRTV()
-    };
-    gfxContext.SetRenderTargets( _countof(rtvs), rtvs, Graphics::g_SceneDepthBuffer.GetDSV() );
-    gfxContext.SetPipelineState( m_GBufferPSO );
-    scene->Render( gfxContext );
-
-    D3D11_RTV_HANDLE nullrtvs[_countof(rtvs)] = { nullptr, };
-    gfxContext.SetRenderTargets( _countof(rtvs), nullrtvs, nullptr );
-
-    D3D11_SRV_HANDLE srvs[] = { 
-        m_LightAccTexture.GetSRV(), 
-        m_DiffuseTexture.GetSRV(),
-        m_SpecularTexture.GetSRV(),
-        m_NormalTexture.GetSRV(),
-        m_PositionTexture.GetSRV()
-    };
-    gfxContext.SetDynamicDescriptors( 0, _countof(srvs), srvs, { kBindPixel } );
+    {
+        ScopedTimer _prof( L"Geometry Pass", gfxContext );
+        D3D11_RTV_HANDLE rtvs[] = {
+            m_LightAccTexture.GetRTV(),
+            m_DiffuseTexture.GetRTV(),
+            m_SpecularTexture.GetRTV(),
+            m_NormalTexture.GetRTV(),
+            m_PositionTexture.GetRTV()
+        };
+        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, Graphics::g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetPipelineState( m_GBufferPSO );
+        scene->Render( gfxContext, m_OaquePass );
+        D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
+        gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
+    }
+    {
+        ScopedTimer _prof( L"Lighting Pass", gfxContext );
+        D3D11_SRV_HANDLE srvs[] = {
+            m_LightAccTexture.GetSRV(),
+            m_DiffuseTexture.GetSRV(),
+            m_SpecularTexture.GetSRV(),
+            m_NormalTexture.GetSRV(),
+            m_PositionTexture.GetSRV()
+        };
+        gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
+        gfxContext.SetRenderTarget( Graphics::g_SceneColorBuffer.GetRTV(), Graphics::g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetPipelineState( m_LightingPSO );
+        gfxContext.Draw( 3 );
+    }
     gfxContext.SetRenderTarget( Graphics::g_SceneColorBuffer.GetRTV(), Graphics::g_SceneDepthBuffer.GetDSV() );
-    gfxContext.SetPipelineState( m_LightingPSO );
-    gfxContext.Draw( 3 );
+
+    {
+        ScopedTimer _prof( L"Forward Pass", gfxContext );
+        gfxContext.SetPipelineState( m_TransparentPSO );
+        scene->Render( gfxContext, m_TransparentPass );
+    }
 }
 
 void Lighting::Shutdown( void )
@@ -213,6 +224,7 @@ void Lighting::Shutdown( void )
     m_DiffuseTexture.Destroy();
     m_SpecularTexture.Destroy();
     m_NormalTexture.Destroy();
+    m_PositionTexture.Destroy();
 }
 
 void Lighting::UpdateLights( const Camera& C )

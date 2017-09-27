@@ -20,6 +20,12 @@ struct PixelShaderInput
 };
 #endif
 
+cbuffer PassConstants : register(b1)
+{
+    float3 SunDirectionVS;
+    float3 SunColor;
+}
+
 cbuffer LightIndexBuffer : register(b4)
 {
     // The index of the light in the Lights array.
@@ -68,8 +74,16 @@ float4 main( PixelShaderInput input ) : SV_Target
     mat.specular = specular.xyz;
     mat.specularPower = specularPower;
 
-    LightingResult result = DoLighting(Lights, mat, P.xyz, N.xyz);
-    return diffuse * (result.Diffuse + ambient) + specular * result.Specular;
+    LightingResult lit = DoLighting(Lights, mat, P.xyz, N.xyz);
+    float3 lightVecVS = normalize(-SunDirectionVS);
+    float3 toEyeV = -P.xyz;
+    float3 halfV = normalize(toEyeV + lightVecVS);
+    float NdotH = dot(N.xyz, halfV);
+    float3 sunDiffuse = SunColor * max(0, dot(lightVecVS, N.xyz));
+    float3 sunSpecular = SunColor * specular.xyz;
+    lit.Diffuse.rgb += sunDiffuse;
+    lit.Specular.rgb += sunSpecular;
+    return diffuse * lit.Diffuse + ambient + specular * lit.Specular;
 }
 #else
 // Pixel shader to render a texture to the screen.
@@ -77,6 +91,5 @@ float4 main( PixelShaderInput input ) : SV_Target
 {
     // return float4( input.uv, 0, 1 );
     return SpecularTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
-    // return SpecularTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
 }
 #endif

@@ -3,6 +3,7 @@
 #include "PmxInstant.h"
 #include "Vmd.h"
 #include "KeyFrameAnimation.h"
+#include "Visitor.h"
 
 using namespace Utility;
 using namespace Math;
@@ -38,7 +39,7 @@ struct PmxInstant::Context final
     Context( const PmxModel& model );
     ~Context();
     void Clear( void );
-    void Draw( GraphicsContext& gfxContext );
+    void Draw( GraphicsContext& gfxContext, Visitor& visitor );
 
     bool LoadModel();
     bool LoadMotion( const std::wstring& FilePath );
@@ -92,7 +93,7 @@ void PmxInstant::Context::Clear()
 	m_PositionBuffer.Destroy();
 }
 
-void PmxInstant::Context::Draw( GraphicsContext& gfxContext )
+void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
 {
     std::vector<Matrix4> SkinData;
     SkinData.reserve( m_Skinning.size() );
@@ -106,13 +107,16 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext )
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
 
-	for (auto& mesh: m_Model.m_Mesh)
+    for (auto& mesh : m_Model.m_Mesh)
 	{
-        auto& material = m_Model.m_Materials[mesh.MaterialIndex];
-        if (material.SetTexture( gfxContext ))
+        if (!visitor.Visit( mesh ))
             continue;
-		gfxContext.SetDynamicConstantBufferView( 0, sizeof(material.CB), &material.CB, { kBindPixel } );
-		gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
+        auto& material = m_Model.m_Materials[mesh.MaterialIndex];
+        if (!visitor.Visit( material ))
+            continue;
+        material.SetTexture( gfxContext );
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof( material.CB ), &material.CB, { kBindPixel } );
+        gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
 	}
 }
 
@@ -331,13 +335,11 @@ bool PmxInstant::LoadMotion( const std::wstring& motionPath )
 void PmxInstant::Update( float deltaT )
 {
     m_Context->Update( deltaT );
-    for ( auto child : m_Children )
-        child->Update( deltaT );
+    SceneNode::Update( deltaT );
 }
 
-void PmxInstant::Render( GraphicsContext& Context )
+void PmxInstant::Render( GraphicsContext& Context, Visitor& visitor )
 {
-    m_Context->Draw( Context );
-    for ( auto child : m_Children )
-        child->Render( Context );
+    m_Context->Draw( Context, visitor );
+    SceneNode::Render( Context, visitor );
 }

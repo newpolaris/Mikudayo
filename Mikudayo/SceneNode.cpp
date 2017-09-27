@@ -16,8 +16,8 @@ void SceneNode::Update( float Delta )
         child->Update( Delta );
 }
 
-void SceneNode::Render( GraphicsContext& Context )
+void SceneNode::Render( GraphicsContext& Context, Visitor& visitor )
 {
     for (auto child : m_Children)
-        child->Render( Context );
+        child->Render( Context, visitor );
 }

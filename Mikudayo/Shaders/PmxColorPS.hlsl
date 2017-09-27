@@ -50,14 +50,9 @@ float4 main(PixelShaderInput input) : SV_TARGET
     float3 sunDiffuse = SunColor * max(0, dot(lightVecVS, normalVS));
     float3 sunSpecular = SunColor * specularFactor;
 
-    LightingResult lit = DoLighting(Lights, material, input.posVS, input.normalVS);
-
-    lit.Diffuse.rgb += sunDiffuse;
-    lit.Specular.rgb += sunSpecular;
-
-    float3 diffuse = material.diffuse * lit.Diffuse.rgb;
+    float3 diffuse = material.diffuse;
     float3 ambient = material.ambient;
-    float3 specular = material.specular * lit.Specular.rgb;
+    float3 specular = material.specular;
 
     float texAlpha = 1.0;
     float3 texColor = float3(1.0, 1.0, 1.0);
@@ -67,15 +62,21 @@ float4 main(PixelShaderInput input) : SV_TARGET
         texColor = tex.xyz;
         texAlpha = tex.w;
     }
-
     float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalVS.xy;
     if (sphereOperation == kSphereAdd)
         texColor += texSphere.Sample(sampler0, sphereCoord);
     else if (sphereOperation == kSphereMul)
         texColor *= texSphere.Sample(sampler0, sphereCoord);
-    float3 color = texColor * (ambient + diffuse) + specular;
     if (bUseToon)
-        color *= texToon.Sample(sampler0, toonCoord);
+        texColor *= texToon.Sample(sampler0, toonCoord);
+
+    diffuse = texColor * diffuse;
+    ambient = texColor * ambient;
+
+    LightingResult lit = DoLighting(Lights, material, input.posVS, input.normalVS);
+    lit.Diffuse.rgb += sunDiffuse;
+    lit.Specular.rgb += sunSpecular;
+    float3 color = diffuse * lit.Diffuse + ambient + specular * lit.Specular;
     float alpha = texAlpha * material.alpha;
     return float4(color, alpha);
 }
