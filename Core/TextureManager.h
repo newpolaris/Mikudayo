@@ -27,7 +27,7 @@ class Texture : public GpuResource
 
 public:
 
-	Texture() { }
+    Texture();
 
 	// Create a 1-level 2D texture
 	void Create( size_t Width, size_t Height, DXGI_FORMAT Format, const void* InitData );
@@ -43,13 +43,21 @@ public:
 	}
 
 	virtual const D3D11_SRV_HANDLE GetSRV() const { return m_SRV.Get(); }
+    void SetProperty( void );
 
 	bool operator!() { return m_SRV == nullptr; }
+    bool IsTransparent() const;
 
 protected:
 
+    bool m_bTransparent;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_SRV;
 };
+
+inline bool Texture::IsTransparent() const
+{
+    return m_bTransparent;
+}
 
 class ManagedTexture : public Texture
 {

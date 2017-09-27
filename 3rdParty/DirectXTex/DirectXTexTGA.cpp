@@ -164,10 +164,9 @@ namespace
                 break;
 
             case 24:
-                metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                metadata.format = DXGI_FORMAT_B8G8R8X8_UNORM;
                 if (convFlags)
                     *convFlags |= CONV_FLAGS_EXPAND;
-                // We could use DXGI_FORMAT_B8G8R8X8_UNORM, but we prefer DXGI 1.0 formats
                 break;
 
             case 32:
@@ -434,7 +433,98 @@ namespace
         }
         break;
 
-        //----------------------------------------------------------------------- 24/32-bit
+        //----------------------------------------------------------------------- 24-bit
+        case DXGI_FORMAT_B8G8R8X8_UNORM:
+        {
+            bool nonzeroa = false;
+            for (size_t y = 0; y < image->height; ++y)
+            {
+                size_t offset = ((convFlags & CONV_FLAGS_INVERTX) ? (image->width - 1) : 0);
+
+                uint32_t* dPtr = reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(image->pixels)
+                    + (image->rowPitch * ((convFlags & CONV_FLAGS_INVERTY) ? y : (image->height - y - 1))))
+                    + offset;
+
+                for (size_t x = 0; x < image->width; )
+                {
+                    if (sPtr >= endPtr)
+                        return E_FAIL;
+
+                    if (*sPtr & 0x80)
+                    {
+                        // Repeat
+                        size_t j = (*sPtr & 0x7F) + 1;
+                        ++sPtr;
+
+                        DWORD t;
+                        assert(offset * 3 < rowPitch);
+
+                        if (sPtr + 2 >= endPtr)
+                            return E_FAIL;
+
+                        // BGR -> BGRX
+                        t = (*sPtr) | (*(sPtr + 1) << 8) | (*(sPtr + 2) << 16) | 0xFF000000;
+                        sPtr += 3;
+
+                        nonzeroa = true;
+
+                        for (; j > 0; --j, ++x)
+                        {
+                            if (x >= image->width)
+                                return E_FAIL;
+
+                            *dPtr = t;
+
+                            if (convFlags & CONV_FLAGS_INVERTX)
+                                --dPtr;
+                            else
+                                ++dPtr;
+                        }
+                    }
+                    else
+                    {
+                        // Literal
+                        size_t j = (*sPtr & 0x7F) + 1;
+                        ++sPtr;
+
+                        if (sPtr + (j * 3) > endPtr)
+                            return E_FAIL;
+
+                        for (; j > 0; --j, ++x)
+                        {
+                            if (x >= image->width)
+                                return E_FAIL;
+
+                            assert(offset * 3 < rowPitch);
+
+                            if (sPtr + 2 >= endPtr)
+                                return E_FAIL;
+
+                            *dPtr = (*sPtr) | (*(sPtr + 1) << 8) | (*(sPtr + 2) << 16) | 0xFF000000;
+                            sPtr += 3;
+
+                            nonzeroa = true;
+
+                            if (convFlags & CONV_FLAGS_INVERTX)
+                                --dPtr;
+                            else
+                                ++dPtr;
+                        }
+                    }
+                }
+            }
+
+            // If there are no non-zero alpha channel entries, we'll assume alpha is not used and force it to opaque
+            if (!nonzeroa)
+            {
+                HRESULT hr = SetAlphaChannelToOpaque(image);
+                if (FAILED(hr))
+                    return hr;
+            }
+        }
+        break;
+
+        //----------------------------------------------------------------------- 32-bit
         case DXGI_FORMAT_R8G8B8A8_UNORM:
         {
             bool nonzeroa = false;
@@ -458,34 +548,18 @@ namespace
                         ++sPtr;
 
                         DWORD t;
-                        if (convFlags & CONV_FLAGS_EXPAND)
-                        {
-                            assert(offset * 3 < rowPitch);
+                        assert(offset * 4 < rowPitch);
 
-                            if (sPtr + 2 >= endPtr)
-                                return E_FAIL;
+                        if (sPtr + 3 >= endPtr)
+                            return E_FAIL;
 
-                            // BGR -> RGBA
-                            t = (*sPtr << 16) | (*(sPtr + 1) << 8) | (*(sPtr + 2)) | 0xFF000000;
-                            sPtr += 3;
+                        // BGRA -> RGBA
+                        t = (*sPtr << 16) | (*(sPtr + 1) << 8) | (*(sPtr + 2)) | (*(sPtr + 3) << 24);
 
+                        if (*(sPtr + 3) > 0)
                             nonzeroa = true;
-                        }
-                        else
-                        {
-                            assert(offset * 4 < rowPitch);
 
-                            if (sPtr + 3 >= endPtr)
-                                return E_FAIL;
-
-                            // BGRA -> RGBA
-                            t = (*sPtr << 16) | (*(sPtr + 1) << 8) | (*(sPtr + 2)) | (*(sPtr + 3) << 24);
-
-                            if (*(sPtr + 3) > 0)
-                                nonzeroa = true;
-
-                            sPtr += 4;
-                        }
+                        sPtr += 4;
 
                         for (; j > 0; --j, ++x)
                         {
@@ -506,50 +580,26 @@ namespace
                         size_t j = (*sPtr & 0x7F) + 1;
                         ++sPtr;
 
-                        if (convFlags & CONV_FLAGS_EXPAND)
-                        {
-                            if (sPtr + (j * 3) > endPtr)
-                                return E_FAIL;
-                        }
-                        else
-                        {
-                            if (sPtr + (j * 4) > endPtr)
-                                return E_FAIL;
-                        }
+                        if (sPtr + (j * 4) > endPtr)
+                            return E_FAIL;
 
                         for (; j > 0; --j, ++x)
                         {
                             if (x >= image->width)
                                 return E_FAIL;
 
-                            if (convFlags & CONV_FLAGS_EXPAND)
-                            {
-                                assert(offset * 3 < rowPitch);
+                            assert(offset * 4 < rowPitch);
 
-                                if (sPtr + 2 >= endPtr)
-                                    return E_FAIL;
+                            if (sPtr + 3 >= endPtr)
+                                return E_FAIL;
 
-                                // BGR -> RGBA
-                                *dPtr = (*sPtr << 16) | (*(sPtr + 1) << 8) | (*(sPtr + 2)) | 0xFF000000;
-                                sPtr += 3;
+                            // BGRA -> RGBA
+                            *dPtr = (*sPtr << 16) | (*(sPtr + 1) << 8) | (*(sPtr + 2)) | (*(sPtr + 3) << 24);
 
+                            if (*(sPtr + 3) > 0)
                                 nonzeroa = true;
-                            }
-                            else
-                            {
-                                assert(offset * 4 < rowPitch);
 
-                                if (sPtr + 3 >= endPtr)
-                                    return E_FAIL;
-
-                                // BGRA -> RGBA
-                                *dPtr = (*sPtr << 16) | (*(sPtr + 1) << 8) | (*(sPtr + 2)) | (*(sPtr + 3) << 24);
-
-                                if (*(sPtr + 3) > 0)
-                                    nonzeroa = true;
-
-                                sPtr += 4;
-                            }
+                            sPtr += 4;
 
                             if (convFlags & CONV_FLAGS_INVERTX)
                                 --dPtr;
@@ -660,6 +710,47 @@ namespace
 
                     if (t & 0x8000)
                         nonzeroa = true;
+
+                    if (convFlags & CONV_FLAGS_INVERTX)
+                        --dPtr;
+                    else
+                        ++dPtr;
+                }
+            }
+
+            // If there are no non-zero alpha channel entries, we'll assume alpha is not used and force it to opaque
+            if (!nonzeroa)
+            {
+                HRESULT hr = SetAlphaChannelToOpaque(image);
+                if (FAILED(hr))
+                    return hr;
+            }
+        }
+        break;
+
+        //----------------------------------------------------------------------- 24-bit
+        case DXGI_FORMAT_B8G8R8X8_UNORM:
+        {
+            bool nonzeroa = false;
+            for (size_t y = 0; y < image->height; ++y)
+            {
+                size_t offset = ((convFlags & CONV_FLAGS_INVERTX) ? (image->width - 1) : 0);
+
+                uint32_t* dPtr = reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(image->pixels)
+                    + (image->rowPitch * ((convFlags & CONV_FLAGS_INVERTY) ? y : (image->height - y - 1))))
+                    + offset;
+
+                for (size_t x = 0; x < image->width; ++x)
+                {
+                    assert(offset * 3 < rowPitch);
+
+                    if (sPtr + 2 >= endPtr)
+                        return E_FAIL;
+
+                    *dPtr = *sPtr | (*(sPtr + 1) << 8) | (*(sPtr + 2) << 16) | 0xFF000000;
+                    sPtr += 3;
+
+                    nonzeroa = true;
 
                     if (convFlags & CONV_FLAGS_INVERTX)
                         --dPtr;
