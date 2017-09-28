@@ -74,9 +74,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
     ambient = texColor * ambient;
 
     LightingResult lit = DoLighting(Lights, material, input.posVS, input.normalVS);
-    lit.Diffuse.rgb += sunDiffuse;
-    lit.Specular.rgb += sunSpecular;
-    float3 color = diffuse * lit.Diffuse + ambient + specular * lit.Specular;
+    float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
     float alpha = texAlpha * material.alpha;
     return float4(color, alpha);
 }

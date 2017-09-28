@@ -32,38 +32,34 @@ cbuffer LightIndexBuffer : register(b4)
     uint LightIndex;
 }
 
-Texture2D AmbientTextureVS : register(t0);
 // The diffuse color from the view space texture.
-Texture2D DiffuseTextureVS : register(t1);
+Texture2D DiffuseTextureVS : register(t0);
 // The specular color from the screen space texture.
-Texture2D SpecularTextureVS : register(t2);
+Texture2D SpecularTextureVS : register(t1);
 // The normal from the screen space texture.
-Texture2D NormalTextureVS : register(t3);
+Texture2D NormalTextureVS : register(t2);
 // The depth from the screen space texture.
 // Texture2D DepthTextureVS : register(t3);
-Texture2D PositionTextureVS : register(t4);
+Texture2D PositionTextureVS : register(t3);
 
 // Deferred lighting pixel shader.
 #if 1
 // [earlydepthstencil]
 float4 main( PixelShaderInput input ) : SV_Target
 {
-    // Everything is in view space.
-    float4 eyePos = { 0, 0, 0, 1 };
-
     int2 texCoord = input.posHS.xy;
     // float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
 
     // float4 P = ScreenToView( float4( texCoord, depth, 1.0f ) );
-    float4 P = PositionTextureVS.Load( int3(texCoord, 0) );
+    float3 P = PositionTextureVS.Load( int3(texCoord, 0) ).xyz;
 
     // View vector
-    float4 V = normalize( eyePos - P );
+    // float3 V = normalize(-P);
+    float3 V = -P;
 
-    float4 ambient = AmbientTextureVS.Load( int3( texCoord, 0 ) );
     float4 diffuse = DiffuseTextureVS.Load( int3( texCoord, 0 ) );
     float4 specular = SpecularTextureVS.Load( int3( texCoord, 0 ) );
-    float4 N = NormalTextureVS.Load( int3( texCoord, 0 ) );
+    float3 N = NormalTextureVS.Load( int3( texCoord, 0 ) ).xyz;
 
     // Unpack the specular power from the alpha component of the specular color.
     float specularPower = exp2( specular.a * 10.5f );
@@ -74,16 +70,21 @@ float4 main( PixelShaderInput input ) : SV_Target
     mat.specular = specular.xyz;
     mat.specularPower = specularPower;
 
-    LightingResult lit = DoLighting(Lights, mat, P.xyz, N.xyz);
-    float3 lightVecVS = normalize(-SunDirectionVS);
-    float3 toEyeV = -P.xyz;
-    float3 halfV = normalize(toEyeV + lightVecVS);
-    float NdotH = dot(N.xyz, halfV);
-    float3 sunDiffuse = SunColor * max(0, dot(lightVecVS, N.xyz));
-    float3 sunSpecular = SunColor * specular.xyz;
-    lit.Diffuse.rgb += sunDiffuse;
-    lit.Specular.rgb += sunSpecular;
-    return diffuse * lit.Diffuse + ambient + specular * lit.Specular;
+    Light light = Lights[LightIndex];
+    LightingResult lit = (LightingResult)0;
+    switch ( light.Type )
+    {
+    case DirectionalLight:
+        lit = DoDirectionalLight( light, mat, V, N );
+        break;
+    case PointLight:
+        lit = DoPointLight( light, mat, V, P, N );
+        break;
+    case SpotLight:
+        lit = DoSpotLight( light, mat, V, P, N );
+        break;
+    }
+    return diffuse * lit.Diffuse + specular * lit.Specular;
 }
 #else
 // Pixel shader to render a texture to the screen.

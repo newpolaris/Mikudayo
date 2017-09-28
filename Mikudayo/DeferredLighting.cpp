@@ -42,7 +42,6 @@ namespace Lighting
     LightData m_LightData[MaxLights];
 
     StructuredBuffer m_LightBuffer;
-    ColorBuffer m_LightAccTexture;
     ColorBuffer m_DiffuseTexture;
     ColorBuffer m_SpecularTexture;
     ColorBuffer m_NormalTexture;
@@ -53,6 +52,8 @@ namespace Lighting
     GraphicsPSO m_TransparentPSO;
     OpaquePass m_OaquePass;
     TransparentPass m_TransparentPass;
+
+    void LightingPass( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene );
 }
 
 inline Vector3 Convert(const glm::vec3& v )
@@ -136,7 +137,6 @@ void Lighting::Initialize( void )
 {
     const uint32_t width = Graphics::g_NativeWidth, height = Graphics::g_NativeHeight;
 
-    m_LightAccTexture.Create(L"LightAcc Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
     m_DiffuseTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
     m_SpecularTexture.Create(L"Specular Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
     m_NormalTexture.Create( L"Normal Buffer", width, height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT );
@@ -160,6 +160,7 @@ void Lighting::Initialize( void )
 
     m_LightingPSO.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
     m_LightingPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingPS ) );
+    m_LightingPSO.SetBlendState( Graphics::BlendAdditive );
     m_LightingPSO.SetDepthStencilState( Graphics::DepthStateDisabled );
     m_LightingPSO.Finalize();
 
@@ -171,9 +172,30 @@ void Lighting::Initialize( void )
     m_TransparentPSO.Finalize();
 }
 
+void Lighting::LightingPass( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene )
+{
+    ScopedTimer _prof( L"Lighting Pass", gfxContext );
+    D3D11_SRV_HANDLE srvs[] = {
+        m_DiffuseTexture.GetSRV(),
+        m_SpecularTexture.GetSRV(),
+        m_NormalTexture.GetSRV(),
+        m_PositionTexture.GetSRV()
+    };
+
+    gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
+    gfxContext.SetRenderTarget( Graphics::g_SceneColorBuffer.GetRTV(), Graphics::g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetPipelineState( m_LightingPSO );
+
+    for (uint32_t i = 0; i < MaxLights; i++)
+    {
+        __declspec(align(16)) uint32_t idx = i;
+        gfxContext.SetDynamicConstantBufferView( 4, sizeof(uint32_t), &idx, { kBindPixel } );
+        gfxContext.Draw( 3 );
+    }
+}
+
 void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene )
 {
-    gfxContext.ClearColor( m_LightAccTexture );
     gfxContext.ClearColor( m_DiffuseTexture );
     gfxContext.ClearColor( m_SpecularTexture );
     gfxContext.ClearColor( m_NormalTexture );
@@ -181,7 +203,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );
         D3D11_RTV_HANDLE rtvs[] = {
-            m_LightAccTexture.GetRTV(),
+            Graphics::g_SceneColorBuffer.GetRTV(),
             m_DiffuseTexture.GetRTV(),
             m_SpecularTexture.GetRTV(),
             m_NormalTexture.GetRTV(),
@@ -193,22 +215,8 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
         gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
     }
-    {
-        ScopedTimer _prof( L"Lighting Pass", gfxContext );
-        D3D11_SRV_HANDLE srvs[] = {
-            m_LightAccTexture.GetSRV(),
-            m_DiffuseTexture.GetSRV(),
-            m_SpecularTexture.GetSRV(),
-            m_NormalTexture.GetSRV(),
-            m_PositionTexture.GetSRV()
-        };
-        gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
-        gfxContext.SetRenderTarget( Graphics::g_SceneColorBuffer.GetRTV(), Graphics::g_SceneDepthBuffer.GetDSV() );
-        gfxContext.SetPipelineState( m_LightingPSO );
-        gfxContext.Draw( 3 );
-    }
+    LightingPass( gfxContext, scene );
     gfxContext.SetRenderTarget( Graphics::g_SceneColorBuffer.GetRTV(), Graphics::g_SceneDepthBuffer.GetDSV() );
-
     {
         ScopedTimer _prof( L"Forward Pass", gfxContext );
         gfxContext.SetPipelineState( m_TransparentPSO );
@@ -220,7 +228,6 @@ void Lighting::Shutdown( void )
 {
     m_LightBuffer.Destroy();
 
-    m_LightAccTexture.Destroy();
     m_DiffuseTexture.Destroy();
     m_SpecularTexture.Destroy();
     m_NormalTexture.Destroy();
