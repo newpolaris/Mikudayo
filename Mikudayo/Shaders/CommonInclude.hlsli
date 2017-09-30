@@ -100,6 +100,11 @@ LightingResult DoLighting( StructuredBuffer<Light> lights, Material mat, float3 
     float3 V = -P;
     for (int i = 0; i < NumLights; i++)
     {
+        // Skip point and spot lights that are out of range of the point being shaded.
+        float3 dist = lights[i].PositionVS.xyz - P;
+        bool bInside = dot(dist, dist) > lights[i].Range*lights[i].Range;
+        if (lights[i].Type != DirectionalLight && bInside)
+            continue;
         LightingResult result = (LightingResult)0;
         switch (lights[i].Type)
         {
