@@ -194,12 +194,12 @@ void GraphicsPSO::SetVertexShader( const std::string& Name, const void* Binary, 
 	m_PSODesc->VS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
 
-void GraphicsPSO::SetPixelShader( const std::string & Name, const void* Binary, size_t Size )
+void GraphicsPSO::SetPixelShader( const std::string& Name, const void* Binary, size_t Size )
 {
 	m_PSODesc->PS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }
 
-void GraphicsPSO::SetGeometryShader( const std::string & Name, const void * Binary, size_t Size )
+void GraphicsPSO::SetGeometryShader( const std::string& Name, const void * Binary, size_t Size )
 {
 	m_PSODesc->GS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
 }

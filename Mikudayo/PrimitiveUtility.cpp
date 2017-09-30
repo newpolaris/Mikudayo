@@ -11,6 +11,15 @@ using namespace Graphics::PrimitiveUtility;
 
 namespace Graphics {
 namespace PrimitiveUtility {
+
+	InputDesc Desc[4] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+
     BoolVar s_bEnableDrawBone( "Application/Model/Draw Bone", false );
     BoolVar s_bEnableDrawBoundingSphere( "Application/Model/Draw Bounding Shphere", false );
     // If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
@@ -34,14 +43,6 @@ namespace PrimitiveUtility {
 
 void PrimitiveUtility::Initialize()
 {
-	InputDesc BoneInputDesc[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
 	std::vector<GeometryGenerator::Vertex> Vertices;
 	std::vector<uint32_t> Indices;
 
@@ -63,6 +64,7 @@ void PrimitiveUtility::Initialize()
         };
         m_Mesh[kBoneMesh] = AppendGeometry( geoGen.CreateCylinder( 2.0f, 0.1f, 1.0f, 5, 1 ) );
 		m_Mesh[kSphereMesh] = AppendGeometry( geoGen.CreateSphere( 1.0f, 8, 8 ) );
+        m_Mesh[kFarClipMesh] = AppendGeometry( geoGen.CreateQuad( -1, -1, 2, 2, -1 ) );
 	}
 
 	m_GeometryVertexBuffer.Create( L"GeometryVertex", static_cast<uint32_t>(Vertices.size()),
@@ -74,7 +76,7 @@ void PrimitiveUtility::Initialize()
 	D3D11_RASTERIZER_DESC RasterizerWire = RasterizerDefault;
 	RasterizerWire.FillMode = D3D11_FILL_WIREFRAME;
 
-	m_PrimitivePSO.SetInputLayout( _countof(BoneInputDesc), BoneInputDesc );
+	m_PrimitivePSO.SetInputLayout( _countof(Desc), Desc );
 	m_PrimitivePSO.SetVertexShader( MY_SHADER_ARGS( g_pModelPrimitiveVS ) );
 	m_PrimitivePSO.SetPixelShader( MY_SHADER_ARGS( g_pModelPrimitivePS ) );
 	m_PrimitivePSO.SetDepthStencilState( DepthStateDisabled );
@@ -116,4 +118,12 @@ void PrimitiveUtility::Flush( GraphicsContext& Context )
         }
         m_PrimitiveQueue[i].resize(0);
     }
+}
+
+void Graphics::PrimitiveUtility::Render( GraphicsContext& Context, PrimtiveMeshType Type )
+{
+	Context.SetVertexBuffer( 0, m_GeometryVertexBuffer.VertexBufferView() );
+	Context.SetIndexBuffer( m_GeometryIndexBuffer.IndexBufferView() );
+    SubmeshGeometry& mesh = m_Mesh[Type];
+    Context.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, mesh.VertexOffset );
 }

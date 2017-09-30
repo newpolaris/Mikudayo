@@ -3,23 +3,6 @@
 SamplerState linearRepeat : register(s0);
 SamplerState linearClamp : register(s1);
 
-// Per-pixel color data passed through the pixel shader.
-#if 0
-struct PixelShaderInput
-{
-	float4 posHS : SV_POSITION;
-	float3 posVS : POSITION0;
-	float3 normalVS : NORMAL;
-	float2 uv : TEXTURE;
-};
-#else
-struct PixelShaderInput
-{
-	float4 posHS : SV_Position;
-	float2 uv : TexCoords0;
-};
-#endif
-
 cbuffer PassConstants : register(b1)
 {
     float3 SunDirectionVS;
@@ -43,11 +26,10 @@ Texture2D NormalTextureVS : register(t2);
 Texture2D PositionTextureVS : register(t3);
 
 // Deferred lighting pixel shader.
-#if 1
-// [earlydepthstencil]
-float4 main( PixelShaderInput input ) : SV_Target
+[earlydepthstencil]
+float4 main( float4 posHS : SV_Position ) : SV_Target
 {
-    int2 texCoord = input.posHS.xy;
+    int2 texCoord = posHS.xy;
     // float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
 
     // float4 P = ScreenToView( float4( texCoord, depth, 1.0f ) );
@@ -86,11 +68,3 @@ float4 main( PixelShaderInput input ) : SV_Target
     }
     return diffuse * lit.Diffuse + specular * lit.Specular;
 }
-#else
-// Pixel shader to render a texture to the screen.
-float4 main( PixelShaderInput input ) : SV_Target
-{
-    // return float4( input.uv, 0, 1 );
-    return SpecularTextureVS.SampleLevel( linearRepeat, input.uv, 0 );
-}
-#endif

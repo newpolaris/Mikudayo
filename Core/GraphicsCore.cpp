@@ -546,6 +546,7 @@ void Graphics::Initialize( void )
 	RasterizerDefault.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
 	RasterizerDefault.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
 	RasterizerDefault.DepthClipEnable = TRUE;
+    RasterizerDefault.ScissorEnable = FALSE;
 	RasterizerDefault.MultisampleEnable = FALSE;
 	RasterizerDefault.AntialiasedLineEnable = FALSE;
 
