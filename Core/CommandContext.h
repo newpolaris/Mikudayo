@@ -245,6 +245,7 @@ public:
 	void ClearDepth( DepthBuffer& Target );
 	void ClearDepth( DepthBuffer& Target, uint32_t Slice );
 	void ClearStencil( DepthBuffer& Target );
+	void ClearStencil( DepthBuffer& Target, uint8_t Stencil );
 	void ClearDepthAndStencil( DepthBuffer& Target );
 
 	void GenerateMips( D3D11_SRV_HANDLE SRV );

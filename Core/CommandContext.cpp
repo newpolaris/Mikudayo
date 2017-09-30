@@ -570,6 +570,11 @@ void GraphicsContext::ClearStencil( DepthBuffer& Target )
 	m_CommandList->ClearDepthStencilView( Target.GetDSV(), D3D11_CLEAR_STENCIL, Target.GetClearDepth(), Target.GetClearStencil() );
 }
 
+void GraphicsContext::ClearStencil( DepthBuffer& Target, uint8_t Stencil )
+{
+	m_CommandList->ClearDepthStencilView( Target.GetDSV(), D3D11_CLEAR_STENCIL, Target.GetClearDepth(), Stencil );
+}
+
 void GraphicsContext::ClearDepthAndStencil( DepthBuffer& Target )
 {
 	m_CommandList->ClearDepthStencilView(Target.GetDSV(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, Target.GetClearDepth(), Target.GetClearStencil() );
