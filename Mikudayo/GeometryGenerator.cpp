@@ -398,7 +398,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius
 	// Compute vertices for each stack ring starting at the bottom and moving up.
 	for(uint32 i = 0; i < ringCount; ++i)
 	{
-		float y = -0.5f*height + i*stackHeight;
+		float y = -1.0f*height + i*stackHeight;
 		float r = bottomRadius + i*radiusStep;
 
 		// vertices of ring
@@ -483,7 +483,7 @@ void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius,
 
 	uint32 baseIndex = (uint32)meshData.Vertices.size();
 
-	float y = 0.5f*height;
+	float y = 0.0f*height;
 	float dTheta = 2.0f*XM_PI/sliceCount;
 
 	// Duplicate cap ring vertices because the texture coordinates and normals differ.
@@ -525,7 +525,7 @@ void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadi
 	//
 
 	uint32 baseIndex = (uint32)meshData.Vertices.size();
-	float y = -0.5f*height;
+	float y = -1.0f*height;
 
 	// vertices of ring
 	float dTheta = 2.0f*XM_PI/sliceCount;
