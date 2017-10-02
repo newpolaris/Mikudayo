@@ -2,6 +2,7 @@
 
 class GraphicsContext;
 class SceneNode;
+class RenderArgs;
 
 namespace Math
 {
@@ -19,7 +20,7 @@ namespace Lighting
     void CreateRandomLights(const Math::Vector3 minBound, const Math::Vector3 maxBound);
 
     void Initialize( void );
-    void Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene );
+    void Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args );
     void Shutdown( void );
     void UpdateLights( const Math::Camera& C );
 }

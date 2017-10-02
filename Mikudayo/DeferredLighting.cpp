@@ -19,6 +19,7 @@
 #include "TransparentPass.h"
 #include "PrimitiveUtility.h"
 #include "DebugHelper.h"
+#include "RenderArgs.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
@@ -51,6 +52,7 @@ namespace Lighting
         float SpotlightAngle;
     };
     LightData m_LightData[MaxLights];
+    Matrix4 m_FullScreenProjMatrix;
 
     StructuredBuffer m_LightBuffer;
     ColorBuffer m_DiffuseTexture;
@@ -60,16 +62,18 @@ namespace Lighting
 
     GraphicsPSO m_GBufferPSO;
     GraphicsPSO m_LightingPSO;
+    GraphicsPSO m_OpaquePSO;
     GraphicsPSO m_TransparentPSO;
     GraphicsPSO m_Lighting1PSO;
     GraphicsPSO m_Lighting2PSO;
+    GraphicsPSO m_DirectionalLightPSO;
     GraphicsPSO m_LightDebugPSO;
     GraphicsPSO m_TextureDebugPSO;
     OpaquePass m_OaquePass;
     TransparentPass m_TransparentPass;
 
-    void LightingPass( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene );
-    void RenderSubPass( GraphicsContext& gfxContext );
+    Matrix4 GetLightTransfrom( const LightData& Data, const Matrix4& ViewToProj );
+    void RenderSubPass( GraphicsContext& gfxContext, GraphicsPSO& PSO, const D3D11_RTV_HANDLE RTV, PrimitiveUtility::PrimtiveMeshType Type );
 }
 
 inline Vector3 Convert(const glm::vec3& v )
@@ -122,18 +126,19 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     }
 
     m_LightData[0].Color = Color(1.f, 0.f, 0.f);
-    m_LightData[0].Range = 30;
-    m_LightData[0].Type = LightType(0);
-    m_LightData[0].PositionWS = Vector4(0, 20, -20, 1);
-    // m_LightData[0].PositionWS = Vector4(0, 20, -30, 1);
+    m_LightData[0].Range = 40;
+    m_LightData[0].Type = LightType(1);
+    m_LightData[0].PositionWS = Vector4(0, 15, -5, 1);
+    m_LightData[0].DirectionWS = Normalize(Vector3(0, -1, -1));
+    m_LightData[0].SpotlightAngle = 45;
 
     m_LightData[1].Color = Color(0.f, 1.f, 0.f);
-    m_LightData[1].Range = 50;
+    m_LightData[1].Range = 30;
     m_LightData[1].Type = LightType(0);
     m_LightData[1].PositionWS = Vector4(0, 50, 10, 1);
 
     m_LightData[2].Color = Color(0.f, 0.f, 1.f);
-    m_LightData[2].Range = 50;
+    m_LightData[2].Range = 30;
     m_LightData[2].Type = LightType(1);
     m_LightData[2].PositionWS = Vector4(25, 25, 10, 1);
 
@@ -152,6 +157,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
 
 void Lighting::Initialize( void )
 {
+    m_FullScreenProjMatrix = Math::OrthographicMatrix( 2, 2, 0, 1, Math::g_ReverseZ );
     const uint32_t width = g_NativeWidth, height = g_NativeHeight;
 
     m_DiffuseTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
@@ -175,23 +181,22 @@ void Lighting::Initialize( void )
     m_GBufferPSO.SetRasterizerState( RasterizerDefault );
     m_GBufferPSO.Finalize();
 
-    m_LightingPSO.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
-    m_LightingPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingPS ) );
-    m_LightingPSO.SetBlendState( BlendAdditive );
-    m_LightingPSO.SetDepthStencilState( DepthStateDisabled );
-    m_LightingPSO.Finalize();
+    m_OpaquePSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
+    m_OpaquePSO.SetRasterizerState( RasterizerDefault );
+    m_OpaquePSO.SetDepthStencilState( DepthStateReadWrite );
+    m_OpaquePSO.Finalize();
 
-    m_TransparentPSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
-    m_TransparentPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_TransparentPSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
+    m_TransparentPSO = m_OpaquePSO;
     m_TransparentPSO.SetBlendState( BlendTraditional );
-    m_TransparentPSO.SetRasterizerState( RasterizerDefault );
     m_TransparentPSO.Finalize();
 
     m_LightDebugPSO.SetInputLayout( _countof( PrimitiveUtility::Desc ), PrimitiveUtility::Desc );
     m_LightDebugPSO.SetVertexShader( MY_SHADER_ARGS( g_pDeferredLightingVS ) );
     m_LightDebugPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingDebugPS ) );
     m_LightDebugPSO.SetRasterizerState( RasterizerWireframe );
+    m_LightDebugPSO.SetDepthStencilState( DepthStateReadWrite );
     m_LightDebugPSO.Finalize();
 
     // Disable writing to the depth buffer.
@@ -229,111 +234,67 @@ void Lighting::Initialize( void )
     m_Lighting2PSO.SetDepthStencilState( depth2 );
     m_Lighting2PSO.Finalize();
 
-    // Pipeline for directional lights in deferred shader (only requires a single pass)
-    /*
-    {
-        g_pDirectionalLightsPipeline = renderDevice.CreatePipelineState();
-        g_pDirectionalLightsPipeline->SetShader( Shader::VertexShader, g_pVertexShader );
-        g_pDirectionalLightsPipeline->SetShader( Shader::PixelShader, g_pDeferredLightingPixelShader );
-        g_pDirectionalLightsPipeline->SetRenderTarget( renderWindow.GetRenderTarget() );
-        g_pDirectionalLightsPipeline->GetBlendState().SetBlendMode( additiveBlending );
-
-        // Setup depth mode
-        DepthStencilState::DepthMode depthMode( true, DepthStencilState::DepthWrite::Disable ); // Disable depth writes.
-        // The full-screen quad that will be used to light pixels will be placed at the far clipping plane.
-        // Only light pixels that are "in front" of the full screen quad (exclude sky box pixels)
-        depthMode.DepthFunction = DepthStencilState::CompareFunction::Greater;
-        g_pDirectionalLightsPipeline->GetDepthStencilState().SetDepthMode( depthMode );
-    }
-    */
+    m_DirectionalLightPSO = m_Lighting2PSO;
+    // m_DirectionalLightPSO.SetDepthStencilState( DepthStateReadOnlyReversed );
+    m_DirectionalLightPSO.SetDepthStencilState( DepthStateDisabled );
+    // m_DirectionalLightPSO.SetRasterizerState( RasterizerDefault );
+    m_DirectionalLightPSO.SetRasterizerState( RasterizerDefaultCW );
+    m_DirectionalLightPSO.Finalize();
 }
 
-using namespace Lighting;
-Matrix4 GetLightTransfrom(const LightData& Data)
+Matrix4 Lighting::GetLightTransfrom(const LightData& Data, const Matrix4& ViewToProj)
 {
     if ( Data.Type == LightType::Directional )
-    {
-        // return perObjectData.ModelViewProjection = m_pAlignedProperties->m_OrthographicProjection;
-    }
-    else
-    {
-        // glm::mat4 rotation = glm::toMat4( glm::quat( glm::vec3( 0, 0, 1 ), glm::normalize( glm::vec3( m_pCurrentLight->m_DirectionWS ) ) ) );
-        Quaternion quat = RotationBetweenVectors( Vector3( 0, 0, 1 ), Data.DirectionWS );
-        OrthogonalTransform transform( quat, Vector3( Data.PositionWS ) );
+        return m_FullScreenProjMatrix;
 
-        // Compute the scale depending on the light type.
-        float scaleX, scaleY, scaleZ;
-        // For point lights, we want to scale the geometry by the range of the light.
-        scaleX = scaleY = scaleZ = Data.Range;
-        if ( Data.Type == LightType::Spot )
-        {
-            // For spotlights, we want to scale the base of the cone by the spotlight angle.
-            scaleX = scaleY = glm::tan( glm::radians( Data.SpotlightAngle ) ) * Data.Range;
-        }
-        AffineTransform scale = AffineTransform::MakeScale( Vector3(scaleX, scaleY, scaleZ) );
-        return AffineTransform(transform) * scale;
+    Quaternion quat = RotationBetweenVectors( Vector3( 0, -1, 0 ), Data.DirectionWS );
+    OrthogonalTransform transform( quat, Vector3( Data.PositionWS ) );
+
+    // Compute the scale depending on the light type.
+    float scaleX, scaleY, scaleZ;
+    // For point lights, we want to scale the geometry by the range of the light.
+    scaleX = scaleY = scaleZ = Data.Range;
+    if (Data.Type == LightType::Spot)
+    {
+        // For spotlights, we want to scale the base of the cone by the spotlight angle.
+        scaleX = scaleZ = glm::tan( glm::radians( Data.SpotlightAngle ) ) * Data.Range;
     }
+    AffineTransform scale = AffineTransform::MakeScale( Vector3( scaleX, scaleY, scaleZ ) );
+    return ViewToProj * AffineTransform( transform ) * scale;
 }
 
-void Lighting::LightingPass( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene )
+void Lighting::RenderSubPass( GraphicsContext& gfxContext,
+    GraphicsPSO& PSO,
+    const D3D11_RTV_HANDLE RTV,
+    PrimitiveUtility::PrimtiveMeshType Type )
 {
-    ScopedTimer _prof( L"Lighting Pass", gfxContext );
-    D3D11_SRV_HANDLE srvs[] = {
-        m_DiffuseTexture.GetSRV(),
-        m_SpecularTexture.GetSRV(),
-        m_NormalTexture.GetSRV(),
-        m_PositionTexture.GetSRV()
-    };
-
-    gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
-    gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-    gfxContext.SetPipelineState( m_LightingPSO );
-
-    for (uint32_t i = 0; i < MaxLights; i++)
+#if 0
+    if (RTV != nullptr) 
     {
-        __declspec(align(16)) uint32_t idx = i;
-        gfxContext.SetDynamicConstantBufferView( 4, sizeof(uint32_t), &idx, { kBindPixel } );
-        // Clear the stencil buffer for the next light
-        gfxContext.ClearStencil( g_SceneDepthBuffer, 1 );
-
-        LightData& light = m_LightData[i];
-        __declspec(align(16)) Matrix4 model = GetLightTransfrom( light );
-        gfxContext.SetDynamicConstantBufferView( 2, sizeof(Matrix4), &model, { kBindVertex } );
-        switch (light.Type)
-        {
-        case LightType::Point:
-        #if 1
-            gfxContext.SetPipelineState( m_LightDebugPSO );
-            gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-            PrimitiveUtility::Render( gfxContext, PrimitiveUtility::kSphereMesh );
-        #endif
-
-            gfxContext.SetPipelineState( m_Lighting1PSO );
-            gfxContext.SetRenderTargets( 0, nullptr, g_SceneDepthBuffer.GetDSV() );
-            PrimitiveUtility::Render( gfxContext, PrimitiveUtility::kSphereMesh );
-
-            gfxContext.SetPipelineState( m_Lighting2PSO );
-            gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-            PrimitiveUtility::Render( gfxContext, PrimitiveUtility::kSphereMesh );
-            break;
-        case LightType::Spot:
-            // RenderSubPass( e, m_pSpotLightScene, m_LightPipeline0 );
-            // RenderSubPass( e, m_pSpotLightScene, m_LightPipeline1 );
-            break;
-        case LightType::Directional:
-            // RenderSubPass( e, m_pDirectionalLightScene, m_DirectionalLightPipeline );
-            break;
-        }
+        gfxContext.SetPipelineState( m_LightDebugPSO );
+        gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV() );
+        PrimitiveUtility::Render( gfxContext, Type );
     }
+#endif
+    gfxContext.SetPipelineState( PSO );
+    gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV() );
+    PrimitiveUtility::Render( gfxContext, Type );
 }
 
-void Lighting::RenderSubPass( GraphicsContext& gfxContext )
+void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args)
 {
-    PrimitiveUtility::Render( gfxContext, PrimitiveUtility::kSphereMesh );
-}
+    ASSERT( args != nullptr );
 
-void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene )
-{
+#if 1
+    struct ScreenToViewParams
+    {
+        Matrix4 InverseProjectionMatrix;
+        Vector4 ScreenDimensions;
+    } psScreenToView;
+    psScreenToView.InverseProjectionMatrix = Invert( args->m_ViewMatrix );
+    psScreenToView.ScreenDimensions = Vector4( args->m_MainViewport.Width, args->m_MainViewport.Height, 0, 0 );
+    gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
+
     gfxContext.ClearColor( m_DiffuseTexture );
     gfxContext.ClearColor( m_SpecularTexture );
     gfxContext.ClearColor( m_NormalTexture );
@@ -353,10 +314,54 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
         gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
     }
-    LightingPass( gfxContext, scene );
+    {
+        ScopedTimer _prof( L"Lighting Pass", gfxContext );
+        D3D11_SRV_HANDLE srvs[] = {
+            m_DiffuseTexture.GetSRV(),
+            m_SpecularTexture.GetSRV(),
+            m_NormalTexture.GetSRV(),
+            m_PositionTexture.GetSRV()
+        };
+
+        gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
+
+        for (uint32_t i = 0; i < MaxLights; i++)
+        {
+            // Clear the stencil buffer for the next light
+            gfxContext.ClearStencil( g_SceneDepthBuffer, 1 );
+
+            __declspec(align(16)) uint32_t idx = i;
+            gfxContext.SetDynamicConstantBufferView( 4, sizeof( uint32_t ), &idx, { kBindPixel } );
+
+            Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
+            LightData& light = m_LightData[i];
+            __declspec(align(16)) Matrix4 model = GetLightTransfrom( light, ViewToClip );
+            gfxContext.SetDynamicConstantBufferView( 2, sizeof( Matrix4 ), &model, { kBindVertex } );
+
+            switch (light.Type)
+            {
+            case LightType::Point:
+                RenderSubPass( gfxContext, m_Lighting1PSO, nullptr, PrimitiveUtility::kSphereMesh );
+                RenderSubPass( gfxContext, m_Lighting2PSO, g_SceneColorBuffer.GetRTV(), PrimitiveUtility::kSphereMesh );
+                break;
+            case LightType::Spot:
+                RenderSubPass( gfxContext, m_Lighting1PSO, nullptr, PrimitiveUtility::kConeMesh );
+                RenderSubPass( gfxContext, m_Lighting2PSO, g_SceneColorBuffer.GetRTV(), PrimitiveUtility::kConeMesh );
+                break;
+            case LightType::Directional:
+                RenderSubPass( gfxContext, m_DirectionalLightPSO, g_SceneColorBuffer.GetRTV(), PrimitiveUtility::kFarClipMesh );
+                break;
+            }
+        }
+    }
+#endif
     gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
     {
         ScopedTimer _prof( L"Forward Pass", gfxContext );
+    #if 0
+        gfxContext.SetPipelineState( m_OpaquePSO );
+        scene->Render( gfxContext, m_OaquePass );
+    #endif
         gfxContext.SetPipelineState( m_TransparentPSO );
         scene->Render( gfxContext, m_TransparentPass );
     }

@@ -545,7 +545,8 @@ void GraphicsContext::SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTV
 }
 
 void GraphicsContext::SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DSV ) {
-	SetRenderTargets( 1, &RTV, DSV );
+    D3D11_RTV_HANDLE RTVs[] = { RTV };
+    SetRenderTargets( 1, RTVs, DSV );
 }
 
 void GraphicsContext::ClearColor( ColorBuffer & Target )

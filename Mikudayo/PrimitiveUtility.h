@@ -10,6 +10,7 @@ namespace PrimitiveUtility {
     enum PrimtiveMeshType {
         kBoneMesh,
         kSphereMesh,
+        kConeMesh,
         kFarClipMesh,
         kBatchMax
     };

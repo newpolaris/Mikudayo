@@ -62,9 +62,10 @@ void PrimitiveUtility::Initialize()
 
             return mesh;
         };
-        m_Mesh[kBoneMesh] = AppendGeometry( geoGen.CreateCylinder( 2.0f, 0.1f, 1.0f, 5, 1 ) );
-		m_Mesh[kSphereMesh] = AppendGeometry( geoGen.CreateSphere( 1.0f, 8, 8 ) );
-        m_Mesh[kFarClipMesh] = AppendGeometry( geoGen.CreateQuad( -1, -1, 2, 2, -1 ) );
+        m_Mesh[kBoneMesh] = AppendGeometry( geoGen.CreateCylinder( 2.0f, 0.1f, 1.0f, 8, 1 ) );
+		m_Mesh[kSphereMesh] = AppendGeometry( geoGen.CreateSphere( 1.0f, 16, 16 ) );
+		m_Mesh[kConeMesh] = AppendGeometry( geoGen.CreateCylinder( 1.0f, 0.f, 1.0f, 16, 1 ) );
+        m_Mesh[kFarClipMesh] = AppendGeometry( geoGen.CreateQuad( -1, 1, -1, 1, -1 ) );
 	}
 
 	m_GeometryVertexBuffer.Create( L"GeometryVertex", static_cast<uint32_t>(Vertices.size()),

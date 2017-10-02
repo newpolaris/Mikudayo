@@ -621,7 +621,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateGrid(float width, float dep
     return meshData;
 }
 
-GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, float w, float h, float depth)
+GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float left, float right, float bottom, float top, float depth)
 {
     MeshData meshData;
 
@@ -630,25 +630,25 @@ GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, floa
 
 	// Position coordinates specified in NDC space.
 	meshData.Vertices[0] = Vertex(
-        x, y - h, depth,
+        left, bottom, depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 1.0f);
 
 	meshData.Vertices[1] = Vertex(
-		x, y, depth,
+		left, top, depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f);
 
 	meshData.Vertices[2] = Vertex(
-		x+w, y, depth,
+		right, top, depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		1.0f, 0.0f);
 
 	meshData.Vertices[3] = Vertex(
-		x+w, y-h, depth,
+		right, bottom, depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		1.0f, 1.0f);

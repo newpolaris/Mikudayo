@@ -6,7 +6,7 @@
 #include "Bullet/PrimitiveBatch.h"
 #include "SoftBodyManager.h"
 #include "ModelManager.h"
-
+#include "RenderArgs.h"
 #include "DeferredLighting.h"
 #include "SceneNode.h"
 
@@ -76,7 +76,7 @@ void Mikudayo::Startup( void )
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
     Lighting::Initialize();
-    Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 100, 100 ) );
+    Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 25, 100 ) );
 
     const Vector3 eye = Vector3(0.0f, 18.0f, 15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
@@ -208,8 +208,9 @@ void Mikudayo::Update( float deltaT )
 
 void Mikudayo::RenderScene( void )
 {
-	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
+    RenderArgs args = { m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
+	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
     struct VSConstants
     {
         Matrix4 view;
@@ -236,22 +237,10 @@ void Mikudayo::RenderScene( void )
 
     gfxContext.ClearColor( g_SceneColorBuffer );
     gfxContext.ClearDepth( g_SceneDepthBuffer );
-    gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
+    gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
     {
         ScopedTimer _prof( L"Render Color", gfxContext );
-
-        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-
-        struct ScreenToViewParams
-        {
-            Matrix4 InverseProjectionMatrix;
-            Vector4 ScreenDimensions;
-        } psScreenToView;
-        psScreenToView.InverseProjectionMatrix = Invert( m_ViewMatrix );
-        psScreenToView.ScreenDimensions = Vector4( m_MainViewport.Width, m_MainViewport.Height, 0, 0 );
-        gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
-        Lighting::Render( gfxContext, m_Scene );
-
+        Lighting::Render( gfxContext, m_Scene, &args );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

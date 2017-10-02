@@ -158,6 +158,9 @@
     <ClInclude Include="TransparentPass.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="RenderArgs.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">
