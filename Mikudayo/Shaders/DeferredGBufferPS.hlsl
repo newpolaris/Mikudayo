@@ -71,7 +71,8 @@ PixelShaderOutput main( PixelShaderInput input )
     if (bUseToon)
         texColor *= texToon.Sample( sampler0, toonCoord );
 
-    Out.LightAccumulation = float4(texColor * ambient, 1.0);
+    // Out.LightAccumulation = float4(texColor * ambient, 1.0);
+    Out.LightAccumulation = float4(texColor * ambient * 0.1, 1.0);
     Out.Diffuse = float4(texColor * diffuse, 1.0);
     Out.NormalVS = float4(normalVS, 0);
     // Method of packing specular power from "Deferred Rendering in Killzone 2" presentation 

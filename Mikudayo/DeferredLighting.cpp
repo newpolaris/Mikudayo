@@ -133,28 +133,6 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     m_LightData[0].PositionWS = Vector4(0, 15, -5, 1);
     m_LightData[0].DirectionWS = Normalize(Vector3(0, -1, -1));
     m_LightData[0].SpotlightAngle = 45;
-
-    m_LightData[1].Color = Color(0.f, 1.f, 0.f);
-    m_LightData[1].Range = 30;
-    m_LightData[1].Type = LightType(0);
-    m_LightData[1].PositionWS = Vector4(0, 50, 10, 1);
-
-    m_LightData[2].Color = Color(0.f, 0.f, 1.f);
-    m_LightData[2].Range = 30;
-    m_LightData[2].Type = LightType(1);
-    m_LightData[2].PositionWS = Vector4(25, 25, 10, 1);
-
-#if 0
-    m_LightData[3].Color = Color(0.5f, 0.5f, 0.f);
-    m_LightData[3].Range = 150;
-    m_LightData[3].Type = 0;
-    m_LightData[3].PositionWS = Vector4(25, 25, 25, 1);
-
-    m_LightData[4].Color = Color(1.0f, 0.0f, 0.f);
-    m_LightData[4].Range = 80;
-    m_LightData[4].Type = 0;
-    m_LightData[4].PositionWS = Vector4(-100, 30, 15, 1);
-#endif
 }
 
 void Lighting::Initialize( void )
