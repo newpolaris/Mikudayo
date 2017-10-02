@@ -58,7 +58,6 @@ namespace Lighting
     ColorBuffer m_DiffuseTexture;
     ColorBuffer m_SpecularTexture;
     ColorBuffer m_NormalTexture;
-    ColorBuffer m_PositionTexture;
 
     GraphicsPSO m_GBufferPSO;
     GraphicsPSO m_LightingPSO;
@@ -143,7 +142,6 @@ void Lighting::Initialize( void )
     m_DiffuseTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
     m_SpecularTexture.Create(L"Specular Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
     m_NormalTexture.Create( L"Normal Buffer", width, height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT );
-    m_PositionTexture.Create( L"Position Buffer", width, height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT );
 
 	InputDesc PmxLayout[] = {
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -249,11 +247,11 @@ void Lighting::RenderSubPass( GraphicsContext& gfxContext,
     if (RTV != nullptr && s_bLightBoundary) 
     {
         gfxContext.SetPipelineState( m_LightDebugPSO );
-        gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
         PrimitiveUtility::Render( gfxContext, Type );
     }
     gfxContext.SetPipelineState( PSO );
-    gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
     PrimitiveUtility::Render( gfxContext, Type );
 }
 
@@ -267,14 +265,13 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         Matrix4 InverseProjectionMatrix;
         Vector4 ScreenDimensions;
     } psScreenToView;
-    psScreenToView.InverseProjectionMatrix = Invert( args->m_ViewMatrix );
+    psScreenToView.InverseProjectionMatrix = Invert( args->m_ProjMatrix );
     psScreenToView.ScreenDimensions = Vector4( args->m_MainViewport.Width, args->m_MainViewport.Height, 0, 0 );
     gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
 
     gfxContext.ClearColor( m_DiffuseTexture );
     gfxContext.ClearColor( m_SpecularTexture );
     gfxContext.ClearColor( m_NormalTexture );
-    gfxContext.ClearColor( m_PositionTexture );
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );
         D3D11_RTV_HANDLE rtvs[] = {
@@ -282,7 +279,6 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             m_DiffuseTexture.GetRTV(),
             m_SpecularTexture.GetRTV(),
             m_NormalTexture.GetRTV(),
-            m_PositionTexture.GetRTV()
         };
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_GBufferPSO );
@@ -296,9 +292,8 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             m_DiffuseTexture.GetSRV(),
             m_SpecularTexture.GetSRV(),
             m_NormalTexture.GetSRV(),
-            m_PositionTexture.GetSRV()
+            g_SceneDepthBuffer.GetDepthSRV(),
         };
-
         gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
 
         for (uint32_t i = 0; i < MaxLights; i++)
@@ -330,6 +325,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             }
         }
     }
+    gfxContext.SetDynamicDescriptor( 3, nullptr, { kBindPixel } );
 #endif
     gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
     {
@@ -352,7 +348,6 @@ void Lighting::Shutdown( void )
     m_DiffuseTexture.Destroy();
     m_SpecularTexture.Destroy();
     m_NormalTexture.Destroy();
-    m_PositionTexture.Destroy();
 }
 
 void Lighting::UpdateLights( const Camera& C )

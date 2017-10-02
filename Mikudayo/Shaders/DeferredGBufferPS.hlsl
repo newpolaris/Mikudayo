@@ -15,7 +15,6 @@ struct PixelShaderOutput
     float4 Diffuse              : SV_Target1;   // Diffuse Albedo (R8G8B8_UNORM) Unused (A8_UNORM)
     float4 Specular             : SV_Target2;   // Specular Color (R8G8B8_UNROM) Specular Power(A8_UNORM)
     float4 NormalVS             : SV_Target3;   // View space normal (R32G32B32_FLOAT) Unused (A32_FLOAT)
-    float4 PositionVS           : SV_Target4;
 };
 
 static const int kSphereNone = 0;
@@ -78,7 +77,6 @@ PixelShaderOutput main( PixelShaderInput input )
     // Method of packing specular power from "Deferred Rendering in Killzone 2" presentation 
     // from Michiel van der Leeuw, Guerrilla (2007)
     Out.Specular = float4(material.specular.rgb, log2( material.specularPower ) / 10.5f);
-    Out.PositionVS = float4(input.posVS, 1.0);
 
     return Out;
 }

@@ -22,22 +22,18 @@ Texture2D SpecularTextureVS : register(t1);
 // The normal from the screen space texture.
 Texture2D NormalTextureVS : register(t2);
 // The depth from the screen space texture.
-// Texture2D DepthTextureVS : register(t3);
-Texture2D PositionTextureVS : register(t3);
+Texture2D DepthTextureVS : register(t3);
 
 // Deferred lighting pixel shader.
 [earlydepthstencil]
 float4 main( float4 posHS : SV_Position ) : SV_Target
 {
     int2 texCoord = posHS.xy;
-    // float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
-
-    // float4 P = ScreenToView( float4( texCoord, depth, 1.0f ) );
-    float3 P = PositionTextureVS.Load( int3(texCoord, 0) ).xyz;
+    float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
+    float3 P = ScreenToView( float4( texCoord, depth, 1.0f ) ).xyz;
 
     // View vector
-    // float3 V = normalize(-P);
-    float3 V = -P;
+    float3 V = normalize(-P);
 
     float4 diffuse = DiffuseTextureVS.Load( int3( texCoord, 0 ) );
     float4 specular = SpecularTextureVS.Load( int3( texCoord, 0 ) );
