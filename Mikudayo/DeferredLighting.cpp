@@ -72,7 +72,7 @@ namespace Lighting
     TransparentPass m_TransparentPass;
 
     Matrix4 GetLightTransfrom( const LightData& Data, const Matrix4& ViewToProj );
-    void RenderSubPass( GraphicsContext& gfxContext, GraphicsPSO& PSO, const D3D11_RTV_HANDLE RTV, PrimitiveUtility::PrimtiveMeshType Type );
+    void RenderSubPass( GraphicsContext& gfxContext, LightType Type, const Matrix4& ViewToClip, GraphicsPSO& PSO );
 }
 
 BoolVar s_bLightBoundary( "Application/Deferred/Light Boundary", false );
@@ -126,12 +126,14 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
         light.Type = LightType(randFloat() > 0.5);
     }
 
+#if 0
     m_LightData[0].Color = Color(1.f, 0.f, 0.f);
     m_LightData[0].Range = 40;
     m_LightData[0].Type = LightType(1);
     m_LightData[0].PositionWS = Vector4(0, 15, -5, 1);
     m_LightData[0].DirectionWS = Normalize(Vector3(0, -1, -1));
     m_LightData[0].SpotlightAngle = 45;
+#endif
 }
 
 void Lighting::Initialize( void )
@@ -177,18 +179,11 @@ void Lighting::Initialize( void )
     m_LightDebugPSO.SetDepthStencilState( DepthStateReadWrite );
     m_LightDebugPSO.Finalize();
 
-    // Disable writing to the depth buffer.
-    // Pass depth test if the light volume is behind scene geometry.
-    D3D11_DEPTH_STENCIL_DESC depth1 = DepthStateReadOnlyReversed;
-    depth1.StencilEnable = TRUE;
-    depth1.FrontFace.StencilPassOp = D3D11_STENCIL_OP_DECR_SAT;
-
     // Pipeline for deferred lighting (stage 1 to determine lit pixels)
     m_Lighting1PSO.SetInputLayout( _countof( PrimitiveUtility::Desc ), PrimitiveUtility::Desc );
     m_Lighting1PSO.SetVertexShader( MY_SHADER_ARGS( g_pDeferredLightingVS ) );
     m_Lighting1PSO.SetRasterizerState( RasterizerDefault );
-    m_Lighting1PSO.SetDepthStencilState( depth1 );
-    m_Lighting1PSO.SetStencilRef( 1 );
+    m_Lighting1PSO.SetDepthStencilState( DepthStateReadOnlyReversed );
     m_Lighting1PSO.Finalize();
 
     D3D11_RASTERIZER_DESC raster2 = RasterizerDefault;
@@ -199,9 +194,6 @@ void Lighting::Initialize( void )
     // Disable depth writes
     D3D11_DEPTH_STENCIL_DESC depth2 = DepthStateReadOnly;
 	depth2.DepthFunc = Math::g_ReverseZ ? D3D11_COMPARISON_LESS_EQUAL : D3D11_COMPARISON_GREATER_EQUAL;
-    depth2.StencilEnable = TRUE;
-    // Render pixel if the depth function passes and the stencil was not un-marked in the previous pass.
-    depth2.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
     // Pipeline for deferred lighting (stage 2 to render lit pixels)
     m_Lighting2PSO = m_Lighting1PSO;
@@ -239,20 +231,23 @@ Matrix4 Lighting::GetLightTransfrom(const LightData& Data, const Matrix4& ViewTo
     return ViewToProj * AffineTransform( transform ) * scale;
 }
 
-void Lighting::RenderSubPass( GraphicsContext& gfxContext,
-    GraphicsPSO& PSO,
-    const D3D11_RTV_HANDLE RTV,
-    PrimitiveUtility::PrimtiveMeshType Type )
+void Lighting::RenderSubPass( GraphicsContext& gfxContext, LightType Type, const Matrix4& ViewToClip, GraphicsPSO& PSO )
 {
-    if (RTV != nullptr && s_bLightBoundary) 
-    {
-        gfxContext.SetPipelineState( m_LightDebugPSO );
-        gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
-        PrimitiveUtility::Render( gfxContext, Type );
-    }
     gfxContext.SetPipelineState( PSO );
-    gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
-    PrimitiveUtility::Render( gfxContext, Type );
+    for (uint32_t i = 0; i < MaxLights; i++)
+    {
+        LightData& light = m_LightData[i];
+        if (Type != light.Type)
+            continue;
+        __declspec(align(16)) uint32_t idx = i;
+        gfxContext.SetDynamicConstantBufferView( 4, sizeof( uint32_t ), &idx, { kBindPixel } );
+        __declspec(align(16)) Matrix4 model = GetLightTransfrom( light, ViewToClip );
+        gfxContext.SetDynamicConstantBufferView( 2, sizeof( Matrix4 ), &model, { kBindVertex } );
+
+        using namespace PrimitiveUtility;
+        PrimtiveMeshType mesh[] = { kSphereMesh, kConeMesh, kFarClipMesh };
+        Render( gfxContext, mesh[(int)light.Type] );
+    }
 }
 
 void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args)
@@ -295,34 +290,17 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             g_SceneDepthBuffer.GetDepthSRV(),
         };
         gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
-
-        for (uint32_t i = 0; i < MaxLights; i++)
+        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
+        Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
+        RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting1PSO );
+        RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting1PSO );
+        RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting2PSO );
+        RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting2PSO );
+        RenderSubPass( gfxContext, LightType::Directional, ViewToClip, m_DirectionalLightPSO );
+        if (s_bLightBoundary)
         {
-            // Clear the stencil buffer for the next light
-            gfxContext.ClearStencil( g_SceneDepthBuffer, 1 );
-
-            __declspec(align(16)) uint32_t idx = i;
-            gfxContext.SetDynamicConstantBufferView( 4, sizeof( uint32_t ), &idx, { kBindPixel } );
-
-            Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
-            LightData& light = m_LightData[i];
-            __declspec(align(16)) Matrix4 model = GetLightTransfrom( light, ViewToClip );
-            gfxContext.SetDynamicConstantBufferView( 2, sizeof( Matrix4 ), &model, { kBindVertex } );
-
-            switch (light.Type)
-            {
-            case LightType::Point:
-                RenderSubPass( gfxContext, m_Lighting1PSO, nullptr, PrimitiveUtility::kSphereMesh );
-                RenderSubPass( gfxContext, m_Lighting2PSO, g_SceneColorBuffer.GetRTV(), PrimitiveUtility::kSphereMesh );
-                break;
-            case LightType::Spot:
-                RenderSubPass( gfxContext, m_Lighting1PSO, nullptr, PrimitiveUtility::kConeMesh );
-                RenderSubPass( gfxContext, m_Lighting2PSO, g_SceneColorBuffer.GetRTV(), PrimitiveUtility::kConeMesh );
-                break;
-            case LightType::Directional:
-                RenderSubPass( gfxContext, m_DirectionalLightPSO, g_SceneColorBuffer.GetRTV(), PrimitiveUtility::kFarClipMesh );
-                break;
-            }
+            RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_LightDebugPSO  );
+            RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_LightDebugPSO  );
         }
     }
     gfxContext.SetDynamicDescriptor( 3, nullptr, { kBindPixel } );
