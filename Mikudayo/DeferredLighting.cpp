@@ -76,6 +76,8 @@ namespace Lighting
     void RenderSubPass( GraphicsContext& gfxContext, GraphicsPSO& PSO, const D3D11_RTV_HANDLE RTV, PrimitiveUtility::PrimtiveMeshType Type );
 }
 
+BoolVar s_bLightBoundary( "Application/Deferred/Light Boundary", false );
+
 inline Vector3 Convert(const glm::vec3& v )
 {
     return Vector3( v.x, v.y, v.z );
@@ -235,9 +237,7 @@ void Lighting::Initialize( void )
     m_Lighting2PSO.Finalize();
 
     m_DirectionalLightPSO = m_Lighting2PSO;
-    // m_DirectionalLightPSO.SetDepthStencilState( DepthStateReadOnlyReversed );
     m_DirectionalLightPSO.SetDepthStencilState( DepthStateDisabled );
-    // m_DirectionalLightPSO.SetRasterizerState( RasterizerDefault );
     m_DirectionalLightPSO.SetRasterizerState( RasterizerDefaultCW );
     m_DirectionalLightPSO.Finalize();
 }
@@ -268,14 +268,12 @@ void Lighting::RenderSubPass( GraphicsContext& gfxContext,
     const D3D11_RTV_HANDLE RTV,
     PrimitiveUtility::PrimtiveMeshType Type )
 {
-#if 0
-    if (RTV != nullptr) 
+    if (RTV != nullptr && s_bLightBoundary) 
     {
         gfxContext.SetPipelineState( m_LightDebugPSO );
         gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV() );
         PrimitiveUtility::Render( gfxContext, Type );
     }
-#endif
     gfxContext.SetPipelineState( PSO );
     gfxContext.SetRenderTarget( RTV, g_SceneDepthBuffer.GetDSV() );
     PrimitiveUtility::Render( gfxContext, Type );
@@ -362,8 +360,10 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         gfxContext.SetPipelineState( m_OpaquePSO );
         scene->Render( gfxContext, m_OaquePass );
     #endif
+    #if 1
         gfxContext.SetPipelineState( m_TransparentPSO );
         scene->Render( gfxContext, m_TransparentPass );
+    #endif
     }
 }
 

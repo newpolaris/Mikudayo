@@ -77,9 +77,11 @@ void Mikudayo::Startup( void )
     ModelManager::Initialize();
     Lighting::Initialize();
     Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 25, 100 ) );
+    // Lighting::CreateRandomLights( Vector3( -100, 0, -350 ), Vector3( 100, 50, 100 ) );
 
     const Vector3 eye = Vector3(0.0f, 18.0f, 15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
+    m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f / 16.0f, 1.0f, 2000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
@@ -111,8 +113,11 @@ void Mikudayo::Startup( void )
 
     ModelInfo stage;
     stage.Type = kModelPMX;
-    stage.Name = L"黒白";
-    stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+    // stage.Name = L"黒白";
+    stage.Name = L"HalloweenStage";
+    // stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+    stage.File = L"Model/HalloweenStage/halloween.Pmx";
+
     if (ModelManager::Load( stage ))
     {
         const auto& model = ModelManager::GetModel( stage.Name );
