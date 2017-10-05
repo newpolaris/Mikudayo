@@ -35,9 +35,9 @@ SamplerState sampler0 : register(s0);
 SamplerState sampler1 : register(s1);
 
 // The diffuse color from the view space texture.
-Texture2D<float4> DiffuseTextureVS : register(t4);
+Texture2D<float3> DiffuseTextureVS : register(t4);
 // The specular color from the screen space texture.
-Texture2D<float4> SpecularTextureVS : register(t5);
+Texture2D<float3> SpecularTextureVS : register(t5);
 Texture2D<float3> NormalTextureVS : register(t6);
 
 [earlydepthstencil]
@@ -47,8 +47,8 @@ float4 main( PixelShaderInput input ) : SV_Target
     float3 lightVecVS = normalize( -SunDirectionVS );
 
     LightingResult lit;
-    lit.Diffuse = DiffuseTextureVS.Load( int3(texCoord, 0) );
-    lit.Specular = SpecularTextureVS.Load( int3(texCoord, 0) );
+    lit.Diffuse = float4(DiffuseTextureVS.Load( int3(texCoord, 0) ), 1);
+    lit.Specular = float4(SpecularTextureVS.Load( int3(texCoord, 0) ), 1);
 
     float3 normalVS = NormalTextureVS.Load( int3(texCoord, 0) ) * 2 - 1;
     float intensity = dot( lightVecVS, normalVS ) * 0.5 + 0.5;

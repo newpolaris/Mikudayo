@@ -2,8 +2,8 @@
 
 struct PixelShaderOutput
 {
-    float4 Diffuse : SV_Target0;   // Diffuse Albedo (R16G16B16_FLOAT) Unused (A8_UNORM)
-    float4 Specular : SV_Target1;   // Specular Color (R16G16B16_FLOAT) Unused (A8_UNORM)
+    float3 Diffuse : SV_Target0;   // Diffuse Albedo (R11G11B11_FLOAT)
+    float3 Specular : SV_Target1;   // Specular Color (R11G11B11_FLOAT)
 };
 
 SamplerState linearRepeat : register(s0);
@@ -60,8 +60,8 @@ PixelShaderOutput main( float4 PosHS : SV_Position )
         break;
     }
 
-    Out.Diffuse = lit.Diffuse;
-    Out.Specular = lit.Specular;
+    Out.Diffuse = lit.Diffuse.rgb;
+    Out.Specular = lit.Specular.rgb;
 
     return Out;
 }
