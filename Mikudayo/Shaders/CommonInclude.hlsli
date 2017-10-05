@@ -31,7 +31,7 @@ struct LightingResult
     float4 Specular;
 };
 
-StructuredBuffer<Light> Lights : register(t5);
+StructuredBuffer<Light> Lights : register(t7);
 
 float4 DoDiffuse( Light light, float3 L, float3 N )
 {
@@ -39,11 +39,11 @@ float4 DoDiffuse( Light light, float3 L, float3 N )
     return light.Color * NdotL;
 }
 
-float4 DoSpecular( Light light, Material mat, float3 V, float3 L, float3 N )
+float4 DoSpecular( Light light, float specularPower, float3 V, float3 L, float3 N )
 {
 	float3 halfV = normalize( V + L );
 	float NdotH = dot( N, halfV );
-	return light.Color * pow( max(NdotH, 0.001f), mat.specularPower );
+	return light.Color * pow( max(NdotH, 0.001f), specularPower );
 }
 
 float DoAttenuation( Light light, float d )
@@ -59,7 +59,7 @@ float DoSpotCone( Light light, float3 L )
     return smoothstep( minCos, maxCos, cosAngle );
 }
 
-LightingResult DoPointLight( Light light, Material mat, float3 V, float3 P, float3 N )
+LightingResult DoPointLight( Light light, float specularPower, float3 V, float3 P, float3 N )
 {
     LightingResult ret;
     float3 L = light.PositionVS.xyz - P;
@@ -67,11 +67,11 @@ LightingResult DoPointLight( Light light, Material mat, float3 V, float3 P, floa
     L /= distance;
     float attenuation = DoAttenuation( light, distance );
     ret.Diffuse = DoDiffuse( light, L, N ) * attenuation;
-    ret.Specular = DoSpecular( light, mat, V, L, N ) * attenuation;
+    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * attenuation;
     return ret;
 }
 
-LightingResult DoSpotLight( Light light, Material mat, float3 V, float3 P, float3 N )
+LightingResult DoSpotLight( Light light, float specularPower, float3 V, float3 P, float3 N )
 {
     LightingResult ret;
     float3 L = light.PositionVS.xyz - P;
@@ -80,21 +80,21 @@ LightingResult DoSpotLight( Light light, Material mat, float3 V, float3 P, float
     float attenuation = DoAttenuation( light, distance );
     float spotIntensity = DoSpotCone( light, L );
     ret.Diffuse = DoDiffuse( light, L, N ) * attenuation * spotIntensity;
-    ret.Specular = DoSpecular( light, mat, V, L, N ) * attenuation * spotIntensity;
+    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * attenuation * spotIntensity;
     return ret;
 }
 
-LightingResult DoDirectionalLight( Light light, Material mat, float3 V, float3 N )
+LightingResult DoDirectionalLight( Light light, float specularPower, float3 V, float3 N )
 {
     LightingResult ret;
     float3 L = normalize(-light.DirectionVS.xyz);
     ret.Diffuse = DoDiffuse( light, L, N );
-    ret.Specular = DoSpecular( light, mat, V, L, N );
+    ret.Specular = DoSpecular( light, specularPower, V, L, N );
     return ret;
 }
 
 
-LightingResult DoLighting( StructuredBuffer<Light> lights, Material mat, float3 P, float3 N )
+LightingResult DoLighting( StructuredBuffer<Light> lights, float specularPower, float3 P, float3 N )
 {
     LightingResult ret = (LightingResult)0;
     float3 V = -P;
@@ -109,13 +109,13 @@ LightingResult DoLighting( StructuredBuffer<Light> lights, Material mat, float3 
         switch (lights[i].Type)
         {
         case PointLight:
-            result = DoPointLight( lights[i], mat, V, P, N );
+            result = DoPointLight( lights[i], specularPower, V, P, N );
             break;
         case SpotLight:
-            result = DoSpotLight( lights[i], mat, V, P, N );
+            result = DoSpotLight( lights[i], specularPower, V, P, N );
             break;
         case DirectionalLight:
-            result = DoDirectionalLight( lights[i], mat, V, N );
+            result = DoDirectionalLight( lights[i], specularPower, V, N );
             break;
         }
         ret.Diffuse += result.Diffuse;

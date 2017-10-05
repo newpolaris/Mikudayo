@@ -11,15 +11,9 @@ struct PixelShaderInput
 
 struct PixelShaderOutput
 {
-    float4 LightAccumulation    : SV_Target0;   // Ambient + emissive (R8G8B8_????) Unused (A8_UNORM)
-    float4 Diffuse              : SV_Target1;   // Diffuse Albedo (R8G8B8_UNORM) Unused (A8_UNORM)
-    float4 Specular             : SV_Target2;   // Specular Color (R8G8B8_UNROM) Specular Power(A8_UNORM)
-    float3 NormalVS             : SV_Target3;   // View space normal (R11G11B10_FLOAT)
+    float3 NormalVS : SV_Target0;   // View space normal (R11G11B10_FLOAT)
+    float4 SpecularPower : SV_Target1; // Specular power (R8_UNORM)
 };
-
-static const int kSphereNone = 0;
-static const int kSphereMul = 1;
-static const int kSphereAdd = 2;
 
 cbuffer MaterialConstants : register(b0)
 {
@@ -28,12 +22,6 @@ cbuffer MaterialConstants : register(b0)
     int bUseTexture;
     int bUseToon;
 };
-
-cbuffer PassConstants : register(b1)
-{
-    float3 SunDirectionVS;
-    float3 SunColor;
-}
 
 Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float3> texSphere : register(t2);
@@ -47,36 +35,9 @@ PixelShaderOutput main( PixelShaderInput input )
 {
     PixelShaderOutput Out;
 
-    float3 lightVecVS = normalize( -SunDirectionVS );
     float3 normalVS = normalize( input.normalVS );
-    float intensity = dot( lightVecVS, normalVS ) * 0.5 + 0.5;
-    float2 toonCoord = float2(0.5, 1.0 - intensity);
-
-    float3 diffuse = material.diffuse;
-    float3 ambient = material.ambient;
-
-    float3 texColor = float3(1.0, 1.0, 1.0);
-    if (bUseTexture)
-    {
-        float4 tex = texDiffuse.Sample( sampler0, input.uv );
-        texColor = tex.xyz;
-    }
-
-    float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalVS.xy;
-    if (sphereOperation == kSphereAdd)
-        texColor += texSphere.Sample( sampler0, sphereCoord );
-    else if (sphereOperation == kSphereMul)
-        texColor *= texSphere.Sample( sampler0, sphereCoord );
-    if (bUseToon)
-        texColor *= texToon.Sample( sampler0, toonCoord );
-
-    // Out.LightAccumulation = float4(texColor * ambient, 1.0);
-    Out.LightAccumulation = float4(texColor * ambient * 0.1, 1.0);
-    Out.Diffuse = float4(texColor * diffuse, 1.0);
     Out.NormalVS = 0.5 * (normalVS + 1);
-    // Method of packing specular power from "Deferred Rendering in Killzone 2" presentation 
-    // from Michiel van der Leeuw, Guerrilla (2007)
-    Out.Specular = float4(material.specular.rgb, log2( material.specularPower ) / 10.5f);
+    Out.SpecularPower = material.specularPower / 255.0;
 
     return Out;
 }

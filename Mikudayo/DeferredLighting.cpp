@@ -27,6 +27,7 @@
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredLightingVS.h"
 #include "CompiledShaders/DeferredLightingPS.h"
+#include "CompiledShaders/DeferredFinalPS.h"
 #include "CompiledShaders/DeferredLightingDebugPS.h"
 
 using namespace Math;
@@ -57,17 +58,18 @@ namespace Lighting
     StructuredBuffer m_LightBuffer;
     ColorBuffer m_DiffuseTexture;
     ColorBuffer m_SpecularTexture;
+    ColorBuffer m_SpecularPowerTexture;
     ColorBuffer m_NormalTexture;
 
     GraphicsPSO m_GBufferPSO;
     GraphicsPSO m_LightingPSO;
+    GraphicsPSO m_FinalPSO;
     GraphicsPSO m_OpaquePSO;
     GraphicsPSO m_TransparentPSO;
     GraphicsPSO m_Lighting1PSO;
     GraphicsPSO m_Lighting2PSO;
     GraphicsPSO m_DirectionalLightPSO;
     GraphicsPSO m_LightDebugPSO;
-    GraphicsPSO m_TextureDebugPSO;
     OpaquePass m_OaquePass;
     TransparentPass m_TransparentPass;
 
@@ -141,9 +143,10 @@ void Lighting::Initialize( void )
     m_FullScreenProjMatrix = Math::OrthographicMatrix( 2, 2, 0, 1, Math::g_ReverseZ );
     const uint32_t width = g_NativeWidth, height = g_NativeHeight;
 
-    m_DiffuseTexture.Create(L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
-    m_SpecularTexture.Create(L"Specular Buffer", width, height, 1, DXGI_FORMAT_R8G8B8A8_UNORM );
     m_NormalTexture.Create( L"Normal Buffer", width, height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT );
+    m_SpecularPowerTexture.Create( L"SpecularPower Buffer", width, height, 1, DXGI_FORMAT_R8_UNORM );
+    m_DiffuseTexture.Create( L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT );
+    m_SpecularTexture.Create( L"Specular Buffer", width, height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT );
 
 	InputDesc PmxLayout[] = {
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -179,6 +182,19 @@ void Lighting::Initialize( void )
     m_LightDebugPSO.SetDepthStencilState( DepthStateReadWrite );
     m_LightDebugPSO.Finalize();
 
+    m_LightingPSO.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
+    m_LightingPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingPS ) );
+    m_LightingPSO.SetBlendState( BlendAdditive );
+    m_LightingPSO.Finalize();
+
+    m_FinalPSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_FinalPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    m_FinalPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
+    m_FinalPSO.SetRasterizerState( RasterizerDefault );
+    m_FinalPSO.SetDepthStencilState( DepthStateTestEqual );
+    m_FinalPSO.Finalize();
+
+    #if 0
     // Pipeline for deferred lighting (stage 1 to determine lit pixels)
     m_Lighting1PSO.SetInputLayout( _countof( PrimitiveUtility::Desc ), PrimitiveUtility::Desc );
     m_Lighting1PSO.SetVertexShader( MY_SHADER_ARGS( g_pDeferredLightingVS ) );
@@ -208,6 +224,7 @@ void Lighting::Initialize( void )
     m_DirectionalLightPSO.SetDepthStencilState( DepthStateDisabled );
     m_DirectionalLightPSO.SetRasterizerState( RasterizerDefaultCW );
     m_DirectionalLightPSO.Finalize();
+    #endif
 }
 
 Matrix4 Lighting::GetLightTransfrom(const LightData& Data, const Matrix4& ViewToProj)
@@ -246,34 +263,21 @@ void Lighting::RenderSubPass( GraphicsContext& gfxContext, LightType Type, const
 
         using namespace PrimitiveUtility;
         PrimtiveMeshType mesh[] = { kSphereMesh, kConeMesh, kFarClipMesh };
-        Render( gfxContext, mesh[(int)light.Type] );
+        PrimitiveUtility::Render( gfxContext, mesh[(int)light.Type] );
     }
 }
 
 void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args)
 {
     ASSERT( args != nullptr );
-
 #if 1
-    struct ScreenToViewParams
-    {
-        Matrix4 InverseProjectionMatrix;
-        Vector4 ScreenDimensions;
-    } psScreenToView;
-    psScreenToView.InverseProjectionMatrix = Invert( args->m_ProjMatrix );
-    psScreenToView.ScreenDimensions = Vector4( args->m_MainViewport.Width, args->m_MainViewport.Height, 0, 0 );
-    gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
-
-    gfxContext.ClearColor( m_DiffuseTexture );
-    gfxContext.ClearColor( m_SpecularTexture );
-    gfxContext.ClearColor( m_NormalTexture );
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );
+        gfxContext.ClearColor( m_NormalTexture );
+        gfxContext.ClearColor( m_SpecularPowerTexture );
         D3D11_RTV_HANDLE rtvs[] = {
-            g_SceneColorBuffer.GetRTV(), // Amibent directly write into the scene buffer
-            m_DiffuseTexture.GetRTV(),
-            m_SpecularTexture.GetRTV(),
             m_NormalTexture.GetRTV(),
+            m_SpecularPowerTexture.GetRTV(),
         };
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_GBufferPSO );
@@ -283,31 +287,54 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
     }
     {
         ScopedTimer _prof( L"Lighting Pass", gfxContext );
+        gfxContext.ClearColor( m_DiffuseTexture );
+        gfxContext.ClearColor( m_SpecularTexture );
+        gfxContext.SetDynamicDescriptor( 7, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
+        struct ScreenToViewParams
+        {
+            Matrix4 InverseProjectionMatrix;
+            Vector4 ScreenDimensions;
+        } psScreenToView;
+        psScreenToView.InverseProjectionMatrix = Invert( args->m_ProjMatrix );
+        psScreenToView.ScreenDimensions = Vector4( args->m_MainViewport.Width, args->m_MainViewport.Height, 0, 0 );
+        gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
+        D3D11_SRV_HANDLE srvs[] = {
+            m_NormalTexture.GetSRV(),
+            m_SpecularPowerTexture.GetSRV(),
+            g_SceneDepthBuffer.GetDepthSRV(),
+        };
+        gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
+        D3D11_RTV_HANDLE rtvs[] = {
+            m_DiffuseTexture.GetRTV(),
+            m_SpecularTexture.GetRTV(),
+        };
+        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
+        gfxContext.SetPipelineState( m_LightingPSO );
+        for (uint32_t i = 0; i < MaxLights; i++)
+        {
+            __declspec(align(16)) uint32_t idx = i;
+            gfxContext.SetDynamicConstantBufferView( 4, sizeof( uint32_t ), &idx, { kBindPixel } );
+            gfxContext.Draw( 3 );
+        }
+        D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
+        gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
+    }
+    {
+        ScopedTimer _prof( L"Final Pass", gfxContext );
         D3D11_SRV_HANDLE srvs[] = {
             m_DiffuseTexture.GetSRV(),
             m_SpecularTexture.GetSRV(),
             m_NormalTexture.GetSRV(),
-            g_SceneDepthBuffer.GetDepthSRV(),
         };
-        gfxContext.SetDynamicDescriptors( 0, _countof( srvs ), srvs, { kBindPixel } );
+        gfxContext.SetDynamicDescriptors( 4, _countof( srvs ), srvs, { kBindPixel } );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
-        Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
-        RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting1PSO );
-        RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting1PSO );
-        RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting2PSO );
-        RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting2PSO );
-        RenderSubPass( gfxContext, LightType::Directional, ViewToClip, m_DirectionalLightPSO );
-        if (s_bLightBoundary)
-        {
-            RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_LightDebugPSO  );
-            RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_LightDebugPSO  );
-        }
+        gfxContext.SetPipelineState( m_FinalPSO );
+        scene->Render( gfxContext, m_OaquePass );
     }
-    gfxContext.SetDynamicDescriptor( 3, nullptr, { kBindPixel } );
 #endif
-    gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
     {
         ScopedTimer _prof( L"Forward Pass", gfxContext );
+        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
     #if 0
         gfxContext.SetPipelineState( m_OpaquePSO );
         scene->Render( gfxContext, m_OaquePass );
@@ -326,6 +353,7 @@ void Lighting::Shutdown( void )
     m_DiffuseTexture.Destroy();
     m_SpecularTexture.Destroy();
     m_NormalTexture.Destroy();
+    m_SpecularPowerTexture.Destroy();
 }
 
 void Lighting::UpdateLights( const Camera& C )

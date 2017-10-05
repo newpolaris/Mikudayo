@@ -1,5 +1,11 @@
 #include "CommonInclude.hlsli"
 
+struct PixelShaderOutput
+{
+    float4 Diffuse              : SV_Target0;   // Diffuse Albedo (R16G16B16_FLOAT) Unused (A8_UNORM)
+    float4 Specular             : SV_Target1;   // Specular Color (R16G16B16_FLOAT) Unused (A8_UNORM)
+};
+
 SamplerState linearRepeat : register(s0);
 SamplerState linearClamp : register(s1);
 
@@ -15,53 +21,47 @@ cbuffer LightIndexBuffer : register(b4)
     uint LightIndex;
 }
 
-// The diffuse color from the view space texture.
-Texture2D DiffuseTextureVS : register(t0);
-// The specular color from the screen space texture.
-Texture2D SpecularTextureVS : register(t1);
 // The normal from the screen space texture.
-Texture2D NormalTextureVS : register(t2);
+Texture2D<float3> NormalTextureVS : register(t0);
+// The specular power from the screen space texture.
+Texture2D<float> SpecularPowerTextureVS : register(t1);
 // The depth from the screen space texture.
-Texture2D DepthTextureVS : register(t3);
+Texture2D<float> DepthTextureVS : register(t2);
 
 // Deferred lighting pixel shader.
 [earlydepthstencil]
-float4 main( float4 posHS : SV_Position ) : SV_Target
+PixelShaderOutput main( float4 PosHS : SV_Position )
 {
-    int2 texCoord = posHS.xy;
-    float depth = DepthTextureVS.Load( int3( texCoord, 0 ) ).r;
+    PixelShaderOutput Out;
+
+    int2 texCoord = PosHS.xy;
+    float depth = DepthTextureVS.Load( int3( texCoord, 0 ) );
     float3 P = ScreenToView( float4( texCoord, depth, 1.0f ) ).xyz;
 
     // View vector
     float3 V = normalize(-P);
-
-    float4 diffuse = DiffuseTextureVS.Load( int3( texCoord, 0 ) );
-    float4 specular = SpecularTextureVS.Load( int3( texCoord, 0 ) );
-    float3 N = NormalTextureVS.Load( int3( texCoord, 0 ) ).xyz;
-    N = (N * 2 - 1);
-
-    // Unpack the specular power from the alpha component of the specular color.
-    float specularPower = exp2( specular.a * 10.5f );
-
-    Material mat = (Material)0;
-    mat.diffuse = diffuse.xyz;
-    mat.alpha = diffuse.w;
-    mat.specular = specular.xyz;
-    mat.specularPower = specularPower;
+    // Unpack the normal
+    float3 N = NormalTextureVS.Load( int3( texCoord, 0 ) ) * 2 - 1;
+    // Unpack the specular power
+    float specularPower = SpecularPowerTextureVS.Load( int3( texCoord, 0 ) ) * 255.0;
 
     Light light = Lights[LightIndex];
     LightingResult lit = (LightingResult)0;
     switch ( light.Type )
     {
     case DirectionalLight:
-        lit = DoDirectionalLight( light, mat, V, N );
+        lit = DoDirectionalLight( light, specularPower, V, N );
         break;
     case PointLight:
-        lit = DoPointLight( light, mat, V, P, N );
+        lit = DoPointLight( light, specularPower, V, P, N );
         break;
     case SpotLight:
-        lit = DoSpotLight( light, mat, V, P, N );
+        lit = DoSpotLight( light, specularPower, V, P, N );
         break;
     }
-    return diffuse * lit.Diffuse + specular * lit.Specular;
+
+    Out.Diffuse = lit.Diffuse;
+    Out.Specular = lit.Specular;
+
+    return Out;
 }

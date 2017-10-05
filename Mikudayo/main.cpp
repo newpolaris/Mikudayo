@@ -234,9 +234,7 @@ void Mikudayo::RenderScene( void )
 
     psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
-
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
-    gfxContext.SetDynamicDescriptor( 5, Lighting::m_LightBuffer.GetSRV(), { kBindPixel }  );
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
@@ -247,6 +245,9 @@ void Mikudayo::RenderScene( void )
     {
         ScopedTimer _prof( L"Render Color", gfxContext );
         Lighting::Render( gfxContext, m_Scene, &args );
+    }
+    {
+        ScopedTimer _prof( L"Primitive Color", gfxContext );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
