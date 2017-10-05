@@ -2,8 +2,8 @@
 
 struct PixelShaderOutput
 {
-    float4 Diffuse              : SV_Target0;   // Diffuse Albedo (R16G16B16_FLOAT) Unused (A8_UNORM)
-    float4 Specular             : SV_Target1;   // Specular Color (R16G16B16_FLOAT) Unused (A8_UNORM)
+    float4 Diffuse : SV_Target0;   // Diffuse Albedo (R16G16B16_FLOAT) Unused (A8_UNORM)
+    float4 Specular : SV_Target1;   // Specular Color (R16G16B16_FLOAT) Unused (A8_UNORM)
 };
 
 SamplerState linearRepeat : register(s0);

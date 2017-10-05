@@ -62,7 +62,6 @@ namespace Lighting
     ColorBuffer m_NormalTexture;
 
     GraphicsPSO m_GBufferPSO;
-    GraphicsPSO m_LightingPSO;
     GraphicsPSO m_FinalPSO;
     GraphicsPSO m_OpaquePSO;
     GraphicsPSO m_TransparentPSO;
@@ -182,19 +181,7 @@ void Lighting::Initialize( void )
     m_LightDebugPSO.SetDepthStencilState( DepthStateReadWrite );
     m_LightDebugPSO.Finalize();
 
-    m_LightingPSO.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
-    m_LightingPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingPS ) );
-    m_LightingPSO.SetBlendState( BlendAdditive );
-    m_LightingPSO.Finalize();
-
-    m_FinalPSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
-    m_FinalPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_FinalPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
-    m_FinalPSO.SetRasterizerState( RasterizerDefault );
-    m_FinalPSO.SetDepthStencilState( DepthStateTestEqual );
-    m_FinalPSO.Finalize();
-
-    #if 0
+    #if 1
     // Pipeline for deferred lighting (stage 1 to determine lit pixels)
     m_Lighting1PSO.SetInputLayout( _countof( PrimitiveUtility::Desc ), PrimitiveUtility::Desc );
     m_Lighting1PSO.SetVertexShader( MY_SHADER_ARGS( g_pDeferredLightingVS ) );
@@ -225,6 +212,13 @@ void Lighting::Initialize( void )
     m_DirectionalLightPSO.SetRasterizerState( RasterizerDefaultCW );
     m_DirectionalLightPSO.Finalize();
     #endif
+
+    m_FinalPSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_FinalPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    m_FinalPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
+    m_FinalPSO.SetRasterizerState( RasterizerDefault );
+    m_FinalPSO.SetDepthStencilState( DepthStateTestEqual );
+    m_FinalPSO.Finalize();
 }
 
 Matrix4 Lighting::GetLightTransfrom(const LightData& Data, const Matrix4& ViewToProj)
@@ -309,13 +303,12 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             m_SpecularTexture.GetRTV(),
         };
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
-        gfxContext.SetPipelineState( m_LightingPSO );
-        for (uint32_t i = 0; i < MaxLights; i++)
-        {
-            __declspec(align(16)) uint32_t idx = i;
-            gfxContext.SetDynamicConstantBufferView( 4, sizeof( uint32_t ), &idx, { kBindPixel } );
-            gfxContext.Draw( 3 );
-        }
+        Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
+        RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting1PSO );
+        RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting1PSO );
+        RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting2PSO );
+        RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting2PSO );
+        RenderSubPass( gfxContext, LightType::Directional, ViewToClip, m_DirectionalLightPSO );
         D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
         gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
     }
