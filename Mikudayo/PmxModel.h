@@ -50,6 +50,8 @@ public:
 		int32_t SphereOperation;
 		int32_t bUseTexture;
 		int32_t bUseToon;
+        float EdgeSize;
+        Color EdgeColor;
 	};
 
     struct Material : public ::Material
@@ -57,11 +59,12 @@ public:
         std::wstring Name;
         std::wstring ShaderName;
         MaterialCB CB;
-        float EdgeSize;
-        Color EdgeColor;
+        bool bOutline = false;
+        bool bCastShadowMap = false;
         std::vector<TexturePath> TexturePathes;
         const ManagedTexture* Textures[kTextureMax];
         bool IsTransparent() const override;
+        bool IsOutline() const override;
         void SetTexture( GraphicsContext& gfxContext ) const;
     };
 

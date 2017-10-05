@@ -19,7 +19,7 @@ struct VertexInput
 	float2 uv : TEXTURE;
 	uint4 boneID : BONE_ID;
 	float4 boneWeight : BONE_WEIGHT;
-	float boneFloat : EDGE_FLAT;
+	float edgeScale : EDGE_FLAT;
     float3 position : POSITION;
 };
 

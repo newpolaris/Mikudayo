@@ -17,12 +17,15 @@
 #include "Color.h"
 #include "OpaquePass.h"
 #include "TransparentPass.h"
+#include "OutlinePass.h"
 #include "PrimitiveUtility.h"
 #include "DebugHelper.h"
 #include "RenderArgs.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
+#include "CompiledShaders/OutlineVS.h"
+#include "CompiledShaders/OutlinePS.h"
 #include "CompiledShaders/ScreenQuadVS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredLightingVS.h"
@@ -69,8 +72,10 @@ namespace Lighting
     GraphicsPSO m_Lighting2PSO;
     GraphicsPSO m_DirectionalLightPSO;
     GraphicsPSO m_LightDebugPSO;
+    GraphicsPSO m_OutlinePSO;
     OpaquePass m_OaquePass;
     TransparentPass m_TransparentPass;
+    OutlinePass m_OutlinePass;
 
     Matrix4 GetLightTransfrom( const LightData& Data, const Matrix4& ViewToProj );
     void RenderSubPass( GraphicsContext& gfxContext, GraphicsPSO& PSO, PrimitiveUtility::PrimtiveMeshType Type, bool bStencilMark );
@@ -221,6 +226,13 @@ void Lighting::Initialize( void )
     m_FinalPSO.SetRasterizerState( RasterizerDefault );
     m_FinalPSO.SetDepthStencilState( DepthStateTestEqual );
     m_FinalPSO.Finalize();
+
+    m_OutlinePSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_OutlinePSO.SetVertexShader( MY_SHADER_ARGS( g_pOutlineVS ) );
+    m_OutlinePSO.SetPixelShader( MY_SHADER_ARGS( g_pOutlinePS ) );
+    m_OutlinePSO.SetRasterizerState( RasterizerDefaultCW );
+    m_OutlinePSO.SetDepthStencilState( DepthStateReadWrite );
+    m_OutlinePSO.Finalize();
 }
 
 Matrix4 Lighting::GetLightTransfrom(const LightData& Data, const Matrix4& ViewToProj)
@@ -365,6 +377,11 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         gfxContext.SetPipelineState( m_TransparentPSO );
         scene->Render( gfxContext, m_TransparentPass );
     #endif
+    }
+    {
+        ScopedTimer _prof( L"Outline Pass", gfxContext );
+        gfxContext.SetPipelineState( m_OutlinePSO );
+        scene->Render( gfxContext, m_OutlinePass );
     }
 }
 

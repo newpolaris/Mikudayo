@@ -81,6 +81,9 @@
     <ClCompile Include="TransparentPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OutlinePass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -161,6 +164,9 @@
     <ClInclude Include="RenderArgs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="OutlinePass.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">
@@ -200,6 +206,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DeferredFinalPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\OutlinePS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\OutlineVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

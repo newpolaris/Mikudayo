@@ -13,19 +13,21 @@ static const int kSphereNone = 0;
 static const int kSphereMul = 1;
 static const int kSphereAdd = 2;
 
-cbuffer MaterialConstants : register(b0)
-{
-    Material material;
-    int sphereOperation;
-    int bUseTexture;
-    int bUseToon;
-};
-
 cbuffer PassConstants : register(b1)
 {
     float3 SunDirectionVS;
     float3 SunColor;
 }
+
+cbuffer MaterialConstants : register(b3)
+{
+    Material material;
+    int sphereOperation;
+    int bUseTexture;
+    int bUseToon;
+    float EdgeSize;
+    float4 EdgeColor;
+};
 
 Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float3> texSphere : register(t2);
@@ -73,7 +75,7 @@ float4 main( PixelShaderInput input ) : SV_Target
     if (bUseToon)
         texColor *= texToon.Sample( sampler0, toonCoord );
 
-    // Ambient = float4(texColor * ambient, 1.0);
+    // AmbientColor = float4(texColor * ambient, 1.0);
     float4 AmbientColor = float4(texColor * ambient * 0.1, 1.0);
     float4 DiffuseColor = float4(texColor * diffuse, 1.0);
     float4 SpecularColor = float4(specular, 1.0);
