@@ -41,8 +41,8 @@ namespace BulletDebug
         XMFLOAT3 color;
     };
 
-#define FAST_LINE_DRAW 1
-#ifdef FAST_LINE_DRAW
+#define FAST_LINE_DRAW 0
+#if FAST_LINE_DRAW
     using LineStorage = Array<Vertex, 1 << 20>; // Slightly faster but have limit size
 #else
     using LineStorage = std::vector<Vertex>;
