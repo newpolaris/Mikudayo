@@ -76,8 +76,6 @@ bool PmxModel::GenerateResource( void )
                 material.CB.bUseToon = TRUE;
             if (material.Textures[kTextureDiffuse])
                 material.CB.bUseTexture = TRUE;
-            material.EdgeSize = material.EdgeSize;
-            material.EdgeColor = Color( Vector4( material.EdgeColor ) ).FromSRGB();
         }
 	}
     return true;
@@ -164,8 +162,10 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         cb.SphereOperation = material.SphereOperation;
 
         mat.CB = cb;
-		mat.EdgeSize = material.EdgeSize;
-		mat.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
+		mat.CB.EdgeSize = material.EdgeSize;
+		mat.CB.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
+        mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
+        mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
         m_Materials.push_back(mat);
 
         Mesh mesh;
@@ -270,4 +270,9 @@ bool PmxModel::Material::IsTransparent() const
 {
     bool bHasTransparentTexture = Textures[kTextureDiffuse] && Textures[kTextureDiffuse]->IsTransparent();
     return CB.Diffuse.w < 1.0f || bHasTransparentTexture;
+}
+
+bool PmxModel::Material::IsOutline() const
+{
+    return bOutline;
 }

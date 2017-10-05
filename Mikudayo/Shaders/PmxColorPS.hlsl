@@ -13,19 +13,19 @@ static const int kSphereNone = 0;
 static const int kSphereMul = 1;
 static const int kSphereAdd = 2;
 
-cbuffer MaterialConstants : register(b0)
+cbuffer PassConstants : register(b1)
+{
+    float3 SunDirectionVS;
+    float3 SunColor;
+}
+
+cbuffer MaterialConstants : register(b3)
 {
     Material material;
     int sphereOperation;
     int bUseTexture;
     int bUseToon;
 };
-
-cbuffer PassConstants : register(b1)
-{
-    float3 SunDirectionVS;
-    float3 SunColor;
-}
 
 Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float3> texSphere : register(t2);

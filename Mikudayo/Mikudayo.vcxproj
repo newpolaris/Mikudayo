@@ -115,6 +115,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelManager.cpp" />
     <ClCompile Include="OpaquePass.cpp" />
+    <ClCompile Include="OutlinePass.cpp" />
     <ClCompile Include="PmxInstant.cpp" />
     <ClCompile Include="PrimitiveUtility.cpp" />
     <ClCompile Include="Pmx.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="OpaquePass.h" />
+    <ClInclude Include="OutlinePass.h" />
     <ClInclude Include="PmxInstant.h" />
     <ClInclude Include="PrimitiveUtility.h" />
     <ClInclude Include="Pmx.h" />
@@ -212,6 +214,19 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\OutlinePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\OutlineVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\PmxColorPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

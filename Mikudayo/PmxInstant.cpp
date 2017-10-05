@@ -115,7 +115,7 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
         if (!visitor.Visit( material ))
             continue;
         material.SetTexture( gfxContext );
-        gfxContext.SetDynamicConstantBufferView( 0, sizeof( material.CB ), &material.CB, { kBindPixel } );
+        gfxContext.SetDynamicConstantBufferView( 3, sizeof( material.CB ), &material.CB, { kBindVertex, kBindPixel } );
         gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
 	}
 }
