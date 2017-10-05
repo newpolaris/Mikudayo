@@ -38,6 +38,7 @@ float4 main( float4 posHS : SV_Position ) : SV_Target
     float4 diffuse = DiffuseTextureVS.Load( int3( texCoord, 0 ) );
     float4 specular = SpecularTextureVS.Load( int3( texCoord, 0 ) );
     float3 N = NormalTextureVS.Load( int3( texCoord, 0 ) ).xyz;
+    N = (N / 2 - 1);
 
     // Unpack the specular power from the alpha component of the specular color.
     float specularPower = exp2( specular.a * 10.5f );

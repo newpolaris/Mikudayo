@@ -14,7 +14,7 @@ struct PixelShaderOutput
     float4 LightAccumulation    : SV_Target0;   // Ambient + emissive (R8G8B8_????) Unused (A8_UNORM)
     float4 Diffuse              : SV_Target1;   // Diffuse Albedo (R8G8B8_UNORM) Unused (A8_UNORM)
     float4 Specular             : SV_Target2;   // Specular Color (R8G8B8_UNROM) Specular Power(A8_UNORM)
-    float4 NormalVS             : SV_Target3;   // View space normal (R32G32B32_FLOAT) Unused (A32_FLOAT)
+    float3 NormalVS             : SV_Target3;   // View space normal (R11G11B10_FLOAT)
 };
 
 static const int kSphereNone = 0;
@@ -73,7 +73,7 @@ PixelShaderOutput main( PixelShaderInput input )
     // Out.LightAccumulation = float4(texColor * ambient, 1.0);
     Out.LightAccumulation = float4(texColor * ambient * 0.1, 1.0);
     Out.Diffuse = float4(texColor * diffuse, 1.0);
-    Out.NormalVS = float4(normalVS, 0);
+    Out.NormalVS = 0.5 * (normalVS + 1);
     // Method of packing specular power from "Deferred Rendering in Killzone 2" presentation 
     // from Michiel van der Leeuw, Guerrilla (2007)
     Out.Specular = float4(material.specular.rgb, log2( material.specularPower ) / 10.5f);
