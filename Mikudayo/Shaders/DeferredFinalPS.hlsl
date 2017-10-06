@@ -109,7 +109,7 @@ float4 main( PixelShaderInput input ) : SV_Target
     light.Color = float4(SunColor, 1);
     LightingResult sunLit = DoDirectionalLight( light, material.specularPower, -input.posVS, N );
     float shadow = GetShadow(input.shadowCoord);
-    // colorSum += shadow * (DiffuseColor * sunLit.Diffuse + SpecularColor * sunLit.Specular);
+    colorSum += shadow * (DiffuseColor * sunLit.Diffuse + SpecularColor * sunLit.Specular);
 
     return colorSum;
 }

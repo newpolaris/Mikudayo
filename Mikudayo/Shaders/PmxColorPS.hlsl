@@ -18,6 +18,7 @@ cbuffer PassConstants : register(b1)
 {
     float3 SunDirectionVS;
     float3 SunColor;
+    float4 ShadowTexelSize;
 }
 
 Texture2D<float4> texDiffuse : register(t1);
@@ -31,7 +32,6 @@ SamplerComparisonState shadowSampler : register(s2);
 
 float GetShadow( float3 ShadowCoord )
 {
-#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
     float result = ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else
@@ -96,16 +96,18 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
     LightingResult lit = DoLighting(Lights, material.specularPower, input.posVS, normalVS);
 
-    float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
-    // float3 color = diffuse * lit.Diffuse.xyz + ambient * 0.1 + specular * lit.Specular.xyz;
+    // float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
+    float3 color = diffuse * lit.Diffuse.xyz + ambient * 0.1 + specular * lit.Specular.xyz;
     float alpha = texAlpha * material.alpha;
-
+#if 1
     Light light = (Light)0;
     light.DirectionVS = float4(SunDirectionVS, 1);
     light.Color = float4(SunColor, 1);
     LightingResult sunLit = DoDirectionalLight( light, material.specularPower, -input.posVS, normalVS );
     float shadow = GetShadow(input.shadowCoord);
-    // color += shadow * (diffuse * sunLit.Diffuse + specular * sunLit.Specular);
+    float3 sunColor = diffuse * sunLit.Diffuse.xyz + specular * sunLit.Specular.xyz;
+    color += shadow * sunColor;
+#endif
 
     return float4(color, alpha);
 }

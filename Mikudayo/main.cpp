@@ -153,7 +153,7 @@ void Mikudayo::Startup( void )
     m_DepthPSO.Finalize();
 
     m_ShadowPSO = m_DepthPSO;
-    m_ShadowPSO.SetRasterizerState( RasterizerShadowTwoSided );
+    m_ShadowPSO.SetRasterizerState( RasterizerShadow );
     m_ShadowPSO.SetRenderTargetFormats( 0, nullptr, g_ShadowBuffer.GetFormat() );
     m_ShadowPSO.Finalize();
 }
