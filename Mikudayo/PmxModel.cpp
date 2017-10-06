@@ -278,3 +278,8 @@ bool PmxModel::Material::IsOutline() const
 {
     return bOutline;
 }
+
+bool PmxModel::Material::IsShadowCaster() const
+{ 
+    return bCastShadowMap;
+}

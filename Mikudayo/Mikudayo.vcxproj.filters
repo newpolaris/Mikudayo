@@ -84,6 +84,9 @@
     <ClCompile Include="OutlinePass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ShadowCasterPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -165,6 +168,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OutlinePass.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowCasterPass.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

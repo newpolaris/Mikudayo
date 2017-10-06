@@ -48,6 +48,7 @@ Texture2D<float> ShadowTexture : register(t7);
 
 float GetShadow( float3 ShadowCoord )
 {
+#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
     float result = ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else
@@ -104,21 +105,22 @@ float4 main( PixelShaderInput input ) : SV_Target
     if (bUseToon)
         texColor *= texToon.Sample( sampler0, toonCoord );
 
-    // AmbientColor = float4(texColor * ambient, 1.0);
+    // float4 AmbientColor = float4(texColor * ambient * 1.0, 1.0);
     float4 AmbientColor = float4(texColor * ambient * 0.1, 1.0);
     float4 DiffuseColor = float4(texColor * diffuse, 1.0);
     float4 SpecularColor = float4(specular, 1.0);
 
-    float3 V = -normalize( input.posVS );
+    float4 colorSum = AmbientColor + DiffuseColor * lit.Diffuse + SpecularColor * lit.Specular;
+
     float3 N = normalize( input.normalVS );
 
     Light light = (Light)0;
     light.DirectionVS = float4(SunDirectionVS, 1);
     light.Color = float4(SunColor, 1);
-    LightingResult sunLit = DoDirectionalLight( light, material.specularPower, V, N );
-    lit.Diffuse += sunLit.Diffuse;
-    lit.Specular += sunLit.Specular;
+    LightingResult sunLit = DoDirectionalLight( light, material.specularPower, -input.posVS, N );
+    float shadow = GetShadow(input.shadowCoord);
+    // colorSum += shadow * (DiffuseColor * sunLit.Diffuse + SpecularColor * sunLit.Specular);
 
-    return (AmbientColor + DiffuseColor) * lit.Diffuse + SpecularColor * lit.Specular;
+    return colorSum;
 }
 

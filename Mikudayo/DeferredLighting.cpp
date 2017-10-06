@@ -101,7 +101,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
 
     std::random_device rd;
     std::mt19937 mt(rd());
-#if PROFILE
+#if 1 
     mt.seed( 0 );
 #endif
     std::uniform_real_distribution<float> dist( 0, 1 );

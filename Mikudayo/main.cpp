@@ -14,6 +14,7 @@
 #include "PmxInstant.h"
 #include "OpaquePass.h"
 #include "DebugHelper.h"
+#include "ShadowCasterPass.h"
 
 #include "CompiledShaders/DepthViewerVS.h"
 
@@ -59,7 +60,7 @@ private:
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
     std::shared_ptr<SceneNode> m_Scene;
 
-    OpaquePass m_OaquePass;
+	ShadowCasterPass m_ShadowCasterPass;
     GraphicsPSO m_DepthPSO;
     GraphicsPSO m_ShadowPSO;
 };
@@ -259,10 +260,6 @@ void Mikudayo::RenderScene( void )
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
-
-    gfxContext.ClearColor( g_SceneColorBuffer );
-    gfxContext.ClearDepth( g_SceneDepthBuffer );
-    gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
     {
         ScopedTimer _prof(L"Render Shadow Map", gfxContext);
         float Radius = Length( m_MaxBound - m_MinBound ) / Scalar(2);
@@ -273,10 +270,14 @@ void Mikudayo::RenderScene( void )
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         gfxContext.SetPipelineState( m_ShadowPSO );
-        m_Scene->Render( gfxContext, m_OaquePass ); // m_ShadowCasterPass );
+        m_Scene->Render( gfxContext, m_ShadowCasterPass );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     {
+        gfxContext.ClearColor( g_SceneColorBuffer );
+        gfxContext.ClearDepth( g_SceneDepthBuffer );
+        gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
+
         struct VSConstants
         {
             Matrix4 view;
