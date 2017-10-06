@@ -114,10 +114,13 @@ void Mikudayo::Startup( void )
 
     ModelInfo stage;
     stage.Type = kModelPMX;
-    // stage.Name = L"黒白";
+#if 0
+    stage.Name = L"黒白";
+    stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+#else
     stage.Name = L"HalloweenStage";
-    // stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
     stage.File = L"Model/HalloweenStage/halloween.Pmx";
+#endif
 
     if (ModelManager::Load( stage ))
     {

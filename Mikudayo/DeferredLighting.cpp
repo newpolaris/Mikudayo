@@ -340,6 +340,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
 
         if (s_bLightBoundary)
         {
+            gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
             Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
             RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_LightDebugPSO );
             RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_LightDebugPSO );
