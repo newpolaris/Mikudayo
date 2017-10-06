@@ -19,14 +19,6 @@ cbuffer PassConstants : register(b1)
     float3 SunColor;
 }
 
-cbuffer MaterialConstants : register(b3)
-{
-    Material material;
-    int sphereOperation;
-    int bUseTexture;
-    int bUseToon;
-};
-
 Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float3> texSphere : register(t2);
 Texture2D<float3> texToon : register(t3);

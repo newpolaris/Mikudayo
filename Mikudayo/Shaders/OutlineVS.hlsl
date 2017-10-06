@@ -14,16 +14,6 @@ cbuffer Model : register(b2)
 	matrix model;
 }
 
-cbuffer MaterialConstants : register(b3)
-{
-    Material material;
-    int sphereOperation;
-    int bUseTexture;
-    int bUseToon;
-    float EdgeSize;
-    float4 EdgeColor;
-};
-
 // Per-vertex data used as input to the vertex shader.
 struct VertexInput
 {

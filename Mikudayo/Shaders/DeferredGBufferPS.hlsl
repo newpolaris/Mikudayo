@@ -15,14 +15,6 @@ struct PixelShaderOutput
     float4 SpecularPower : SV_Target1; // Specular power (R8_UNORM)
 };
 
-cbuffer MaterialConstants : register(b0)
-{
-    Material material;
-    int sphereOperation;
-    int bUseTexture;
-    int bUseToon;
-};
-
 Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float3> texSphere : register(t2);
 Texture2D<float3> texToon : register(t3);

@@ -12,6 +12,16 @@ struct Material
 	float3 ambient;
 };
 
+cbuffer MaterialConstants : register(b4)
+{
+    Material material;
+    int sphereOperation;
+    int bUseTexture;
+    int bUseToon;
+    float EdgeSize;
+    float4 EdgeColor;
+};
+
 struct Light
 {
     float4 PositionWS;
