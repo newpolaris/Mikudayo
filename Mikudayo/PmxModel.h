@@ -11,6 +11,7 @@ using namespace Math;
 
 namespace Pmx {
     struct Bone;
+    extern std::vector<InputDesc> VertElem;
 }
 
 class PmxModel : public Model

@@ -22,5 +22,5 @@ namespace Lighting
     void Initialize( void );
     void Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args );
     void Shutdown( void );
-    void UpdateLights( const Math::Camera& C );
+    void UpdateLights( const Math::BaseCamera& C );
 }

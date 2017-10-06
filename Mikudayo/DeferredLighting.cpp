@@ -21,6 +21,7 @@
 #include "PrimitiveUtility.h"
 #include "DebugHelper.h"
 #include "RenderArgs.h"
+#include "PmxModel.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
@@ -155,23 +156,14 @@ void Lighting::Initialize( void )
     m_DiffuseTexture.Create( L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R11G11B10_FLOAT );
     m_SpecularTexture.Create( L"Specular Buffer", width, height, 1, DXGI_FORMAT_R11G11B10_FLOAT );
 
-	InputDesc PmxLayout[] = {
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "EDGE_FLAT", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-    m_GBufferPSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_GBufferPSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
     m_GBufferPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
     m_GBufferPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
     m_GBufferPSO.SetDepthStencilState( DepthStateReadWrite );
     m_GBufferPSO.SetRasterizerState( RasterizerDefault );
     m_GBufferPSO.Finalize();
 
-    m_OpaquePSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_OpaquePSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
     m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
     m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
     m_OpaquePSO.SetRasterizerState( RasterizerDefault );
@@ -219,14 +211,14 @@ void Lighting::Initialize( void )
     m_DirectionalLightPSO.SetRasterizerState( RasterizerDefaultCW );
     m_DirectionalLightPSO.Finalize();
     
-    m_FinalPSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_FinalPSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
     m_FinalPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
     m_FinalPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
     m_FinalPSO.SetRasterizerState( RasterizerDefault );
     m_FinalPSO.SetDepthStencilState( DepthStateTestEqual );
     m_FinalPSO.Finalize();
 
-    m_OutlinePSO.SetInputLayout( _countof( PmxLayout ), PmxLayout );
+    m_OutlinePSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
     m_OutlinePSO.SetVertexShader( MY_SHADER_ARGS( g_pOutlineVS ) );
     m_OutlinePSO.SetPixelShader( MY_SHADER_ARGS( g_pOutlinePS ) );
     m_OutlinePSO.SetRasterizerState( RasterizerDefaultCW );
@@ -296,7 +288,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         ScopedTimer _prof( L"Lighting Pass", gfxContext );
         gfxContext.ClearColor( m_DiffuseTexture );
         gfxContext.ClearColor( m_SpecularTexture );
-        gfxContext.SetDynamicDescriptor( 7, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
+        gfxContext.SetDynamicDescriptor( 60, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
         struct ScreenToViewParams
         {
             Matrix4 InverseProjectionMatrix;
@@ -332,6 +324,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             m_DiffuseTexture.GetSRV(),
             m_SpecularTexture.GetSRV(),
             m_NormalTexture.GetSRV(),
+            g_ShadowBuffer.GetSRV(),
         };
         gfxContext.SetDynamicDescriptors( 4, _countof( srvs ), srvs, { kBindPixel } );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
@@ -376,7 +369,7 @@ void Lighting::Shutdown( void )
     m_SpecularPowerTexture.Destroy();
 }
 
-void Lighting::UpdateLights( const Camera& C )
+void Lighting::UpdateLights( const BaseCamera& C )
 {
     const Matrix4& View = C.GetViewMatrix();
     for (uint32_t n = 0; n < MaxLights; n++)

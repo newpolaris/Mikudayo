@@ -174,6 +174,16 @@ void GraphicsPSO::SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY TopologyTyp
 	m_PSODesc->TopologyType = TopologyType;
 }
 
+void GraphicsPSO::SetRenderTargetFormat( DXGI_FORMAT RTVFormat, DXGI_FORMAT DSVFormat, UINT MsaaCount, UINT MsaaQuality )
+{
+    (RTVFormat), (DSVFormat), (MsaaCount), (MsaaQuality);
+}
+
+void GraphicsPSO::SetRenderTargetFormats( UINT NumRTVs, const DXGI_FORMAT* RTVFormats, DXGI_FORMAT DSVFormat, UINT MsaaCount, UINT MsaaQuality )
+{
+    (NumRTVs), (RTVFormats), (DSVFormat), (MsaaCount), (MsaaQuality);
+}
+
 void GraphicsPSO::SetInputLayout( UINT NumElements, const InputDesc* pInputElementDescs )
 {
 	if (NumElements > 0)

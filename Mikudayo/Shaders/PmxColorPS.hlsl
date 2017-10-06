@@ -6,7 +6,8 @@ struct PixelShaderInput
     float4 posHS : SV_POSITION;
     float3 posVS : POSITION0;
     float3 normalVS : NORMAL;
-    float2 uv : TEXTURE;
+    float2 uv : TEXTURE0;
+    float3 shadowCoord : TEXTURE1;
 };
 
 static const int kSphereNone = 0;
