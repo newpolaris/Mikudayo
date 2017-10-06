@@ -9,8 +9,14 @@
 #include "RenderArgs.h"
 #include "DeferredLighting.h"
 #include "SceneNode.h"
-
+#include "ShadowCamera.h"
+#include "PmxModel.h"
 #include "PmxInstant.h"
+#include "OpaquePass.h"
+#include "DebugHelper.h"
+#include "ShadowCasterPass.h"
+
+#include "CompiledShaders/DepthViewerVS.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -32,10 +38,14 @@ public:
     virtual void RenderUI( GraphicsContext& Context ) override;
 
 private:
-    const Camera& GetCamera();
+    const BaseCamera& GetCamera();
 
     Camera m_Camera, m_SecondCamera;
+    ShadowCamera m_SunShadow;
     std::auto_ptr<CameraController> m_CameraController, m_SecondCameraController;
+
+    const Vector3 m_MinBound = Vector3( -100, 0, -350 );
+    const Vector3 m_MaxBound = Vector3( 100, 25, 100 );
 
     Vector3 m_SunColor;
     Vector3 m_SunDirection;
@@ -49,15 +59,19 @@ private:
     btSoftBody* m_SoftBody;
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
     std::shared_ptr<SceneNode> m_Scene;
+
+	ShadowCasterPass m_ShadowCasterPass;
+    GraphicsPSO m_DepthPSO;
+    GraphicsPSO m_ShadowPSO;
 };
 
 CREATE_APPLICATION( Mikudayo )
 
 SoftBodyManager manager;
 
-enum { kCameraMain, kCameraVirtual };
-const char* CameraNames[] = { "CameraMain", "CameraVirtual" };
-EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, kCameraVirtual+1, CameraNames );
+enum { kCameraMain, kCameraVirtual, kCameraShadow };
+const char* CameraNames[] = { "CameraMain", "CameraVirtual", "CameraShadow" };
+EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNames );
 
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
@@ -77,8 +91,7 @@ void Mikudayo::Startup( void )
     ModelManager::Initialize();
     Lighting::Initialize();
 
-    // Lighting::CreateRandomLights( Vector3( -100, 0, -100 ), Vector3( 100, 25, 100 ) );
-    Lighting::CreateRandomLights( Vector3( -100, 0, -350 ), Vector3( 100, 25, 100 ) );
+    Lighting::CreateRandomLights( m_MinBound, m_MaxBound );
 
     const Vector3 eye = Vector3(0.0f, 100.0f, 100.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
@@ -114,10 +127,13 @@ void Mikudayo::Startup( void )
 
     ModelInfo stage;
     stage.Type = kModelPMX;
-    // stage.Name = L"黒白";
+#if 1
+    stage.Name = L"黒白";
+    stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+#else
     stage.Name = L"HalloweenStage";
-    // stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
     stage.File = L"Model/HalloweenStage/halloween.Pmx";
+#endif
 
     if (ModelManager::Load( stage ))
     {
@@ -126,6 +142,20 @@ void Mikudayo::Startup( void )
         instant->LoadModel();
         m_Scene->AddChild( instant );
     }
+
+    DXGI_FORMAT DepthFormat = g_SceneDepthBuffer.GetFormat();
+    m_DepthPSO.SetRasterizerState( RasterizerDefault );
+    m_DepthPSO.SetBlendState( BlendNoColorWrite );
+    m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
+    m_DepthPSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+    m_DepthPSO.SetRenderTargetFormats( 0, nullptr, DepthFormat );
+    m_DepthPSO.SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
+    m_DepthPSO.Finalize();
+
+    m_ShadowPSO = m_DepthPSO;
+    m_ShadowPSO.SetRasterizerState( RasterizerShadowTwoSided );
+    m_ShadowPSO.SetRenderTargetFormats( 0, nullptr, g_ShadowBuffer.GetFormat() );
+    m_ShadowPSO.Finalize();
 }
 
 void Mikudayo::Cleanup( void )
@@ -217,32 +247,48 @@ void Mikudayo::RenderScene( void )
     RenderArgs args = { m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
-    struct VSConstants
-    {
-        Matrix4 view;
-        Matrix4 projection;
-    } vsConstants;
-    vsConstants.view = m_ViewMatrix;
-    vsConstants.projection = m_ProjMatrix;
-	gfxContext.SetDynamicConstantBufferView( 0, sizeof(vsConstants), &vsConstants, { kBindVertex } );
-
     __declspec(align(16)) struct
     {
         Vector3 LightDirection;
         Vector3 LightColor;
+        float ShadowTexelSize[4];
     } psConstants;
-
     psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
+    psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
-
-    gfxContext.ClearColor( g_SceneColorBuffer );
-    gfxContext.ClearDepth( g_SceneDepthBuffer );
-    gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
     {
+        ScopedTimer _prof(L"Render Shadow Map", gfxContext);
+        float Radius = Length( m_MaxBound - m_MinBound ) / Scalar(2);
+        Vector3 SunPosition = -m_SunDirection * Radius;
+        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius*2 ),
+            (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
+
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
+        g_ShadowBuffer.BeginRendering( gfxContext );
+        gfxContext.SetPipelineState( m_ShadowPSO );
+        m_Scene->Render( gfxContext, m_ShadowCasterPass );
+        g_ShadowBuffer.EndRendering( gfxContext );
+    }
+    {
+        gfxContext.ClearColor( g_SceneColorBuffer );
+        gfxContext.ClearDepth( g_SceneDepthBuffer );
+        gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
+
+        struct VSConstants
+        {
+            Matrix4 view;
+            Matrix4 projection;
+            Matrix4 viewToShadow;
+        } vsConstants;
+        vsConstants.view = m_ViewMatrix;
+        vsConstants.projection = m_ProjMatrix;
+        vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
+
         ScopedTimer _prof( L"Render Color", gfxContext );
         Lighting::Render( gfxContext, m_Scene, &args );
     }
@@ -253,6 +299,7 @@ void Mikudayo::RenderScene( void )
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
     }
+    Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
     gfxContext.SetRenderTarget( nullptr );
 	gfxContext.Finish();
 }
@@ -261,10 +308,12 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
 {
 }
 
-const Camera& Mikudayo::GetCamera()
+const BaseCamera& Mikudayo::GetCamera()
 {
     if (m_CameraType == kCameraVirtual)
         return m_SecondCamera;
+    else if (m_CameraType == kCameraShadow)
+        return m_SunShadow;
     else
         return m_Camera;
 }

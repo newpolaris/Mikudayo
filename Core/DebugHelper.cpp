@@ -58,7 +58,7 @@ void Utility::DebugTexture( GraphicsContext& Context, D3D11_SRV_HANDLE SRV, LONG
 
     D3D11_VIEWPORT Viewport = { (FLOAT)X, (FLOAT)Y, (FLOAT)W, (FLOAT)H };
     D3D11_RECT Scissor = { X, Y, X+W, Y+H };
-    Context.SetDynamicSampler( 0, Graphics::SamplerLinearClamp, { kBindPixel} );
+    Context.SetDynamicSampler( 0, Graphics::SamplerLinearClamp, { kBindPixel } );
     Context.SetViewportAndScissor( Viewport, Scissor );
     Context.SetPipelineState( DebugTexturePSO );
     Context.SetDynamicDescriptor( 0, SRV, { kBindPixel });

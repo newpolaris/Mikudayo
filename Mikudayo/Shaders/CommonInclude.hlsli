@@ -41,7 +41,7 @@ struct LightingResult
     float4 Specular;
 };
 
-StructuredBuffer<Light> Lights : register(t7);
+StructuredBuffer<Light> Lights : register(t60);
 
 float4 DoDiffuse( Light light, float3 L, float3 N )
 {

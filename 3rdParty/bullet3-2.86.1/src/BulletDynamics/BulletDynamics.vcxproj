@@ -83,10 +83,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -117,10 +117,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -150,10 +150,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -165,97 +165,97 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Character\btKinematicCharacterController.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btConeTwistConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btContactConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btFixedConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGearConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGeneric6DofConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGeneric6DofSpringConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGeneric6DofSpring2Constraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btHinge2Constraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btHingeConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btPoint2PointConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSequentialImpulseConstraintSolver.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btNNCGConstraintSolver.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSliderConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSolve2LinearConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btTypedConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btUniversalConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btDiscreteDynamicsWorld.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btDiscreteDynamicsWorldMt.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btSimulationIslandManagerMt.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btRigidBody.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btSimpleDynamicsWorld.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Vehicle\btRaycastVehicle.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Vehicle\btWheelInfo.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBody.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyConstraintSolver.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyDynamicsWorld.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyJointLimitConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyPoint2Point.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyFixedConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodySliderConstraint.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyJointMotor.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btDantzigLCP.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btMLCPSolver.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btLemkeAlgorithm.cpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\btBulletDynamicsCommon.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\btBulletCollisionCommon.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btConeTwistConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btConstraintSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btContactConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btContactSolverInfo.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btFixedConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGearConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGeneric6DofConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGeneric6DofSpringConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btGeneric6DofSpring2Constraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btHinge2Constraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btHingeConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btJacobianEntry.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btPoint2PointConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSequentialImpulseConstraintSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btNNCGConstraintSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSliderConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSolve2LinearConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSolverBody.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btSolverConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btTypedConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\ConstraintSolver\btUniversalConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btActionInterface.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btDiscreteDynamicsWorld.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btDiscreteDynamicsWorldMt.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btSimulationIslandManagerMt.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btDynamicsWorld.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btSimpleDynamicsWorld.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Dynamics\btRigidBody.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Vehicle\btRaycastVehicle.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Vehicle\btVehicleRaycaster.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Vehicle\btWheelInfo.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Character\btCharacterControllerInterface.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Character\btKinematicCharacterController.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBody.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyConstraintSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyDynamicsWorld.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyLink.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyLinkCollider.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodySolverConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyJointLimitConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyPoint2Point.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyFixedConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodySliderConstraint.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\Featherstone\btMultiBodyJointMotor.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btDantzigLCP.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btDantzigSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btMLCPSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btMLCPSolverInterface.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btPATHSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btSolveProjectedGaussSeidel.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btLemkeSolver.h" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletDynamics\MLCPSolvers\btLemkeAlgorithm.h" />
+    <ClCompile Include="Character\btKinematicCharacterController.cpp" />
+    <ClCompile Include="ConstraintSolver\btConeTwistConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btContactConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btFixedConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btGearConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btGeneric6DofConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btGeneric6DofSpringConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btGeneric6DofSpring2Constraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btHinge2Constraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btHingeConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btPoint2PointConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btSequentialImpulseConstraintSolver.cpp" />
+    <ClCompile Include="ConstraintSolver\btNNCGConstraintSolver.cpp" />
+    <ClCompile Include="ConstraintSolver\btSliderConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btSolve2LinearConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btTypedConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver\btUniversalConstraint.cpp" />
+    <ClCompile Include="Dynamics\btDiscreteDynamicsWorld.cpp" />
+    <ClCompile Include="Dynamics\btDiscreteDynamicsWorldMt.cpp" />
+    <ClCompile Include="Dynamics\btSimulationIslandManagerMt.cpp" />
+    <ClCompile Include="Dynamics\btRigidBody.cpp" />
+    <ClCompile Include="Dynamics\btSimpleDynamicsWorld.cpp" />
+    <ClCompile Include="Vehicle\btRaycastVehicle.cpp" />
+    <ClCompile Include="Vehicle\btWheelInfo.cpp" />
+    <ClCompile Include="Featherstone\btMultiBody.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyConstraintSolver.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyDynamicsWorld.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyJointLimitConstraint.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyConstraint.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyPoint2Point.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyFixedConstraint.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodySliderConstraint.cpp" />
+    <ClCompile Include="Featherstone\btMultiBodyJointMotor.cpp" />
+    <ClCompile Include="MLCPSolvers\btDantzigLCP.cpp" />
+    <ClCompile Include="MLCPSolvers\btMLCPSolver.cpp" />
+    <ClCompile Include="MLCPSolvers\btLemkeAlgorithm.cpp" />
+    <ClInclude Include="btBulletDynamicsCommon.h" />
+    <ClInclude Include="btBulletCollisionCommon.h" />
+    <ClInclude Include="ConstraintSolver\btConeTwistConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btConstraintSolver.h" />
+    <ClInclude Include="ConstraintSolver\btContactConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btContactSolverInfo.h" />
+    <ClInclude Include="ConstraintSolver\btFixedConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btGearConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btGeneric6DofConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btGeneric6DofSpringConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btGeneric6DofSpring2Constraint.h" />
+    <ClInclude Include="ConstraintSolver\btHinge2Constraint.h" />
+    <ClInclude Include="ConstraintSolver\btHingeConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btJacobianEntry.h" />
+    <ClInclude Include="ConstraintSolver\btPoint2PointConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btSequentialImpulseConstraintSolver.h" />
+    <ClInclude Include="ConstraintSolver\btNNCGConstraintSolver.h" />
+    <ClInclude Include="ConstraintSolver\btSliderConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btSolve2LinearConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btSolverBody.h" />
+    <ClInclude Include="ConstraintSolver\btSolverConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btTypedConstraint.h" />
+    <ClInclude Include="ConstraintSolver\btUniversalConstraint.h" />
+    <ClInclude Include="Dynamics\btActionInterface.h" />
+    <ClInclude Include="Dynamics\btDiscreteDynamicsWorld.h" />
+    <ClInclude Include="Dynamics\btDiscreteDynamicsWorldMt.h" />
+    <ClInclude Include="Dynamics\btSimulationIslandManagerMt.h" />
+    <ClInclude Include="Dynamics\btDynamicsWorld.h" />
+    <ClInclude Include="Dynamics\btSimpleDynamicsWorld.h" />
+    <ClInclude Include="Dynamics\btRigidBody.h" />
+    <ClInclude Include="Vehicle\btRaycastVehicle.h" />
+    <ClInclude Include="Vehicle\btVehicleRaycaster.h" />
+    <ClInclude Include="Vehicle\btWheelInfo.h" />
+    <ClInclude Include="Character\btCharacterControllerInterface.h" />
+    <ClInclude Include="Character\btKinematicCharacterController.h" />
+    <ClInclude Include="Featherstone\btMultiBody.h" />
+    <ClInclude Include="Featherstone\btMultiBodyConstraintSolver.h" />
+    <ClInclude Include="Featherstone\btMultiBodyDynamicsWorld.h" />
+    <ClInclude Include="Featherstone\btMultiBodyLink.h" />
+    <ClInclude Include="Featherstone\btMultiBodyLinkCollider.h" />
+    <ClInclude Include="Featherstone\btMultiBodySolverConstraint.h" />
+    <ClInclude Include="Featherstone\btMultiBodyConstraint.h" />
+    <ClInclude Include="Featherstone\btMultiBodyJointLimitConstraint.h" />
+    <ClInclude Include="Featherstone\btMultiBodyPoint2Point.h" />
+    <ClInclude Include="Featherstone\btMultiBodyFixedConstraint.h" />
+    <ClInclude Include="Featherstone\btMultiBodySliderConstraint.h" />
+    <ClInclude Include="Featherstone\btMultiBodyJointMotor.h" />
+    <ClInclude Include="MLCPSolvers\btDantzigLCP.h" />
+    <ClInclude Include="MLCPSolvers\btDantzigSolver.h" />
+    <ClInclude Include="MLCPSolvers\btMLCPSolver.h" />
+    <ClInclude Include="MLCPSolvers\btMLCPSolverInterface.h" />
+    <ClInclude Include="MLCPSolvers\btPATHSolver.h" />
+    <ClInclude Include="MLCPSolvers\btSolveProjectedGaussSeidel.h" />
+    <ClInclude Include="MLCPSolvers\btLemkeSolver.h" />
+    <ClInclude Include="MLCPSolvers\btLemkeAlgorithm.h" />
     <ClInclude Include="Dynamics\InplaceSolverIslandCallbackMT.h" />
   </ItemGroup>
   <ItemGroup>

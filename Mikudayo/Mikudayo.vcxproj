@@ -121,6 +121,7 @@
     <ClCompile Include="Pmx.cpp" />
     <ClCompile Include="PmxModel.cpp" />
     <ClCompile Include="SceneNode.cpp" />
+    <ClCompile Include="ShadowCasterPass.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -153,6 +154,7 @@
     <ClInclude Include="PmxModel.h" />
     <ClInclude Include="RenderArgs.h" />
     <ClInclude Include="SceneNode.h" />
+    <ClInclude Include="ShadowCasterPass.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TransparentPass.h" />
@@ -201,6 +203,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\DeferredLightingVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DepthViewerVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>

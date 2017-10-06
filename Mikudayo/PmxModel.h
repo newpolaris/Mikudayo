@@ -11,6 +11,7 @@ using namespace Math;
 
 namespace Pmx {
     struct Bone;
+    extern std::vector<InputDesc> VertElem;
 }
 
 class PmxModel : public Model
@@ -65,6 +66,7 @@ public:
         const ManagedTexture* Textures[kTextureMax];
         bool IsTransparent() const override;
         bool IsOutline() const override;
+        bool IsShadowCaster() const override;
         void SetTexture( GraphicsContext& gfxContext ) const;
     };
 

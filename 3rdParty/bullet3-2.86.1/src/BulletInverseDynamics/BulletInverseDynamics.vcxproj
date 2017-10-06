@@ -83,10 +83,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -117,10 +117,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -150,10 +150,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WIN64;BT_THREADSAFE=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -165,21 +165,21 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\IDMath.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\MultiBodyTree.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\MultiBodyTreeInitCache.cpp" />
-    <ClCompile Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\MultiBodyTreeImpl.cpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\IDConfig.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\IDConfigEigen.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\IDMath.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\IDConfigBuiltin.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\IDErrorMessages.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\MultiBodyTree.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\IDEigenInterface.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\IDMatVec.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\IDLinearMathInterface.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\MultiBodyTreeImpl.hpp" />
-    <ClInclude Include="C:\Users\newpolaris\Projects\MikuViewer\3rdParty\bullet3-2.86.1\src\BulletInverseDynamics\details\MultiBodyTreeInitCache.hpp" />
+    <ClCompile Include="BulletInverseDynamics\IDMath.cpp" />
+    <ClCompile Include="BulletInverseDynamics\MultiBodyTree.cpp" />
+    <ClCompile Include="BulletInverseDynamics\details\MultiBodyTreeInitCache.cpp" />
+    <ClCompile Include="BulletInverseDynamics\details\MultiBodyTreeImpl.cpp" />
+    <ClInclude Include="BulletInverseDynamics\IDConfig.hpp" />
+    <ClInclude Include="BulletInverseDynamics\IDConfigEigen.hpp" />
+    <ClInclude Include="BulletInverseDynamics\IDMath.hpp" />
+    <ClInclude Include="BulletInverseDynamics\IDConfigBuiltin.hpp" />
+    <ClInclude Include="BulletInverseDynamics\IDErrorMessages.hpp" />
+    <ClInclude Include="BulletInverseDynamics\MultiBodyTree.hpp" />
+    <ClInclude Include="BulletInverseDynamics\details\IDEigenInterface.hpp" />
+    <ClInclude Include="BulletInverseDynamics\details\IDMatVec.hpp" />
+    <ClInclude Include="BulletInverseDynamics\details\IDLinearMathInterface.hpp" />
+    <ClInclude Include="BulletInverseDynamics\details\MultiBodyTreeImpl.hpp" />
+    <ClInclude Include="BulletInverseDynamics\details\MultiBodyTreeInitCache.hpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
