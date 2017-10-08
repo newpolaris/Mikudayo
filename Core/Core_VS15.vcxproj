@@ -182,6 +182,10 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\AverageLumaCS.hlsl" />
+    <FxCompile Include="Shaders\BloomExtractAndDownsampleHdrCS.hlsl" />
+    <FxCompile Include="Shaders\BloomExtractAndDownsampleLdrCS.hlsl" />
+    <FxCompile Include="Shaders\BlurCS.hlsl" />
     <FxCompile Include="Shaders\BoundNeighborhoodCS.hlsl" />
     <FxCompile Include="Shaders\BufferCopyPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -201,6 +205,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\DebugDrawHistogramCS.hlsl" />
     <FxCompile Include="Shaders\DebugLuminanceHdr2CS.hlsl" />
     <FxCompile Include="Shaders\DebugLuminanceHdrCS.hlsl" />
     <FxCompile Include="Shaders\DebugLuminanceLdr2CS.hlsl">
@@ -218,6 +223,8 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\DownsampleBloomAllCS.hlsl" />
+    <FxCompile Include="Shaders\DownsampleBloomCS.hlsl" />
     <FxCompile Include="Shaders\ExtractLumaCS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass1_Luma2_CS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass1_Luma_CS.hlsl" />
@@ -299,6 +306,7 @@
     </FxCompile>
     <FxCompile Include="Shaders\ToneMapHDR2CS.hlsl" />
     <FxCompile Include="Shaders\ToneMapHDRCS.hlsl" />
+    <FxCompile Include="Shaders\UpsampleAndBlurCS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\3rdParty\DirectXTex\DirectXTex_Desktop_2017_Win10.vcxproj">

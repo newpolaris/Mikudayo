@@ -611,5 +611,29 @@
     <FxCompile Include="Shaders\AdaptExposureCS.hlsl">
       <Filter>Shaders\HDR</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\AverageLumaCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BloomExtractAndDownsampleHdrCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BloomExtractAndDownsampleLdrCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DownsampleBloomAllCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DownsampleBloomCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\UpsampleAndBlurCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BlurCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugDrawHistogramCS.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
