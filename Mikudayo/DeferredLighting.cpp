@@ -55,6 +55,7 @@ namespace Lighting
         float Range;
         LightType Type;
         float SpotlightAngle;
+        float Intensity;
     };
     LightData m_LightData[MaxLights];
     Matrix4 m_FullScreenProjMatrix;
@@ -123,6 +124,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     {
         auto& light = m_LightData[n];
 
+        light.Intensity = 1.f;
         light.PositionWS = Vector4(randVecUniform() * posScale + posBias, 1.f);
         light.DirectionWS = randVecNormal();
 
@@ -143,6 +145,12 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     m_LightData[0].PositionWS = Vector4(0, 15, -5, 1);
     m_LightData[0].DirectionWS = Normalize(Vector3(0, -1, -1));
     m_LightData[0].SpotlightAngle = 45;
+
+    m_LightData[1].Color = Color(0.f, 1.f, 0.f);
+    m_LightData[1].Range = 80;
+    m_LightData[1].Type = LightType(0);
+    m_LightData[1].PositionWS = Vector4(0, 5, 5, 1);
+    m_LightData[1].Intensity = 25.f;
 #endif
 }
 

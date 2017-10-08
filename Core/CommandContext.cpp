@@ -117,9 +117,19 @@ void CommandContext::FillBuffer( GpuResource& Dest, size_t DestOffset, DWParam V
     CopyBufferRegion(Dest, DestOffset, TempSpace.Buffer, TempSpace.FirstConstant*16, NumBytes );
 }
 
-void CommandContext::TransitionResource(GpuResource& Resource, D3D12_RESOURCE_STATES NewState, bool FlushImmediate)
+void CommandContext::TransitionResource( GpuResource& Resource, D3D12_RESOURCE_STATES NewState, bool FlushImmediate )
 {
-    (Resource); (NewState); (FlushImmediate);
+    Resource, NewState, FlushImmediate;
+}
+
+void CommandContext::InsertUAVBarrier( GpuResource& Resource, bool FlushImmediate )
+{
+    Resource, FlushImmediate;
+}
+
+void CommandContext::InsertAliasBarrier( GpuResource& Before, GpuResource& After, bool FlushImmediate )
+{
+    Before, After, FlushImmediate;
 }
 
 ComputeContext& ComputeContext::Begin( const std::wstring& ID )

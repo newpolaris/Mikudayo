@@ -32,7 +32,7 @@ struct Light
     float Range;
     uint Type;
     float SpotlightAngle;
-    float _;
+    float Intensity;
 };
 
 struct LightingResult
@@ -76,8 +76,8 @@ LightingResult DoPointLight( Light light, float specularPower, float3 V, float3 
     float distance = length( L );
     L /= distance;
     float attenuation = DoAttenuation( light, distance );
-    ret.Diffuse = DoDiffuse( light, L, N ) * attenuation;
-    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * attenuation;
+    ret.Diffuse = DoDiffuse( light, L, N ) * attenuation * light.Intensity;
+    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * attenuation * light.Intensity;
     return ret;
 }
 
@@ -89,8 +89,8 @@ LightingResult DoSpotLight( Light light, float specularPower, float3 V, float3 P
     L /= distance;
     float attenuation = DoAttenuation( light, distance );
     float spotIntensity = DoSpotCone( light, L );
-    ret.Diffuse = DoDiffuse( light, L, N ) * attenuation * spotIntensity;
-    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * attenuation * spotIntensity;
+    ret.Diffuse = DoDiffuse( light, L, N ) * attenuation * spotIntensity * light.Intensity;
+    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * attenuation * spotIntensity * light.Intensity;
     return ret;
 }
 
@@ -98,8 +98,8 @@ LightingResult DoDirectionalLight( Light light, float specularPower, float3 V, f
 {
     LightingResult ret;
     float3 L = normalize(-light.DirectionVS.xyz);
-    ret.Diffuse = DoDiffuse( light, L, N );
-    ret.Specular = DoSpecular( light, specularPower, V, L, N );
+    ret.Diffuse = DoDiffuse( light, L, N ) * light.Intensity;
+    ret.Specular = DoSpecular( light, specularPower, V, L, N ) * light.Intensity;
     return ret;
 }
 
