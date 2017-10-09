@@ -79,6 +79,21 @@ public:
 		float EdgeSize;
         Color EdgeColor;
 	};
+	
+	struct Bone
+    {
+        std::wstring Name;
+        Vector3 Translate; // Offset from parent
+        Vector3 Position;
+        int32_t DestinationIndex;
+        Vector3 DestinationOffset;
+        bool bInherentRotation = false;
+        bool bInherentTranslation = false;
+        int32_t ParentInherentBoneIndex = -1;
+        float ParentInherentBoneCoefficent = 0.f;
+		int32_t Parent;
+        std::vector<int32_t> Child;
+	};
 
     struct IKChild
     {
@@ -97,16 +112,7 @@ public:
         std::vector<IKChild> Link;
     };
 
-    struct Bone
-    {
-        std::wstring Name;
-        Vector3 Translate; // Offset from parent
-        Vector3 Position;
-        int32_t DestinationIndex;
-        Vector3 DestinationOffset;
-        int32_t Parent;
-        std::vector<int32_t> Child;
-    };
+    
 
     std::wstring m_Name;
     std::wstring m_TextureRoot;

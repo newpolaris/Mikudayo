@@ -180,14 +180,14 @@ namespace Pmx
         void Fill( bufferstream& is, bool bRH, uint8_t boneIndexByteSize );
     };
 
-    struct Ik
+    struct IK
     {
         int32_t BoneIndex;
         int32_t NumIteration;
         float LimitedRadian;
         std::vector<IkLink> Link;
 
-        Ik();
+        IK();
         void Fill( bufferstream& is, bool bRH, uint8_t boneIndexByteSize );
     };
 
@@ -204,7 +204,9 @@ namespace Pmx
         int32_t DestinationOriginIndex; // if BitFlag & kHasDestinationOriginIndex, given by bone index
         XMFLOAT3 DestinationOriginOffset; // else given by offset
 
-        // Additional bias bone (Inherent Rotation | Translation from parent)
+        // Additional bias bone (Inherent Rotation | Inherent Translation) from parent
+        bool bInherentRotation = false;
+        bool bInherentTranslation = false;
         int32_t ParentInherentBoneIndex;
         float ParentInherentBoneCoefficent;
 
@@ -218,7 +220,7 @@ namespace Pmx
         int32_t ExtParentIndex;
 
         bool bIK;
-        Ik Ik;
+        IK Ik;
 
         Bone();
         void Fill( bufferstream & is, bool bRH, bool bUtf16, uint8_t boneIndexByteSize );
@@ -321,7 +323,6 @@ namespace Pmx
         void Fill( bufferstream& is, bool bRH );
     };
     */
-
     // Polygon Model eXtended
     class PMX
     {
@@ -347,7 +348,6 @@ namespace Pmx
         vector<Material> m_Materials;
         vector<Bone> m_Bones;
         /*
-        vector<IK> m_IKs;
         vector<Face> m_Faces;
         vector<uint16_t> m_FaceDisplayList;
         BoneDisplayNameList m_BoneDisplayNameList;

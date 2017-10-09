@@ -202,6 +202,10 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         dst.Position = origin;
         dst.DestinationIndex = src.DestinationOriginIndex;
         dst.DestinationOffset = src.DestinationOriginOffset;
+        dst.bInherentRotation = src.bInherentRotation;
+        dst.bInherentTranslation = src.bInherentTranslation;
+        dst.ParentInherentBoneIndex = src.ParentInherentBoneIndex;
+        dst.ParentInherentBoneCoefficent = src.ParentInherentBoneCoefficent;
 		m_BoneIndex[src.Name] = i;
 	}
 

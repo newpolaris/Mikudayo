@@ -235,11 +235,13 @@ namespace Pmx
         if (BitFlag & kHasDestinationOriginIndex)
             DestinationOriginIndex = ReadIndex( is, boneIndexByteSize );
         else
-            Read( is, DestinationOriginOffset );
+            ReadPosition( is, DestinationOriginOffset, bRH );
 
         // bone has additional bias
         if (BitFlag & kHasInherentRotation || BitFlag & kHasInherentTranslation)
         {
+            bInherentTranslation = BitFlag & kHasInherentTranslation;
+            bInherentRotation = BitFlag & kHasInherentRotation;
             ParentInherentBoneIndex = ReadIndex( is, boneIndexByteSize );
             Read( is, ParentInherentBoneCoefficent );
         }
@@ -271,14 +273,14 @@ namespace Pmx
         }
 	}
 
-    Ik::Ik()
+    IK::IK()
     {
         BoneIndex = -1;
         NumIteration = 0;
         LimitedRadian = 0.f;
     }
 
-    void Ik::Fill( bufferstream& is, bool bRH, uint8_t boneIndexByteSize )
+    void IK::Fill( bufferstream& is, bool bRH, uint8_t boneIndexByteSize )
     {
         BoneIndex = ReadIndex( is, boneIndexByteSize );
         Read( is, NumIteration );
@@ -448,11 +450,6 @@ namespace Pmx
 			m_Bones[i].Fill( is, bRightHand, isUtf16(), GetByteSize( kBoneIndex ) );
 
         /*
-		uint16_t NumIK = ReadShort( is );
-		m_IKs.resize( NumIK );
-		for (uint32_t i = 0; i < NumIK; i++)
-			m_IKs[i].Fill( is );
-
 		uint16_t NumFaces = ReadShort( is );
 		m_Faces.resize( NumFaces );
 		for (uint16_t i = 0; i < NumFaces; i++)
@@ -502,3 +499,4 @@ namespace Pmx
 		m_IsValid = true;
 	}
 }
+
