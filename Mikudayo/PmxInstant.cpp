@@ -52,6 +52,8 @@ struct PmxInstant::Context final
 protected:
 
     void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
+    void UpdateChildPose( int32_t idx );
+    void UpdateIK( const PmxModel::IKAttr& ik );
 
     const PmxModel& m_Model;
     bool m_bRightHand;
@@ -59,7 +61,8 @@ protected:
 
     // Skinning
     std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
-    std::vector<OrthogonalTransform> m_Pose; // offset matrix
+    std::vector<OrthogonalTransform> m_LocalPose; // offset matrix
+    std::vector<OrthogonalTransform> m_Pose;
     std::vector<OrthogonalTransform> m_Skinning; // final skinning transform
 
     // Bone
@@ -180,10 +183,11 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
     auto bones = m_Model.m_Bones;
     int32_t numBones = static_cast<int32_t>(bones.size());
     m_BoneMotions.resize( numBones );
+    m_LocalPose.resize( numBones );
     m_Pose.resize( numBones );
     m_toRoot.resize( numBones );
     for (auto i = 0; i < bones.size(); i++)
-        m_Pose[i].SetTranslation( bones[i].Translate );
+        m_LocalPose[i].SetTranslation( bones[i].Translate );
 
     std::vector<OrthogonalTransform> RestPose( numBones );
     for (auto i = 0; i < numBones; i++)
@@ -233,6 +237,18 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
 		bone.SortKeyFrame();
 }
 
+void PmxInstant::Context::UpdateChildPose( int32_t idx )
+{
+    auto parentIndex = m_Model.m_Bones[idx].Parent;
+    if (parentIndex >= 0)
+        m_Pose[idx] = m_Pose[parentIndex] * m_LocalPose[idx];
+    else
+        m_Pose[idx] = m_LocalPose[idx];
+
+	for (auto c : m_Model.m_Bones[idx].Child)
+		UpdateChildPose( c );
+}
+
 void PmxInstant::Context::SetPosition( const Vector3& postion )
 {
     m_ModelTransform = Matrix4::MakeTranslate( postion );
@@ -252,20 +268,22 @@ void PmxInstant::Context::Update( float kFrameTime )
 	{
 		size_t numBones = m_BoneMotions.size();
 		for (auto i = 0; i < numBones; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_Pose[i] );
+			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
 
-        std::vector<OrthogonalTransform> Pose;
-        Pose.resize( numBones );
 		for (auto i = 0; i < numBones; i++)
 		{
 			auto parentIndex = m_Model.m_Bones[i].Parent;
-			if (parentIndex < numBones)
-				Pose[i] = Pose[parentIndex] * m_Pose[i];
+			if (parentIndex >= 0)
+				m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
 			else
-				Pose[i] = m_Pose[i];
+				m_Pose[i] = m_LocalPose[i];
 		}
+
+		for (auto& ik : m_Model.m_IKs)
+			UpdateIK( ik );
+
 		for (auto i = 0; i < numBones; i++)
-			m_Skinning[i] = Pose[i] * m_toRoot[i];
+			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
 	}
 
     if (m_MorphMotions.size() > 0)
@@ -304,6 +322,96 @@ void PmxInstant::Context::Update( float kFrameTime )
 				static_cast<uint32_t>(m_VertexMorphedPos.size()),
 				sizeof( XMFLOAT3 ),
 				m_VertexMorphedPos.data() );
+		}
+	}
+}
+
+//
+// Solve Constrainted IK
+// Cyclic-Coordinate-Descent（CCD）
+//
+// http://d.hatena.ne.jp/edvakf/20111102/1320268602
+// Game programming gems 3 Constrained Inverse Kinematics - Jason Weber
+//
+void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
+{
+	auto GetPosition = [&]( int32_t index ) -> Vector3
+	{
+		return Vector3(m_Pose[index].GetTranslation());
+	};
+
+	// "effector" (Fixed)
+	const auto ikBonePos = GetPosition( ik.BoneIndex );
+    const auto ikTargetBonePos = GetPosition( ik.TargetBoneIndex );
+
+	for (int n = 0; n < ik.NumIteration; n++)
+	{
+		// "effected" bone list in order
+		for (auto k = 0; k < ik.Link.size(); k++)
+		{
+			auto childIndex = ik.Link[k].BoneIndex;
+			auto invLinkMtx = Invert( m_Pose[childIndex] );
+
+			//
+			// transform to child bone's local coordinate.
+			// note that even if pos is vector3 type, transformed by affine tranform.
+			//
+			auto ikTargetVec = Vector3( invLinkMtx * ikTargetBonePos );
+			auto ikBoneVec = Vector3( invLinkMtx * ikBonePos );
+
+            // rotated axis
+			auto axis = Cross( ikBoneVec, ikTargetVec );
+			auto axisLen = Length( axis );
+			auto sinTheta = axisLen / Length( ikTargetVec ) / Length( ikBoneVec );
+			if (sinTheta < 1.0e-3f)
+				continue;
+
+			// angles moved in one iteration
+			auto maxAngle = (k + 1) * ik.LimitedRadian * 4;
+			auto theta = ASin( sinTheta );
+			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
+				theta = XM_PI - theta;
+			if (theta > maxAngle)
+				theta = maxAngle;
+
+			auto rotBase = m_LocalPose[childIndex].GetRotation();
+			auto translate = m_LocalPose[childIndex].GetTranslation();
+
+			// To apply base coordinate system which it is base on, inverted theta direction
+			Quaternion rotNext( axis, -theta );
+			auto rotFinish = rotBase * rotNext;
+
+			// Constraint IK, restrict rotation angle
+			if (false) // ik.Link[k].bLimit)
+			{
+				//
+				// MMD-Agent PMDIK
+				//
+				/* when this is the first iteration, we force rotating to the maximum angle toward limited direction */
+				/* this will help convergence the whole IK step earlier for most of models, especially for legs */
+				if (n == 0)
+				{
+					if (theta < 0.0f)
+						theta = -theta;
+					rotFinish = rotBase * Quaternion( Vector3( 1.0f, 0.f, 0.f ), theta );
+				}
+				else
+				{
+					//
+					// Needed to stable IK result (esp. Ankle)
+					// The value obtained from the test
+					//
+					const Scalar PMDMinRotX = 0.10f;
+					auto next = rotNext.toEuler();
+					auto base = rotBase.toEuler();
+
+					auto sum = Clamp( next.GetX() + base.GetX(), PMDMinRotX, Scalar(XM_PI) );
+					next = Vector3( sum - base.GetX(), 0.f, 0.f );
+					rotFinish = rotBase * Quaternion( next.GetX(), next.GetY(), next.GetZ() );
+				}
+			}
+			m_LocalPose[childIndex] = OrthogonalTransform( rotFinish, translate );
+			UpdateChildPose( childIndex );
 		}
 	}
 }

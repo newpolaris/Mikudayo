@@ -173,7 +173,6 @@ namespace Pmx
     {
         int32_t BoneIndex;
         uint8_t bLimit;
-        // if bLimit == 1
         XMFLOAT3 MinLimit;
         XMFLOAT3 MaxLimit;
 

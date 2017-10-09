@@ -205,6 +205,29 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 		m_BoneIndex[src.Name] = i;
 	}
 
+    for (auto i = 0; i < numBones; i++)
+    {
+        if (!Bones[i].bIK)
+            continue;
+        auto& it = Bones[i].Ik;
+        IKAttr attr;
+        attr.BoneIndex = i;
+        attr.TargetBoneIndex = it.BoneIndex;
+        attr.LimitedRadian = it.LimitedRadian;
+        attr.NumIteration = it.NumIteration;
+
+        for (auto& ik : it.Link)
+        {
+            IKChild child;
+            child.BoneIndex = ik.BoneIndex;
+            child.bLimit = ik.bLimit;
+            child.MinLimit = ik.MinLimit;
+            child.MaxLimit = ik.MaxLimit;
+            attr.Link.push_back( child );
+        }
+        m_IKs.push_back( attr );
+    }
+
     // Find root bone
     ASSERT( numBones > 0 );
     auto it = std::find_if( m_Bones.begin(), m_Bones.end(), [](const Bone& Bone){

@@ -80,6 +80,23 @@ public:
         Color EdgeColor;
 	};
 
+    struct IKChild
+    {
+        int32_t BoneIndex;
+        uint8_t bLimit;
+        XMFLOAT3 MinLimit;
+        XMFLOAT3 MaxLimit;
+    };
+
+    struct IKAttr
+    {
+        int32_t BoneIndex;
+        int32_t TargetBoneIndex;
+        int32_t NumIteration;
+        float LimitedRadian;
+        std::vector<IKChild> Link;
+    };
+
     struct Bone
     {
         std::wstring Name;
@@ -102,6 +119,7 @@ public:
     // Bone
     uint32_t m_RootBoneIndex; // model center
     std::vector<Bone> m_Bones;
+    std::vector<IKAttr> m_IKs;
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;
