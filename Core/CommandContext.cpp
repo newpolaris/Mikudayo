@@ -145,6 +145,10 @@ void ComputeContext::ClearUAV(ColorBuffer& Target)
     m_CommandList->ClearUnorderedAccessViewFloat(Target.GetUAV(), ClearColor);
 }
 
+void CommandContext::InsertUAVBarrier( GpuResource& Resource, bool FlushImmediate )
+{
+}
+
 uint64_t CommandContext::Flush(bool WaitForCompletion)
 {
     (WaitForCompletion);
