@@ -27,7 +27,7 @@ bool ModelManager::Load( const ModelInfo& Info )
     return true;
 }
 
-const Model& ModelManager::GetModel( const std::wstring& Name )
+Model& ModelManager::GetModel( const std::wstring& Name )
 {
     ASSERT(m_Models.count(Name) > 0);
     return *m_Models[Name];

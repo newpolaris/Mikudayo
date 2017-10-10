@@ -12,7 +12,7 @@
 #include "PipelineState.h"
 #include "Camera.h"
 #include "GraphicsCore.h"
-#include "SceneNode.h"
+#include "Scene.h"
 #include "VectorMath.h"
 #include "Color.h"
 #include "OpaquePass.h"
@@ -76,8 +76,8 @@ namespace Lighting
     GraphicsPSO m_LightDebugPSO;
     GraphicsPSO m_OutlinePSO;
     OpaquePass m_OaquePass;
-    TransparentPass m_TransparentPass;
     OutlinePass m_OutlinePass;
+    TransparentPass m_TransparentPass;
 
     Matrix4 GetLightTransfrom( const LightData& Data, const Matrix4& ViewToProj );
     void RenderSubPass( GraphicsContext& gfxContext, LightType Type, const Matrix4& ViewToClip, GraphicsPSO& PSO );
@@ -138,7 +138,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
         light.Type = LightType(randFloat() > 0.5);
     }
 
-#if 0
+#if 1
     m_LightData[0].Color = Color(1.f, 0.f, 0.f);
     m_LightData[0].Range = 40;
     m_LightData[0].Type = LightType(1);
@@ -146,7 +146,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     m_LightData[0].DirectionWS = Normalize(Vector3(0, -1, -1));
     m_LightData[0].SpotlightAngle = 45;
 
-    m_LightData[1].Color = Color(0.f, 1.f, 0.f);
+    m_LightData[1].Color = Color(1.f, 1.f, 1.f);
     m_LightData[1].Range = 80;
     m_LightData[1].Type = LightType(0);
     m_LightData[1].PositionWS = Vector4(0, 5, 5, 1);
@@ -274,10 +274,12 @@ void Lighting::RenderSubPass( GraphicsContext& gfxContext, LightType Type, const
     }
 }
 
-void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args)
+
+void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 {
-    ASSERT( args != nullptr );
-#if 1
+    GraphicsContext& gfxContext = args.gfxContext;
+#define DEFERRED 1
+#if DEFERRED
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );
         gfxContext.ClearColor( m_NormalTexture );
@@ -288,7 +290,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         };
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         gfxContext.SetPipelineState( m_GBufferPSO );
-        scene->Render( gfxContext, m_OaquePass );
+        scene->Render( m_OaquePass, args );
         D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
         gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
     }
@@ -302,8 +304,8 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             Matrix4 InverseProjectionMatrix;
             Vector4 ScreenDimensions;
         } psScreenToView;
-        psScreenToView.InverseProjectionMatrix = Invert( args->m_ProjMatrix );
-        psScreenToView.ScreenDimensions = Vector4( args->m_MainViewport.Width, args->m_MainViewport.Height, 0, 0 );
+        psScreenToView.InverseProjectionMatrix = Invert( args.m_ProjMatrix );
+        psScreenToView.ScreenDimensions = Vector4( args.m_MainViewport.Width, args.m_MainViewport.Height, 0, 0 );
         gfxContext.SetDynamicConstantBufferView( 3, sizeof( psScreenToView ), &psScreenToView, { kBindPixel } );
         D3D11_SRV_HANDLE srvs[] = {
             m_NormalTexture.GetSRV(),
@@ -316,7 +318,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
             m_SpecularTexture.GetRTV(),
         };
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
-        Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
+        Matrix4 ViewToClip = args.m_ProjMatrix*args.m_ViewMatrix;
         RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting1PSO );
         RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_Lighting1PSO );
         RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_Lighting2PSO );
@@ -325,6 +327,7 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
 
         D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
         gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
+        gfxContext.SetDynamicDescriptor( 2, nullptr, { kBindPixel } );
     }
     {
         ScopedTimer _prof( L"Final Pass", gfxContext );
@@ -337,12 +340,12 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
         gfxContext.SetDynamicDescriptors( 4, _countof( srvs ), srvs, { kBindPixel } );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
         gfxContext.SetPipelineState( m_FinalPSO );
-        scene->Render( gfxContext, m_OaquePass );
+        scene->Render( m_OaquePass, args );
 
         if (s_bLightBoundary)
         {
             gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-            Matrix4 ViewToClip = args->m_ProjMatrix*args->m_ViewMatrix;
+            Matrix4 ViewToClip = args.m_ProjMatrix*args.m_ViewMatrix;
             RenderSubPass( gfxContext, LightType::Point, ViewToClip, m_LightDebugPSO );
             RenderSubPass( gfxContext, LightType::Spot, ViewToClip, m_LightDebugPSO );
         }
@@ -351,19 +354,17 @@ void Lighting::Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& 
     {
         ScopedTimer _prof( L"Forward Pass", gfxContext );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-    #if 0
+    #if !DEFERRED
         gfxContext.SetPipelineState( m_OpaquePSO );
-        scene->Render( gfxContext, m_OaquePass );
+        scene->Render( m_OaquePass, args );
     #endif
-    #if 1
         gfxContext.SetPipelineState( m_TransparentPSO );
-        scene->Render( gfxContext, m_TransparentPass );
-    #endif
+        scene->Render( m_TransparentPass, args );
     }
     {
         ScopedTimer _prof( L"Outline Pass", gfxContext );
         gfxContext.SetPipelineState( m_OutlinePSO );
-        scene->Render( gfxContext, m_OutlinePass );
+        scene->Render( m_OutlinePass, args );
     }
 }
 

@@ -3,6 +3,7 @@
 #include "PmxInstant.h"
 #include "Vmd.h"
 #include "KeyFrameAnimation.h"
+#include "PrimitiveUtility.h"
 #include "Visitor.h"
 
 using namespace Utility;
@@ -34,12 +35,19 @@ namespace {
     }
 }
 
+BoolVar s_bDrawBone( "Application/Model/Draw Bone", false );
+BoolVar s_bDrawBoundingSphere( "Application/Model/Draw Bounding Shphere", false );
+// If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
+BoolVar s_bExcludeSkyBox( "Application/Model/Exclude Sky Box", true );
+NumVar s_ExcludeRange( "Application/Model/Exclude Range", 1000.f, 500.f, 10000.f );
+
 struct PmxInstant::Context final
 {
-    Context( const PmxModel& model );
+    Context( PmxModel& model );
     ~Context();
     void Clear( void );
     void Draw( GraphicsContext& gfxContext, Visitor& visitor );
+    void DrawBone();
 
     bool LoadModel();
     bool LoadMotion( const std::wstring& FilePath );
@@ -55,7 +63,7 @@ protected:
     void UpdateChildPose( int32_t idx );
     void UpdateIK( const PmxModel::IKAttr& ik );
 
-    const PmxModel& m_Model;
+    PmxModel& m_Model;
     bool m_bRightHand;
     Matrix4 m_ModelTransform;
 
@@ -80,7 +88,7 @@ protected:
     VertexBuffer m_PositionBuffer;
 };
 
-PmxInstant::Context::Context(const PmxModel& model) :
+PmxInstant::Context::Context(PmxModel& model) :
     m_Model(model), m_bRightHand(true), m_ModelTransform(kIdentity)
 {
 }
@@ -121,6 +129,13 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
         gfxContext.SetDynamicConstantBufferView( 4, sizeof( material.CB ), &material.CB, { kBindVertex, kBindPixel } );
         gfxContext.DrawIndexed( mesh.IndexCount, mesh.IndexOffset, 0 );
 	}
+}
+
+void PmxInstant::Context::DrawBone()
+{
+	auto numBones = m_BoneAttribute.size();
+	for (auto i = 0; i < numBones; i++)
+        PrimitiveUtility::Append( PrimitiveUtility::kBoneMesh, m_ModelTransform * m_Skinning[i] * m_BoneAttribute[i] );
 }
 
 bool PmxInstant::Context::LoadModel()
@@ -260,6 +275,26 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 
     // set default skinning matrix
     m_Skinning.resize( numBones );
+
+	std::vector<Vector3> GlobalPosition( numBones );
+	m_BoneAttribute.resize( numBones );
+	for ( auto i = 0; i < numBones; i++ )
+	{
+		auto parentIndex = m_Model.m_Bones[i].Parent;
+		Vector3 ParentPos = Vector3( kZero );
+		if (parentIndex < numBones)
+			ParentPos = GlobalPosition[parentIndex];
+
+		Vector3 diff = m_Model.m_Bones[i].Translate;;
+		Scalar length = Length( diff );
+		Quaternion Q = RotationBetweenVectors( Vector3( 0.0f, -1.0f, 0.0f ), diff );
+		AffineTransform scale = AffineTransform::MakeScale( Vector3(0.05f, length, 0.05f) );
+        // Move primitive bottom to origin
+		// AffineTransform alignToOrigin = AffineTransform::MakeTranslation( Vector3(0.0f, 0.5f * length, 0.0f) );
+		GlobalPosition[i] = ParentPos + diff;
+		m_BoneAttribute[i] = AffineTransform(Q, m_Model.m_Bones[i].Translate) * scale;
+	}
+
 }
 
 void PmxInstant::Context::Update( float kFrameTime )
@@ -279,8 +314,10 @@ void PmxInstant::Context::Update( float kFrameTime )
 				m_Pose[i] = m_LocalPose[i];
 		}
 
+    #if 0
 		for (auto& ik : m_Model.m_IKs)
 			UpdateIK( ik );
+    #endif
 
 		for (auto i = 0; i < numBones; i++)
 			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
@@ -367,7 +404,11 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 				continue;
 
 			// angles moved in one iteration
+        #if 0
 			auto maxAngle = (k + 1) * ik.LimitedRadian * 4;
+        #else
+			auto maxAngle = ik.LimitedRadian;
+        #endif
 			auto theta = ASin( sinTheta );
 			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
 				theta = XM_PI - theta;
@@ -416,8 +457,8 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 	}
 }
 
-PmxInstant::PmxInstant( const Model& model ) :
-    m_Context( std::make_shared<Context>( dynamic_cast<const PmxModel&>(model) ) )
+PmxInstant::PmxInstant( Model& model ) :
+    m_Context( std::make_shared<Context>( dynamic_cast<PmxModel&>(model) ) )
 {
 }
 
@@ -437,8 +478,18 @@ void PmxInstant::Update( float deltaT )
     SceneNode::Update( deltaT );
 }
 
+void PmxInstant::Accept( Visitor& visitor )
+{
+    visitor.Visit( *this );
+}
+
 void PmxInstant::Render( GraphicsContext& Context, Visitor& visitor )
 {
     m_Context->Draw( Context, visitor );
-    SceneNode::Render( Context, visitor );
+}
+
+void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
+{
+    (Context), (visitor);
+    m_Context->DrawBone();
 }

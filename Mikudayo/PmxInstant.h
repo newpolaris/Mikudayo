@@ -8,10 +8,12 @@ class PmxInstant : public SceneNode
 {
 public:
 
-    PmxInstant( const Model& model );
+    PmxInstant( Model& model );
     bool LoadModel();
     bool LoadMotion( const std::wstring& motionPath );
+    virtual void Accept( Visitor& visitor ) override;
     virtual void Render( GraphicsContext& Context, Visitor& visitor ) override;
+    virtual void RenderBone( GraphicsContext& Context, Visitor& visitor ) override;
     virtual void Update( float deltaT ) override;
 
 protected:

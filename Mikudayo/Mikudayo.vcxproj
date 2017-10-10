@@ -120,6 +120,9 @@
     <ClCompile Include="PrimitiveUtility.cpp" />
     <ClCompile Include="Pmx.cpp" />
     <ClCompile Include="PmxModel.cpp" />
+    <ClCompile Include="RenderBonePass.cpp" />
+    <ClCompile Include="RenderPass.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneNode.cpp" />
     <ClCompile Include="ShadowCasterPass.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
@@ -153,6 +156,9 @@
     <ClInclude Include="Pmx.h" />
     <ClInclude Include="PmxModel.h" />
     <ClInclude Include="RenderArgs.h" />
+    <ClInclude Include="RenderBonePass.h" />
+    <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
     <ClInclude Include="ShadowCasterPass.h" />
     <ClInclude Include="SoftBodyManager.h" />

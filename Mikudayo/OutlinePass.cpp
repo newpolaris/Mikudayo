@@ -6,7 +6,7 @@ OutlinePass::OutlinePass()
 {
 }
 
-bool OutlinePass::Visit( const Material& material )
+bool OutlinePass::Visit( Material& material )
 {
     return material.IsOutline();
 }

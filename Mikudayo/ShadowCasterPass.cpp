@@ -6,7 +6,7 @@ ShadowCasterPass::ShadowCasterPass()
 {
 }
 
-bool ShadowCasterPass::Visit( const Material& material )
+bool ShadowCasterPass::Visit( Material& material )
 {
     return material.IsShadowCaster();
 }

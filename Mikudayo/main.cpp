@@ -8,13 +8,14 @@
 #include "ModelManager.h"
 #include "RenderArgs.h"
 #include "DeferredLighting.h"
-#include "SceneNode.h"
+#include "Scene.h"
 #include "ShadowCamera.h"
 #include "PmxModel.h"
 #include "PmxInstant.h"
 #include "OpaquePass.h"
 #include "DebugHelper.h"
 #include "ShadowCasterPass.h"
+#include "RenderBonePass.h"
 
 #include "CompiledShaders/DepthViewerVS.h"
 
@@ -58,8 +59,9 @@ private:
 
     btSoftBody* m_SoftBody;
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
-    std::shared_ptr<SceneNode> m_Scene;
+    std::shared_ptr<Scene> m_Scene;
 
+    RenderBonePass m_RenderBonePass;
 	ShadowCasterPass m_ShadowCasterPass;
     GraphicsPSO m_DepthPSO;
     GraphicsPSO m_ShadowPSO;
@@ -110,15 +112,16 @@ void Mikudayo::Startup( void )
     for (auto& info : primitves)
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 
-    m_Scene = std::make_shared<SceneNode>();
+    m_Scene = std::make_shared<Scene>();
 
     ModelInfo info;
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
     info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
+    info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
     if (ModelManager::Load( info ))
     {
-        const auto& model = ModelManager::GetModel( info.Name );
+        auto& model = ModelManager::GetModel( info.Name );
         auto instant = std::make_shared<PmxInstant>(model);
         instant->LoadModel();
         instant->LoadMotion( L"Motion/nekomimi_lat.vmd" );
@@ -137,7 +140,7 @@ void Mikudayo::Startup( void )
 
     if (ModelManager::Load( stage ))
     {
-        const auto& model = ModelManager::GetModel( stage.Name );
+        auto& model = ModelManager::GetModel( stage.Name );
         auto instant = std::make_shared<PmxInstant>(model);
         instant->LoadModel();
         m_Scene->AddChild( instant );
@@ -160,6 +163,7 @@ void Mikudayo::Startup( void )
 
 void Mikudayo::Cleanup( void )
 {
+    m_Scene.reset();
     ModelManager::Shutdown();
     PrimitiveUtility::Shutdown();
     for (auto& model : m_Primitives)
@@ -205,7 +209,7 @@ void Mikudayo::Update( float deltaT )
         m_Frame = m_Frame + deltaT * 30.f;
     }
 
-    m_Scene->Update( m_Frame );
+    m_Scene->UpdateScene( m_Frame );
 
     auto GetRayTo = [&]( float x, float y) {
         auto& invView = m_Camera.GetCameraToWorld();
@@ -244,9 +248,10 @@ void Mikudayo::Update( float deltaT )
 
 void Mikudayo::RenderScene( void )
 {
-    RenderArgs args = { m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
-
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
+
+    RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
+
     __declspec(align(16)) struct
     {
         Vector3 LightDirection;
@@ -270,7 +275,7 @@ void Mikudayo::RenderScene( void )
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         gfxContext.SetPipelineState( m_ShadowPSO );
-        m_Scene->Render( gfxContext, m_ShadowCasterPass );
+        m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     {
@@ -290,7 +295,8 @@ void Mikudayo::RenderScene( void )
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
 
         ScopedTimer _prof( L"Render Color", gfxContext );
-        Lighting::Render( gfxContext, m_Scene, &args );
+        Lighting::Render( m_Scene, args );
+        m_Scene->Render( m_RenderBonePass, args );
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );

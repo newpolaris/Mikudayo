@@ -20,12 +20,6 @@ namespace PrimitiveUtility {
 		{ "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-    BoolVar s_bEnableDrawBone( "Application/Model/Draw Bone", false );
-    BoolVar s_bEnableDrawBoundingSphere( "Application/Model/Draw Bounding Shphere", false );
-    // If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
-    BoolVar s_bExcludeSkyBox( "Application/Model/Exclude Sky Box", true );
-    NumVar s_ExcludeRange( "Application/Model/Exclude Range", 1000.f, 500.f, 10000.f );
-
 	struct SubmeshGeometry
 	{
 		uint32_t IndexCount;

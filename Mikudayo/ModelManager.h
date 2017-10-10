@@ -7,5 +7,5 @@ namespace ModelManager {
     void Initialize();
     void Shutdown();
     bool Load(const ModelInfo& Info);
-    const Model& GetModel( const std::wstring& Name );
+    Model& GetModel( const std::wstring& Name );
 }

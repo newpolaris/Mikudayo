@@ -1,8 +1,16 @@
 #include "stdafx.h"
 #include "SceneNode.h"
+#include "Visitor.h"
 
-SceneNode::SceneNode()
+SceneNode::SceneNode() : m_RenderArgs(nullptr)
 {
+}
+
+void SceneNode::Accept( Visitor& visitor )
+{
+    visitor.Visit( *this );
+    for (auto child : m_Children)
+        child->Accept( visitor );
 }
 
 void SceneNode::AddChild( std::shared_ptr<SceneNode> pNode )
@@ -10,14 +18,17 @@ void SceneNode::AddChild( std::shared_ptr<SceneNode> pNode )
     m_Children.push_back( pNode );
 }
 
-void SceneNode::Update( float Delta )
+void SceneNode::Render( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    for (auto child : m_Children)
-        child->Update( Delta );
+    (gfxContext), (visitor);
 }
 
-void SceneNode::Render( GraphicsContext& Context, Visitor& visitor )
+void SceneNode::RenderBone( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    for (auto child : m_Children)
-        child->Render( Context, visitor );
+    (gfxContext), (visitor);
+}
+
+void SceneNode::Update( float deltaT )
+{
+    (deltaT);
 }

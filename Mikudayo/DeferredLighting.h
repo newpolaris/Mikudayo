@@ -1,7 +1,7 @@
 #pragma once
 
 class GraphicsContext;
-class SceneNode;
+class Scene;
 class RenderArgs;
 
 namespace Math
@@ -13,14 +13,14 @@ namespace Math
 
 namespace Lighting
 {
-    enum { MaxLights = 128 };
+    enum { MaxLights = 12 };
 
     extern StructuredBuffer m_LightBuffer;
 
     void CreateRandomLights(const Math::Vector3 minBound, const Math::Vector3 maxBound);
 
     void Initialize( void );
-    void Render( GraphicsContext& gfxContext, std::shared_ptr<SceneNode>& scene, RenderArgs* args );
+    void Render( std::shared_ptr<Scene>& scene, RenderArgs& args );
     void Shutdown( void );
     void UpdateLights( const Math::BaseCamera& C );
 }

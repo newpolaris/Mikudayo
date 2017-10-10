@@ -87,6 +87,15 @@
     <ClCompile Include="ShadowCasterPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderBonePass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -171,6 +180,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ShadowCasterPass.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPass.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderBonePass.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

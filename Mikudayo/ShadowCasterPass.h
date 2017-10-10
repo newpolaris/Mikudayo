@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Visitor.h"
+#include "RenderPass.h"
 
 class Material;
-class ShadowCasterPass : public Visitor
+class ShadowCasterPass : public RenderPass
 {
 public:
 
     ShadowCasterPass();
-    bool Visit( const Material& material ) override;
+    bool Visit( Material& material ) override;
 };
 

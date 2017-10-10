@@ -7,7 +7,11 @@ class Material;
 class Visitor
 {
 public:
-    virtual bool Visit( const SceneNode& ) { return true; }
-    virtual bool Visit( const Mesh& ) { return true; }
-    virtual bool Visit( const Material& ) { return true; }
+    virtual bool Visit( SceneNode& );
+    virtual bool Visit( Mesh& );
+    virtual bool Visit( Material& );
 };
+
+inline bool Visitor::Visit( SceneNode& ) { return true; }
+inline bool Visitor::Visit( Mesh& ) { return true; }
+inline bool Visitor::Visit( Material& ) { return true; }

@@ -6,7 +6,7 @@ TransparentPass::TransparentPass()
 {
 }
 
-bool TransparentPass::Visit( const Material& material )
+bool TransparentPass::Visit( Material& material )
 {
     return material.IsTransparent();
 }
