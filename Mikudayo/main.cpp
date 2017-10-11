@@ -118,7 +118,8 @@ void Mikudayo::Startup( void )
     info.Type = kModelPMX;
     info.Name = L"mikudayo";
     info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
-    info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
+    info.File = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
+    // info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
     if (ModelManager::Load( info ))
     {
         auto& model = ModelManager::GetModel( info.Name );

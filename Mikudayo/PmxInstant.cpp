@@ -354,6 +354,32 @@ void PmxInstant::Context::UpdateChildPose( int32_t idx )
 		UpdateChildPose( c );
 }
 
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+inline Vector3 Convert(const glm::vec3& v )
+{
+    return Vector3( v.x, v.y, v.z );
+}
+
+inline glm::vec3 Convert(const Vector3& v )
+{
+    return glm::vec3( v.GetX(), v.GetY(), v.GetZ() );
+}
+
+inline glm::quat Convert( const Quaternion& q )
+{
+    XMFLOAT4 v;
+    XMStoreFloat4( &v, q);
+    glm::quat g;
+    g.x = v.x;
+    g.y = v.y;
+    g.z = v.z;
+    g.w = v.w;
+    return g;
+}
+
 //
 // Solve Constrainted IK
 // Cyclic-Coordinate-Descent（CCD）
@@ -379,7 +405,7 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
             // toward IkVector (link-ik)
             const auto ikTargetBonePos = GetPosition( ik.TargetBoneIndex );
 
-			if (Length(ikBonePos - ikTargetBonePos) < 0.0001f)
+			if (Length(ikBonePos - ikTargetBonePos) < FLT_EPSILON)
 				return;
 
 			auto linkIndex = ik.Link[k].BoneIndex;
@@ -389,19 +415,85 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 			auto ikTargetVec = Vector3( invLinkMtx * ikTargetBonePos );
 			auto ikBoneVec = Vector3( invLinkMtx * ikBonePos );
 
-            // IK link's coordinate, rotate target vector V_T to V_Ik
+        #if 1
+			auto axis = Cross( ikBoneVec, ikTargetVec );
+			auto axisLen = Length( axis );
+			auto sinTheta = axisLen / Length( ikTargetVec ) / Length( ikBoneVec );
+			if (sinTheta < 1.0e-5f)
+				continue;
 
+			// move angles in one iteration
+			auto maxAngle = (k + 1) * ik.LimitedRadian * 4;
+			auto theta = ASin( sinTheta );
+			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
+				theta = XM_PI - theta;
+			if (theta > maxAngle)
+				theta = maxAngle;
+
+			auto rotBase = m_LocalPose[linkIndex].GetRotation();
+			auto translate = m_LocalPose[linkIndex].GetTranslation();
+
+			// To apply base coordinate system which it is base on, inverted theta direction
+			Quaternion rotNext( axis, -theta );
+			auto rotFinish = rotBase * rotNext;
+
+			// Constraint IK, restrict rotation angle
+			if (ik.Link[k].bLimit)
+			{
+            #define EXPERIMENT_IK
+            #ifndef EXPERIMENT_IK
+                // c = cos(theta / 2)
+                auto c = XMVectorGetW( rotFinish );
+                // s = sin(theta / 2)
+                auto s = Sqrt( 1.0f - c*c );
+                rotFinish = Quaternion( Vector4( s, 0, 0, c ) );
+                if (!m_bRightHand)
+                {
+                    auto a = -std::asin( s );
+                    rotFinish = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
+                }
+            #else
+                //
+                // MMD-Agent PMDIK
+                //
+                /* when this is the first iteration, we force rotating to the maximum angle toward limited direction */
+                /* this will help convergence the whole IK step earlier for most of models, especially for legs */
+                if (n == 0)
+                {
+                    if (theta < 0.0f)
+                        theta = -theta;
+                    rotFinish = rotBase * Quaternion( Vector3( 1.0f, 0.f, 0.f ), theta );
+				}
+				else
+				{
+					//
+					// Needed to stable IK result (esp. Ankle)
+					// The value obtained from the test
+					//
+					const Scalar PMDMinRotX = 0.10f;
+					auto next = rotNext.toEuler();
+					auto base = rotBase.toEuler();
+
+					auto sum = Clamp( next.GetX() + base.GetX(), PMDMinRotX, Scalar(XM_PI) );
+					next = Vector3( sum - base.GetX(), 0.f, 0.f );
+					rotFinish = rotBase * Quaternion( next.GetX(), next.GetY(), next.GetZ() );
+				}
+            #endif
+			}
+			m_LocalPose[linkIndex] = OrthogonalTransform( rotFinish, translate );
+			UpdateChildPose( linkIndex );
+        #else
+            // IK link's coordinate, rotate target vector V_T to V_Ik
+        #if 0
 			// Use code from 'ray'
             // Copyright (c) 2015-2017  ray
 			Vector3 srcLocal = Normalize(ikTargetVec);
 			Vector3 dstLocal = Normalize(ikBoneVec);
-
-            if (Length( srcLocal - dstLocal) < 0.0001f)
-                return;
-
 			float rotationDotProduct = Dot(dstLocal, srcLocal);
+            if (std::abs( rotationDotProduct - 1.f ) < FLT_EPSILON*100)
+                return;
             float rotationAngle = ACos( rotationDotProduct );
-            rotationAngle = min( ik.LimitedRadian, rotationAngle );
+            rotationAngle = min( ik.LimitedRadian*(k + 1), rotationAngle );
 
 			if (rotationAngle < 0.0001f)
 				continue;
@@ -410,12 +502,32 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 			rotationAxis = Normalize(rotationAxis);
 
 			Quaternion q0(rotationAxis, rotationAngle);
+        #else
+			auto axis = Cross( ikBoneVec, ikTargetVec );
+			auto axisLen = Length( axis );
+			auto sinTheta = axisLen / Length( ikTargetVec ) / Length( ikBoneVec );
+			if (sinTheta < 1.0e-3f)
+				continue;
 
+			// angle to move in one iteration
+			auto maxAngle = (k + 1) * ik.LimitedRadian * 4;
+			float rotationAngle = ASin( sinTheta );
+			if (Dot( ikTargetVec, ikBoneVec ) < 0.f)
+				rotationAngle = XM_PI - rotationAngle;
+            rotationAngle = min( ik.LimitedRadian*(k + 1), rotationAngle );
+
+			// To apply base coordinate system which it is base on, inverted theta direction
+			Quaternion q0( axis, -rotationAngle );
+        #endif
+
+			// if (false)
 			if (ik.Link[k].bLimit)
 			{
-				Vector3 euler(q0.toEuler());
+                Vector3 euler = Convert(glm::eulerAngles( Convert( q0 ) ));
                 // due to rightHand min, max is swap needed
-                euler = Clamp( euler, ik.Link[k].MaxLimit, ik.Link[k].MinLimit );
+                Vector3 MinLimit = ik.Link[k].MaxLimit;
+                MinLimit -= Vector3( Scalar( 0.005 ) );
+                euler = Clamp( euler, MinLimit, ik.Link[k].MinLimit );
                 q0 = Quaternion( euler.GetX(), euler.GetY(), euler.GetZ() );
 			}
 
@@ -423,6 +535,7 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 			Quaternion qq = q0 * linkLocalPose.GetRotation();
 			linkLocalPose = OrthogonalTransform( qq, linkLocalPose.GetTranslation() );
 			UpdateChildPose( linkIndex );
+        #endif
         }
 	}
 }
@@ -482,14 +595,12 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 		Vector3 DestinationOffset = m_Model.m_Bones[i].DestinationOffset;
 		if (DestinationIndex >= 0)
 			DestinationOffset = m_Model.m_Bones[DestinationIndex].Position - m_Model.m_Bones[i].Position;
-
 		Vector3 diff = DestinationOffset;
 		Scalar length = Length( diff );
-		Quaternion Q = RotationBetweenVectors( Vector3( 0.0f, 1.0f, 0.0f ), diff );
+		Quaternion Q = RotationBetweenVectors( Vector3( 0.0f, -1.0f, 0.0f ), diff );
 		AffineTransform scale = AffineTransform::MakeScale( Vector3(0.05f, length, 0.05f) );
         // Move primitive bottom to origin
-		AffineTransform alignToOrigin = AffineTransform::MakeTranslation( Vector3(0.0f, 0.5f * length, 0.0f) );
-		m_BoneAttribute[i] = AffineTransform(Q, m_Model.m_Bones[i].Position) * alignToOrigin * scale;
+		m_BoneAttribute[i] = AffineTransform(Q, m_Model.m_Bones[i].Position) * scale;
 	}
 }
 
