@@ -222,7 +222,7 @@ namespace Pmx
         bIK = false;
     }
 
-    void Bone::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t boneIndexByteSize  )
+    void Bone::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t boneIndexByteSize )
 	{
         Name = ReadText( is, bUtf16 );
         NameEnglish = ReadText( is, bUtf16 );
@@ -240,8 +240,8 @@ namespace Pmx
         // bone has additional bias
         if (BitFlag & kHasInherentRotation || BitFlag & kHasInherentTranslation)
         {
-            bInherentTranslation = BitFlag & kHasInherentTranslation;
-            bInherentRotation = BitFlag & kHasInherentRotation;
+            bInherentTranslation = (BitFlag & kHasInherentTranslation) != 0;
+            bInherentRotation = (BitFlag & kHasInherentRotation) != 0;
             ParentInherentBoneIndex = ReadIndex( is, boneIndexByteSize );
             Read( is, ParentInherentBoneCoefficent );
         }
@@ -309,69 +309,142 @@ namespace Pmx
             ReadRotation( is, MaxLimit, bRH );
         }
     }
-/*
-	void Face::FaceVertex::Fill( bufferstream & is, bool bRH )
+
+    void MorphGroup::Fill( bufferstream& is, uint8_t size )
+    {
+		Index = ReadIndex( is, size );
+		Read( is, Weight );
+    }
+
+	void MorphVertex::Fill( bufferstream& is, uint8_t size, bool bRH )
 	{
-		Read( is, Index );
+		VertexIndex = ReadIndex( is, size );
 		ReadPosition( is, Position, bRH );
 	}
 
-	void Face::Fill( bufferstream & is, bool bRH )
-	{
-		NameBuf SkinName;
-		Read( is, SkinName );
-		uint32_t VertexCount;
-		Read( is, VertexCount );
+    void MorphMaterial::Fill( bufferstream& is, uint8_t size )
+    {
+		MaterialIndex = ReadIndex( is, size );
+        Read( is, OffsetOperation );
+        Read( is, Diffuse );
+        Read( is, Specular );
+        Read( is, SpecularPower );
+        Read( is, Ambient );
+        Read( is, EdgeColor );
+        Read( is, EdgeSize );
+        Read( is, TextureWeight );
+        Read( is, SphereWeight );
+        Read( is, ToonWeight );
+    }
+
+    void MorphBone::Fill( bufferstream& is, uint8_t size, bool bRH )
+    {
+		BoneIndex = ReadIndex( is, size );
+        ReadPosition( is, Translation, bRH );
+        ReadRotation( is, Rotation, bRH );
+    }
+
+    void MorphUV::Fill( bufferstream& is, uint8_t offset, uint8_t size )
+    {
+        Offset = offset;
+        VertexIndex = ReadIndex( is, size );
+        Read( is, Position );
+    }
+
+    void MorphFlip::Fill( bufferstream& is, uint8_t size )
+    {
+        Index = ReadIndex( is, size );
+        Read( is, Value );
+    }
+
+    void MorphImpulse::Fill( bufferstream& is, uint8_t size, bool bRH )
+    {
+        Index = ReadIndex( is, size );
+        uint8_t isLocal;
+        Read( is, isLocal );
+        bLocal = isLocal ? 1 : 0;
+        ReadPosition( is, Velocity, bRH );
+        ReadRotation( is, AngularTorque, bRH );
+    }
+
+    void Morph::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t config[] )
+    {
+		Name = ReadText( is, bUtf16 );
+        NameEnglish = ReadText( is, bUtf16 );
+		Read( is, Panel );
 		Read( is, Type );
-		FaceVertices.resize( VertexCount );
-		for (uint32_t i = 0; i < VertexCount; i++)
-			FaceVertices[i].Fill( is, bRH );
+		uint32_t MorphCount;
+		Read( is, MorphCount );
+        switch (Type)
+        {
+        case MorphType::kGroup:
+            GroupList.resize( MorphCount );
+            for (uint32_t i = 0; i < MorphCount; i++)
+                GroupList[i].Fill( is, config[kMorphIndex] );
+            break;
+        case MorphType::kVertex:
+            VertexList.resize( MorphCount );
+            for (uint32_t i = 0; i < MorphCount; i++)
+                VertexList[i].Fill( is, config[kVertIndex], bRH );
+            break;
+        case MorphType::kBone:
+            BoneList.resize( MorphCount );
+            for (uint32_t i = 0; i < MorphCount; i++)
+                BoneList[i].Fill( is, config[kBoneIndex], bRH );
+            break;
+        case MorphType::kMaterial:
+            MaterialList.resize( MorphCount );
+            for (uint32_t i = 0; i < MorphCount; i++)
+                MaterialList[i].Fill( is, config[kMatIndex] );
+            break;
+        case MorphType::kTexCoord:
+        case MorphType::kExtraUV1:
+        case MorphType::kExtraUV2:
+        case MorphType::kExtraUV3:
+        case MorphType::kExtraUV4:
+        {
+            TexCoordList.resize( MorphCount );
+            const uint8_t offset = (uint8_t)Type - (uint8_t)MorphType::kTexCoord;
+            for (uint32_t i = 0; i < MorphCount; i++)
+                TexCoordList[i].Fill( is, offset, config[kVertIndex] );
+            break;
+        }
+        default:
+            ASSERT( FALSE );
+        }
+    }
 
-		Name = sjis_to_utf( SkinName );
-	}
+    void DisplayElement::Fill( bufferstream& is, uint8_t config[] )
+    {
+        Read( is, Type );
+        if (Type == DisplayElementType::kBone)
+            Index = ReadIndex( is, config[kBoneIndex] );
+        else if (Type == DisplayElementType::kMorph)
+            Index = ReadIndex( is, config[kMorphIndex] );
+        else
+            ASSERT( FALSE );
+    }
 
-	void Face::FillExpantion( bufferstream & is )
+    void DisplayFrame::Fill( bufferstream& is, bool bUtf16, uint8_t config[] )
+    {
+        Name = ReadText( is, bUtf16 );
+        NameEnglish = ReadText( is, bUtf16 );
+        Read( is, Type );
+		uint32_t Count;
+        Read( is, Count );
+        ElementList.resize( Count );
+        for (uint32_t i = 0; i < Count; i++)
+            ElementList[i].Fill( is, config );
+    }
+
+	void RigidBody::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t boneIndexSize )
 	{
-		NameBuf SkinName;
-		Read( is, SkinName );
-		NameEnglish = ascii_to_utf( SkinName );
-	}
-
-	void BoneDisplayNameList::Fill( bufferstream & is )
-	{
-		Read( is, BoneNameCount );
-		for (uint8_t i = 0; i < BoneNameCount; i++) {
-			FrameBuf buf;
-			Read( is, buf );
-			Name.push_back( sjis_to_utf( buf ) );
-		}
-	}
-
-	void BoneDisplayNameList::FillExpantion( bufferstream & is )
-	{
-		for (uint8_t i = 0; i < BoneNameCount; i++) {
-			FrameBuf buf;
-			Read( is, buf );
-			NameEnglish.push_back( ascii_to_utf( buf ) );
-		}
-	}
-
-	void BoneDisplayFrame::Fill( bufferstream & is )
-	{
-		Read( is, BoneIndex );
-		Read( is, BoneDisplayNameIndex );
-	}
-
-	void RigidBody::Fill( bufferstream & is, bool bRH )
-	{
-		NameBuf Buffer;
-		Read( is, Buffer );
-		Name = sjis_to_utf( Buffer );
-
-		Read( is, BoneIndex );
-		Read( is, RigidBodyGroup );
-		Read( is, UnCollisionGroupFlag );
-		Read( is, Type );
+        Name = ReadText( is, bUtf16 );
+        NameEnglish = ReadText( is, bUtf16 );
+		BoneIndex = ReadIndex( is, boneIndexSize );
+		Read( is, CollisionGroupID );
+		Read( is, CollisionGroupMask );
+		Read( is, Shape );
 		Read( is, Size );
 		ReadPosition( is, Position, bRH );
 		ReadRotation( is, Rotation, bRH );
@@ -381,26 +454,39 @@ namespace Pmx
 		Read( is, Restitution );
 		Read( is, Friction );
 		Read( is, RigidType );
+
+        GroupID = uint16_t( 0x0001 << CollisionGroupID );
 	}
 
-	void Constraint::Fill( bufferstream & is, bool bRH )
-	{
-		NameBuf Buffer;
-		Read( is, Buffer );
-		Name = sjis_to_utf( Buffer );
-
-		Read( is, RigidBodyIndexA );
-		Read( is, RigidBodyIndexB );
+    void Joint::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize )
+    {
+		Name = ReadText( is, bUtf16 );
+		NameEnglish = ReadText( is, bUtf16 );
+        Read( is, Type );
+		RigidBodyIndexA = ReadIndex( is, rigidIndexSize );
+		RigidBodyIndexB = ReadIndex( is, rigidIndexSize );
 		ReadPosition( is, Position, bRH );
 		ReadRotation( is, Rotation, bRH );
 		ReadPosition( is, LinearLowerLimit, bRH );
 		ReadPosition( is, LinearUpperLimit, bRH );
 		ReadRotation( is, AngularLowerLimit, bRH );
 		ReadRotation( is, AngularUpperLimit, bRH );
-		ReadPosition( is, LinearStiffness, bRH );
-		ReadRotation( is, AngularStiffness, bRH );
-	}
-*/
+		Read( is, LinearStiffness );
+		Read( is, AngularStiffness );
+    }
+
+    void RigidBodyAnchor::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize )
+    {
+        (is), (bRH), (bUtf16), (rigidIndexSize);
+        ASSERT( FALSE );
+    }
+
+    void SoftBody::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize )
+    {
+        (is), (bRH), (bUtf16), (rigidIndexSize);
+        ASSERT( FALSE );
+    }
+
     void PMX::Fill( bufferstream& is, bool bRightHand )
 	{
         m_IsValid = false;
@@ -449,53 +535,38 @@ namespace Pmx
 		for (uint32_t i = 0; i < NumBones; i++)
 			m_Bones[i].Fill( is, bRightHand, isUtf16(), GetByteSize( kBoneIndex ) );
 
-        /*
-		uint16_t NumFaces = ReadShort( is );
-		m_Faces.resize( NumFaces );
-		for (uint16_t i = 0; i < NumFaces; i++)
-			m_Faces[i].Fill( is, bRightHand );
+		uint32_t NumMorphs = ReadUint( is );
+        m_Morphs.resize( NumMorphs );
+        for (uint32_t i = 0; i < NumMorphs; i++)
+            m_Morphs[i].Fill( is, bRightHand, isUtf16(), m_Config.Data );
 
-		uint8_t NumFaceDislayList;
-		Read( is, NumFaceDislayList );
-		m_FaceDisplayList.resize( NumFaceDislayList );
-		for (uint8_t i = 0; i < NumFaceDislayList; i++)
-			Read( is, m_FaceDisplayList[i] );
+		uint32_t NumFrames = ReadUint( is );
+        m_Frames.resize( NumFrames );
+        for (uint32_t i = 0; i < NumFrames; i++)
+            m_Frames[i].Fill( is, isUtf16(), m_Config.Data );
 
-		m_BoneDisplayNameList.Fill( is );
+        uint32_t NumRigidBody;
+        Read( is, NumRigidBody );
+        m_RigidBodies.resize( NumRigidBody );
+        for (uint32_t i = 0; i < NumRigidBody; i++)
+            m_RigidBodies[i].Fill( is, bRightHand, isUtf16(), GetByteSize( kBoneIndex ) );
 
-		uint32_t NumBoneDisplayFrame = Read<uint32_t>( is );
-		m_BoneDisplayFrames.resize( NumBoneDisplayFrame );
-		for (uint8_t i = 0; i < NumBoneDisplayFrame; i++)
-			m_BoneDisplayFrames[i].Fill( is );
+        uint32_t NumJoint;
+        Read( is, NumJoint );
+        m_Joints.resize( NumJoint );
+        for (uint32_t i = 0; i < NumJoint; i++)
+            m_Joints[i].Fill( is, bRightHand, isUtf16(), GetByteSize( kRigidBodyIndex ) );
 
-
-		if (is.peek() != ios::traits_type::eof())
-		{
-			static const int ToonNum = 10;
-			ToonBuf Buf;
-			for (int i = 0; i < ToonNum; i++)
-			{
-				Read( is, Buf );
-				m_ToonTextureList.push_back( sjis_to_utf( Buf ) );
-				m_ToonTextureRawList.push_back( read_default( Buf ) );
-			}
-		}
-
-		if (is.peek() != ios::traits_type::eof())
-		{
-			uint32_t NumRigidBody;
-			Read( is, NumRigidBody );
-			m_Bodies.resize( NumRigidBody );
-			for (uint32_t i = 0; i < NumRigidBody; i++)
-				m_Bodies[i].Fill( is, bRightHand );
-
-			uint32_t NumConstraint;
-			Read( is, NumConstraint );
-			m_Constraint.resize( NumConstraint );
-			for (uint32_t i = 0; i < NumConstraint; i++)
-				m_Constraint[i].Fill( is, bRightHand );
-		}
-        */
+        if (is.peek() != ios::traits_type::eof())
+        {
+            ASSERT( m_Header.Version >= 2.1f );
+            // Version >= 2.1f
+            uint32_t NumSoftBody;
+            Read( is, NumSoftBody );
+            m_SoftBodies.resize( NumSoftBody );
+            for (uint32_t i = 0; i < NumJoint; i++)
+                m_SoftBodies[i].Fill( is, bRightHand, isUtf16(), GetByteSize( kRigidBodyIndex ) );
+        }
 		m_IsValid = true;
 	}
 }

@@ -14,7 +14,7 @@ namespace fs = boost::filesystem;
 inline std::wstring ResourcePath( fs::path Path )
 {
     auto Root = L"C:/Users/newpolaris/Projects/MikuViewer/Test";
-    return (Root / Path).generic_wstring();
+    return (Root/Path).generic_wstring();
 }
 
 MATCHER_P(MatcherNearFast, Precision, "")

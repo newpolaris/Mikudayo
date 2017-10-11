@@ -19,9 +19,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="PMX\Model.cpp">
-      <Filter>Source Files\PMX</Filter>
-    </ClCompile>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,6 +48,12 @@
     </ClCompile>
     <ClCompile Include="Math\Frustum.cpp">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="PMX\SimpleModel.cpp">
+      <Filter>Source Files\PMX</Filter>
+    </ClCompile>
+    <ClCompile Include="PMX\BasicModel.cpp">
+      <Filter>Source Files\PMX</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

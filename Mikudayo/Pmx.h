@@ -5,7 +5,10 @@
 // Pmx Parser MMDFormats
 // https://github.com/oguna/MMDFormats
 //
-// MMDAI
+// Use code from 'MMDAI'
+// Copyright (c) 2010-2014  hkrn
+//
+// Use code from 'MikuMikuFormats'
 //
 // PmxEditor PMX仕様.txt
 //
@@ -226,50 +229,143 @@ namespace Pmx
         void Fill( bufferstream & is, bool bRH, bool bUtf16, uint8_t boneIndexByteSize );
     };
 
-    /*
-    enum class FaceType : uint8_t
+	enum class MorphCategory : uint8_t
+	{
+		kReservedCategory = 0,
+		kEyebrow = 1,
+		kEye = 2,
+		kMouth = 3,
+		kOther = 4,
+	};
+
+    enum class MorphType : uint8_t
     {
-        kBase = 0,
-        kEyebrow,
-        kEye,
-        kLip,
-        kOther,
+	    kGroup = 0,
+	    kVertex = 1,
+	    kBone = 2,
+	    kTexCoord = 3,
+	    kExtraUV1 = 4,
+	    kExtraUV2 = 5,
+	    kExtraUV3 = 6,
+	    kExtraUV4 = 7,
+	    kMaterial = 8,
+        kFlip = 9,
+        kImpulse = 10,
     };
 
-    struct Face
+    struct MorphGroup
     {
-        struct FaceVertex
-        {
-            uint32_t Index;
-            XMFLOAT3 Position;
+        uint32_t Index;
+        float Weight;
+        void Fill( bufferstream& is, uint8_t size );
+    };
 
-            void Fill( bufferstream& is, bool bRH );
-        };
+    struct MorphVertex
+    {
+        uint32_t VertexIndex;
+        XMFLOAT3 Position;
 
+        void Fill( bufferstream& is, uint8_t size, bool bRH );
+    };
+
+    struct MorphMaterial
+    {
+        uint32_t MaterialIndex;
+        uint8_t OffsetOperation;
+        XMFLOAT4 Diffuse;
+        XMFLOAT3 Specular;
+        float SpecularPower;
+        XMFLOAT3 Ambient;
+        XMFLOAT4 EdgeColor;
+        float EdgeSize;
+        XMFLOAT4 TextureWeight;
+        XMFLOAT4 SphereWeight;
+        XMFLOAT4 ToonWeight;
+
+        void Fill( bufferstream& is, uint8_t size );
+    };
+
+    struct MorphBone
+    {
+        uint32_t BoneIndex;
+        XMFLOAT3 Translation;
+        XMFLOAT4 Rotation;
+
+        void Fill( bufferstream& is, uint8_t size, bool bRH );
+    };
+
+    struct MorphUV
+    {
+        uint32_t VertexIndex;
+        XMFLOAT4 Position;
+        uint8_t Offset;
+
+        void Fill( bufferstream& is, uint8_t offset, uint8_t size );
+    };
+
+    struct MorphFlip
+    {
+        uint32_t Index;
+        float Value;
+
+        void Fill( bufferstream& is, uint8_t size );
+    };
+
+    struct MorphImpulse
+    {
+        uint32_t Index;
+        bool bLocal;
+        XMFLOAT3 Velocity;
+        XMFLOAT3 AngularTorque;
+
+        void Fill( bufferstream& is, uint8_t size, bool bRH );
+    };
+
+    //
+    // Each value is given as offset from original one
+    //
+    struct Morph
+    {
         wstring Name;
         wstring NameEnglish;
-        FaceType Type;
-        vector<FaceVertex> FaceVertices;
+        MorphCategory Panel;
+        MorphType Type;
+        uint16_t MorphIndex;
+        float MorphRate;
 
-        void Fill( bufferstream& is, bool bRH );
-        void FillExpantion( bufferstream& is );
+        vector<MorphGroup> GroupList;
+        vector<MorphVertex> VertexList;
+        vector<MorphBone> BoneList;
+        vector<MorphUV> TexCoordList;
+        vector<MorphMaterial> MaterialList;
+        vector<MorphFlip> FlipList;
+        vector<MorphImpulse> ImpulseList;
+
+        void Fill( bufferstream& is, bool bUtf16, bool bRH, uint8_t config[] );
     };
 
-    struct BoneDisplayNameList
+    enum class DisplayElementType  : uint8_t
     {
-        uint8_t BoneNameCount;
-        vector<wstring> Name;
-        vector<wstring> NameEnglish;
-
-        void Fill( bufferstream& is );
-        void FillExpantion( bufferstream& is );
+        kBone,
+        kMorph
     };
 
-    struct BoneDisplayFrame {
-        uint16_t BoneIndex;
-        uint8_t BoneDisplayNameIndex;
+    struct DisplayElement
+    {
+        DisplayElementType Type;
+        uint32_t Index;
 
-        void Fill( bufferstream& is );
+        void Fill( bufferstream& is, uint8_t config[] );
+    };
+
+    struct DisplayFrame
+    {
+        wstring Name;
+        wstring NameEnglish;
+        uint8_t Type;
+        vector<DisplayElement> ElementList;
+
+        void Fill( bufferstream& is, bool bUtf16, uint8_t config[] );
     };
 
     enum class RigidBodyShape : uint8_t
@@ -281,48 +377,124 @@ namespace Pmx
 
     enum class RigidBodyType : uint8_t
     {
-        kBoneConnected,
-        kPhysics,
-        kConnectedPhysics
+        kBoneConnected, // Follow Bone (static)
+        kPhysics, // Physics Calc. (dynamic)
+        kConnectedPhysics //  Physics Calc. + Bone position matching
     };
 
     struct RigidBody
     {
         wstring Name;
-        uint16_t BoneIndex; // If not then -1
-        uint8_t RigidBodyGroup;
-        uint16_t UnCollisionGroupFlag;
-        RigidBodyShape Type;
-        XMFLOAT3 Size;
+        wstring NameEnglish;
+        uint32_t BoneIndex;
+        uint8_t CollisionGroupID; // (group that start from 0)
+        uint16_t CollisionGroupMask; // (~non-collision group)
+        RigidBodyShape Shape;
+        XMFLOAT3 Size; // (raidus, height, ?)
         XMFLOAT3 Position;
         XMFLOAT3 Rotation; // Orientation
-        float Weight; // Mass
-        float LinearDamping; // MoveAttenuation
-        float AngularDamping; // RotationAttenuation
-        float Restitution; // Repulsion
+        float Weight; // Mass(Mass)
+        float LinearDamping; // MoveAttenuation (Move)
+        float AngularDamping; // RotationAttenuation (Rotation)
+        float Restitution; // Repulsion (Repel)
         float Friction;
         RigidBodyType RigidType;
 
-        void Fill( bufferstream& is, bool bRH );
+        uint16_t GroupID;
+        void Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t boneIndexSize );
     };
 
-    struct Constraint // Joint
+	enum class JointType : uint8_t
+	{
+		kGeneric6DofSpring = 0,
+		kGeneric6Dof = 1,
+		kPoint2Point = 2,
+		kConeTwist = 3,
+		kSlider = 5,
+		kHinge = 6
+	};
+
+    struct Joint
     {
         wstring Name;
+        wstring NameEnglish;
+        JointType Type;
         uint32_t RigidBodyIndexA;
         uint32_t RigidBodyIndexB;
         XMFLOAT3 Position;
         XMFLOAT3 Rotation;
-        XMFLOAT3 LinearLowerLimit; // MoveLimitationMin (Constraint Pos)
+        XMFLOAT3 LinearLowerLimit; // MoveLimitationMin (Constraint Position)(limits move)
         XMFLOAT3 LinearUpperLimit;
-        XMFLOAT3 AngularLowerLimit; // RotationLimitationMin (Constraint Rotation)
+        XMFLOAT3 AngularLowerLimit; // RotationLimitationMin (Constraint Rotation)(limits rot)
         XMFLOAT3 AngularUpperLimit;
-        XMFLOAT3 LinearStiffness; // springMoveCoefficient
-        XMFLOAT3 AngularStiffness; // springRotationCoefficient
+        XMFLOAT3 LinearStiffness; // SpringMoveCoefficient (spring move)
+        XMFLOAT3 AngularStiffness; // SpringRotationCoefficient (spring rotation)
 
-        void Fill( bufferstream& is, bool bRH );
+        void Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize );
     };
-    */
+
+	enum kSoftBodyFlag : uint8_t
+	{
+		kBLink = 0x01,
+		kCluster = 0x02,
+		kLink = 0x04
+	};
+
+	class RigidBodyAnchor
+	{
+	public:
+		int32_t RelatedRigidBody;
+		int32_t RelatedVertex;
+		bool bNear;
+
+        void Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize );
+	};
+
+    struct SoftBody
+    {
+        wstring Name;
+        wstring NameEnglish;
+        uint8_t Shape;
+        uint32_t TargetMaterial;
+        uint8_t SoftBodyGroup;
+        uint16_t UnCollisionGroupFlag;
+        kSoftBodyFlag Flag;
+		int32_t BlinkDistance;
+		int32_t ClusterCount;
+		float Mass;
+		float CollisioniMargin;
+		int32_t AeroModel;
+		float VCF;
+		float DP;
+		float DG;
+		float LF;
+		float PR;
+		float VC;
+		float DF;
+		float MT;
+		float CHR;
+		float KHR;
+		float SHR;
+		float AHR;
+		float SRHR_CL;
+		float SKHR_CL;
+		float SSHR_CL;
+		float SR_SPLT_CL;
+		float SK_SPLT_CL;
+		float SS_SPLT_CL;
+		int32_t V_IT;
+		int32_t P_IT;
+		int32_t D_IT;
+		int32_t C_IT;
+		float LST;
+		float AST;
+		float VST;
+        std::vector<RigidBodyAnchor> Anchors;
+        std::vector<int32_t> PinVertices;
+
+        void Fill( bufferstream& is, bool bUtf16, bool bRH, uint8_t rigidIndexSize );
+    };
+
     // Polygon Model eXtended
     class PMX
     {
@@ -347,17 +519,12 @@ namespace Pmx
         vector<wstring> m_Textures;
         vector<Material> m_Materials;
         vector<Bone> m_Bones;
-        /*
-        vector<Face> m_Faces;
-        vector<uint16_t> m_FaceDisplayList;
-        BoneDisplayNameList m_BoneDisplayNameList;
-        vector<BoneDisplayFrame> m_BoneDisplayFrames;
-        uint8_t m_bEnglishSupport;
-        vector<wstring> m_ToonTextureList;            // decode system default
-        vector<string> m_ToonTextureRawList;          // decode shift-jis
-        vector<RigidBody> m_Bodies;
-        vector<Constraint> m_Constraint;
-        */
+        vector<Morph> m_Morphs;
+        vector<DisplayFrame> m_Frames;
+        vector<RigidBody> m_RigidBodies;
+        vector<Joint> m_Joints;
+        // Version >= 2.1f
+        vector<SoftBody> m_SoftBodies;
     };
 
     inline bool PMX::isUtf16() const
