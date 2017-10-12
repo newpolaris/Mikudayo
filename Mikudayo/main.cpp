@@ -296,7 +296,9 @@ void Mikudayo::RenderScene( void )
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Lighting::Render( m_Scene, args );
+    #if 0
         m_Scene->Render( m_RenderBonePass, args );
+    #endif
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );

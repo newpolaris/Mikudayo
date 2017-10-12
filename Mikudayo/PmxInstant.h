@@ -20,7 +20,7 @@ public:
     BoneRef() {}
     BoneRef( PmxInstant* inst, uint32_t i );
 
-    const Math::OrthogonalTransform& GetLocalTransform() const;
+    const Math::OrthogonalTransform GetLocalTransform() const;
     void SetLocalTransform( const Math::OrthogonalTransform& transform );
 
     uint32_t m_Index = 0;
@@ -44,7 +44,7 @@ public:
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor ) override;
     virtual void Update( float deltaT ) override;
 
-    const Math::OrthogonalTransform& GetLocalTransform( uint32_t i ) const;
+    const Math::OrthogonalTransform GetLocalTransform( uint32_t i ) const;
     void SetLocalTransform( uint32_t i, const Math::OrthogonalTransform& transform );
 
 protected:

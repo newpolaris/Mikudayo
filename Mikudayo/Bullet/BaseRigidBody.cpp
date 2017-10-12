@@ -95,7 +95,7 @@ btTransform BaseRigidBody::GetTransfrom() const
     return transform;
 }
 
-void BaseRigidBody::syncLocalTransform()
+void BaseRigidBody::SyncLocalTransform()
 {
     if (m_Type != kStaticObject)
     {
@@ -125,11 +125,7 @@ void BaseRigidBody::syncLocalTransform()
 
 void BaseRigidBody::JoinWorld( btDynamicsWorld* world )
 {
-#if 1
     world->addRigidBody( m_Body.get(), m_GroupID, m_CollisionGroupMask );
-#else
-    world->addRigidBody( m_Body.get() );
-#endif
     m_Body->setUserPointer( this );
 }
 
@@ -141,9 +137,13 @@ void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
 
 void BaseRigidBody::UpdateTransform()
 {
-    const btTransform& newTransform = Convert(m_BoneRef.GetLocalTransform()) * m_WorldTransform;
+    const OrthogonalTransform& local = m_BoneRef.GetLocalTransform();
+    const AffineTransform& t = m_BoneRef.GetLocalTransform();
+    const btTransform& newTransform = Convert(local) * m_WorldTransform;
     m_MotionState->setWorldTransform( newTransform );
+#if 0
     m_Body->setInterpolationWorldTransform( newTransform );
+#endif
 }
 
 void BaseRigidBody::SetAngularDamping( float value )

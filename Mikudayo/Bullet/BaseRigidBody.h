@@ -96,7 +96,7 @@ public:
     void SetShapeType( ShapeType Type );
     void SetSize( const Math::Vector3& value );
 
-    void syncLocalTransform();
+    void SyncLocalTransform();
     void JoinWorld( btDynamicsWorld* world );
     void LeaveWorld( btDynamicsWorld* world );
     void UpdateTransform();

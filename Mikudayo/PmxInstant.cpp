@@ -59,7 +59,7 @@ struct PmxInstant::Context final
     void SetupSkeleton( const std::vector<PmxModel::Bone>& Bones );
     void Update( float kFrameTime );
 
-    const OrthogonalTransform& GetLocalTransform( uint32_t i ) const;
+    const OrthogonalTransform GetLocalTransform( uint32_t i ) const;
     void SetLocalTransform( uint32_t i, const OrthogonalTransform& transform );
 
 protected:
@@ -168,9 +168,11 @@ bool PmxInstant::Context::LoadModel()
 
 	SetupSkeleton( m_Model.m_Bones );
 
-    for (auto& it : m_Model.m_RigidBodies)
+    for (auto i = 0; i < m_Model.m_RigidBodies.size(); i++)
     {
+        auto& it = m_Model.m_RigidBodies[i];
         auto body = std::make_shared<RigidBody>();
+        body->SetIndex( i );
         body->SetName( it.Name );
         body->SetNameEnglish( it.NameEnglish );
         body->SetBoneRef( BoneRef(m_Parent, it.BoneIndex) );
@@ -390,19 +392,20 @@ void PmxInstant::Context::Update( float kFrameTime )
         for (auto i = 0; i < numBones; i++)
             PerformTransform( i );
         UpdatePose();
-    #if 0
         for (auto& it : m_RigidBodies)
-            it->syncLocalTransform();
-    #endif
+        {
+            it->UpdateTransform();
+            // it->SyncLocalTransform();
+        }
         UpdatePose();
 		for (auto i = 0; i < numBones; i++)
 			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
 	}
 }
 
-const OrthogonalTransform& PmxInstant::Context::GetLocalTransform( uint32_t i ) const
+const OrthogonalTransform PmxInstant::Context::GetLocalTransform( uint32_t i ) const
 {
-    return m_LocalPose[i];
+    return m_Pose[i] * m_toRoot[i];
 }
 
 void PmxInstant::Context::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
@@ -692,7 +695,7 @@ void PmxInstant::Update( float deltaT )
     m_Context->Update( deltaT );
 }
 
-const OrthogonalTransform& PmxInstant::GetLocalTransform( uint32_t i ) const
+const OrthogonalTransform PmxInstant::GetLocalTransform( uint32_t i ) const
 {
     return m_Context->GetLocalTransform( i );
 }
@@ -730,7 +733,7 @@ BoneRef::BoneRef( PmxInstant* inst, uint32_t i ) : m_Instance( inst ), m_Index( 
 {
 }
 
-const OrthogonalTransform& BoneRef::GetLocalTransform() const
+const OrthogonalTransform BoneRef::GetLocalTransform() const
 {
     return m_Instance->GetLocalTransform( m_Index );
 }

@@ -31,6 +31,8 @@ void PhysicsPrimitive::Create( const PhysicsPrimitiveInfo& Info )
     Body->SetMass( Info.Mass );
     Body->SetPosition( Info.Position );
     Body->SetSize( Info.Size );
+    Body->SetCollisionGroupID( 0 );
+    Body->SetCollisionMask( uint16_t(btBroadphaseProxy::AllFilter) );
     Body->Build();
     Body->JoinWorld( g_DynamicsWorld );
 
