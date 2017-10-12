@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Physics.h"
 #include "BaseRigidBody.h"
+#include "Bullet/LinearMath.h"
 
 using namespace Physics;
 
@@ -8,14 +9,14 @@ BaseRigidBody::BaseRigidBody() :
     m_angularDamping( 0 ),
     m_friction( 0.5f ),
     m_linearDamping( 0 ),
-    m_mass( 0 ),
+    m_Mass( 0 ),
     m_Position( 0, 0, 0 ),
     m_Rotation( 0, 0, 0, 1 ),
     m_Restitution( 0 ),
     m_Size( 0, 0, 0 ),
-    m_groupID( 0 ),
-    m_collisionGroupMask( 0 ),
-    m_collisionGroupID( 0 ),
+    m_GroupID( 0 ),
+    m_CollisionGroupMask( 0 ),
+    m_CollisionGroupID( 0 ),
     m_Type( kStaticObject ),
     m_ShapeType( kUnknownShape )
 {
@@ -48,21 +49,31 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
     btVector3 localInertia(0, 0, 0);
     btScalar massValue(0);
     if (m_Type != kStaticObject) {
-        massValue = m_mass;
+        massValue = m_Mass;
         if (Shape && !btFuzzyZero(massValue)) {
             Shape->calculateLocalInertia(massValue, localInertia);
         }
     }
-    m_worldTransform = CreateTransform();
-    m_MotionState = std::make_shared<btDefaultMotionState>( m_worldTransform );
+    m_WorldTransform = CreateTransform();
+    m_World2LocalTransform = m_WorldTransform.inverse();
+    m_MotionState = std::make_shared<btDefaultMotionState>( m_WorldTransform );
 
     btRigidBody::btRigidBodyConstructionInfo info(massValue, m_MotionState.get(), Shape, localInertia);
     info.m_linearDamping = m_linearDamping;
     info.m_angularDamping = m_angularDamping;
     info.m_restitution = m_Restitution;
     info.m_friction = m_friction;
+    info.m_additionalDamping = true;
     std::shared_ptr<btRigidBody> body = std::make_shared<btRigidBody>( info );
-
+    body->setActivationState( DISABLE_DEACTIVATION );
+    body->setUserPointer( this );
+    switch (m_Type) {
+    case kStaticObject:
+        body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+        break;
+    default:
+        break;
+    }
     return body;
 }
 
@@ -84,16 +95,55 @@ btTransform BaseRigidBody::GetTransfrom() const
     return transform;
 }
 
-void BaseRigidBody::JoinWorld( void* value )
+void BaseRigidBody::syncLocalTransform()
 {
-    auto DynamicsWorld = reinterpret_cast<btDynamicsWorld*>( value );
-    DynamicsWorld->addRigidBody( m_Body.get() );
+    if (m_Type != kStaticObject)
+    {
+        AffineTransform centerOfMassTransform = Convert( m_Body->getCenterOfMassTransform() );
+        const AffineTransform& worldBoneTransform = AffineTransform(m_BoneRef.GetLocalTransform()) * Convert( m_WorldTransform );
+        if (m_Type == kAlignedObject) {
+            centerOfMassTransform.SetTranslation( worldBoneTransform.GetTranslation() );
+            m_Body->setCenterOfMassTransform( Convert( centerOfMassTransform ) );
+        }
+    #if 0
+        const int nconstraints = m_body->getNumConstraintRefs();
+        for (int i = 0; i < nconstraints; i++) {
+            btTypedConstraint *constraint = m_body->getConstraintRef( i );
+            if (constraint->getConstraintType() == D6_CONSTRAINT_TYPE) {
+                btGeneric6DofConstraint *dof = static_cast<btGeneric6DofSpringConstraint *>(constraint);
+                btTranslationalLimitMotor *motor = dof->getTranslationalLimitMotor();
+                if (motor->m_lowerLimit.isZero() && motor->m_upperLimit.isZero()) {
+                }
+            }
+        }
+    #endif
+        const AffineTransform& localTransform = centerOfMassTransform * Convert(m_World2LocalTransform);
+        const OrthogonalTransform localOrth( Quaternion( localTransform.GetBasis() ), localTransform.GetTranslation() );
+        m_BoneRef.SetLocalTransform( localOrth );
+    }
 }
 
-void BaseRigidBody::LeaveWorld( void* value )
+void BaseRigidBody::JoinWorld( btDynamicsWorld* world )
 {
-    auto DynamicsWorld = reinterpret_cast<btDynamicsWorld*>( value );
-    DynamicsWorld->removeRigidBody( m_Body.get() );
+#if 1
+    world->addRigidBody( m_Body.get(), m_GroupID, m_CollisionGroupMask );
+#else
+    world->addRigidBody( m_Body.get() );
+#endif
+    m_Body->setUserPointer( this );
+}
+
+void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
+{
+    world->removeRigidBody( m_Body.get() );
+    m_Body->setUserPointer( nullptr );
+}
+
+void BaseRigidBody::UpdateTransform()
+{
+    const btTransform& newTransform = Convert(m_BoneRef.GetLocalTransform()) * m_WorldTransform;
+    m_MotionState->setWorldTransform( newTransform );
+    m_Body->setInterpolationWorldTransform( newTransform );
 }
 
 void BaseRigidBody::SetAngularDamping( float value )
@@ -101,14 +151,20 @@ void BaseRigidBody::SetAngularDamping( float value )
     m_angularDamping = value;
 }
 
+void BaseRigidBody::SetBoneRef( BoneRef boneRef )
+{
+    m_BoneRef = boneRef;
+}
+
 void BaseRigidBody::SetCollisionGroupID( uint8_t value )
 {
-    m_collisionGroupID = value;
+    m_CollisionGroupID = value;
+    m_GroupID = uint16_t( 0x0001 << m_CollisionGroupID );
 }
 
 void BaseRigidBody::SetCollisionMask( uint16_t value )
 {
-    m_collisionGroupMask = value;
+    m_CollisionGroupMask = value;
 }
 
 void BaseRigidBody::SetFriction( float value )
@@ -123,7 +179,7 @@ void BaseRigidBody::SetLinearDamping( float value )
 
 void BaseRigidBody::SetMass( float value )
 {
-    m_mass = value;
+    m_Mass = value;
 }
 
 void BaseRigidBody::SetObjectType( ObjectType Type )
@@ -131,10 +187,9 @@ void BaseRigidBody::SetObjectType( ObjectType Type )
     m_Type = Type;
 }
 
-void BaseRigidBody::SetPosition( const btVector3& value )
+void BaseRigidBody::SetPosition( const Vector3& value )
 {
-    m_Position = value;
-
+    m_Position = Convert(value);
 }
 
 void BaseRigidBody::SetRestitution( float value )
@@ -142,9 +197,9 @@ void BaseRigidBody::SetRestitution( float value )
     m_Restitution = value;
 }
 
-void BaseRigidBody::SetRotation( const btQuaternion& value )
+void BaseRigidBody::SetRotation( const Quaternion& value )
 {
-    m_Rotation = value;
+    m_Rotation = Convert(value);
 }
 
 void BaseRigidBody::SetShapeType( ShapeType Type )
@@ -152,7 +207,7 @@ void BaseRigidBody::SetShapeType( ShapeType Type )
     m_ShapeType = Type;
 }
 
-void BaseRigidBody::SetSize( const btVector3& value )
+void BaseRigidBody::SetSize( const Vector3& value )
 {
-    m_Size = value;
+    m_Size = Convert( value );
 }

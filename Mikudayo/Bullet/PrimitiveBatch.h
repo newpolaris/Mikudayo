@@ -11,7 +11,6 @@ namespace Math
 }
 namespace PrimitiveBatch
 {
-    using namespace Physics;
     using namespace Math;
 
     void Initialize();

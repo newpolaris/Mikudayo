@@ -8,10 +8,7 @@
 #include "IRigidBody.h"
 
 class GraphicsContext;
-namespace Physics
-{
-    class BaseRigidBody;
-}
+class BaseRigidBody;
 namespace Math
 {
     class Frustum;
@@ -20,7 +17,6 @@ namespace Math
 namespace Primitive
 {
     using namespace Math;
-    using namespace Physics;
 
     struct PhysicsPrimitiveInfo
     {

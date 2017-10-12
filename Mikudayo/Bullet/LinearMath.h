@@ -41,4 +41,14 @@ namespace Math
     {
         return *reinterpret_cast<const btVector4*>(&vector);
     }
+
+    inline Quaternion Convert( const btQuaternion& quat )
+    {
+        return *reinterpret_cast<const Quaternion*>(&quat);
+    }
+
+    inline btQuaternion Convert( const Quaternion& quat )
+    {
+        return *reinterpret_cast<const btQuaternion*>(&quat);
+    }
 }

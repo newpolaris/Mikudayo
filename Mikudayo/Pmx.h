@@ -393,14 +393,13 @@ namespace Pmx
         XMFLOAT3 Size; // (raidus, height, ?)
         XMFLOAT3 Position;
         XMFLOAT3 Rotation; // Orientation
-        float Weight; // Mass(Mass)
+        float Mass;
         float LinearDamping; // MoveAttenuation (Move)
         float AngularDamping; // RotationAttenuation (Rotation)
         float Restitution; // Repulsion (Repel)
         float Friction;
         RigidBodyType RigidType;
 
-        uint16_t GroupID;
         void Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t boneIndexSize );
     };
 

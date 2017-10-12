@@ -29,8 +29,8 @@ void PhysicsPrimitive::Create( const PhysicsPrimitiveInfo& Info )
     Body->SetObjectType( m_Kind );
     Body->SetShapeType( m_Type );
     Body->SetMass( Info.Mass );
-    Body->SetPosition( Convert(Info.Position) );
-    Body->SetSize( Convert(Info.Size) );
+    Body->SetPosition( Info.Position );
+    Body->SetSize( Info.Size );
     Body->Build();
     Body->JoinWorld( g_DynamicsWorld );
 

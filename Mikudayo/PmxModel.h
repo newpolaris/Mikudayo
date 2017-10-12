@@ -6,11 +6,11 @@
 #include "Model.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "Pmx.h"
 
 using namespace Math;
 
 namespace Pmx {
-    struct Bone;
     extern std::vector<InputDesc> VertElem;
 }
 
@@ -112,8 +112,6 @@ public:
         std::vector<IKChild> Link;
     };
 
-    
-
     std::wstring m_Name;
     std::wstring m_TextureRoot;
     std::vector<XMFLOAT3> m_VertexPosition;
@@ -126,6 +124,9 @@ public:
     uint32_t m_RootBoneIndex; // model center
     std::vector<Bone> m_Bones;
     std::vector<IKAttr> m_IKs;
+
+    // RigidBody
+    std::vector<Pmx::RigidBody> m_RigidBodies;
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;

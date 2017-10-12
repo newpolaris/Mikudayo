@@ -49,90 +49,98 @@
 #include "LinearMath/btVector3.h"
 #include "LinearMath/btTransform.h"
 
+#include "PmxInstant.h"
+
 class btRigidBody;
 class btCollisionShape;
 class btMotionState;
+class btDynamicsWorld;
 
-namespace Physics
+namespace Math
 {
-    class BaseRigidBody
-    {
-    public:
-        BaseRigidBody();
-        BaseRigidBody(const BaseRigidBody&) = delete;
-        BaseRigidBody& operator=( const BaseRigidBody& ) = delete;
-        virtual ~BaseRigidBody() {}
+    class Vector3;
+    class Quaternion;
+}
 
-        void Build();
+class BaseRigidBody
+{
+public:
+    BaseRigidBody();
+    BaseRigidBody( const BaseRigidBody& ) = delete;
+    BaseRigidBody& operator=( const BaseRigidBody& ) = delete;
+    virtual ~BaseRigidBody() {}
 
-        ObjectType GetType() const;
-        ShapeType GetShapeType() const;
-        btRigidBody* GetBody() const;
-        btTransform GetTransfrom() const;
-        btVector3 GetSize() const;
+    void Build();
 
-        void SetAngularDamping( float value );
-        void SetCollisionGroupID( uint8_t value );
-        void SetCollisionMask( uint16_t value );
-        void SetFriction( float value );
-        void SetLinearDamping( float value );
-        void SetMass( float Mass );
-        void SetObjectType( ObjectType Type );
-        void SetPosition(const btVector3& value);
-        void SetRestitution(float value);
-        void SetRotation(const btQuaternion& value);
-        void SetShapeType( ShapeType Type );
-        void SetSize(const btVector3& value);
+    std::shared_ptr<btCollisionShape> CreateShape() const;
+    std::shared_ptr<btRigidBody> CreateRigidBody( btCollisionShape* shape );
+    const btTransform CreateTransform() const;
 
-        std::shared_ptr<btCollisionShape> CreateShape() const;
-        std::shared_ptr<btRigidBody> CreateRigidBody( btCollisionShape* shape );
-        const btTransform CreateTransform() const;
+    ObjectType GetType() const;
+    ShapeType GetShapeType() const;
+    btRigidBody* GetBody() const;
+    btTransform GetTransfrom() const;
+    btVector3 GetSize() const;
 
-        void syncLocalTransform();
-        void JoinWorld( void *value );
-        void LeaveWorld( void *value );
+    void SetAngularDamping( float value );
+    void SetBoneRef( BoneRef boneRef );
+    void SetCollisionGroupID( uint8_t value );
+    void SetCollisionMask( uint16_t value );
+    void SetFriction( float value );
+    void SetLinearDamping( float value );
+    void SetMass( float Mass );
+    void SetObjectType( ObjectType Type );
+    void SetPosition( const Math::Vector3& value );
+    void SetRestitution( float value );
+    void SetRotation( const Math::Quaternion& value );
+    void SetShapeType( ShapeType Type );
+    void SetSize( const Math::Vector3& value );
 
-    protected:
-        ObjectType m_Type;
-        ShapeType m_ShapeType;
-        btVector3 m_Size;
-        btVector3 m_Position;
-        btQuaternion m_Rotation;
-        btTransform m_worldTransform;
+    void syncLocalTransform();
+    void JoinWorld( btDynamicsWorld* world );
+    void LeaveWorld( btDynamicsWorld* world );
+    void UpdateTransform();
 
-        float m_mass;
-        float m_linearDamping;
-        float m_angularDamping;
-        float m_Restitution;
-        float m_friction;
+protected:
+    ObjectType m_Type;
+    ShapeType m_ShapeType;
+    btVector3 m_Size;
+    btVector3 m_Position;
+    btQuaternion m_Rotation;
+    btTransform m_WorldTransform;
+    btTransform m_World2LocalTransform;
 
-        uint16_t m_groupID;
-        uint16_t m_collisionGroupMask;
-        uint8_t m_collisionGroupID;
+    float m_Mass;
+    float m_linearDamping;
+    float m_angularDamping;
+    float m_Restitution;
+    float m_friction;
 
-        std::shared_ptr<btRigidBody> m_Body;
-        std::shared_ptr<btCollisionShape> m_Shape;
-        std::shared_ptr<btMotionState> m_MotionState;
-    };
+    uint16_t m_GroupID;
+    uint16_t m_CollisionGroupMask;
+    uint8_t m_CollisionGroupID;
 
-    using BaseRigidBodyPtr = std::shared_ptr<BaseRigidBody>;
+    BoneRef m_BoneRef;
+    std::shared_ptr<btRigidBody> m_Body;
+    std::shared_ptr<btCollisionShape> m_Shape;
+    std::shared_ptr<btMotionState> m_MotionState;
+};
 
-    inline ObjectType BaseRigidBody::GetType() const
-    {
-        return m_Type;
-    }
+inline ObjectType BaseRigidBody::GetType() const
+{
+    return m_Type;
+}
 
-    inline ShapeType BaseRigidBody::GetShapeType() const
-    {
-        return m_ShapeType;
-    }
+inline ShapeType BaseRigidBody::GetShapeType() const
+{
+    return m_ShapeType;
+}
 
-    inline btRigidBody* BaseRigidBody::GetBody() const
-    {
-        return m_Body.get();
-    }
-    inline btVector3 BaseRigidBody::GetSize() const
-    {
-        return m_Size;
-    }
+inline btRigidBody* BaseRigidBody::GetBody() const
+{
+    return m_Body.get();
+}
+inline btVector3 BaseRigidBody::GetSize() const
+{
+    return m_Size;
 }

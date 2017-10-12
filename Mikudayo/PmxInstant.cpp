@@ -5,10 +5,13 @@
 #include "KeyFrameAnimation.h"
 #include "PrimitiveUtility.h"
 #include "Visitor.h"
+#include "Bullet/Physics.h"
+#include "Bullet/RigidBody.h"
 
 using namespace Utility;
 using namespace Math;
 using namespace Graphics;
+using namespace Physics;
 
 namespace {
 	enum ETextureType
@@ -43,19 +46,21 @@ NumVar s_ExcludeRange( "Application/Model/Exclude Range", 1000.f, 500.f, 10000.f
 
 struct PmxInstant::Context final
 {
-    Context( PmxModel& model );
+    Context( PmxModel& model, PmxInstant* parent );
     ~Context();
     void Clear( void );
     void Draw( GraphicsContext& gfxContext, Visitor& visitor );
     void DrawBone();
-
     bool LoadModel();
     bool LoadMotion( const std::wstring& FilePath );
-
+    void JoinWorld( btDynamicsWorld* world );
+    void LeaveWorld( btDynamicsWorld* world );
     void SetPosition( const Vector3& postion );
     void SetupSkeleton( const std::vector<PmxModel::Bone>& Bones );
-
     void Update( float kFrameTime );
+
+    const OrthogonalTransform& GetLocalTransform( uint32_t i ) const;
+    void SetLocalTransform( uint32_t i, const OrthogonalTransform& transform );
 
 protected:
 
@@ -66,6 +71,7 @@ protected:
     void UpdatePose();
 
     PmxModel& m_Model;
+    PmxInstant* m_Parent;
     bool m_bRightHand;
     Matrix4 m_ModelTransform;
 
@@ -86,6 +92,7 @@ protected:
     std::vector<Vector3> m_MorphDelta; // tempolar space to store morphed position delta
     enum { kMorphBase = 0 }; // m_MorphMotions's first slot is reserved as base (original) position data
     std::vector<Animation::MorphMotion> m_MorphMotions;
+    std::vector<RigidBodyPtr> m_RigidBodies;
 
     std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
 
@@ -93,8 +100,8 @@ protected:
     VertexBuffer m_PositionBuffer;
 };
 
-PmxInstant::Context::Context(PmxModel& model) :
-    m_Model(model), m_bRightHand(true), m_ModelTransform(kIdentity)
+PmxInstant::Context::Context( PmxModel& model, PmxInstant* parent ) :
+    m_Model( model ), m_bRightHand( true ), m_ModelTransform( kIdentity ), m_Parent( parent )
 {
 }
 
@@ -105,6 +112,9 @@ PmxInstant::Context::~Context()
 
 void PmxInstant::Context::Clear()
 {
+    ASSERT( g_DynamicsWorld != nullptr );
+    LeaveWorld( g_DynamicsWorld );
+
 	m_AttributeBuffer.Destroy();
 	m_PositionBuffer.Destroy();
 }
@@ -158,6 +168,32 @@ bool PmxInstant::Context::LoadModel()
 
 	SetupSkeleton( m_Model.m_Bones );
 
+    for (auto& it : m_Model.m_RigidBodies)
+    {
+        auto body = std::make_shared<RigidBody>();
+        body->SetName( it.Name );
+        body->SetNameEnglish( it.NameEnglish );
+        body->SetBoneRef( BoneRef(m_Parent, it.BoneIndex) );
+        body->SetCollisionGroupID( it.CollisionGroupID );
+        body->SetCollisionMask( it.CollisionGroupMask );
+        body->SetShapeType( static_cast<ShapeType>(it.Shape) );
+        body->SetSize( it.Size );
+        body->SetPosition( it.Position );
+        const Quaternion rot( it.Rotation.x, it.Rotation.y, it.Rotation.z );
+        body->SetRotation( rot );
+        body->SetMass( it.Mass );
+        body->SetLinearDamping( it.LinearDamping );
+        body->SetAngularDamping( it.AngularDamping );
+        body->SetRestitution( it.Restitution );
+        body->SetFriction( it.Friction );
+        body->SetObjectType( static_cast<ObjectType>(it.RigidType) );
+        body->Build();
+        m_RigidBodies.push_back( std::move(body) );
+    }
+
+    ASSERT( g_DynamicsWorld != nullptr );
+    JoinWorld( g_DynamicsWorld );
+
     return true;
 }
 
@@ -193,6 +229,24 @@ bool PmxInstant::Context::LoadMotion( const std::wstring& motionPath )
 	for (auto& face : m_MorphMotions )
 		face.SortKeyFrame();
     return true;
+}
+
+void PmxInstant::Context::JoinWorld( btDynamicsWorld* world )
+{
+    if (world)
+    {
+        for (auto& it : m_RigidBodies)
+            it->JoinWorld( world );
+    }
+}
+
+void PmxInstant::Context::LeaveWorld( btDynamicsWorld* world )
+{
+    if (world)
+    {
+        for (auto& it : m_RigidBodies)
+            it->LeaveWorld( world );
+    }
 }
 
 void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
@@ -284,24 +338,6 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
 
 void PmxInstant::Context::Update( float kFrameTime )
 {
-	if (m_BoneMotions.size() > 0)
-	{
-        m_LocalPose = m_LocalPoseDefault;
-        const size_t numMotions = m_BoneMotions.size();
-		for (auto i = 0; i < numMotions; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
-        UpdatePose();
-		for (auto& ik : m_Model.m_IKs)
-            UpdateIK( ik );
-		const size_t numBones = m_Model.m_Bones.size();
-        for (auto i = 0; i < numBones; i++)
-            PerformTransform( i );
-        UpdatePose();
-
-		for (auto i = 0; i < numBones; i++)
-			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
-	}
-
     if (m_MorphMotions.size() > 0)
 	{
 		//
@@ -340,6 +376,38 @@ void PmxInstant::Context::Update( float kFrameTime )
 				m_VertexMorphedPos.data() );
 		}
 	}
+
+	if (m_BoneMotions.size() > 0)
+	{
+        m_LocalPose = m_LocalPoseDefault;
+        const size_t numMotions = m_BoneMotions.size();
+		for (auto i = 0; i < numMotions; i++)
+			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+        UpdatePose();
+		for (auto& ik : m_Model.m_IKs)
+            UpdateIK( ik );
+		const size_t numBones = m_Model.m_Bones.size();
+        for (auto i = 0; i < numBones; i++)
+            PerformTransform( i );
+        UpdatePose();
+    #if 0
+        for (auto& it : m_RigidBodies)
+            it->syncLocalTransform();
+    #endif
+        UpdatePose();
+		for (auto i = 0; i < numBones; i++)
+			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+	}
+}
+
+const OrthogonalTransform& PmxInstant::Context::GetLocalTransform( uint32_t i ) const
+{
+    return m_LocalPose[i];
+}
+
+void PmxInstant::Context::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
+{
+    m_LocalPose[i] = transform;
 }
 
 void PmxInstant::Context::UpdateChildPose( int32_t idx )
@@ -605,7 +673,7 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 }
 
 PmxInstant::PmxInstant( Model& model ) :
-    m_Context( std::make_shared<Context>( dynamic_cast<PmxModel&>(model) ) )
+    m_Context( std::make_shared<Context>( dynamic_cast<PmxModel&>(model), this ) )
 {
 }
 
@@ -622,12 +690,29 @@ bool PmxInstant::LoadMotion( const std::wstring& motionPath )
 void PmxInstant::Update( float deltaT )
 {
     m_Context->Update( deltaT );
-    SceneNode::Update( deltaT );
+}
+
+const OrthogonalTransform& PmxInstant::GetLocalTransform( uint32_t i ) const
+{
+    return m_Context->GetLocalTransform( i );
+}
+
+void PmxInstant::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
+{
+    m_Context->SetLocalTransform( i, transform );
 }
 
 void PmxInstant::Accept( Visitor& visitor )
 {
     visitor.Visit( *this );
+}
+
+void PmxInstant::JoinWorld( btDynamicsWorld* world )
+{
+}
+
+void PmxInstant::LeaveWorld( btDynamicsWorld* world )
+{
 }
 
 void PmxInstant::Render( GraphicsContext& Context, Visitor& visitor )
@@ -639,4 +724,18 @@ void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
 {
     (Context), (visitor);
     m_Context->DrawBone();
+}
+
+BoneRef::BoneRef( PmxInstant* inst, uint32_t i ) : m_Instance( inst ), m_Index( i )
+{
+}
+
+const OrthogonalTransform& BoneRef::GetLocalTransform() const
+{
+    return m_Instance->GetLocalTransform( m_Index );
+}
+
+void BoneRef::SetLocalTransform( const OrthogonalTransform& transform )
+{
+    m_Instance->SetLocalTransform( m_Index, transform );
 }

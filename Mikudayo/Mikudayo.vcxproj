@@ -108,6 +108,7 @@
     <ClCompile Include="Bullet\Physics.cpp" />
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
+    <ClCompile Include="Bullet\RigidBody.cpp" />
     <ClCompile Include="DeferredLighting.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
@@ -142,6 +143,7 @@
     <ClInclude Include="Bullet\Physics.h" />
     <ClInclude Include="Bullet\PhysicsPrimitive.h" />
     <ClInclude Include="Bullet\PrimitiveBatch.h" />
+    <ClInclude Include="Bullet\RigidBody.h" />
     <ClInclude Include="DeferredLighting.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="KeyFrameAnimation.h" />

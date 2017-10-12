@@ -96,6 +96,9 @@
     <ClCompile Include="RenderBonePass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Bullet\RigidBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -190,6 +193,9 @@
     </ClInclude>
     <ClInclude Include="RenderBonePass.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\RigidBody.h">
+      <Filter>Source Files\Bullet</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

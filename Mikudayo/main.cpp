@@ -103,11 +103,11 @@ void Mikudayo::Startup( void )
     m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
-        { Physics::kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
-        { Physics::kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
+        { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
+        { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
+        { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
+        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
+        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
     };
     for (auto& info : primitves)
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
@@ -305,7 +305,7 @@ void Mikudayo::RenderScene( void )
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
     }
-    Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
+    // Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
     gfxContext.SetRenderTarget( nullptr );
 	gfxContext.Finish();
 }

@@ -448,14 +448,12 @@ namespace Pmx
 		Read( is, Size );
 		ReadPosition( is, Position, bRH );
 		ReadRotation( is, Rotation, bRH );
-		Read( is, Weight );
+		Read( is, Mass );
 		Read( is, LinearDamping );
 		Read( is, AngularDamping );
 		Read( is, Restitution );
 		Read( is, Friction );
 		Read( is, RigidType );
-
-        GroupID = uint16_t( 0x0001 << CollisionGroupID );
 	}
 
     void Joint::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize )

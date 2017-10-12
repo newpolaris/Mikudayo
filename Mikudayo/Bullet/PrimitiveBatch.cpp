@@ -11,7 +11,6 @@
 #include "CompiledShaders/BulletPrimitivePS.h"
 
 using namespace Math;
-using namespace Physics;
 
 namespace PrimitiveBatch
 {
