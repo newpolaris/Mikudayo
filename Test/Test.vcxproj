@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -23,18 +23,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <ConfigurationType>Application</ConfigurationType>
   </PropertyGroup>
@@ -74,7 +74,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;$(SolutionDir)..\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Mikudayo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
@@ -88,7 +88,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;$(SolutionDir)..\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Mikudayo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
@@ -99,7 +99,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Miku;$(SolutionDir)..\Bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Mikudayo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
@@ -116,17 +116,11 @@
     <ProjectReference Include="..\3rdParty\bullet3-2.86.1\src\LinearMath\LinearMath.vcxproj">
       <Project>{83d0fb92-3b9b-3ef9-92a0-71521f9d16d3}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\3rdParty\zlib-win64\ZLib_VS14.vcxproj">
+    <ProjectReference Include="..\3rdParty\zlib-win64\ZLib_VS15.vcxproj">
       <Project>{ae5221d1-87e2-4428-8ef9-f25909c43291}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Bullet\Bullet.vcxproj">
-      <Project>{ff4d1578-70e5-4953-9889-d99c88bba923}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\Core_VS14.vcxproj">
+    <ProjectReference Include="..\Core\Core_VS15.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Miku\Miku_VS14.vcxproj">
-      <Project>{2229c8e4-2050-451d-9126-b800f35a4b79}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -144,7 +138,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="PMX\Model.cpp" />
+    <ClCompile Include="PMX\Model.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
@@ -152,10 +150,31 @@
     <ClInclude Include="PMX\Common.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="resource\観客_右利き_サイリウム有AL.pmx">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\Mikudayo\packages\boost.1.65.1.0\build\native\boost.targets" Condition="Exists('..\Mikudayo\packages\boost.1.65.1.0\build\native\boost.targets')" />
+    <Import Project="..\Mikudayo\packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets')" />
+    <Import Project="..\Mikudayo\packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets')" />
+    <Import Project="..\Mikudayo\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('..\Mikudayo\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
+    <Import Project="..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets')" />
+    <Import Project="..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets" Condition="Exists('..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" />
+    <Import Project="..\Mikudayo\packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\Mikudayo\packages\boost.1.65.1.0\build\native\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost.1.65.1.0\build\native\boost.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_filesystem-vc141.1.65.1.0\build\native\boost_filesystem-vc141.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_system-vc141.1.65.1.0\build\native\boost_system-vc141.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_locale-vc141.1.65.1.0\build\native\boost_locale-vc141.targets'))" />
+  </Target>
 </Project>

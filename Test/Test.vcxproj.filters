@@ -68,5 +68,6 @@
     <None Include="resource\観客_右利き_サイリウム有AL.pmx">
       <Filter>Resource</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

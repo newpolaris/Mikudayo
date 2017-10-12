@@ -119,7 +119,7 @@ void Mikudayo::Startup( void )
     info.Name = L"mikudayo";
     info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
     info.File = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    // info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
+    info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
     if (ModelManager::Load( info ))
     {
         auto& model = ModelManager::GetModel( info.Name );
@@ -138,7 +138,6 @@ void Mikudayo::Startup( void )
     stage.Name = L"HalloweenStage";
     stage.File = L"Model/HalloweenStage/halloween.Pmx";
 #endif
-
     if (ModelManager::Load( stage ))
     {
         auto& model = ModelManager::GetModel( stage.Name );

@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "Math/Matrix3.h"
-#include "LinearMath.h"
+#include "Bullet/LinearMath.h"
 #include "LinearMath/btMatrix3x3.h"
 #include "LinearMath/btTransform.h"
 
