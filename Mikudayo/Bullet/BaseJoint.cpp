@@ -32,33 +32,28 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
     worldTransform.setRotation( m_Rotation );
     worldTransform.setOrigin( m_Position );
 
+    btTransform invTransformA = m_RigidBodyA->GetBody()->getCenterOfMassTransform().inverse();
+    btTransform invTransformB = m_RigidBodyB->GetBody()->getCenterOfMassTransform().inverse();
+    btTransform frameInA = invTransformA * worldTransform;
+    btTransform frameInB = invTransformB * worldTransform;
+
+    btRigidBody *pBodyA = m_RigidBodyA->GetBody(), *pBodyB = m_RigidBodyB->GetBody();
+
     switch (m_Type) {
     case JointType::kGeneric6Dof:
     {
-    #if 0
-        auto pGen6Dof = std::make_shared<btGeneric6DofConstraint>( btRigidBody& rbA, btRigidBody& rbB, const btTransform& frameInA, const btTransform& frameInB, true );
-        pGen6Dof->setDbgDrawSize( btScalar( 5.f ) );
-        pGen6Dof->setAngularLowerLimit( btVector3( 0, 0, 0 ) );
-        pGen6Dof->setAngularUpperLimit( btVector3( 0, 0, 0 ) );
-        pGen6Dof->setLinearLowerLimit( btVector3( -10., 0, 0 ) );
-        pGen6Dof->setLinearUpperLimit( btVector3( 10., 0, 0 ) );
+        auto pConstraint = std::make_shared<btGeneric6DofConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
+        pConstraint->setDbgDrawSize( btScalar( 5.f ) );
+        pConstraint->setLinearUpperLimit( m_LinearLowerLimit );
+        pConstraint->setLinearLowerLimit( m_LinearUpperLimit );
+        pConstraint->setAngularLowerLimit( m_AngularLowerLimit );
+        pConstraint->setAngularUpperLimit( m_AngularUpperLimit );
 
-        pGen6Dof->getTranslationalLimitMotor()->m_enableMotor[0] = true;
-        pGen6Dof->getTranslationalLimitMotor()->m_targetVelocity[0] = 5.0f;
-        pGen6Dof->getTranslationalLimitMotor()->m_maxMotorForce[0] = 0.1f;
-
-        return pGen6Dof;
-    #endif
+        return pConstraint;
     }
     case JointType::kGeneric6DofSpring:
     {
-        btTransform invTransformA = m_RigidBodyA->GetBody()->getCenterOfMassTransform().inverse();
-        btTransform invTransformB = m_RigidBodyB->GetBody()->getCenterOfMassTransform().inverse();
-        btTransform frameInA = invTransformA * worldTransform;
-        btTransform frameInB = invTransformB * worldTransform;
-
-        auto pBodyA = m_RigidBodyA->GetBody(), pBodyB = m_RigidBodyB->GetBody();
-		auto pConstraint = std::make_shared<btGeneric6DofSpringConstraint>(*pBodyA, *pBodyB, frameInA, frameInB, true);
+        auto pConstraint = std::make_shared<btGeneric6DofSpringConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
         pConstraint->setDbgDrawSize( btScalar( 5.f ) );
         pConstraint->setLinearUpperLimit( m_LinearLowerLimit );
         pConstraint->setLinearLowerLimit( m_LinearUpperLimit );
@@ -69,63 +64,114 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
         // Used MMDAI's RigidBody code
         // Copyright (c) 2010-2014  hkrn
         //
-        for (int i = 0; i < 3; i++) 
+        for (int i = 0; i < 3; i++)
         {
             const btScalar& value = m_LinearStiffness[i];
-            if (!btFuzzyZero(value)) 
+            if (!btFuzzyZero( value ))
             {
-                pConstraint->enableSpring(i, true);
-                pConstraint->setStiffness(i, value);
-                pConstraint->setDamping(i, kDefaultDamping);
+                pConstraint->enableSpring( i, true );
+                pConstraint->setStiffness( i, value );
+                pConstraint->setDamping( i, kDefaultDamping );
             }
         }
 
-        for (int i = 0; i < 3; i++) 
+        for (int i = 0; i < 3; i++)
         {
             const btScalar& value = m_AngularStiffness[i];
-            if (!btFuzzyZero(value)) 
+            if (!btFuzzyZero( value ))
             {
                 int index = i + 3;
-                pConstraint->enableSpring(index, true);
-                pConstraint->setStiffness(index, value);
-                pConstraint->setDamping(index, kDefaultDamping);
+                pConstraint->enableSpring( index, true );
+                pConstraint->setStiffness( index, value );
+                pConstraint->setDamping( index, kDefaultDamping );
             }
         }
         return pConstraint;
     }
     case JointType::kPoint2Point:
     {
-        // btTypedConstraint* p2p = new btPoint2PointConstraint( *body0, pivotInA );
-        // btTypedConstraint* p2p = new btPoint2PointConstraint(*body0,*body1,pivotInA,pivotInB);
+        return std::make_shared<btPoint2PointConstraint>( *pBodyA, *pBodyB, btVector3(0,0,0), btVector3(0,0,0) );
     }
     case JointType::kConeTwist:
     {
-        /*
-		btTransform frameInA, frameInB;
-		frameInA = btTransform::getIdentity();
-		frameInA.getBasis().setEulerZYX(0, 0, SIMD_PI_2);
-		frameInA.setOrigin(btVector3(btScalar(0.), btScalar(-5.), btScalar(0.)));
-		frameInB = btTransform::getIdentity();
-		frameInB.getBasis().setEulerZYX(0,0,  SIMD_PI_2);
-		frameInB.setOrigin(btVector3(btScalar(0.), btScalar(5.), btScalar(0.)));
+        auto pConstraint = std::make_shared<btConeTwistConstraint>( *pBodyA, *pBodyB, frameInA, frameInB );
 
-        auto joint = std::make_shared<btConeTwistConstraint>();// *pBodyA, *pBodyB, frameInA, frameInB );
-		m_ctc->setLimit(btScalar(SIMD_PI_4*0.6f), btScalar(SIMD_PI_4), btScalar(SIMD_PI) * 0.8f, 0.5f);
-        joint->
-        */
+        //
+        // Used MMDAI's RigidBody code
+        // Copyright (c) 2010-2014  hkrn
+        //
+        // (_swingSpan1, _swingSpan2, _twistSpan, _softness, _biasFactor, _relaxationFactor)
+        pConstraint->setLimit( m_AngularLowerLimit.x(), m_AngularLowerLimit.y(), m_AngularLowerLimit.z(),
+            m_LinearStiffness.x(), m_LinearStiffness.y(), m_LinearStiffness.z() );
+        pConstraint->setDamping( m_LinearLowerLimit.x() );
+        pConstraint->setFixThresh( m_LinearLowerLimit.x() );
+        bool enableMotor = btFuzzyZero( m_LinearLowerLimit.z() );
+        pConstraint->enableMotor( enableMotor );
+        if (enableMotor)
+        {
+            pConstraint->setMaxMotorImpulse( m_LinearUpperLimit.z() );
+            btQuaternion rotation;
+            rotation.setEuler( m_AngularStiffness.x(), m_AngularStiffness.y(), m_AngularStiffness.z() );
+            pConstraint->setMotorTargetInConstraintSpace( rotation );
+        }
+        return pConstraint;
     }
-    // case JointType::kSlider:
-    // case JointType::kHinge:
-		//btTypedConstraint* hinge = new btHingeConstraint(*body0,*body1,pivotInA,pivotInB,axisInA,axisInB);
+    case JointType::kSlider:
+    {
+        auto pConstraint = std::make_shared<btSliderConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
+        pConstraint->setLowerLinLimit( m_LinearLowerLimit.x() );
+        pConstraint->setUpperLinLimit( m_LinearUpperLimit.x() );
+        pConstraint->setLowerAngLimit( m_AngularLowerLimit.x() );
+        pConstraint->setUpperAngLimit( m_AngularUpperLimit.x() );
+
+        //
+        // Used MMDAI's RigidBody code
+        // Copyright (c) 2010-2014  hkrn
+        //
+        bool enablePoweredLinMotor = btFuzzyZero( m_LinearStiffness.x() );
+        pConstraint->setPoweredLinMotor( enablePoweredLinMotor );
+        if (enablePoweredLinMotor) {
+            pConstraint->setTargetLinMotorVelocity( m_LinearStiffness.y() );
+            pConstraint->setMaxLinMotorForce( m_LinearStiffness.z() );
+        }
+        bool enablePoweredAngMotor = btFuzzyZero( m_AngularStiffness.x() );
+        pConstraint->setPoweredAngMotor( enablePoweredAngMotor );
+        if (enablePoweredAngMotor) {
+            pConstraint->setTargetAngMotorVelocity( m_AngularStiffness.y() );
+            pConstraint->setMaxAngMotorForce( m_AngularStiffness.z() );
+        }
+        return pConstraint;
+    }
+    case JointType::kHinge:
+    {
+        auto pConstraint = std::make_shared<btHingeConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
+
+        //
+        // Used MMDAI's RigidBody code
+        // Copyright (c) 2010-2014  hkrn
+        //
+        pConstraint->setLimit( m_AngularLowerLimit.x(), m_AngularUpperLimit.y(), m_LinearStiffness.x(),
+            m_LinearStiffness.y(), m_LinearStiffness.z() );
+        bool enableMotor = btFuzzyZero( m_AngularStiffness.z() );
+        pConstraint->enableMotor( enableMotor );
+        if (enableMotor) {
+            pConstraint->enableAngularMotor( enableMotor, m_AngularStiffness.y(), m_AngularStiffness.z() );
+        }
+        return pConstraint;
+    }
+    default:
+        return nullptr;
     }
 }
 
 void BaseJoint::Build()
 {
     m_Constraint = CreateConstraint();
-
-    m_RigidBodyA->GetBody()->addConstraintRef( m_Constraint.get() );
-    m_RigidBodyB->GetBody()->addConstraintRef( m_Constraint.get() );
+    if (m_Constraint)
+    {
+        m_RigidBodyA->GetBody()->addConstraintRef( m_Constraint.get() );
+        m_RigidBodyB->GetBody()->addConstraintRef( m_Constraint.get() );
+    }
 }
 
 void BaseJoint::JoinWorld( btDynamicsWorld* world )
