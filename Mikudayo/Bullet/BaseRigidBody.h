@@ -65,6 +65,7 @@ namespace Math
 class BaseRigidBody
 {
 public:
+
     BaseRigidBody();
     BaseRigidBody( const BaseRigidBody& ) = delete;
     BaseRigidBody& operator=( const BaseRigidBody& ) = delete;

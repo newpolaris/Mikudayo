@@ -96,8 +96,14 @@
     <ClCompile Include="RenderBonePass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Bullet\RigidBody.cpp">
+    <ClCompile Include="Bullet\BaseJoint.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\RigidBody.cpp">
+      <Filter>Source Files\Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\Joint.cpp">
+      <Filter>Source Files\Bullet</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,6 +201,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\RigidBody.h">
+      <Filter>Source Files\Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\BaseJoint.h">
+      <Filter>Source Files\Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\Joint.h">
       <Filter>Source Files\Bullet</Filter>
     </ClInclude>
   </ItemGroup>

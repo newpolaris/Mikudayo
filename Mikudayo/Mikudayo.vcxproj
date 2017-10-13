@@ -103,8 +103,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bullet\BaseJoint.cpp" />
     <ClCompile Include="Bullet\BaseRigidBody.cpp" />
     <ClCompile Include="Bullet\BulletDebugDraw.cpp" />
+    <ClCompile Include="Bullet\Joint.cpp" />
     <ClCompile Include="Bullet\Physics.cpp" />
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
@@ -136,9 +138,11 @@
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bullet\BaseJoint.h" />
     <ClInclude Include="Bullet\BaseRigidBody.h" />
     <ClInclude Include="Bullet\BulletDebugDraw.h" />
     <ClInclude Include="Bullet\IRigidBody.h" />
+    <ClInclude Include="Bullet\Joint.h" />
     <ClInclude Include="Bullet\LinearMath.h" />
     <ClInclude Include="Bullet\Physics.h" />
     <ClInclude Include="Bullet\PhysicsPrimitive.h" />

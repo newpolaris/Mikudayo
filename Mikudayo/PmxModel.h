@@ -127,6 +127,7 @@ public:
 
     // RigidBody
     std::vector<Pmx::RigidBody> m_RigidBodies;
+    std::vector<Pmx::Joint> m_Joints;
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;

@@ -7,6 +7,7 @@
 #include "Visitor.h"
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
+#include "Bullet/Joint.h"
 
 using namespace Utility;
 using namespace Math;
@@ -93,6 +94,7 @@ protected:
     enum { kMorphBase = 0 }; // m_MorphMotions's first slot is reserved as base (original) position data
     std::vector<Animation::MorphMotion> m_MorphMotions;
     std::vector<RigidBodyPtr> m_RigidBodies;
+    std::vector<JointPtr> m_Joints;
 
     std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
 
@@ -168,11 +170,9 @@ bool PmxInstant::Context::LoadModel()
 
 	SetupSkeleton( m_Model.m_Bones );
 
-    for (auto i = 0; i < m_Model.m_RigidBodies.size(); i++)
+    for (auto& it : m_Model.m_RigidBodies)
     {
-        auto& it = m_Model.m_RigidBodies[i];
         auto body = std::make_shared<RigidBody>();
-        body->SetIndex( i );
         body->SetName( it.Name );
         body->SetNameEnglish( it.NameEnglish );
         body->SetBoneRef( BoneRef(m_Parent, it.BoneIndex) );
@@ -189,8 +189,39 @@ bool PmxInstant::Context::LoadModel()
         body->SetRestitution( it.Restitution );
         body->SetFriction( it.Friction );
         body->SetObjectType( static_cast<ObjectType>(it.RigidType) );
-        body->Build();
         m_RigidBodies.push_back( std::move(body) );
+    }
+
+    for (auto i = 0; i < m_RigidBodies.size(); i++)
+    {
+        m_RigidBodies[i]->SetIndex( i );
+        m_RigidBodies[i]->Build();
+    }
+
+    for (auto& it : m_Model.m_Joints)
+    {
+        auto body = std::make_shared<Joint>();
+        body->SetName( it.Name );
+        body->SetNameEnglish( it.NameEnglish );
+        body->SetType( static_cast<JointType>(it.Type) );
+        body->SetRigidBodyA( m_RigidBodies[it.RigidBodyIndexA] );
+        body->SetRigidBodyB( m_RigidBodies[it.RigidBodyIndexB] );
+        body->SetPosition( it.Position );
+        const Quaternion rot( it.Rotation.x, it.Rotation.y, it.Rotation.z );
+        body->SetRotation( rot );
+        body->SetLinearLowerLimit( it.LinearLowerLimit );
+        body->SetLinearUpperLimit( it.LinearUpperLimit );
+        body->SetAngularLowerLimit( it.AngularLowerLimit );
+        body->SetAngularUpperLimit( it.AngularUpperLimit );
+        body->SetLinearStiffness( it.LinearStiffness );
+        body->SetAngularStiffness( it.AngularStiffness );
+        m_Joints.push_back( std::move( body ) );
+    }
+
+    for (auto i = 0; i < m_Joints.size(); i++)
+    {
+        m_Joints[i]->SetIndex( i );
+        m_Joints[i]->Build();
     }
 
     ASSERT( g_DynamicsWorld != nullptr );
@@ -239,6 +270,9 @@ void PmxInstant::Context::JoinWorld( btDynamicsWorld* world )
     {
         for (auto& it : m_RigidBodies)
             it->JoinWorld( world );
+
+        for (auto& it : m_Joints)
+            it->JoinWorld( world );
     }
 }
 
@@ -246,6 +280,9 @@ void PmxInstant::Context::LeaveWorld( btDynamicsWorld* world )
 {
     if (world)
     {
+        for (auto& it : m_Joints)
+            it->LeaveWorld( world );
+
         for (auto& it : m_RigidBodies)
             it->LeaveWorld( world );
     }

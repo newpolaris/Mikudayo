@@ -242,6 +242,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
     m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 
     m_RigidBodies = std::move( pmx.m_RigidBodies );
+    m_Joints = std::move( pmx.m_Joints );
 
     return true;
 }
