@@ -48,6 +48,7 @@
 #define BT_NO_SIMD_OPERATOR_OVERLOADS 1
 #include "LinearMath/btVector3.h"
 #include "LinearMath/btTransform.h"
+#include "LinearMath/btMotionState.h"
 
 #include "PmxInstant.h"
 
@@ -55,6 +56,7 @@ class btRigidBody;
 class btCollisionShape;
 class btMotionState;
 class btDynamicsWorld;
+class BoneRef;
 
 namespace Math
 {
@@ -65,6 +67,32 @@ namespace Math
 class BaseRigidBody
 {
 public:
+
+    class DefaultMotionState : public btMotionState {
+    public:
+
+        DefaultMotionState( const btTransform& startTransform, BaseRigidBody* parent );
+        ~DefaultMotionState();
+
+        void getWorldTransform( btTransform& worldTransform ) const override;
+        void setWorldTransform( const btTransform& worldTransform ) override;
+
+        const BaseRigidBody *parentRigidBodyRef() const;
+
+    protected:
+        BaseRigidBody *m_parentRigidBodyRef;
+        const btTransform m_startTransform;
+
+        btTransform m_worldTransform;
+    };
+
+    class KinematicMotionState : public DefaultMotionState {
+    public:
+        KinematicMotionState(const btTransform& startTransform, BaseRigidBody* parent);
+        ~KinematicMotionState();
+
+        void getWorldTransform(btTransform& worldTransform) const;
+    };
 
     BaseRigidBody();
     BaseRigidBody( const BaseRigidBody& ) = delete;
@@ -82,6 +110,8 @@ public:
     btRigidBody* GetBody() const;
     btTransform GetTransfrom() const;
     btVector3 GetSize() const;
+
+    BoneRef *boneRef();
 
     void SetAngularDamping( float value );
     void SetBoneRef( BoneRef boneRef );
@@ -145,3 +175,4 @@ inline btVector3 BaseRigidBody::GetSize() const
 {
     return m_Size;
 }
+

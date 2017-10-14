@@ -467,10 +467,10 @@ namespace Pmx
 		ReadRotation( is, Rotation, bRH );
 		ReadPosition( is, LinearLowerLimit, bRH );
 		ReadPosition( is, LinearUpperLimit, bRH );
-		ReadRotation( is, AngularLowerLimit, bRH );
-		ReadRotation( is, AngularUpperLimit, bRH );
-		Read( is, LinearStiffness );
-		Read( is, AngularStiffness );
+		ReadRotation( is, AngularLowerLimit, !bRH );
+		ReadRotation( is, AngularUpperLimit, !bRH );
+		ReadPosition( is, LinearStiffness, bRH );
+		ReadRotation( is, AngularStiffness, !bRH );
     }
 
     void RigidBodyAnchor::Fill( bufferstream& is, bool bRH, bool bUtf16, uint8_t rigidIndexSize )

@@ -150,7 +150,7 @@ void Lighting::CreateRandomLights( const Vector3 minBound, const Vector3 maxBoun
     m_LightData[1].Range = 80;
     m_LightData[1].Type = LightType(0);
     m_LightData[1].PositionWS = Vector4(0, 5, 5, 1);
-    m_LightData[1].Intensity = 25.f;
+    m_LightData[1].Intensity = 1.f;
 #endif
 }
 

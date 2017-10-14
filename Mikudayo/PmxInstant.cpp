@@ -429,25 +429,21 @@ void PmxInstant::Context::Update( float kFrameTime )
         for (auto i = 0; i < numBones; i++)
             PerformTransform( i );
         UpdatePose();
-        for (auto& it : m_RigidBodies)
-        {
-            it->UpdateTransform();
-            // it->SyncLocalTransform();
-        }
-        UpdatePose();
 		for (auto i = 0; i < numBones; i++)
 			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+        for (auto& it : m_RigidBodies)
+            it->SyncLocalTransform();
 	}
 }
 
 const OrthogonalTransform PmxInstant::Context::GetLocalTransform( uint32_t i ) const
 {
-    return m_Pose[i] * m_toRoot[i];
+    return m_Skinning[i];
 }
 
 void PmxInstant::Context::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
 {
-    m_LocalPose[i] = transform;
+    m_Skinning[i] = transform;
 }
 
 void PmxInstant::Context::UpdateChildPose( int32_t idx )
@@ -772,6 +768,7 @@ BoneRef::BoneRef( PmxInstant* inst, uint32_t i ) : m_Instance( inst ), m_Index( 
 
 const OrthogonalTransform BoneRef::GetLocalTransform() const
 {
+    ASSERT( m_Instance != nullptr );
     return m_Instance->GetLocalTransform( m_Index );
 }
 

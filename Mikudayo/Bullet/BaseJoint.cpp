@@ -11,6 +11,7 @@ using namespace Math;
 
 namespace {
     const btScalar kDefaultDamping = 0.25f;
+    const btScalar kDebugDrawSize = 0.50f;
 }
 
 BaseJoint::BaseJoint() : 
@@ -29,6 +30,7 @@ BaseJoint::BaseJoint() :
 btTypedConstraintPtr BaseJoint::CreateConstraint()
 {
     btTransform worldTransform;
+	worldTransform.setIdentity();
     worldTransform.setRotation( m_Rotation );
     worldTransform.setOrigin( m_Position );
 
@@ -43,7 +45,6 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
     case JointType::kGeneric6Dof:
     {
         auto pConstraint = std::make_shared<btGeneric6DofConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
-        pConstraint->setDbgDrawSize( btScalar( 5.f ) );
         pConstraint->setLinearUpperLimit( m_LinearLowerLimit );
         pConstraint->setLinearLowerLimit( m_LinearUpperLimit );
         pConstraint->setAngularLowerLimit( m_AngularLowerLimit );
@@ -54,7 +55,6 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
     case JointType::kGeneric6DofSpring:
     {
         auto pConstraint = std::make_shared<btGeneric6DofSpringConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
-        pConstraint->setDbgDrawSize( btScalar( 5.f ) );
         pConstraint->setLinearUpperLimit( m_LinearLowerLimit );
         pConstraint->setLinearLowerLimit( m_LinearUpperLimit );
         pConstraint->setAngularLowerLimit( m_AngularLowerLimit );
@@ -167,6 +167,7 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
 void BaseJoint::Build()
 {
     m_Constraint = CreateConstraint();
+    m_Constraint->setDbgDrawSize( kDebugDrawSize );
     if (m_Constraint)
     {
         m_RigidBodyA->GetBody()->addConstraintRef( m_Constraint.get() );

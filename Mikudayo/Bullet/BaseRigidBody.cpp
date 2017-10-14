@@ -26,13 +26,13 @@ std::shared_ptr<btCollisionShape> BaseRigidBody::CreateShape() const
 {
     switch (m_ShapeType) {
     case kSphereShape:
-        return std::make_shared<btSphereShape>(m_Size.x());
+        return std::make_shared<btSphereShape>( m_Size.x() );
     case kBoxShape:
-        return std::make_shared<btBoxShape>(m_Size);
+        return std::make_shared<btBoxShape>( m_Size );
     case kCapsuleShape:
-        return std::make_shared<btCapsuleShape>(m_Size.x(), m_Size.y());
+        return std::make_shared<btCapsuleShape>( m_Size.x(), m_Size.y() );
     case kConeShape:
-        return std::make_shared<btConeShape>(m_Size.x(), m_Size.y());
+        return std::make_shared<btConeShape>( m_Size.x(), m_Size.y() );
     case kCylinderShape:
         return std::make_shared<btCylinderShape>( m_Size );
     case kPlaneShape:
@@ -56,7 +56,10 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
     }
     m_WorldTransform = CreateTransform();
     m_World2LocalTransform = m_WorldTransform.inverse();
-    m_MotionState = std::make_shared<btDefaultMotionState>( m_WorldTransform );
+    if (m_Type == kStaticObject)
+        m_MotionState = std::make_shared<KinematicMotionState>( m_WorldTransform, this );
+    else
+        m_MotionState = std::make_shared<DefaultMotionState>( m_WorldTransform, this );
 
     btRigidBody::btRigidBodyConstructionInfo info(massValue, m_MotionState.get(), Shape, localInertia);
     info.m_linearDamping = m_linearDamping;
@@ -97,14 +100,17 @@ btTransform BaseRigidBody::GetTransfrom() const
 
 void BaseRigidBody::SyncLocalTransform()
 {
-    if (m_Type != kStaticObject)
+    if (m_Type != kStaticObject && m_BoneRef.m_Instance != nullptr)
     {
-        AffineTransform centerOfMassTransform = Convert( m_Body->getCenterOfMassTransform() );
-        const AffineTransform& worldBoneTransform = AffineTransform(m_BoneRef.GetLocalTransform()) * Convert( m_WorldTransform );
+        btTransform centerOfMassTransform = m_Body->getCenterOfMassTransform();
+        btTransform worldBoneTransform = Convert(AffineTransform(m_BoneRef.GetLocalTransform())) * m_WorldTransform;
+    #if 0
         if (m_Type == kAlignedObject) {
-            centerOfMassTransform.SetTranslation( worldBoneTransform.GetTranslation() );
-            m_Body->setCenterOfMassTransform( Convert( centerOfMassTransform ) );
+            // Remain only rotation factor
+            centerOfMassTransform.setOrigin( worldBoneTransform.getOrigin() );
+            m_Body->setCenterOfMassTransform( centerOfMassTransform );
         }
+    #endif
     #if 0
         const int nconstraints = m_body->getNumConstraintRefs();
         for (int i = 0; i < nconstraints; i++) {
@@ -117,8 +123,9 @@ void BaseRigidBody::SyncLocalTransform()
             }
         }
     #endif
-        const AffineTransform& localTransform = centerOfMassTransform * Convert(m_World2LocalTransform);
-        const OrthogonalTransform localOrth( Quaternion( localTransform.GetBasis() ), localTransform.GetTranslation() );
+        btTransform localTransform = centerOfMassTransform * m_World2LocalTransform;
+        AffineTransform local = Convert( localTransform );
+        const OrthogonalTransform localOrth( Quaternion( local.GetBasis() ), local.GetTranslation() );
         m_BoneRef.SetLocalTransform( localOrth );
     }
 }
@@ -137,13 +144,10 @@ void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
 
 void BaseRigidBody::UpdateTransform()
 {
-    const OrthogonalTransform& local = m_BoneRef.GetLocalTransform();
-    const AffineTransform& t = m_BoneRef.GetLocalTransform();
+    const OrthogonalTransform local = m_BoneRef.GetLocalTransform();
     const btTransform& newTransform = Convert(local) * m_WorldTransform;
     m_MotionState->setWorldTransform( newTransform );
-#if 0
     m_Body->setInterpolationWorldTransform( newTransform );
-#endif
 }
 
 void BaseRigidBody::SetAngularDamping( float value )
@@ -210,4 +214,52 @@ void BaseRigidBody::SetShapeType( ShapeType Type )
 void BaseRigidBody::SetSize( const Vector3& value )
 {
     m_Size = Convert( value );
+}
+
+BaseRigidBody::DefaultMotionState::DefaultMotionState( const btTransform& startTransform, BaseRigidBody * parent )
+    : m_parentRigidBodyRef(parent),
+      m_startTransform(startTransform),
+      m_worldTransform(startTransform)
+{
+}
+
+BaseRigidBody::DefaultMotionState::~DefaultMotionState()
+{
+}
+
+void BaseRigidBody::DefaultMotionState::getWorldTransform( btTransform& worldTransform ) const
+{
+    worldTransform = m_worldTransform;
+}
+
+void BaseRigidBody::DefaultMotionState::setWorldTransform( const btTransform& worldTransform )
+{
+    m_worldTransform = worldTransform;
+}
+
+BaseRigidBody::KinematicMotionState::KinematicMotionState(const btTransform &startTransform, BaseRigidBody *parent)
+    : DefaultMotionState(startTransform, parent)
+{
+}
+
+BaseRigidBody::KinematicMotionState::~KinematicMotionState()
+{
+}
+
+void BaseRigidBody::KinematicMotionState::getWorldTransform(btTransform &worldTransform) const
+{
+    if (const BoneRef *boneRef = m_parentRigidBodyRef->boneRef()) {
+        AffineTransform transform = boneRef->GetLocalTransform();
+        worldTransform = Convert(transform) * m_startTransform;
+    }
+    else {
+        worldTransform.setIdentity();
+    }
+}
+
+BoneRef* BaseRigidBody::boneRef()
+{
+    if (m_BoneRef.m_Instance == nullptr)
+        return nullptr;
+    return &m_BoneRef;
 }

@@ -11,7 +11,7 @@ namespace Physics
     BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", false );
     BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
 
-    const float EarthGravity = 9.8f;
+    const float EarthGravity = -9.8f;
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
     int m_SolverMode = SOLVER_SIMD |
         SOLVER_USE_WARMSTARTING |
@@ -238,14 +238,14 @@ void Physics::Initialize( void )
     SoftBodyWorldInfo.m_sparsesdf.Initialize();
 
     ASSERT( DynamicsWorld != nullptr );
-    DynamicsWorld->setGravity( btVector3( 0, -EarthGravity, 0 ) );
+    DynamicsWorld->setGravity( btVector3( 0, EarthGravity, 0 ) );
     DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
 
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
         // btIDebugDraw::DBG_DrawAabb |
-        // btIDebugDraw::DBG_DrawConstraints |
-        // btIDebugDraw::DBG_DrawConstraintLimits |
+        btIDebugDraw::DBG_DrawConstraints |
+        btIDebugDraw::DBG_DrawConstraintLimits |
         btIDebugDraw::DBG_DrawWireframe
     );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
