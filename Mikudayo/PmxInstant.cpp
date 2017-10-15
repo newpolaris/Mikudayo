@@ -8,6 +8,7 @@
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
 #include "Bullet/Joint.h"
+#include "Bullet/LinearMath.h"
 
 using namespace Utility;
 using namespace Math;
@@ -39,7 +40,6 @@ namespace {
     }
 }
 
-BoolVar s_bDrawBone( "Application/Model/Draw Bone", false );
 BoolVar s_bDrawBoundingSphere( "Application/Model/Draw Bounding Shphere", false );
 // If model is mixed with sky box, model's boundary is exculde by 's_ExcludeRange'
 BoolVar s_bExcludeSkyBox( "Application/Model/Exclude Sky Box", true );
@@ -59,8 +59,10 @@ struct PmxInstant::Context final
     void SetPosition( const Vector3& postion );
     void SetupSkeleton( const std::vector<PmxModel::Bone>& Bones );
     void Update( float kFrameTime );
+    void UpdateAfterPhysics( float kFrameTime );
 
-    const OrthogonalTransform GetLocalTransform( uint32_t i ) const;
+    const OrthogonalTransform GetTransform( uint32_t i ) const;
+    void UpdateLocalTransform( uint32_t i );
     void SetLocalTransform( uint32_t i, const OrthogonalTransform& transform );
 
 protected:
@@ -250,7 +252,6 @@ bool PmxInstant::Context::LoadMotion( const std::wstring& motionPath )
 		MorphKeyFrame key;
 		key.Frame = frame.Frame;
 		key.Weight = frame.Weight;
-		key.Weight = frame.Weight;
         WARN_ONCE_IF(m_MorphIndex.count(frame.FaceName) <= 0, L"Can't find target morph on model: ");
         if (m_MorphIndex.count(frame.FaceName) > 0)
         {
@@ -303,6 +304,7 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
 
 		Animation::BoneKeyFrame key;
 		key.Frame = frame.Frame;
+        // make offset motion to local translation 
 		key.Local.SetTranslation( Vector3(frame.Offset) + BoneTranslate );
 		key.Local.SetRotation( Quaternion( frame.Rotation ) );
 
@@ -416,9 +418,14 @@ void PmxInstant::Context::Update( float kFrameTime )
 		}
 	}
 
-	if (m_BoneMotions.size() > 0)
 	{
+        //
+        // in initialize m_LocalPoseDefault and in every motion data
+        // position is already translated by offset from parent
+        // so, local_pos = pos + offset
+        //
         m_LocalPose = m_LocalPoseDefault;
+
         const size_t numMotions = m_BoneMotions.size();
 		for (auto i = 0; i < numMotions; i++)
 			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
@@ -429,21 +436,34 @@ void PmxInstant::Context::Update( float kFrameTime )
         for (auto i = 0; i < numBones; i++)
             PerformTransform( i );
         UpdatePose();
-		for (auto i = 0; i < numBones; i++)
-			m_Skinning[i] = m_Pose[i] * m_toRoot[i];
-        for (auto& it : m_RigidBodies)
-            it->SyncLocalTransform();
 	}
 }
 
-const OrthogonalTransform PmxInstant::Context::GetLocalTransform( uint32_t i ) const
+void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
 {
-    return m_Skinning[i];
+    for (auto& it : m_RigidBodies)
+        it->SyncLocalTransform();
+
+    const size_t numBones = m_Model.m_Bones.size();
+    for (auto i = 0; i < numBones; i++)
+        m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+}
+
+const OrthogonalTransform PmxInstant::Context::GetTransform( uint32_t i ) const
+{
+    return m_Pose[i];
+}
+
+void PmxInstant::Context::UpdateLocalTransform( uint32_t i )
+{
+    auto parentIndex = m_Model.m_Bones[i].Parent;
+    if (parentIndex >= 0)
+        m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
 }
 
 void PmxInstant::Context::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
 {
-    m_Skinning[i] = transform;
+    m_Pose[i] = transform;
 }
 
 void PmxInstant::Context::UpdateChildPose( int32_t idx )
@@ -676,17 +696,10 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
     for (auto i = 0; i < bones.size(); i++)
         m_LocalPoseDefault[i].SetTranslation( bones[i].Translate );
     m_LocalPose = m_LocalPoseDefault;
-    std::vector<OrthogonalTransform> RestPose( numBones );
     for (auto i = 0; i < numBones; i++)
-    {
-        auto& bone = bones[i];
-        auto parentIndex = bone.Parent;
-        RestPose[i].SetTranslation( bone.Translate );
-        if (parentIndex >= 0)
-            RestPose[i] = RestPose[parentIndex] * RestPose[i];
-    }
+        m_Pose[i].SetTranslation( bones[i].Position );
     for (auto i = 0; i < numBones; i++)
-        m_toRoot[i] = ~RestPose[i];
+        m_toRoot[i] = ~m_Pose[i];
 
     // set default skinning matrix
     m_Skinning.resize( numBones );
@@ -731,14 +744,24 @@ void PmxInstant::Update( float deltaT )
     m_Context->Update( deltaT );
 }
 
-const OrthogonalTransform PmxInstant::GetLocalTransform( uint32_t i ) const
+void PmxInstant::UpdateAfterPhysics( float deltaT )
 {
-    return m_Context->GetLocalTransform( i );
+    m_Context->UpdateAfterPhysics( deltaT );
+}
+
+const OrthogonalTransform PmxInstant::GetTransform( uint32_t i ) const
+{
+    return m_Context->GetTransform( i );
 }
 
 void PmxInstant::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
 {
     m_Context->SetLocalTransform( i, transform );
+}
+
+void PmxInstant::UpdateLocalTransform( uint32_t i )
+{
+    m_Context->UpdateLocalTransform( i );
 }
 
 void PmxInstant::Accept( Visitor& visitor )
@@ -761,13 +784,25 @@ BoneRef::BoneRef( PmxInstant* inst, uint32_t i ) : m_Instance( inst ), m_Index( 
 {
 }
 
-const OrthogonalTransform BoneRef::GetLocalTransform() const
+const OrthogonalTransform BoneRef::GetTransform() const
 {
     ASSERT( m_Instance != nullptr );
-    return m_Instance->GetLocalTransform( m_Index );
+    return m_Instance->GetTransform( m_Index );
 }
 
-void BoneRef::SetLocalTransform( const OrthogonalTransform& transform )
+void BoneRef::SetTransform( const btTransform& trnasform )
+{
+    AffineTransform local = Convert( trnasform );
+    const OrthogonalTransform localOrth( Quaternion( local.GetBasis() ), local.GetTranslation() );
+    SetTransform( localOrth );
+}
+
+void BoneRef::SetTransform( const OrthogonalTransform& transform )
 {
     m_Instance->SetLocalTransform( m_Index, transform );
+}
+
+void BoneRef::UpdateLocalTransform()
+{
+    m_Instance->UpdateLocalTransform( m_Index );
 }

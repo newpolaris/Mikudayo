@@ -85,6 +85,8 @@ NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f
 NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
 
+BoolVar s_bDrawBone( "Application/Model/Draw Bone", false );
+
 void Mikudayo::Startup( void )
 {
     TextureManager::Initialize( L"Textures" );
@@ -201,6 +203,8 @@ void Mikudayo::Update( float deltaT )
 
     Lighting::UpdateLights(GetCamera());
 
+    m_Scene->UpdateScene( m_Frame );
+
     if (!EngineProfiling::IsPaused())
     {
         Physics::Update( deltaT );
@@ -209,7 +213,7 @@ void Mikudayo::Update( float deltaT )
         m_Frame = m_Frame + deltaT * 30.f;
     }
 
-    m_Scene->UpdateScene( m_Frame );
+    m_Scene->UpdateSceneAfterPhysics( m_Frame );
 
     auto GetRayTo = [&]( float x, float y) {
         auto& invView = m_Camera.GetCameraToWorld();
@@ -296,9 +300,8 @@ void Mikudayo::RenderScene( void )
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Lighting::Render( m_Scene, args );
-    #if 0
-        m_Scene->Render( m_RenderBonePass, args );
-    #endif
+        if (s_bDrawBone)
+            m_Scene->Render( m_RenderBonePass, args );
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );

@@ -7,6 +7,7 @@ class Scene : public SceneNode
 public:
 
     void UpdateScene( float Delta );
+    void UpdateSceneAfterPhysics( float Delta );
     void Render( RenderPass& renderPass, RenderArgs& args );
 
 };

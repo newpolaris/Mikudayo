@@ -20,6 +20,7 @@ public:
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor );
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor );
     virtual void Update( float deltaT );
+    virtual void UpdateAfterPhysics( float deltaT );
 
 protected:
 

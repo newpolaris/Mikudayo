@@ -5,6 +5,47 @@
 
 using namespace Physics;
 
+BaseRigidBody::DefaultMotionState::DefaultMotionState( const btTransform& startTransform, BaseRigidBody * parent )
+    : m_parentRigidBodyRef(parent),
+      m_startTransform(startTransform),
+      m_worldTransform(startTransform)
+{
+}
+
+BaseRigidBody::DefaultMotionState::~DefaultMotionState()
+{
+}
+
+void BaseRigidBody::DefaultMotionState::getWorldTransform( btTransform& worldTransform ) const
+{
+    worldTransform = m_worldTransform;
+}
+
+void BaseRigidBody::DefaultMotionState::setWorldTransform( const btTransform& worldTransform )
+{
+    m_worldTransform = worldTransform;
+}
+
+BaseRigidBody::KinematicMotionState::KinematicMotionState(const btTransform &startTransform, BaseRigidBody *parent)
+    : DefaultMotionState(startTransform, parent)
+{
+}
+
+BaseRigidBody::KinematicMotionState::~KinematicMotionState()
+{
+}
+
+void BaseRigidBody::KinematicMotionState::getWorldTransform(btTransform &worldTransform) const
+{
+    if (const BoneRef *boneRef = m_parentRigidBodyRef->boneRef()) {
+        AffineTransform transform = boneRef->GetTransform();
+        worldTransform = Convert(transform) * m_startTransform;
+    }
+    else {
+        worldTransform.setIdentity();
+    }
+}
+
 BaseRigidBody::BaseRigidBody() :
     m_angularDamping( 0 ),
     m_friction( 0.5f ),
@@ -54,12 +95,19 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
             Shape->calculateLocalInertia(massValue, localInertia);
         }
     }
-    m_WorldTransform = CreateTransform();
-    m_World2LocalTransform = m_WorldTransform.inverse();
+
+    Vector3 BonePosition( kZero );
+    if (m_BoneRef.m_Instance != nullptr)
+        BonePosition = m_BoneRef.GetTransform().GetTranslation();
+    m_Trans = btTransform( m_Rotation, m_Position - Convert(BonePosition) );
+    m_InvTrans = m_Trans.inverse();
+
+    btTransform worldTransform( m_Rotation, m_Position );
+
     if (m_Type == kStaticObject)
-        m_MotionState = std::make_shared<KinematicMotionState>( m_WorldTransform, this );
+        m_MotionState = std::make_shared<KinematicMotionState>( m_Trans, this );
     else
-        m_MotionState = std::make_shared<DefaultMotionState>( m_WorldTransform, this );
+        m_MotionState = std::make_shared<DefaultMotionState>( worldTransform, this );
 
     btRigidBody::btRigidBodyConstructionInfo info(massValue, m_MotionState.get(), Shape, localInertia);
     info.m_linearDamping = m_linearDamping;
@@ -80,11 +128,6 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
     return body;
 }
 
-const btTransform BaseRigidBody::CreateTransform() const
-{
-    return btTransform( m_Rotation, m_Position );
-}
-
 void BaseRigidBody::Build()
 {
     m_Shape = CreateShape();
@@ -100,33 +143,37 @@ btTransform BaseRigidBody::GetTransfrom() const
 
 void BaseRigidBody::SyncLocalTransform()
 {
+#if 0
+    const int nconstraints = m_body->getNumConstraintRefs();
+    for (int i = 0; i < nconstraints; i++) {
+        btTypedConstraint *constraint = m_body->getConstraintRef( i );
+        if (constraint->getConstraintType() == D6_CONSTRAINT_TYPE) {
+            btGeneric6DofConstraint *dof = static_cast<btGeneric6DofSpringConstraint *>(constraint);
+            btTranslationalLimitMotor *motor = dof->getTranslationalLimitMotor();
+            if (motor->m_lowerLimit.isZero() && motor->m_upperLimit.isZero()) {
+            }
+        }
+    }
+#endif
+
     if (m_Type != kStaticObject && m_BoneRef.m_Instance != nullptr)
     {
         btTransform centerOfMassTransform = m_Body->getCenterOfMassTransform();
-        btTransform worldBoneTransform = Convert(AffineTransform(m_BoneRef.GetLocalTransform())) * m_WorldTransform;
-    #if 0
-        if (m_Type == kAlignedObject) {
-            // Remain only rotation factor
-            centerOfMassTransform.setOrigin( worldBoneTransform.getOrigin() );
-            m_Body->setCenterOfMassTransform( centerOfMassTransform );
+        btTransform tr = centerOfMassTransform * m_InvTrans;
+        //
+        // Remove the disparity from bone to bone connection.
+        // Even joint has 0 linear limit, small linear movement would be happend.
+        // Align the bone position to the non-simulated position.
+        //
+        if (m_Type == kAlignedObject)
+        {
+            m_BoneRef.UpdateLocalTransform();
+            tr.setOrigin( Convert(m_BoneRef.GetTransform().GetTranslation()) );
+        #if 1 // Update rigid-body
+            m_Body->setCenterOfMassTransform( tr * m_Trans );
+        #endif
         }
-    #endif
-    #if 0
-        const int nconstraints = m_body->getNumConstraintRefs();
-        for (int i = 0; i < nconstraints; i++) {
-            btTypedConstraint *constraint = m_body->getConstraintRef( i );
-            if (constraint->getConstraintType() == D6_CONSTRAINT_TYPE) {
-                btGeneric6DofConstraint *dof = static_cast<btGeneric6DofSpringConstraint *>(constraint);
-                btTranslationalLimitMotor *motor = dof->getTranslationalLimitMotor();
-                if (motor->m_lowerLimit.isZero() && motor->m_upperLimit.isZero()) {
-                }
-            }
-        }
-    #endif
-        btTransform localTransform = centerOfMassTransform * m_World2LocalTransform;
-        AffineTransform local = Convert( localTransform );
-        const OrthogonalTransform localOrth( Quaternion( local.GetBasis() ), local.GetTranslation() );
-        m_BoneRef.SetLocalTransform( localOrth );
+        m_BoneRef.SetTransform( tr );
     }
 }
 
@@ -144,8 +191,8 @@ void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
 
 void BaseRigidBody::UpdateTransform()
 {
-    const OrthogonalTransform local = m_BoneRef.GetLocalTransform();
-    const btTransform& newTransform = Convert(local) * m_WorldTransform;
+    const OrthogonalTransform local = m_BoneRef.GetTransform();
+    const btTransform& newTransform = Convert(local) * m_Trans;
     m_MotionState->setWorldTransform( newTransform );
     m_Body->setInterpolationWorldTransform( newTransform );
 }
@@ -214,47 +261,6 @@ void BaseRigidBody::SetShapeType( ShapeType Type )
 void BaseRigidBody::SetSize( const Vector3& value )
 {
     m_Size = Convert( value );
-}
-
-BaseRigidBody::DefaultMotionState::DefaultMotionState( const btTransform& startTransform, BaseRigidBody * parent )
-    : m_parentRigidBodyRef(parent),
-      m_startTransform(startTransform),
-      m_worldTransform(startTransform)
-{
-}
-
-BaseRigidBody::DefaultMotionState::~DefaultMotionState()
-{
-}
-
-void BaseRigidBody::DefaultMotionState::getWorldTransform( btTransform& worldTransform ) const
-{
-    worldTransform = m_worldTransform;
-}
-
-void BaseRigidBody::DefaultMotionState::setWorldTransform( const btTransform& worldTransform )
-{
-    m_worldTransform = worldTransform;
-}
-
-BaseRigidBody::KinematicMotionState::KinematicMotionState(const btTransform &startTransform, BaseRigidBody *parent)
-    : DefaultMotionState(startTransform, parent)
-{
-}
-
-BaseRigidBody::KinematicMotionState::~KinematicMotionState()
-{
-}
-
-void BaseRigidBody::KinematicMotionState::getWorldTransform(btTransform &worldTransform) const
-{
-    if (const BoneRef *boneRef = m_parentRigidBodyRef->boneRef()) {
-        AffineTransform transform = boneRef->GetLocalTransform();
-        worldTransform = Convert(transform) * m_startTransform;
-    }
-    else {
-        worldTransform.setIdentity();
-    }
 }
 
 BoneRef* BaseRigidBody::boneRef()

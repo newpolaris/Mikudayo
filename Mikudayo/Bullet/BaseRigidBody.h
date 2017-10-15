@@ -1,45 +1,10 @@
 //
+// Used MMDAgent's PMDRigidBody code
+// Copyright (c) 2009-2016  Nagoya Institute of Technology Department of Computer Science
+//
 // Used MMDAI's RigidBody code
-//
-// Original Boilerplate:
-//
-/**
-
- Copyright (c) 2010-2014  hkrn
-
- All rights reserved.
-
- Redistribution and use in source and binary forms, with or
- without modification, are permitted provided that the following
- conditions are met:
-
- - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
- - Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following
-   disclaimer in the documentation and/or other materials provided
-   with the distribution.
- - Neither the name of the MMDAI project team nor the names of
-   its contributors may be used to endorse or promote products
-   derived from this software without specific prior written
-   permission.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
- BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- POSSIBILITY OF SUCH DAMAGE.
-
-*/
-
+// Copyright (c) 2010-2014  hkrn
+// 
 #pragma once
 
 #include <memory>
@@ -77,8 +42,6 @@ public:
         void getWorldTransform( btTransform& worldTransform ) const override;
         void setWorldTransform( const btTransform& worldTransform ) override;
 
-        const BaseRigidBody *parentRigidBodyRef() const;
-
     protected:
         BaseRigidBody *m_parentRigidBodyRef;
         const btTransform m_startTransform;
@@ -103,7 +66,6 @@ public:
 
     std::shared_ptr<btCollisionShape> CreateShape() const;
     std::shared_ptr<btRigidBody> CreateRigidBody( btCollisionShape* shape );
-    const btTransform CreateTransform() const;
 
     ObjectType GetType() const;
     ShapeType GetShapeType() const;
@@ -138,8 +100,8 @@ protected:
     btVector3 m_Size;
     btVector3 m_Position;
     btQuaternion m_Rotation;
-    btTransform m_WorldTransform;
-    btTransform m_World2LocalTransform;
+    btTransform m_Trans;
+    btTransform m_InvTrans;
 
     float m_Mass;
     float m_linearDamping;

@@ -13,9 +13,26 @@ public:
     float m_DeltaT;
 };
 
+class UpdatePassAfterPhysics : public Visitor
+{
+public:
+    UpdatePassAfterPhysics( float DeltaT ) : m_DeltaT( DeltaT ) {}
+    bool Visit( SceneNode& node ) override {
+        node.UpdateAfterPhysics( m_DeltaT );
+        return true;
+    }
+    float m_DeltaT;
+};
+
 void Scene::UpdateScene( float Delta )
 {
     UpdatePass updatePass( Delta );
+    Accept( updatePass );
+}
+
+void Scene::UpdateSceneAfterPhysics( float Delta )
+{
+    UpdatePassAfterPhysics updatePass( Delta );
     Accept( updatePass );
 }
 

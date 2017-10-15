@@ -32,3 +32,8 @@ void SceneNode::Update( float deltaT )
 {
     (deltaT);
 }
+
+void SceneNode::UpdateAfterPhysics( float deltaT )
+{
+    (deltaT);
+}

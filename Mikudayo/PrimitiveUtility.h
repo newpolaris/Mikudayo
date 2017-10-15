@@ -16,7 +16,6 @@ namespace PrimitiveUtility {
     };
 
     extern InputDesc Desc[4];
-    extern BoolVar s_bEnableDrawBone;
     extern BoolVar s_bEnableDrawBoundingSphere;
     extern BoolVar s_bExcludeSkyBox;
     extern NumVar s_ExcludeRange;
