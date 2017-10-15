@@ -4,43 +4,7 @@
 
 btSoftBody* SoftBodyManager::CreateSoftBody( const SoftBodyGeometry& Geometry )
 {
-    btSoftBody* psb = btSoftBodyHelpers::CreateFromTriMesh(
-        *Physics::g_SoftBodyWorldInfo,
-        reinterpret_cast<const btScalar*>(Geometry.Positions.data()),
-        reinterpret_cast<const int*>(Geometry.Indices.data()),
-        static_cast<int>(Geometry.Indices.size() / 3) );
-
-    btSoftBody::Material* pm = psb->appendMaterial();
-    pm->m_kLST = 1.0;
-    pm->m_kAST = 1.0;
-    pm->m_kVST = 1.0;
-    pm->m_flags -= btSoftBody::fMaterial::DebugDraw;
-
-    psb->generateBendingConstraints( 2, pm );
-    psb->m_cfg.kVCF = 1.0; // Velocities correction factor (Baumgarte)
-    psb->m_cfg.kDP = 0.0; // Damping coefficient [0,1]
-    psb->m_cfg.kDG = 0.0; // Drag coefficient [0,+inf]
-    psb->m_cfg.kLF = 0.0; // Lift coefficient [0,+inf]
-    psb->m_cfg.kPR = 0.5;
-    psb->m_cfg.kVC = 0.001;
-    psb->m_cfg.kDF = 0.5;
-    psb->m_cfg.kMT = 0.1;
-    psb->m_cfg.kCHR = 0.1; // Rigid contacts hardness [0,1]
-    psb->m_cfg.kKHR = 0.1; // Kinetic contacts hardness [0,1]
-    psb->m_cfg.kSHR = 0.1; // Soft contacts hardness [0,1]
-    psb->m_cfg.kAHR = 0.1; // Anchors hardness [0,1]
-    psb->m_cfg.viterations = 0; // Velocities solver iterations
-    psb->m_cfg.piterations = 2; // Positions solver iterations
-    psb->m_cfg.diterations = 0; // Drift solver iterations
-    psb->m_cfg.citerations = 1; // Cluster solver iterations
-    psb->m_cfg.collisions |= btSoftBody::fCollision::VF_SS;
-    psb->randomizeConstraints();
-    psb->generateClusters( 3 );
-    psb->scale( btVector3( 0.5, 0.5, 0.5 ) );
-    psb->setTotalMass( 10.f, true );
-    psb->setPose( true, true );
-
-    return psb;
+    return nullptr;
 }
 
 SoftBodyManager::SoftBodyManager()
@@ -53,9 +17,7 @@ SoftBodyManager::~SoftBodyManager()
 
 btSoftBody* SoftBodyManager::LoadFromGeometry( const SoftBodyGeometry& Geometry )
 {
-    btSoftBody* psb = CreateSoftBody( Geometry );
-    Physics::g_DynamicsWorld->addSoftBody( psb );
-    return psb;
+    return nullptr;
 }
 
 btSoftBody* SoftBodyManager::LoadFromFile( const std::string& Filename )
