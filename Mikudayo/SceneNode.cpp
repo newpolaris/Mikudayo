@@ -18,16 +18,6 @@ void SceneNode::AddChild( std::shared_ptr<SceneNode> pNode )
     m_Children.push_back( pNode );
 }
 
-void SceneNode::JoinWorld( btDynamicsWorld* world )
-{
-    (world);
-}
-
-void SceneNode::LeaveWorld( btDynamicsWorld* world )
-{
-    (world);
-}
-
 void SceneNode::Render( GraphicsContext& gfxContext, Visitor& visitor )
 {
     (gfxContext), (visitor);

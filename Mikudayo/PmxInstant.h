@@ -37,9 +37,6 @@ public:
     bool LoadMotion( const std::wstring& motionPath );
 
     virtual void Accept( Visitor& visitor ) override;
-    virtual void JoinWorld( btDynamicsWorld* world ) override;
-    virtual void LeaveWorld( btDynamicsWorld* world ) override;
-
     virtual void Render( GraphicsContext& Context, Visitor& visitor ) override;
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor ) override;
     virtual void Update( float deltaT ) override;

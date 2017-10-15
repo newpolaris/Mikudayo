@@ -8,8 +8,8 @@
 
 namespace Physics
 {
-    BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", false );
-    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
+    BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
+    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
 
     const float EarthGravity = -9.8f;
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;

@@ -458,9 +458,12 @@ void PmxInstant::Context::UpdateChildPose( int32_t idx )
 		UpdateChildPose( c );
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4201)
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#pragma warning(pop)
 
 inline Vector3 Convert(const glm::vec3& v )
 {
@@ -741,14 +744,6 @@ void PmxInstant::SetLocalTransform( uint32_t i, const OrthogonalTransform& trans
 void PmxInstant::Accept( Visitor& visitor )
 {
     visitor.Visit( *this );
-}
-
-void PmxInstant::JoinWorld( btDynamicsWorld* world )
-{
-}
-
-void PmxInstant::LeaveWorld( btDynamicsWorld* world )
-{
 }
 
 void PmxInstant::Render( GraphicsContext& Context, Visitor& visitor )

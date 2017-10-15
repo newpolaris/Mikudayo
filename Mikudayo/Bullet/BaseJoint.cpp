@@ -15,7 +15,7 @@ namespace {
 }
 
 BaseJoint::BaseJoint(bool bRH) : 
-    m_bRightHand(true),
+    m_bRightHand( bRH ),
     m_Type( JointType::kGeneric6DofSpring ),
     m_Position( 0, 0, 0 ),
     m_Rotation( 0, 0, 0, 1 ),

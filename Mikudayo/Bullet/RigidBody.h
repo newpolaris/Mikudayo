@@ -59,7 +59,7 @@ public:
     void SetNameEnglish( const std::wstring& name );
     void SetIndex( int32_t index );
 
-    uint32_t m_Index;
+    int32_t m_Index;
     std::wstring m_Name;
     std::wstring m_NameEnglish;
 };

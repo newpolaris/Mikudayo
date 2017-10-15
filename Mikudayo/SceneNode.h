@@ -17,8 +17,6 @@ public:
 
     virtual void Accept( Visitor& visitor );
     virtual void AddChild( std::shared_ptr<SceneNode> pNode );
-    virtual void JoinWorld( btDynamicsWorld* world );
-    virtual void LeaveWorld( btDynamicsWorld* world );
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor );
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor );
     virtual void Update( float deltaT );
