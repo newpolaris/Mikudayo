@@ -314,40 +314,6 @@ void Mikudayo::RenderScene( void )
 
 void Mikudayo::RenderUI( GraphicsContext& Context )
 {
-    // Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
-    // Physics::Render( Context, m_ViewProjMatrix );
-	int32_t x = g_OverlayBuffer.GetWidth() - 500;
-
-    Physics::ProfileStatus Status;
-    Physics::Profile( Status );
-
-	TextContext UiContext(Context);
-	UiContext.Begin();
-    UiContext.ResetCursor( float(x), 10.f );
-    UiContext.SetColor(Color( 0.7f, 1.0f, 0.7f ));
-
-#define DebugAttribute(Attribute) \
-    UiContext.DrawFormattedString( ""#Attribute " %3d", Status.Attribute ); \
-    UiContext.NewLine();
-
-    DebugAttribute(NumIslands);
-    DebugAttribute(NumCollisionObjects);
-    DebugAttribute(NumManifolds);
-    DebugAttribute(NumContacts);
-    DebugAttribute(NumThread);
-#undef DebugAttribute
-
-#define DebugAttribute(Attribute) \
-    UiContext.DrawFormattedString( ""#Attribute " %5.3f", Status.Attribute ); \
-    UiContext.NewLine();
-
-    DebugAttribute(InternalTimeStep);
-    DebugAttribute(DispatchAllCollisionPairs);
-    DebugAttribute(DispatchIslands);
-    DebugAttribute(PredictUnconstrainedMotion);
-    DebugAttribute(CreatePredictiveContacts);
-    DebugAttribute(IntegrateTransforms);
-#undef DebugAttribute
 }
 
 const BaseCamera& Mikudayo::GetCamera()

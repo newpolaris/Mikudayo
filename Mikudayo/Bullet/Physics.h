@@ -2,7 +2,8 @@
 
 class btVector3;
 class GraphicsContext;
-class btDynamicsWorld;
+class btSoftRigidDynamicsWorld;
+struct btSoftBodyWorldInfo;
 
 // Bullet Physcis
 #pragma warning(push)
@@ -15,7 +16,18 @@ class btDynamicsWorld;
 #include "btBulletDynamicsCommon.h"
 #include "LinearMath/btThreads.h"
 #include "LinearMath/btQuickprof.h"
+#include "BulletSoftBody/btSoftBodyHelpers.h"
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
+#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
+#include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h"
+#include "BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h"
+#include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
+#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
+#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
+#include "BulletDynamics/MLCPSolvers/btLemkeSolver.h"
 #pragma warning(pop)
+
 namespace Math
 {
     class Matrix4;
@@ -34,22 +46,8 @@ namespace Physics
         SOLVER_TYPE_COUNT
     };
 
-    struct ProfileStatus
-    {
-        uint32_t NumIslands = 0;
-        uint32_t NumCollisionObjects = 0;
-        uint32_t NumManifolds = 0;
-        uint32_t NumContacts = 0;
-        uint32_t NumThread = 0;
-        float InternalTimeStep = 0.f;
-        float DispatchAllCollisionPairs = 0.f;
-        float DispatchIslands = 0.f;
-        float PredictUnconstrainedMotion = 0.f;
-        float CreatePredictiveContacts = 0.f;
-        float IntegrateTransforms = 0.f;
-    };
-
-	extern btDynamicsWorld* g_DynamicsWorld;
+	extern btSoftRigidDynamicsWorld* g_DynamicsWorld;
+    extern btSoftBodyWorldInfo* g_SoftBodyWorldInfo;
 
     void Initialize( void );
     void Shutdown( void );
@@ -57,6 +55,5 @@ namespace Physics
     bool MovePickBody(const btVector3& From, const btVector3& To, const btVector3& Forward );
     bool PickBody( const btVector3& From, const btVector3& To, const btVector3& Forward );
     void ReleasePickBody();
-    void Render( GraphicsContext& Context, const Math::Matrix4& ClipToWorld );
-    void Profile( ProfileStatus& Status );
+    void Render( GraphicsContext& Context, const Matrix4& WorldToClip );
 };

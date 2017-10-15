@@ -75,7 +75,6 @@ SIMD_FORCE_INLINE	int	btGetConstraintIslandId( const btTypedConstraint* lhs )
     const btCollisionObject& rcolObj0 = lhs->getRigidBodyA();
     const btCollisionObject& rcolObj1 = lhs->getRigidBodyB();
     int islandId = rcolObj0.getIslandTag() >= 0 ? rcolObj0.getIslandTag() : rcolObj1.getIslandTag();
-    btAssert( islandId >= 0 );
     return islandId;
 }
 
@@ -182,7 +181,6 @@ void btSimulationIslandManagerMt::initIslandPools()
 
 btSimulationIslandManagerMt::Island* btSimulationIslandManagerMt::getIsland( int id )
 {
-    if (id < 0) return nullptr;
     Island* island = m_lookupIslandFromId[ id ];
     if ( island == NULL )
     {
