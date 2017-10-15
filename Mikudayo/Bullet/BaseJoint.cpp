@@ -14,7 +14,8 @@ namespace {
     const btScalar kDebugDrawSize = 0.50f;
 }
 
-BaseJoint::BaseJoint() : 
+BaseJoint::BaseJoint(bool bRH) : 
+    m_bRightHand(true),
     m_Type( JointType::kGeneric6DofSpring ),
     m_Position( 0, 0, 0 ),
     m_Rotation( 0, 0, 0, 1 ),
@@ -40,6 +41,19 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
     btTransform frameInB = invTransformB * worldTransform;
 
     btRigidBody *pBodyA = m_RigidBodyA->GetBody(), *pBodyB = m_RigidBodyB->GetBody();
+
+    if (m_bRightHand)
+    {
+        auto lower = m_LinearLowerLimit, upper = m_LinearUpperLimit;
+        m_LinearLowerLimit = btVector3( lower.x(), lower.y(), -upper.z() );
+        m_LinearUpperLimit = btVector3( upper.x(), upper.y(), -lower.z() );
+    }
+    if (m_bRightHand)
+    {
+        auto lower = m_AngularLowerLimit, upper = m_AngularUpperLimit;
+        m_AngularLowerLimit = btVector3( -upper.x(), -upper.y(), lower.z() );
+        m_AngularUpperLimit = btVector3( -lower.x(), -lower.y(), upper.z() );
+    }
 
     switch (m_Type) {
     case JointType::kGeneric6Dof:

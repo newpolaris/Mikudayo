@@ -35,7 +35,7 @@ class BaseJoint
 {
 public:
 
-    BaseJoint();
+    BaseJoint(bool bRH = true);
 
     btTypedConstraintPtr CreateConstraint();
 
@@ -58,6 +58,7 @@ public:
 
 protected:
 
+    bool m_bRightHand;
     JointType m_Type;
     btVector3 m_Position;
     btQuaternion m_Rotation;
