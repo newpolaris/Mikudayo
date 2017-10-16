@@ -81,7 +81,7 @@ protected:
     // Skinning
     std::vector<Quaternion> localInherentOrientations;
     std::vector<Vector3> localInherentTranslations;
-    std::vector<OrthogonalTransform> m_toRoot; // inverse inital pose ( inverse Rest)
+    std::vector<OrthogonalTransform> m_toRoot; // inverse initial pose
     std::vector<OrthogonalTransform> m_LocalPose;
     std::vector<OrthogonalTransform> m_LocalPoseDefault; // offset matrix
     std::vector<OrthogonalTransform> m_Pose;
@@ -300,11 +300,10 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
         auto it = m_Model.m_BoneIndex.find(frame.BoneName);
         if (it == m_Model.m_BoneIndex.end())
 			continue;
-		Vector3 BoneTranslate(bones[it->second].Translate);
-
 		Animation::BoneKeyFrame key;
 		key.Frame = frame.Frame;
-        // make offset motion to local translation 
+        // make offset motion to local translation, to remove add operation in pose
+		Vector3 BoneTranslate(bones[it->second].Translate);
 		key.Local.SetTranslation( Vector3(frame.Offset) + BoneTranslate );
 		key.Local.SetRotation( Quaternion( frame.Rotation ) );
 
@@ -790,9 +789,9 @@ const OrthogonalTransform BoneRef::GetTransform() const
     return m_Instance->GetTransform( m_Index );
 }
 
-void BoneRef::SetTransform( const btTransform& trnasform )
+void BoneRef::SetTransform( const btTransform& transform )
 {
-    AffineTransform local = Convert( trnasform );
+    AffineTransform local = Convert( transform );
     const OrthogonalTransform localOrth( Quaternion( local.GetBasis() ), local.GetTranslation() );
     SetTransform( localOrth );
 }

@@ -105,6 +105,9 @@
     <ClCompile Include="Bullet\Joint.cpp">
       <Filter>Source Files\Bullet</Filter>
     </ClCompile>
+    <ClCompile Include="Bone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -208,6 +211,9 @@
     </ClInclude>
     <ClInclude Include="Bullet\Joint.h">
       <Filter>Source Files\Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="Bone.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

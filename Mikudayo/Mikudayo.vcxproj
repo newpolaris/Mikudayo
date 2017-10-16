@@ -103,6 +103,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bone.cpp" />
     <ClCompile Include="Bullet\BaseJoint.cpp" />
     <ClCompile Include="Bullet\BaseRigidBody.cpp" />
     <ClCompile Include="Bullet\BulletDebugDraw.cpp" />
@@ -138,6 +139,7 @@
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bone.h" />
     <ClInclude Include="Bullet\BaseJoint.h" />
     <ClInclude Include="Bullet\BaseRigidBody.h" />
     <ClInclude Include="Bullet\BulletDebugDraw.h" />
