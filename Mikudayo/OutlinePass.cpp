@@ -2,11 +2,12 @@
 #include "OutlinePass.h"
 #include "Material.h"
 
-OutlinePass::OutlinePass()
+OutlinePass::OutlinePass() : RenderPass( kRenderQueueOutline )
 {
 }
 
 bool OutlinePass::Visit( Material& material )
 {
+    RenderPass::Visit( material );
     return material.IsOutline();
 }

@@ -9,11 +9,13 @@ namespace ModelManager {
 
 void ModelManager::Initialize()
 {
+    PmxModel::Initialize();
 }
 
 void ModelManager::Shutdown()
 {
     m_Models.clear();
+    PmxModel::Shutdown();
 }
 
 bool ModelManager::Load( const ModelInfo& Info )

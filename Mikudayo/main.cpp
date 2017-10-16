@@ -17,8 +17,6 @@
 #include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
 
-#include "CompiledShaders/DepthViewerVS.h"
-
 using namespace Math;
 using namespace GameCore;
 using namespace Graphics;
@@ -63,8 +61,6 @@ private:
 
     RenderBonePass m_RenderBonePass;
 	ShadowCasterPass m_ShadowCasterPass;
-    GraphicsPSO m_DepthPSO;
-    GraphicsPSO m_ShadowPSO;
 };
 
 CREATE_APPLICATION( Mikudayo )
@@ -147,20 +143,6 @@ void Mikudayo::Startup( void )
         instant->LoadModel();
         m_Scene->AddChild( instant );
     }
-
-    DXGI_FORMAT DepthFormat = g_SceneDepthBuffer.GetFormat();
-    m_DepthPSO.SetRasterizerState( RasterizerDefault );
-    m_DepthPSO.SetBlendState( BlendNoColorWrite );
-    m_DepthPSO.SetDepthStencilState( DepthStateReadWrite );
-    m_DepthPSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    m_DepthPSO.SetRenderTargetFormats( 0, nullptr, DepthFormat );
-    m_DepthPSO.SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
-    m_DepthPSO.Finalize();
-
-    m_ShadowPSO = m_DepthPSO;
-    m_ShadowPSO.SetRasterizerState( RasterizerShadow );
-    m_ShadowPSO.SetRenderTargetFormats( 0, nullptr, g_ShadowBuffer.GetFormat() );
-    m_ShadowPSO.Finalize();
 }
 
 void Mikudayo::Cleanup( void )
@@ -278,7 +260,6 @@ void Mikudayo::RenderScene( void )
 
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
-        gfxContext.SetPipelineState( m_ShadowPSO );
         m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
@@ -300,8 +281,6 @@ void Mikudayo::RenderScene( void )
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Lighting::Render( m_Scene, args );
-        if (s_bDrawBone)
-            m_Scene->Render( m_RenderBonePass, args );
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );
@@ -310,13 +289,19 @@ void Mikudayo::RenderScene( void )
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
     }
-    // Utility::DebugTexture( gfxContext, g_ShadowBuffer.GetSRV() );
     gfxContext.SetRenderTarget( nullptr );
 	gfxContext.Finish();
 }
 
 void Mikudayo::RenderUI( GraphicsContext& Context )
 {
+    RenderArgs args = { Context, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
+
+    if (s_bDrawBone)
+        m_Scene->Render( m_RenderBonePass, args );
+    Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
+    Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
+    Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 }
 
 const BaseCamera& Mikudayo::GetCamera()

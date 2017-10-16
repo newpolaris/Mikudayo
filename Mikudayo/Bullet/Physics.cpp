@@ -286,8 +286,12 @@ void Physics::Update( float deltaT )
 
 void Physics::Render( GraphicsContext& Context, const Matrix4& WorldToClip )
 {
-    ASSERT( DynamicsWorld.get() != nullptr );
     PrimitiveBatch::Flush( Context, WorldToClip );
+}
+
+void Physics::RenderDebug( GraphicsContext& Context, const Matrix4& WorldToClip )
+{
+    ASSERT( DynamicsWorld.get() != nullptr );
     if (s_bDebugDraw)
     {
         DynamicsWorld->debugDrawWorld();

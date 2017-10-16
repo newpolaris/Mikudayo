@@ -23,15 +23,9 @@
 #include "RenderArgs.h"
 #include "PmxModel.h"
 
-#include "CompiledShaders/PmxColorVS.h"
-#include "CompiledShaders/PmxColorPS.h"
-#include "CompiledShaders/OutlineVS.h"
-#include "CompiledShaders/OutlinePS.h"
 #include "CompiledShaders/ScreenQuadVS.h"
-#include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredLightingVS.h"
 #include "CompiledShaders/DeferredLightingPS.h"
-#include "CompiledShaders/DeferredFinalPS.h"
 #include "CompiledShaders/DeferredLightingDebugPS.h"
 
 using namespace Math;
@@ -66,16 +60,10 @@ namespace Lighting
     ColorBuffer m_SpecularPowerTexture;
     ColorBuffer m_NormalTexture;
 
-    GraphicsPSO m_GBufferPSO;
-    GraphicsPSO m_FinalPSO;
-    GraphicsPSO m_OpaquePSO;
-    GraphicsPSO m_TransparentPSO;
     GraphicsPSO m_Lighting1PSO;
     GraphicsPSO m_Lighting2PSO;
     GraphicsPSO m_DirectionalLightPSO;
     GraphicsPSO m_LightDebugPSO;
-    GraphicsPSO m_OutlinePSO;
-    OpaquePass m_OaquePass;
     OutlinePass m_OutlinePass;
     TransparentPass m_TransparentPass;
 
@@ -164,24 +152,6 @@ void Lighting::Initialize( void )
     m_DiffuseTexture.Create( L"Diffuse Buffer", width, height, 1, DXGI_FORMAT_R11G11B10_FLOAT );
     m_SpecularTexture.Create( L"Specular Buffer", width, height, 1, DXGI_FORMAT_R11G11B10_FLOAT );
 
-    m_GBufferPSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    m_GBufferPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_GBufferPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
-    m_GBufferPSO.SetDepthStencilState( DepthStateReadWrite );
-    m_GBufferPSO.SetRasterizerState( RasterizerDefault );
-    m_GBufferPSO.Finalize();
-
-    m_OpaquePSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    m_OpaquePSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_OpaquePSO.SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
-    m_OpaquePSO.SetRasterizerState( RasterizerDefault );
-    m_OpaquePSO.SetDepthStencilState( DepthStateReadWrite );
-    m_OpaquePSO.Finalize();
-
-    m_TransparentPSO = m_OpaquePSO;
-    m_TransparentPSO.SetBlendState( BlendTraditional );
-    m_TransparentPSO.Finalize();
-
     m_LightDebugPSO.SetInputLayout( _countof( PrimitiveUtility::Desc ), PrimitiveUtility::Desc );
     m_LightDebugPSO.SetVertexShader( MY_SHADER_ARGS( g_pDeferredLightingVS ) );
     m_LightDebugPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredLightingDebugPS ) );
@@ -218,20 +188,6 @@ void Lighting::Initialize( void )
     m_DirectionalLightPSO.SetDepthStencilState( DepthStateDisabled );
     m_DirectionalLightPSO.SetRasterizerState( RasterizerDefaultCW );
     m_DirectionalLightPSO.Finalize();
-    
-    m_FinalPSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    m_FinalPSO.SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-    m_FinalPSO.SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
-    m_FinalPSO.SetRasterizerState( RasterizerDefault );
-    m_FinalPSO.SetDepthStencilState( DepthStateTestEqual );
-    m_FinalPSO.Finalize();
-
-    m_OutlinePSO.SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    m_OutlinePSO.SetVertexShader( MY_SHADER_ARGS( g_pOutlineVS ) );
-    m_OutlinePSO.SetPixelShader( MY_SHADER_ARGS( g_pOutlinePS ) );
-    m_OutlinePSO.SetRasterizerState( RasterizerDefaultCW );
-    m_OutlinePSO.SetDepthStencilState( DepthStateReadWrite );
-    m_OutlinePSO.Finalize();
 }
 
 Matrix4 Lighting::GetLightTransfrom(const LightData& Data, const Matrix4& ViewToProj)
@@ -278,7 +234,7 @@ void Lighting::RenderSubPass( GraphicsContext& gfxContext, LightType Type, const
 void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 {
     GraphicsContext& gfxContext = args.gfxContext;
-#define DEFERRED 1
+#define DEFERRED 0
 #if DEFERRED
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );
@@ -289,8 +245,8 @@ void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
             m_SpecularPowerTexture.GetRTV(),
         };
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
-        gfxContext.SetPipelineState( m_GBufferPSO );
-        scene->Render( m_OaquePass, args );
+        OpaquePass gbuffer( kRenderQueueDeferredGBuffer );
+        scene->Render( gbuffer, args );
         D3D11_RTV_HANDLE nullrtvs[_countof( rtvs )] = { nullptr, };
         gfxContext.SetRenderTargets( _countof( rtvs ), nullrtvs, nullptr );
     }
@@ -339,8 +295,8 @@ void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
         };
         gfxContext.SetDynamicDescriptors( 4, _countof( srvs ), srvs, { kBindPixel } );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
-        gfxContext.SetPipelineState( m_FinalPSO );
-        scene->Render( m_OaquePass, args );
+        OpaquePass deferredFinal( kRenderQueueDeferredFinal );
+        scene->Render( deferredFinal, args );
 
         if (s_bLightBoundary)
         {
@@ -355,15 +311,13 @@ void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
         ScopedTimer _prof( L"Forward Pass", gfxContext );
         gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
     #if !DEFERRED
-        gfxContext.SetPipelineState( m_OpaquePSO );
-        scene->Render( m_OaquePass, args );
+        OpaquePass opaque( kRenderQueueOpaque );
+        scene->Render( opaque, args );
     #endif
-        gfxContext.SetPipelineState( m_TransparentPSO );
         scene->Render( m_TransparentPass, args );
     }
     {
         ScopedTimer _prof( L"Outline Pass", gfxContext );
-        gfxContext.SetPipelineState( m_OutlinePSO );
         scene->Render( m_OutlinePass, args );
     }
 }

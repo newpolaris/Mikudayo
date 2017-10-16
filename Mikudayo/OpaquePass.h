@@ -7,7 +7,7 @@ class OpaquePass : public RenderPass
 {
 public:
 
-    OpaquePass();
+    OpaquePass( RenderQueue Queue );
     bool Visit( Material& material ) override;
 };
 

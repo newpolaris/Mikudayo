@@ -215,6 +215,9 @@
     <ClInclude Include="Bone.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="RenderType.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">

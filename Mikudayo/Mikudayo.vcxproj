@@ -166,6 +166,7 @@
     <ClInclude Include="RenderArgs.h" />
     <ClInclude Include="RenderBonePass.h" />
     <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="RenderType.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
     <ClInclude Include="ShadowCasterPass.h" />

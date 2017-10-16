@@ -440,6 +440,8 @@ void PmxInstant::Context::Update( float kFrameTime )
 
 void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
 {
+    (kFrameTime);
+
     for (auto& it : m_RigidBodies)
         it->SyncLocalTransform();
 

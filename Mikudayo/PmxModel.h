@@ -7,6 +7,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "Pmx.h"
+#include "RenderPass.h"
 
 using namespace Math;
 
@@ -62,11 +63,13 @@ public:
         MaterialCB CB;
         bool bOutline = false;
         bool bCastShadowMap = false;
+        RenderPipelineList Techniques;
         std::vector<TexturePath> TexturePathes;
         const ManagedTexture* Textures[kTextureMax];
         bool IsTransparent() const override;
         bool IsOutline() const override;
         bool IsShadowCaster() const override;
+        RenderPipelinePtr GetPipeline( RenderQueue Queue ) override;
         void SetTexture( GraphicsContext& gfxContext ) const;
     };
 
@@ -114,6 +117,7 @@ public:
 
     std::wstring m_Name;
     std::wstring m_TextureRoot;
+    std::wstring m_DefaultShader;
     std::vector<XMFLOAT3> m_VertexPosition;
     std::vector<VertexAttribute> m_VertexAttribute;
     std::vector<uint32_t> m_Indices;
@@ -134,8 +138,12 @@ public:
 
     IndexBuffer m_IndexBuffer;
 
+    static void Initialize();
+    static void Shutdown();
+
     PmxModel();
     virtual ~PmxModel();
+
     void Clear();
     bool Load( const ModelInfo& Info );
 
@@ -145,4 +153,5 @@ protected:
     bool LoadFromFile( const std::wstring& FilePath );
     const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );
     bool SetCustomShader( const CustomShaderInfo& Data );
+    bool SetDefaultShader( const std::wstring& Name );
 };

@@ -25,6 +25,7 @@ struct ModelInfo
     EModelType Type;
     std::wstring Name;
     std::wstring File;
+    std::wstring DefaultShader = L"Default";
     CustomShaderInfo Shader;
 };
 

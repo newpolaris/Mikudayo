@@ -6,9 +6,26 @@
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
+#include "CompiledShaders/OutlineVS.h"
+#include "CompiledShaders/OutlinePS.h"
+#include "CompiledShaders/DeferredGBufferPS.h"
+#include "CompiledShaders/DeferredFinalPS.h"
+#include "CompiledShaders/DepthViewerVS.h"
 
 using namespace Utility;
 using namespace Graphics;
+
+namespace Pmx {
+    std::vector<InputDesc> VertElem
+    {
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "EDGE_SCALE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+}
 
 namespace {
     const std::wstring ToonList[10] = {
@@ -23,21 +40,144 @@ namespace {
         L"toon09.bmp",
         L"toon10.bmp"
     };
+
+    std::map<std::wstring, RenderPipelineList> Techniques;
 }
 
-namespace Pmx {
-    std::vector<InputDesc> VertElem
+void PmxModel::Initialize()
+{
+    RenderPipelinePtr DeferredGBufferPSO, OutlinePSO, DepthPSO, ShadowPSO;
+
+    DeferredGBufferPSO = std::make_shared<GraphicsPSO>();
+    DeferredGBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+    DeferredGBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    DeferredGBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
+    DeferredGBufferPSO->SetDepthStencilState( DepthStateReadWrite );
+    DeferredGBufferPSO->SetRasterizerState( RasterizerDefault );
+    DeferredGBufferPSO->Finalize();
+
+    OutlinePSO = std::make_shared<GraphicsPSO>();
+    OutlinePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+    OutlinePSO->SetVertexShader( MY_SHADER_ARGS( g_pOutlineVS ) );
+    OutlinePSO->SetPixelShader( MY_SHADER_ARGS( g_pOutlinePS ) );
+    OutlinePSO->SetRasterizerState( RasterizerDefaultCW );
+    OutlinePSO->SetDepthStencilState( DepthStateReadWrite );
+    OutlinePSO->Finalize();
+
+    DXGI_FORMAT DepthFormat = g_SceneDepthBuffer.GetFormat();
+    DepthPSO = std::make_shared<GraphicsPSO>();
+    DepthPSO->SetRasterizerState( RasterizerDefault );
+    DepthPSO->SetBlendState( BlendNoColorWrite );
+    DepthPSO->SetDepthStencilState( DepthStateReadWrite );
+    DepthPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+    DepthPSO->SetRenderTargetFormats( 0, nullptr, DepthFormat );
+    DepthPSO->SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
+    DepthPSO->Finalize();
+
+    ShadowPSO = std::make_shared<GraphicsPSO>();
+    *ShadowPSO = *DepthPSO;
+    ShadowPSO->SetRasterizerState( RasterizerShadow );
+    ShadowPSO->SetRenderTargetFormats( 0, nullptr, g_ShadowBuffer.GetFormat() );
+    ShadowPSO->Finalize();
+
+    // Default 
     {
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "EDGE_SCALE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
+        RenderPipelinePtr OpaquePSO, TransparentPSO, GBufferPSO, FinalPSO;
+
+        OpaquePSO = std::make_shared<GraphicsPSO>();
+        OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
+        OpaquePSO->SetRasterizerState( RasterizerDefault );
+        OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
+        OpaquePSO->Finalize();
+
+        TransparentPSO = std::make_shared<GraphicsPSO>();
+        *TransparentPSO = *OpaquePSO;
+        TransparentPSO->SetBlendState( BlendTraditional );
+        TransparentPSO->Finalize();
+
+        FinalPSO = std::make_shared<GraphicsPSO>();
+        FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+        FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        FinalPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
+        FinalPSO->SetRasterizerState( RasterizerDefault );
+        FinalPSO->SetDepthStencilState( DepthStateTestEqual );
+        FinalPSO->Finalize();
+
+        GBufferPSO = std::make_shared<GraphicsPSO>();
+        GBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+        GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        GBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
+        GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
+        GBufferPSO->SetRasterizerState( RasterizerDefault );
+        GBufferPSO->Finalize();
+        
+        RenderPipelineList Default;
+        Default[kRenderQueueOpaque] = OpaquePSO;
+        Default[kRenderQueueTransparent] = TransparentPSO;
+        Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
+        Default[kRenderQueueDeferredFinal] = FinalPSO;
+        Default[kRenderQueueOutline] = OutlinePSO;
+        Default[kRenderQueueShadow] = ShadowPSO;
+
+        Techniques.emplace( L"Default", std::move( Default ) );
+    }
+    // Stage
+    {
+        RenderPipelinePtr OpaquePSO;
+        RenderPipelinePtr TransparentPSO;
+        RenderPipelinePtr GBufferPSO;
+        RenderPipelinePtr FinalPSO;
+
+        OpaquePSO = std::make_shared<GraphicsPSO>();
+        OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
+        OpaquePSO->SetRasterizerState( RasterizerDefault );
+        OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
+        OpaquePSO->Finalize();
+
+        TransparentPSO = std::make_shared<GraphicsPSO>();
+        *TransparentPSO = *OpaquePSO;
+        TransparentPSO->SetBlendState( BlendTraditional );
+        TransparentPSO->Finalize();
+
+        FinalPSO = std::make_shared<GraphicsPSO>();
+        FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+        FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        FinalPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
+        FinalPSO->SetRasterizerState( RasterizerDefault );
+        FinalPSO->SetDepthStencilState( DepthStateTestEqual );
+        FinalPSO->Finalize();
+
+        GBufferPSO = std::make_shared<GraphicsPSO>();
+        GBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+        GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        GBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
+        GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
+        GBufferPSO->SetRasterizerState( RasterizerDefault );
+        GBufferPSO->Finalize();
+        
+        RenderPipelineList Stage;
+        Stage[kRenderQueueOpaque] = OpaquePSO;
+        Stage[kRenderQueueTransparent] = TransparentPSO;
+        Stage[kRenderQueueDeferredGBuffer] = GBufferPSO;
+        Stage[kRenderQueueDeferredFinal] = FinalPSO;
+        Stage[kRenderQueueOutline] = OutlinePSO;
+        Stage[kRenderQueueShadow] = ShadowPSO;
+
+        Techniques.emplace( L"Stage", std::move( Stage ) );
+    }
 }
 
-PmxModel::PmxModel()
+void PmxModel::Shutdown()
+{
+    Techniques.clear();
+}
+
+PmxModel::PmxModel() : 
+    m_DefaultShader( L"Default" )
 {
 }
 
@@ -141,7 +281,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 		Material mat = {};
         mat.Name = material.Name;
-        mat.ShaderName = L"PMX";
+        mat.ShaderName = m_DefaultShader;
         mat.TexturePathes.resize(kTextureMax);
         if (material.DiffuseTexureIndex >= 0)
             mat.TexturePathes[kTextureDiffuse] = { true, pmx.m_Textures[material.DiffuseTexureIndex] };
@@ -168,6 +308,8 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 		mat.CB.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
         mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
         mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
+        if (Techniques.count( m_DefaultShader ))
+            mat.Techniques = Techniques[m_DefaultShader];
         m_Materials.push_back(mat);
 
         Mesh mesh;
@@ -287,6 +429,12 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
     return true;
 }
 
+bool PmxModel::SetDefaultShader( const std::wstring& Name )
+{
+    m_DefaultShader = Name;
+    return true;
+}
+
 void PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
 {
     D3D11_SRV_HANDLE SRV[kTextureMax] = { nullptr };
@@ -312,4 +460,9 @@ bool PmxModel::Material::IsOutline() const
 bool PmxModel::Material::IsShadowCaster() const
 { 
     return bCastShadowMap;
+}
+
+RenderPipelinePtr PmxModel::Material::GetPipeline( RenderQueue Queue ) 
+{
+    return Techniques[Queue];
 }

@@ -56,4 +56,5 @@ namespace Physics
     bool PickBody( const btVector3& From, const btVector3& To, const btVector3& Forward );
     void ReleasePickBody();
     void Render( GraphicsContext& Context, const Matrix4& WorldToClip );
+    void RenderDebug( GraphicsContext& Context, const Matrix4& WorldToClip );
 };
