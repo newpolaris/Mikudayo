@@ -39,9 +39,11 @@ public:
 private:
     const BaseCamera& GetCamera();
 
-    Camera m_Camera, m_SecondCamera;
+    Camera m_Camera;
+    Camera m_SecondCamera;
     ShadowCamera m_SunShadow;
-    std::auto_ptr<CameraController> m_CameraController, m_SecondCameraController;
+    std::auto_ptr<CameraController> m_CameraController;
+    std::auto_ptr<CameraController> m_SecondCameraController;
 
     const Vector3 m_MinBound = Vector3( -100, 0, -350 );
     const Vector3 m_MaxBound = Vector3( 100, 25, 100 );
@@ -90,7 +92,6 @@ void Mikudayo::Startup( void )
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
     Lighting::Initialize();
-
     Lighting::CreateRandomLights( m_MinBound, m_MaxBound );
 
     const Vector3 eye = Vector3(0.0f, 100.0f, 100.0f);
@@ -100,17 +101,24 @@ void Mikudayo::Startup( void )
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
+    // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
+
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
+    #if 1
         { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
         { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
         { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
         { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
         { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
+    #endif
     };
     for (auto& info : primitves)
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 
     m_Scene = std::make_shared<Scene>();
+
+    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
+    // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
 
     ModelInfo info;
     info.Type = kModelPMX;
@@ -118,26 +126,35 @@ void Mikudayo::Startup( void )
     info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
     info.File = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
+    info.File = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
     if (ModelManager::Load( info ))
     {
         auto& model = ModelManager::GetModel( info.Name );
         auto instant = std::make_shared<PmxInstant>(model);
         instant->LoadModel();
-        instant->LoadMotion( L"Motion/nekomimi_lat.vmd" );
+        instant->LoadMotion( motion );
         m_Scene->AddChild( instant );
     }
 
     ModelInfo stage;
     stage.Type = kModelPMX;
-#if 1
+
+// #define HALLOWEEN
+// #define BOARD
+
+#if BOARD
     stage.Name = L"黒白";
     stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
-#else
+    stage.DefaultShader = L"Stage";
+#elif HALLOWEEN
     stage.Name = L"HalloweenStage";
     stage.File = L"Model/HalloweenStage/halloween.Pmx";
-#endif
     stage.DefaultShader = L"Stage";
-
+#else 
+    stage.File = L"Model/Floor.pmx";
+    stage.DefaultShader = L"Stage";
+#endif
+    
     if (ModelManager::Load( stage ))
     {
         auto& model = ModelManager::GetModel( stage.Name );
@@ -188,14 +205,12 @@ void Mikudayo::Update( float deltaT )
     Lighting::UpdateLights(GetCamera());
 
     m_Scene->UpdateScene( m_Frame );
+    Physics::Update( deltaT );
+    for (auto& primitive : m_Primitives)
+        primitive->Update();
 
     if (!EngineProfiling::IsPaused())
-    {
-        Physics::Update( deltaT );
-        for (auto& primitive : m_Primitives)
-            primitive->Update();
         m_Frame = m_Frame + deltaT * 30.f;
-    }
 
     m_Scene->UpdateSceneAfterPhysics( m_Frame );
 
