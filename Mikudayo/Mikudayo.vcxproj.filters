@@ -16,21 +16,18 @@
     <Filter Include="Source Files\Bullet">
       <UniqueIdentifier>{d82a62ad-7256-4891-9cf3-04460f9bac60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\MMD">
+      <UniqueIdentifier>{93c8fd1f-8bd1-4646-8a3d-4e043bca5819}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderPass">
+      <UniqueIdentifier>{2a320a56-6c1f-42a4-8d4e-8c4d41d51dc5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PmxModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="KeyFrameAnimation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Pmx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Vmd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GeometryGenerator.cpp">
@@ -60,43 +57,10 @@
     <ClCompile Include="PrimitiveUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ModelManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PmxInstant.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DeferredLighting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OpaquePass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TransparentPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OutlinePass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ShadowCasterPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderBonePass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Bullet\BaseJoint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Bullet\RigidBody.cpp">
@@ -105,7 +69,49 @@
     <ClCompile Include="Bullet\Joint.cpp">
       <Filter>Source Files\Bullet</Filter>
     </ClCompile>
+    <ClCompile Include="PmxInstant.cpp">
+      <Filter>Source Files\MMD</Filter>
+    </ClCompile>
+    <ClCompile Include="PmxModel.cpp">
+      <Filter>Source Files\MMD</Filter>
+    </ClCompile>
+    <ClCompile Include="Pmx.cpp">
+      <Filter>Source Files\MMD</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderBonePass.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="OpaquePass.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="OutlinePass.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowCasterPass.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="TransparentPass.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="Vmd.cpp">
+      <Filter>Source Files\MMD</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\BaseJoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Bone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -113,16 +119,7 @@
     <ClInclude Include="stdafx.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="PmxModel.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="KeyFrameAnimation.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Pmx.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Vmd.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="GeometryGenerator.h">
@@ -155,15 +152,6 @@
     <ClInclude Include="PrimitiveUtility.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ModelManager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PmxInstant.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="DeferredLighting.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -173,34 +161,7 @@
     <ClInclude Include="Visitor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="OpaquePass.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TransparentPass.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderArgs.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OutlinePass.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadowCasterPass.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPass.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderBonePass.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\RigidBody.h">
@@ -212,10 +173,55 @@
     <ClInclude Include="Bullet\Joint.h">
       <Filter>Source Files\Bullet</Filter>
     </ClInclude>
+    <ClInclude Include="PmxInstant.h">
+      <Filter>Source Files\MMD</Filter>
+    </ClInclude>
+    <ClInclude Include="PmxModel.h">
+      <Filter>Source Files\MMD</Filter>
+    </ClInclude>
+    <ClInclude Include="Pmx.h">
+      <Filter>Source Files\MMD</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderBonePass.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPass.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="OpaquePass.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="OutlinePass.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowCasterPass.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="TransparentPass.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="Vmd.h">
+      <Filter>Source Files\MMD</Filter>
+    </ClInclude>
     <ClInclude Include="Bone.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="RenderType.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderArgs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -269,6 +275,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PmxColor2PS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DeferredFinal2PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

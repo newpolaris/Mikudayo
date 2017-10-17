@@ -14,6 +14,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include "Math/Vector.h"
 
 using namespace DirectX;
 
@@ -130,3 +131,19 @@ inline uint32_t Color::R8G8B8A8( void ) const
 	uint32_t a = XMVectorGetIntW(result);
 	return a << 24 | b << 16 | g << 8 | r;
 }
+
+inline XMFLOAT4 FromSRGB(XMFLOAT4 c)
+{
+    FXMVECTOR C = XMLoadFloat4(&c);
+    XMVECTOR V = Color(C).FromSRGB();
+    XMStoreFloat4( &c, V );
+    return c;
+};
+
+inline XMFLOAT3 FromSRGB(XMFLOAT3 c)
+{
+    FXMVECTOR C = XMLoadFloat3(&c);
+    XMVECTOR V = Color(C).FromSRGB();
+    XMStoreFloat3( &c, V );
+    return c;
+};

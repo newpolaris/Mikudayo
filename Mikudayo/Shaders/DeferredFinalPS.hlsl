@@ -49,14 +49,14 @@ float GetShadow( float3 ShadowCoord )
     float d4 = Dilation * ShadowTexelSize.x * 0.375;
     float result = (
         2.0 * ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z ) +
-        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(-d2,  d1), ShadowCoord.z ) +
+        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(-d2, d1), ShadowCoord.z ) +
         ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(-d1, -d2), ShadowCoord.z ) +
-        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2( d2, -d1), ShadowCoord.z ) +
-        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2( d1,  d2), ShadowCoord.z ) +
-        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(-d4,  d3), ShadowCoord.z ) +
+        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(d2, -d1), ShadowCoord.z ) +
+        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(d1, d2), ShadowCoord.z ) +
+        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(-d4, d3), ShadowCoord.z ) +
         ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(-d3, -d4), ShadowCoord.z ) +
-        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2( d4, -d3), ShadowCoord.z ) +
-        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2( d3,  d4), ShadowCoord.z )
+        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(d4, -d3), ShadowCoord.z ) +
+        ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy + float2(d3, d4), ShadowCoord.z )
         ) / 10.0;
 #endif
     return result * result;
@@ -99,9 +99,18 @@ float4 main( PixelShaderInput input ) : SV_Target
     float4 DiffuseColor = float4(texColor * diffuse, 1.0);
     float4 SpecularColor = float4(specular, 1.0);
 
-    // float4 colorSum = AmbientColor + DiffuseColor*float4(SunColor, 1) + SpecularColor * lit.Specular;
-    float4 colorSum = AmbientColor + DiffuseColor*lit.Diffuse + SpecularColor * lit.Specular;
-
+#if ENABLE_STAGE
+    float4 colorSum = AmbientColor + DiffuseColor * lit.Diffuse + SpecularColor * lit.Specular;
+    float3 N = normalize( input.normalVS );
+    Light light = (Light)0;
+    light.DirectionVS = float4(SunDirectionVS, 1);
+    light.Color = float4(SunColor, 1);
+    LightingResult sunLit = DoDirectionalLight( light, material.specularPower, -input.posVS, N );
+    float shadow = GetShadow( input.shadowCoord );
+    colorSum += shadow * (DiffuseColor * sunLit.Diffuse + SpecularColor * sunLit.Specular);
+#else
+    float4 colorSum = AmbientColor + DiffuseColor*float4(SunColor, 1) + SpecularColor * lit.Specular;
+#endif
     return colorSum;
 }
 

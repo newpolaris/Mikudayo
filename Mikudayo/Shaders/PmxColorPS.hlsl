@@ -97,9 +97,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
 #if ENABLE_STAGE
     LightingResult lit = DoLighting(Lights, material.specularPower, input.posVS, normalVS);
-
-    // float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
-    float3 color = diffuse * lit.Diffuse.xyz + ambient * 0.1 + specular * lit.Specular.xyz;
+    float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
     float alpha = texAlpha * material.alpha;
 
     Light light = (Light)0;

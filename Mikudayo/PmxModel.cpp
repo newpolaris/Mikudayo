@@ -3,6 +3,7 @@
 #include "KeyFrameAnimation.h"
 #include "Model.h"
 #include "Pmx.h"
+#include "Color.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
@@ -11,6 +12,7 @@
 #include "CompiledShaders/OutlinePS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredFinalPS.h"
+#include "CompiledShaders/DeferredFinal2PS.h"
 #include "CompiledShaders/DepthViewerVS.h"
 
 using namespace Utility;
@@ -82,9 +84,8 @@ void PmxModel::Initialize()
     ShadowPSO->Finalize();
 
     RenderPipelineList Default;
+    RenderPipelinePtr OpaquePSO, TransparentPSO, GBufferPSO, FinalPSO;
     {
-        RenderPipelinePtr OpaquePSO, TransparentPSO, GBufferPSO, FinalPSO;
-
         OpaquePSO = std::make_shared<GraphicsPSO>();
         OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
         OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
@@ -122,44 +123,27 @@ void PmxModel::Initialize()
         Default[kRenderQueueShadow] = ShadowPSO;
     }
     RenderPipelineList Stage;
+    RenderPipelinePtr Opaque2PSO, Transparent2PSO, Final2PSO;
     {
-        RenderPipelinePtr OpaquePSO;
-        RenderPipelinePtr TransparentPSO;
-        RenderPipelinePtr GBufferPSO;
-        RenderPipelinePtr FinalPSO;
+        Opaque2PSO = std::make_shared<GraphicsPSO>();
+        *Opaque2PSO = *OpaquePSO;
+        Opaque2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
+        Opaque2PSO->Finalize();
 
-        OpaquePSO = std::make_shared<GraphicsPSO>();
-        *OpaquePSO = *Default[kRenderQueueOpaque];
-        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
-        OpaquePSO->Finalize();
+        Transparent2PSO = std::make_shared<GraphicsPSO>();
+        *Transparent2PSO = *TransparentPSO;
+        Transparent2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
+        Transparent2PSO->Finalize();
 
-        TransparentPSO = std::make_shared<GraphicsPSO>();
-        *TransparentPSO = *OpaquePSO;
-        TransparentPSO->SetBlendState( BlendTraditional );
-        TransparentPSO->Finalize();
-
-        FinalPSO = std::make_shared<GraphicsPSO>();
-        FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        FinalPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
-        FinalPSO->SetRasterizerState( RasterizerDefault );
-        FinalPSO->SetDepthStencilState( DepthStateTestEqual );
-        FinalPSO->Finalize();
-
-        GBufferPSO = std::make_shared<GraphicsPSO>();
-        GBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        GBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
-        GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
-        GBufferPSO->SetRasterizerState( RasterizerDefault );
-        GBufferPSO->Finalize();
+        Final2PSO = std::make_shared<GraphicsPSO>();
+        *Final2PSO = *FinalPSO;
+        Final2PSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinal2PS ) );
+        Final2PSO->Finalize();
         
-        Stage[kRenderQueueOpaque] = OpaquePSO;
-        Stage[kRenderQueueTransparent] = TransparentPSO;
-        Stage[kRenderQueueDeferredGBuffer] = GBufferPSO;
-        Stage[kRenderQueueDeferredFinal] = FinalPSO;
-        Stage[kRenderQueueOutline] = OutlinePSO;
-        Stage[kRenderQueueShadow] = ShadowPSO;
+        Stage = Default;
+        Stage[kRenderQueueOpaque] = Opaque2PSO;
+        Stage[kRenderQueueTransparent] = Transparent2PSO;
+        Stage[kRenderQueueDeferredFinal] = Final2PSO;
     }
     Techniques.emplace( L"Default", std::move( Default ) );
     Techniques.emplace( L"Stage", std::move( Stage ) );
@@ -293,11 +277,13 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
             mat.TexturePathes[kTextureToon] = { true, ToonName };
 
         MaterialCB cb = {};
-		cb.Diffuse = material.Diffuse;
-		cb.Specular = material.Specular;
+		cb.Diffuse = FromSRGB(material.Diffuse);
+		cb.Specular = FromSRGB(material.Specular);
 		cb.SpecularPower = material.SpecularPower;
-		cb.Ambient = material.Ambient;
+        cb.Ambient = FromSRGB(material.Ambient);
         cb.SphereOperation = material.SphereOperation;
+        if (mat.TexturePathes[kTextureSphere].Path.empty())
+            cb.SphereOperation = Pmx::ESphereOpeation::kNone;
 
         mat.CB = cb;
 		mat.CB.EdgeSize = material.EdgeSize;
