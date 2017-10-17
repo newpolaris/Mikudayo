@@ -6,6 +6,7 @@
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
+#include "CompiledShaders/PmxColor2PS.h"
 #include "CompiledShaders/OutlineVS.h"
 #include "CompiledShaders/OutlinePS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
@@ -80,7 +81,7 @@ void PmxModel::Initialize()
     ShadowPSO->SetRenderTargetFormats( 0, nullptr, g_ShadowBuffer.GetFormat() );
     ShadowPSO->Finalize();
 
-    // Default 
+    RenderPipelineList Default;
     {
         RenderPipelinePtr OpaquePSO, TransparentPSO, GBufferPSO, FinalPSO;
 
@@ -113,17 +114,14 @@ void PmxModel::Initialize()
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
         
-        RenderPipelineList Default;
         Default[kRenderQueueOpaque] = OpaquePSO;
         Default[kRenderQueueTransparent] = TransparentPSO;
         Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
         Default[kRenderQueueDeferredFinal] = FinalPSO;
         Default[kRenderQueueOutline] = OutlinePSO;
         Default[kRenderQueueShadow] = ShadowPSO;
-
-        Techniques.emplace( L"Default", std::move( Default ) );
     }
-    // Stage
+    RenderPipelineList Stage;
     {
         RenderPipelinePtr OpaquePSO;
         RenderPipelinePtr TransparentPSO;
@@ -131,11 +129,8 @@ void PmxModel::Initialize()
         RenderPipelinePtr FinalPSO;
 
         OpaquePSO = std::make_shared<GraphicsPSO>();
-        OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
-        OpaquePSO->SetRasterizerState( RasterizerDefault );
-        OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
+        *OpaquePSO = *Default[kRenderQueueOpaque];
+        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
         OpaquePSO->Finalize();
 
         TransparentPSO = std::make_shared<GraphicsPSO>();
@@ -159,16 +154,15 @@ void PmxModel::Initialize()
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
         
-        RenderPipelineList Stage;
         Stage[kRenderQueueOpaque] = OpaquePSO;
         Stage[kRenderQueueTransparent] = TransparentPSO;
         Stage[kRenderQueueDeferredGBuffer] = GBufferPSO;
         Stage[kRenderQueueDeferredFinal] = FinalPSO;
         Stage[kRenderQueueOutline] = OutlinePSO;
         Stage[kRenderQueueShadow] = ShadowPSO;
-
-        Techniques.emplace( L"Stage", std::move( Stage ) );
     }
+    Techniques.emplace( L"Default", std::move( Default ) );
+    Techniques.emplace( L"Stage", std::move( Stage ) );
 }
 
 void PmxModel::Shutdown()
@@ -193,6 +187,8 @@ void PmxModel::Clear()
 
 bool PmxModel::Load( const ModelInfo& Info )
 {
+    SetDefaultShader( Info.DefaultShader );
+
     if (!LoadFromFile( Info.File ))
         return false;
     if (!SetCustomShader( Info.Shader ))

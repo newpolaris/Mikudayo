@@ -136,6 +136,8 @@ void Mikudayo::Startup( void )
     stage.Name = L"HalloweenStage";
     stage.File = L"Model/HalloweenStage/halloween.Pmx";
 #endif
+    stage.DefaultShader = L"Stage";
+
     if (ModelManager::Load( stage ))
     {
         auto& model = ModelManager::GetModel( stage.Name );

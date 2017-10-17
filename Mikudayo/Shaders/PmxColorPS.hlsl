@@ -32,6 +32,7 @@ SamplerComparisonState shadowSampler : register(s2);
 
 float GetShadow( float3 ShadowCoord )
 {
+#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
     float result = ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else
@@ -94,12 +95,13 @@ float4 main(PixelShaderInput input) : SV_TARGET
     diffuse = texColor * diffuse;
     ambient = texColor * ambient;
 
+#if ENABLE_STAGE
     LightingResult lit = DoLighting(Lights, material.specularPower, input.posVS, normalVS);
 
     // float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
     float3 color = diffuse * lit.Diffuse.xyz + ambient * 0.1 + specular * lit.Specular.xyz;
     float alpha = texAlpha * material.alpha;
-#if 1
+
     Light light = (Light)0;
     light.DirectionVS = float4(SunDirectionVS, 1);
     light.Color = float4(SunColor, 1);
@@ -107,6 +109,9 @@ float4 main(PixelShaderInput input) : SV_TARGET
     float shadow = GetShadow(input.shadowCoord);
     float3 sunColor = diffuse * sunLit.Diffuse.xyz + specular * sunLit.Specular.xyz;
     color += shadow * sunColor;
+#else
+    float3 color = diffuse*SunColor + ambient + specular * specularFactor;
+    float alpha = texAlpha * material.alpha;
 #endif
 
     return float4(color, alpha);

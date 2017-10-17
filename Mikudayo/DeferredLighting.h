@@ -13,7 +13,7 @@ namespace Math
 
 namespace Lighting
 {
-    enum { MaxLights = 12 };
+    enum { MaxLights = 128 };
 
     extern StructuredBuffer m_LightBuffer;
 

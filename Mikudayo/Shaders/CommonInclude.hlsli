@@ -1,4 +1,4 @@
-#define NumLights 12
+#define NumLights 128
 #define PointLight 0
 #define SpotLight 1
 #define DirectionalLight 2

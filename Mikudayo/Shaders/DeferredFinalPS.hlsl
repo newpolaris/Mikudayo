@@ -95,21 +95,12 @@ float4 main( PixelShaderInput input ) : SV_Target
     if (bUseToon)
         texColor *= texToon.Sample( sampler0, toonCoord );
 
-    // float4 AmbientColor = float4(texColor * ambient * 1.0, 1.0);
-    float4 AmbientColor = float4(texColor * ambient * 0.1, 1.0);
+    float4 AmbientColor = float4(texColor * ambient, 1.0);
     float4 DiffuseColor = float4(texColor * diffuse, 1.0);
     float4 SpecularColor = float4(specular, 1.0);
 
-    float4 colorSum = AmbientColor + DiffuseColor * lit.Diffuse + SpecularColor * lit.Specular;
-
-    float3 N = normalize( input.normalVS );
-
-    Light light = (Light)0;
-    light.DirectionVS = float4(SunDirectionVS, 1);
-    light.Color = float4(SunColor, 1);
-    LightingResult sunLit = DoDirectionalLight( light, material.specularPower, -input.posVS, N );
-    float shadow = GetShadow(input.shadowCoord);
-    colorSum += shadow * (DiffuseColor * sunLit.Diffuse + SpecularColor * sunLit.Specular);
+    // float4 colorSum = AmbientColor + DiffuseColor*float4(SunColor, 1) + SpecularColor * lit.Specular;
+    float4 colorSum = AmbientColor + DiffuseColor*lit.Diffuse + SpecularColor * lit.Specular;
 
     return colorSum;
 }

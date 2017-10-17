@@ -237,7 +237,7 @@ void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 
     gfxContext.SetDynamicDescriptor( 60, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
 
-#define DEFERRED 0
+#define DEFERRED 1
 #if DEFERRED
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );
