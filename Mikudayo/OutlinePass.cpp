@@ -6,7 +6,7 @@ OutlinePass::OutlinePass() : RenderPass( kRenderQueueOutline )
 {
 }
 
-bool OutlinePass::Visit( Material& material )
+bool OutlinePass::Visit( IMaterial& material )
 {
     RenderPass::Visit( material );
     return material.IsOutline();

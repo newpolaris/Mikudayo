@@ -6,7 +6,7 @@ TransparentPass::TransparentPass() : RenderPass( kRenderQueueTransparent )
 {
 }
 
-bool TransparentPass::Visit( Material& material )
+bool TransparentPass::Visit( IMaterial& material )
 {
     RenderPass::Visit( material );
     return material.IsTransparent();

@@ -29,12 +29,12 @@ struct ModelInfo
     CustomShaderInfo Shader;
 };
 
-class Model
+class IModel
 {
 public:
 
-    Model();
-    ~Model();
+    IModel();
+    ~IModel();
     void Clear();
 
     virtual bool Load( const ModelInfo& Info ) = 0;

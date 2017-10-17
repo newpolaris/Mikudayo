@@ -6,7 +6,7 @@ ShadowCasterPass::ShadowCasterPass() : RenderPass( kRenderQueueShadow )
 {
 }
 
-bool ShadowCasterPass::Visit( Material& material )
+bool ShadowCasterPass::Visit( IMaterial& material )
 {
     RenderPass::Visit( material );
     return material.IsShadowCaster();

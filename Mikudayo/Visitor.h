@@ -1,17 +1,17 @@
 #pragma once
 
 class SceneNode;
-class Mesh;
-class Material;
+class IMesh;
+class IMaterial;
 
 class Visitor
 {
 public:
     virtual bool Visit( SceneNode& );
-    virtual bool Visit( Mesh& );
-    virtual bool Visit( Material& );
+    virtual bool Visit( IMesh& );
+    virtual bool Visit( IMaterial& );
 };
 
 inline bool Visitor::Visit( SceneNode& ) { return true; }
-inline bool Visitor::Visit( Mesh& ) { return true; }
-inline bool Visitor::Visit( Material& ) { return true; }
+inline bool Visitor::Visit( IMesh& ) { return true; }
+inline bool Visitor::Visit( IMaterial& ) { return true; }

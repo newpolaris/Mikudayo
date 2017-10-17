@@ -5,8 +5,8 @@
 
 class RenderArgs;
 class SceneNode;
-class Mesh;
-class Material;
+class IMesh;
+class IMaterial;
 
 class RenderPass : public Visitor
 {
@@ -18,7 +18,7 @@ public:
 
     // Inherited from Visitor
     virtual bool Visit( SceneNode& node ) override;
-    virtual bool Visit( Material& material ) override;
+    virtual bool Visit( IMaterial& material ) override;
 
     RenderQueue m_RenderQueue;
     RenderArgs* m_RenderArgs = nullptr;

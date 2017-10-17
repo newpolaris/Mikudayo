@@ -4,7 +4,7 @@
 #include "PmxModel.h"
 
 namespace ModelManager {
-    std::map<std::wstring, std::shared_ptr<Model>> m_Models;
+    std::map<std::wstring, std::shared_ptr<IModel>> m_Models;
 } // namespace ModelManager {
 
 void ModelManager::Initialize()
@@ -29,7 +29,7 @@ bool ModelManager::Load( const ModelInfo& Info )
     return true;
 }
 
-Model& ModelManager::GetModel( const std::wstring& Name )
+IModel& ModelManager::GetModel( const std::wstring& Name )
 {
     ASSERT(m_Models.count(Name) > 0);
     return *m_Models[Name];

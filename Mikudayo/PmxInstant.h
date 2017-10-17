@@ -2,7 +2,7 @@
 
 #include "SceneNode.h"
 
-class Model;
+class IModel;
 class Visitor;
 class btTransform;
 class PmxInstant;
@@ -33,7 +33,7 @@ class PmxInstant : public SceneNode
 {
 public:
 
-    PmxInstant( Model& model );
+    PmxInstant( IModel& model );
 
     bool LoadModel();
     bool LoadMotion( const std::wstring& motionPath );

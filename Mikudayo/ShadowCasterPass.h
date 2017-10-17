@@ -2,12 +2,12 @@
 
 #include "RenderPass.h"
 
-class Material;
+class IMaterial;
 class ShadowCasterPass : public RenderPass
 {
 public:
 
     ShadowCasterPass();
-    bool Visit( Material& material ) override;
+    bool Visit( IMaterial& material ) override;
 };
 

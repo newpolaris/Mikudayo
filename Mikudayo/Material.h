@@ -2,7 +2,7 @@
 
 #include "RenderType.h"
 
-class Material
+class IMaterial
 {
 public:
 
@@ -12,22 +12,22 @@ public:
     virtual RenderPipelinePtr GetPipeline( RenderQueue Queue );
 };
 
-inline bool Material::IsTransparent() const
+inline bool IMaterial::IsTransparent() const
 {
     return false; 
 }
 
-inline bool Material::IsOutline() const
+inline bool IMaterial::IsOutline() const
 {
     return false;
 }
 
-inline bool Material::IsShadowCaster() const
+inline bool IMaterial::IsShadowCaster() const
 {
     return false;
 }
 
-inline RenderPipelinePtr Material::GetPipeline( RenderQueue )
+inline RenderPipelinePtr IMaterial::GetPipeline( RenderQueue )
 {
     return nullptr;
 }

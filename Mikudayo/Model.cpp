@@ -1,15 +1,15 @@
 #include "stdafx.h"
 #include "Model.h"
 
-Model::Model()
+IModel::IModel()
 {
 }
 
-Model::~Model()
+IModel::~IModel()
 {
     Clear();
 }
 
-void Model::Clear()
+void IModel::Clear()
 {
 }

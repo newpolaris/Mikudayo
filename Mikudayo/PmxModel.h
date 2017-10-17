@@ -15,7 +15,7 @@ namespace Pmx {
     extern std::vector<InputDesc> VertElem;
 }
 
-class PmxModel : public Model
+class PmxModel : public IModel
 {
 public:
 
@@ -56,7 +56,7 @@ public:
         Color EdgeColor;
 	};
 
-    struct Material : public ::Material
+    struct Material : public IMaterial
     {
         std::wstring Name;
         std::wstring ShaderName;
@@ -73,7 +73,7 @@ public:
         void SetTexture( GraphicsContext& gfxContext ) const;
     };
 
-	struct Mesh : public ::Mesh
+	struct Mesh : public IMesh
 	{
         uint32_t MaterialIndex;
         int32_t IndexOffset;

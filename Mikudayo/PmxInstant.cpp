@@ -725,7 +725,7 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 	}
 }
 
-PmxInstant::PmxInstant( Model& model ) :
+PmxInstant::PmxInstant( IModel& model ) :
     m_Context( std::make_shared<Context>( dynamic_cast<PmxModel&>(model), this ) )
 {
 }

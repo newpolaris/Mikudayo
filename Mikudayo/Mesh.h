@@ -1,6 +1,6 @@
 #pragma once
 
-class Mesh
+class IMesh
 {
 public:
 

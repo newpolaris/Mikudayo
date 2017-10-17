@@ -14,7 +14,7 @@ void RenderPass::SetRenderArgs( RenderArgs& args )
     m_RenderArgs = &args;
 }
 
-bool RenderPass::Visit( Material& material ) 
+bool RenderPass::Visit( IMaterial& material ) 
 { 
     if (m_RenderQueue != kRenderQueueEmpty)
     {

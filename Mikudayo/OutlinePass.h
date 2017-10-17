@@ -2,12 +2,12 @@
 
 #include "RenderPass.h"
 
-class Material;
+class IMaterial;
 class OutlinePass : public RenderPass
 {
 public:
 
     OutlinePass();
-    bool Visit( Material& material ) override;
+    bool Visit( IMaterial& material ) override;
 };
 
