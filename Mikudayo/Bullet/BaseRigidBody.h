@@ -92,7 +92,6 @@ public:
     void SyncLocalTransform();
     void JoinWorld( btDynamicsWorld* world );
     void LeaveWorld( btDynamicsWorld* world );
-    void UpdateTransform();
 
 protected:
     ObjectType m_Type;

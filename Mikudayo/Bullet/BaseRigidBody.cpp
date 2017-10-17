@@ -104,7 +104,7 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
 
     btTransform worldTransform( m_Rotation, m_Position );
 
-    if (m_Type == kStaticObject)
+    if (m_Type == kStaticObject && m_BoneRef.m_Instance)
         m_MotionState = std::make_shared<KinematicMotionState>( m_Trans, this );
     else
         m_MotionState = std::make_shared<DefaultMotionState>( worldTransform, this );
@@ -114,6 +114,7 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
     info.m_angularDamping = m_angularDamping;
     info.m_restitution = m_Restitution;
     info.m_friction = m_friction;
+    // additional damping can help avoiding lowpass jitter motion, help stability for ragdolls etc.
     info.m_additionalDamping = true;
     std::shared_ptr<btRigidBody> body = std::make_shared<btRigidBody>( info );
     body->setActivationState( DISABLE_DEACTIVATION );
@@ -187,14 +188,6 @@ void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
 {
     world->removeRigidBody( m_Body.get() );
     m_Body->setUserPointer( nullptr );
-}
-
-void BaseRigidBody::UpdateTransform()
-{
-    const OrthogonalTransform local = m_BoneRef.GetTransform();
-    const btTransform& newTransform = Convert(local) * m_Trans;
-    m_MotionState->setWorldTransform( newTransform );
-    m_Body->setInterpolationWorldTransform( newTransform );
 }
 
 void BaseRigidBody::SetAngularDamping( float value )
