@@ -234,6 +234,9 @@ void Lighting::RenderSubPass( GraphicsContext& gfxContext, LightType Type, const
 void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 {
     GraphicsContext& gfxContext = args.gfxContext;
+
+    gfxContext.SetDynamicDescriptor( 60, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
+
 #define DEFERRED 0
 #if DEFERRED
     {
@@ -252,9 +255,8 @@ void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
     }
     {
         ScopedTimer _prof( L"Lighting Pass", gfxContext );
-        gfxContext.ClearColor( m_DiffuseTexture );
-        gfxContext.ClearColor( m_SpecularTexture );
-        gfxContext.SetDynamicDescriptor( 60, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
+	    gfxContext.ClearColor( m_DiffuseTexture );
+	    gfxContext.ClearColor( m_SpecularTexture );
         struct ScreenToViewParams
         {
             Matrix4 InverseProjectionMatrix;
