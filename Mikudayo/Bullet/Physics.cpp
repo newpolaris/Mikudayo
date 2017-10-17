@@ -11,7 +11,11 @@ namespace Physics
     BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
     BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
 
-    const float EarthGravity = -9.8f;
+    // use scalar from MMD-Agent
+    // set default gravity 
+    // some tweak for the simulation to match that of MikuMikuDance
+    const float gScale = 10.f;
+    const float EarthGravity = -9.8f * gScale;
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
     int m_SolverMode = SOLVER_SIMD |
         SOLVER_USE_WARMSTARTING |
@@ -245,8 +249,8 @@ void Physics::Initialize( void )
     DebugDrawer->setDebugMode(
         // btIDebugDraw::DBG_DrawAabb |
         btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits |
-        btIDebugDraw::DBG_DrawWireframe
+        btIDebugDraw::DBG_DrawConstraintLimits
+        // btIDebugDraw::DBG_DrawWireframe
     );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
     auto pickCallback = []( btDynamicsWorld * world, btScalar timeStep ) {
