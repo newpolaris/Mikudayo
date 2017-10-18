@@ -142,10 +142,9 @@ public:
     static void Shutdown();
 
     PmxModel();
-    virtual ~PmxModel();
 
-    void Clear();
-    bool Load( const ModelInfo& Info );
+    void Clear() override;
+    bool Load( const ModelInfo& Info ) override;
 
 protected:
 

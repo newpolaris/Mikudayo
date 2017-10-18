@@ -16,6 +16,7 @@
 #include "DebugHelper.h"
 #include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
+#include "ModelAssimp.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -119,6 +120,13 @@ void Mikudayo::Startup( void )
 
     const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
     // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
+
+#if 1
+    auto importedModel = std::make_shared<AssimpModel>();
+    auto testModel = L"Model";
+    auto modelPath = Utility::MakeStr( testModel );
+    importedModel->Load(modelPath.c_str());
+#endif
 
     ModelInfo info;
     info.Type = kModelPMX;

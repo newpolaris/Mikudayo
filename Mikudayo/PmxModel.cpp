@@ -159,11 +159,6 @@ PmxModel::PmxModel() :
 {
 }
 
-PmxModel::~PmxModel()
-{
-    Clear();
-}
-
 void PmxModel::Clear()
 {
     m_IndexBuffer.Destroy();

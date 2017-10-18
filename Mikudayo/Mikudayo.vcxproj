@@ -103,6 +103,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BaseModel.cpp" />
     <ClCompile Include="Bone.cpp" />
     <ClCompile Include="Bullet\BaseJoint.cpp" />
     <ClCompile Include="Bullet\BaseRigidBody.cpp" />
@@ -114,10 +115,15 @@
     <ClCompile Include="Bullet\RigidBody.cpp" />
     <ClCompile Include="DeferredLighting.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="IndexOptimizePostTransform.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MiniModel.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ModelAssimp.cpp" />
+    <ClCompile Include="ModelH3D.cpp" />
     <ClCompile Include="ModelManager.cpp" />
+    <ClCompile Include="ModelOptimize.cpp" />
     <ClCompile Include="OpaquePass.cpp" />
     <ClCompile Include="OutlinePass.cpp" />
     <ClCompile Include="PmxInstant.cpp" />
@@ -139,6 +145,7 @@
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BaseModel.h" />
     <ClInclude Include="Bone.h" />
     <ClInclude Include="Bullet\BaseJoint.h" />
     <ClInclude Include="Bullet\BaseRigidBody.h" />
@@ -152,10 +159,13 @@
     <ClInclude Include="Bullet\RigidBody.h" />
     <ClInclude Include="DeferredLighting.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="IndexOptimizePostTransform.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="MiniModel.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelAssimp.h" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="OpaquePass.h" />
     <ClInclude Include="OutlinePass.h" />
