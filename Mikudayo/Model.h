@@ -4,7 +4,8 @@ using namespace Math;
 
 enum EModelType
 {
-    kModelPMX
+    kModelDefault,
+    kModelPMX,
 };
 
 struct TextureInfo
@@ -34,9 +35,9 @@ class IModel
 public:
 
     IModel();
-    ~IModel();
-    void Clear();
+    virtual ~IModel();
 
+    virtual void Clear();
     virtual bool Load( const ModelInfo& Info ) = 0;
 
 protected:

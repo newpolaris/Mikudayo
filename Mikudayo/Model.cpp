@@ -10,6 +10,6 @@ IModel::~IModel()
     Clear();
 }
 
-void IModel::Clear()
+void IModel::Clear() 
 {
 }
