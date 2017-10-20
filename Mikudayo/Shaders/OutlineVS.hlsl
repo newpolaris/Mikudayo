@@ -1,5 +1,6 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
+#include "PmxHeader.hlsli"
 
 static const float edgeFactor = 1.5;
 

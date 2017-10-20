@@ -6,8 +6,7 @@ OpaquePass::OpaquePass( RenderQueue Queue ) : RenderPass( Queue )
 {
 }
 
-bool OpaquePass::Visit( IMaterial& material )
+bool OpaquePass::Enable( IMaterial& material )
 {
-    RenderPass::Visit( material );
     return !material.IsTransparent();
 }

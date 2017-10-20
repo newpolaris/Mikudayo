@@ -8,6 +8,7 @@ class OutlinePass : public RenderPass
 public:
 
     OutlinePass();
-    bool Visit( IMaterial& material ) override;
+
+    bool Enable( IMaterial& material ) override;
 };
 

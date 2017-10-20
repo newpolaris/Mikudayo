@@ -16,13 +16,20 @@ void RenderPass::SetRenderArgs( RenderArgs& args )
 
 bool RenderPass::Visit( IMaterial& material ) 
 { 
+    if (!Enable( material ))
+        return false;
+
+    // Reserve access pattern to accept > visit
+    // then this logic can be extracted in in mesh accept function
     if (m_RenderQueue != kRenderQueueEmpty)
     {
         RenderPipelinePtr pso = material.GetPipeline( m_RenderQueue );
-        if (pso != nullptr)
-            m_RenderArgs->gfxContext.SetPipelineState( *pso );
+        if (pso == nullptr)
+            return false;
+        m_RenderArgs->gfxContext.SetPipelineState( *pso );
     }
-    return true; 
+    material.Bind( m_RenderArgs->gfxContext );
+    return true;
 }
 
 bool RenderPass::Visit( SceneNode& node )

@@ -8,6 +8,7 @@ class TransparentPass : public RenderPass
 public:
 
     TransparentPass();
-    bool Visit( IMaterial& material ) override;
+
+    virtual bool Enable( IMaterial& material ) override;
 };
 

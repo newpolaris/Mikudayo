@@ -9,6 +9,7 @@ public:
     virtual bool IsTransparent() const;
     virtual bool IsOutline() const;
     virtual bool IsShadowCaster() const;
+    virtual void Bind( GraphicsContext& gfxContext );
     virtual RenderPipelinePtr GetPipeline( RenderQueue Queue );
 };
 
@@ -25,6 +26,10 @@ inline bool IMaterial::IsOutline() const
 inline bool IMaterial::IsShadowCaster() const
 {
     return false;
+}
+
+inline void IMaterial::Bind( GraphicsContext& )
+{
 }
 
 inline RenderPipelinePtr IMaterial::GetPipeline( RenderQueue )

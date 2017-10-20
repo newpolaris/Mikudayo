@@ -64,7 +64,7 @@ void AssimpModel::OptimizeRemoveDuplicateVertices(bool depth)
         }
 
         unsigned int indexCount = mesh->indexCount;
-        uint16_t *indexArray = (uint16_t*)((depth ? m_pIndexDataDepth : m_pIndexData) + mesh->indexDataByteOffset);
+        uint32_t *indexArray = (uint32_t*)((depth ? m_pIndexDataDepth : m_pIndexData) + mesh->indexDataByteOffset);
         for (unsigned int n = 0; n < indexCount; n++)
         {
             indexArray[n] = vertexRemap[indexArray[n]];
@@ -107,11 +107,11 @@ void AssimpModel::OptimizePostTransform(bool depth)
     {
         Mesh *mesh = m_pMesh + meshIndex;
 
-        uint16_t *srcIndices = new uint16_t [mesh->indexCount];
-        uint16_t *dstIndices = (uint16_t*)((depth ? m_pIndexDataDepth : m_pIndexData) + mesh->indexDataByteOffset);
-        memcpy(srcIndices, dstIndices, sizeof(uint16_t) * mesh->indexCount);
+        uint32_t *srcIndices = new uint32_t [mesh->indexCount];
+        uint32_t *dstIndices = (uint32_t*)((depth ? m_pIndexDataDepth : m_pIndexData) + mesh->indexDataByteOffset);
+        memcpy(srcIndices, dstIndices, sizeof(uint32_t) * mesh->indexCount);
 
-        OptimizeFaces<uint16_t>(srcIndices, mesh->indexCount, dstIndices, lruCacheSize);
+        OptimizeFaces<uint32_t>(srcIndices, mesh->indexCount, dstIndices, lruCacheSize);
 
         delete [] srcIndices;
     }
@@ -136,10 +136,10 @@ void AssimpModel::OptimizePreTransform(bool depth)
         memset(vertexRemap, (uint32_t)-1, sizeof(uint32_t) * vertexCount);
         assert(vertexCount <= (uint32_t)-1);
 
-        uint16_t *indexArray = (uint16_t*)((depth ? m_pIndexDataDepth : m_pIndexData) + mesh->indexDataByteOffset);
+        uint32_t *indexArray = (uint32_t*)((depth ? m_pIndexDataDepth : m_pIndexData) + mesh->indexDataByteOffset);
         for (unsigned int n = 0; n < indexCount; n++)
         {
-            uint16_t index = indexArray[n];
+            uint32_t index = indexArray[n];
             if (vertexRemap[index] == (uint32_t)-1)
             {
                 // not relocated yet

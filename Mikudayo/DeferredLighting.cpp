@@ -33,24 +33,6 @@ using namespace Graphics;
 
 namespace Lighting
 {
-    enum class LightType : uint32_t
-    {
-        Point = 0,
-        Spot = 1,
-        Directional = 2
-    };
-    struct LightData
-    {
-        Vector4 PositionWS;
-        Vector4 PositionVS;
-        Vector3 DirectionWS;
-        Vector3 DirectionVS;
-        Color Color;
-        float Range;
-        LightType Type;
-        float SpotlightAngle;
-        float Intensity;
-    };
     LightData m_LightData[MaxLights];
     Matrix4 m_FullScreenProjMatrix;
 
@@ -237,7 +219,7 @@ void Lighting::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 
     gfxContext.SetDynamicDescriptor( 60, Lighting::m_LightBuffer.GetSRV(), { kBindPixel } );
 
-#define DEFERRED 1
+#define DEFERRED 0
 #if DEFERRED
     {
         ScopedTimer _prof( L"Geometry Pass", gfxContext );

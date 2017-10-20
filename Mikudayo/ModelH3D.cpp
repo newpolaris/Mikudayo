@@ -19,7 +19,7 @@
 #include "CommandContext.h"
 #include <stdio.h>
 
-bool MiniModel::LoadH3D(const char *filename)
+bool MiniModel::ImportH3D(const char *filename)
 {
     FILE *file = nullptr;
     if (0 != fopen_s(&file, filename, "rb"))

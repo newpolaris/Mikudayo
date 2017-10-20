@@ -8,6 +8,7 @@ class ShadowCasterPass : public RenderPass
 public:
 
     ShadowCasterPass();
-    bool Visit( IMaterial& material ) override;
+
+    virtual bool Enable( IMaterial& material ) override;
 };
 

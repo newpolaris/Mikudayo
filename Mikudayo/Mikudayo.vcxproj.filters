@@ -310,6 +310,12 @@
     <FxCompile Include="Shaders\DeferredFinal2PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\ModelColorPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ModelColorVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Shadow.hlsli">
@@ -326,6 +332,9 @@
     </None>
     <None Include="packages.config" />
     <None Include="Shaders\CommonInclude.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\PmxHeader.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

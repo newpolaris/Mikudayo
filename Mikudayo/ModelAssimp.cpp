@@ -44,6 +44,77 @@ int AssimpModel::FormatFromFilename(const char *filename)
 
 bool AssimpModel::Load(const char *filename)
 {
+    m_FileName = Utility::MakeWStr(filename);
+
+    if (!Import(filename))
+        return false;
+
+    for (uint32_t i = 0; i < m_Header.materialCount; i++)
+    {
+        MaterialPtr material = std::make_shared<BaseMaterial>();
+        material->ambient = m_pMaterial[i].ambient;
+        material->diffuse = m_pMaterial[i].diffuse;
+        material->specular = m_pMaterial[i].specular;
+        material->ambient = m_pMaterial[i].ambient;
+        material->emissive = m_pMaterial[i].emissive;
+        material->transparent = m_pMaterial[i].transparent;
+        material->opacity = m_pMaterial[i].opacity;
+        material->shininess = m_pMaterial[i].shininess;
+        material->specularStrength = m_pMaterial[i].specularStrength;
+
+        m_Materials.push_back( std::move( material ) );
+    }
+
+    assert( m_VertexStride > 0 );
+    assert( m_VertexStrideDepth > 0 );
+
+    for (uint32_t i = 0; i < m_Header.meshCount; i++)
+    {
+        MeshPtr mesh = std::make_shared<BaseMesh>();
+        mesh->boundingBox = Math::BoundingBox( m_pMesh[i].boundingBox.min, m_pMesh[i].boundingBox.max );
+        mesh->materialIndex = m_pMesh[i].materialIndex;
+        mesh->material = m_Materials[m_pMesh[i].materialIndex];
+        mesh->attribsEnabled = m_pMesh[i].attribsEnabled;
+        mesh->attribsEnabledDepth = m_pMesh[i].attribsEnabledDepth;
+        mesh->vertexStride = m_pMesh[i].vertexStride;
+        mesh->vertexStrideDepth = m_pMesh[i].vertexStrideDepth;
+        // Attrib attrib[maxAttribs];
+        // Attrib attribDepth[maxAttribs];
+        mesh->vertexDataByteOffset = m_pMesh[i].vertexDataByteOffset;
+        mesh->vertexCount = m_pMesh[i].vertexCount;
+        mesh->indexDataByteOffset = m_pMesh[i].indexDataByteOffset;
+        mesh->indexCount = m_pMesh[i].indexCount;
+        mesh->vertexDataByteOffsetDepth = m_pMesh[i].vertexDataByteOffsetDepth;
+        mesh->vertexCountDepth = m_pMesh[i].vertexCountDepth;
+        mesh->startIndex = m_pMesh[i].indexDataByteOffset / sizeof(uint32_t);
+        mesh->baseVertex = m_pMesh[i].vertexDataByteOffset / m_VertexStride;
+
+        m_Meshes.push_back( std::move( mesh ) );
+    }
+
+    assert( m_Meshes.size() > 0 );
+
+    m_VertexBuffer.Create(L"VertexBuffer", m_Header.vertexDataByteSize / m_VertexStride, m_VertexStride, m_pVertexData);
+    m_IndexBuffer.Create(L"IndexBuffer", m_Header.indexDataByteSize / sizeof(uint32_t), sizeof(uint32_t), m_pIndexData);
+    delete [] m_pVertexData;
+    m_pVertexData = nullptr;
+    delete [] m_pIndexData;
+    m_pIndexData = nullptr;
+
+    m_VertexBufferDepth.Create(L"VertexBufferDepth", m_Header.vertexDataByteSizeDepth / m_VertexStrideDepth, m_VertexStrideDepth, m_pVertexDataDepth);
+    m_IndexBufferDepth.Create(L"IndexBufferDepth", m_Header.indexDataByteSize / sizeof(uint32_t), sizeof(uint32_t), m_pIndexDataDepth);
+    delete [] m_pVertexDataDepth;
+    m_pVertexDataDepth = nullptr;
+    delete [] m_pIndexDataDepth;
+    m_pIndexDataDepth = nullptr;
+
+    LoadTextures();
+
+	return true;
+}
+
+bool AssimpModel::Import( const char* filename )
+{
 	Clear();
 
 	int format = FormatFromFilename(filename);
@@ -53,11 +124,11 @@ bool AssimpModel::Load(const char *filename)
 	switch (format)
 	{
 	case format_none:
-		rval = LoadAssimp(filename);
+		rval = ImportAssimp(filename);
 		break;
 
 	case format_h3d:
-		rval = LoadH3D(filename);
+		rval = ImportH3D(filename);
 		needToOptimize = false;
 		break;
 	}
@@ -65,13 +136,15 @@ bool AssimpModel::Load(const char *filename)
 	if (!rval)
 		return false;
 
+#if 0
 	if (needToOptimize)
 		Optimize();
+#endif
 
-	return true;
+    return true;
 }
 
-bool AssimpModel::Save(const char *filename) const
+bool AssimpModel::Export(const char *filename) const
 {
 	int format = FormatFromFilename(filename);
 
@@ -90,7 +163,7 @@ bool AssimpModel::Save(const char *filename) const
 }
 
 
-bool AssimpModel::LoadAssimp(const char *filename)
+bool AssimpModel::ImportAssimp(const char *filename)
 {
     Assimp::Importer importer;
 
@@ -128,6 +201,7 @@ bool AssimpModel::LoadAssimp(const char *filename)
     if (scene->HasTextures())
     {
         // embedded textures...
+        assert( false );
     }
 
     if (scene->HasAnimations())
@@ -181,37 +255,12 @@ bool AssimpModel::LoadAssimp(const char *filename)
         dstMat->shininess = shininess;
         dstMat->specularStrength = specularStrength;
 
-        char *pRem = nullptr;
-
-        strncpy_s(dstMat->texDiffusePath, "models/", Material::maxTexPath - 1);
-        strncat_s(dstMat->texDiffusePath, texDiffusePath.C_Str(), Material::maxTexPath - 1);
-        pRem = strrchr(dstMat->texDiffusePath, '.');
-        while (pRem != nullptr && *pRem != 0) *(pRem++) = 0; // remove extension
-
-        strncpy_s(dstMat->texSpecularPath, "models/", Material::maxTexPath - 1);
-        strncat_s(dstMat->texSpecularPath, texSpecularPath.C_Str(), Material::maxTexPath - 1);
-        pRem = strrchr(dstMat->texSpecularPath, '.');
-        while (pRem != nullptr && *pRem != 0) *(pRem++) = 0; // remove extension
-
-        strncpy_s(dstMat->texEmissivePath, "models/", Material::maxTexPath - 1);
-        strncat_s(dstMat->texEmissivePath, texEmissivePath.C_Str(), Material::maxTexPath - 1);
-        pRem = strrchr(dstMat->texEmissivePath, '.');
-        while (pRem != nullptr && *pRem != 0) *(pRem++) = 0; // remove extension
-
-        strncpy_s(dstMat->texNormalPath, "models/", Material::maxTexPath - 1);
-        strncat_s(dstMat->texNormalPath, texNormalPath.C_Str(), Material::maxTexPath - 1);
-        pRem = strrchr(dstMat->texNormalPath, '.');
-        while (pRem != nullptr && *pRem != 0) *(pRem++) = 0; // remove extension
-
-        strncpy_s(dstMat->texLightmapPath, "models/", Material::maxTexPath - 1);
-        strncat_s(dstMat->texLightmapPath, texLightmapPath.C_Str(), Material::maxTexPath - 1);
-        pRem = strrchr(dstMat->texLightmapPath, '.');
-        while (pRem != nullptr && *pRem != 0) *(pRem++) = 0; // remove extension
-
-        strncpy_s(dstMat->texReflectionPath, "models/", Material::maxTexPath - 1);
-        strncat_s(dstMat->texReflectionPath, texReflectionPath.C_Str(), Material::maxTexPath - 1);
-        pRem = strrchr(dstMat->texReflectionPath, '.');
-        while (pRem != nullptr && *pRem != 0) *(pRem++) = 0; // remove extension
+        strncpy_s(dstMat->texDiffusePath, texDiffusePath.C_Str(), Material::maxTexPath - 1);
+        strncpy_s(dstMat->texSpecularPath, texSpecularPath.C_Str(), Material::maxTexPath - 1);
+        strncpy_s(dstMat->texEmissivePath, texEmissivePath.C_Str(), Material::maxTexPath - 1);
+        strncpy_s(dstMat->texNormalPath, texNormalPath.C_Str(), Material::maxTexPath - 1);
+        strncpy_s(dstMat->texLightmapPath, texLightmapPath.C_Str(), Material::maxTexPath - 1);
+        strncpy_s(dstMat->texReflectionPath, texReflectionPath.C_Str(), Material::maxTexPath - 1);
 
         aiString matName;
         srcMat->Get(AI_MATKEY_NAME, matName);
@@ -283,7 +332,7 @@ bool AssimpModel::LoadAssimp(const char *filename)
         dstMesh->indexCount = srcMesh->mNumFaces * 3;
 
         m_Header.vertexDataByteSize += dstMesh->vertexStride * dstMesh->vertexCount;
-        m_Header.indexDataByteSize += sizeof(uint16_t) * dstMesh->indexCount;
+        m_Header.indexDataByteSize += sizeof(uint32_t) * dstMesh->indexCount;
 
         // depth-only rendering
         dstMesh->vertexDataByteOffsetDepth = m_Header.vertexDataByteSizeDepth;
@@ -291,6 +340,13 @@ bool AssimpModel::LoadAssimp(const char *filename)
 
         m_Header.vertexDataByteSizeDepth += dstMesh->vertexStrideDepth * dstMesh->vertexCountDepth;
     }
+
+    if (m_Header.meshCount > 0)
+    {
+        m_VertexStride = m_pMesh[0].vertexStride;
+        m_VertexStrideDepth = m_pMesh[0].vertexStrideDepth;
+    }
+
     // allocate storage
     m_pVertexData = new unsigned char [m_Header.vertexDataByteSize];
     m_pIndexData = new unsigned char [m_Header.indexDataByteSize];
@@ -333,8 +389,10 @@ bool AssimpModel::LoadAssimp(const char *filename)
             if (srcMesh->mTextureCoords[0])
             {
                 dstTexcoord0[0] = srcMesh->mTextureCoords[0][v].x;
-                dstTexcoord0[1] = srcMesh->mTextureCoords[0][v].y;
-            }
+				#if 1
+                dstTexcoord0[1] = 1-srcMesh->mTextureCoords[0][v].y;
+            	#endif
+			}
             else
             {
                 dstTexcoord0[0] = 0.0f;
@@ -387,8 +445,8 @@ bool AssimpModel::LoadAssimp(const char *filename)
             dstBitangent = (float*)((unsigned char*)dstBitangent + dstMesh->vertexStride);
         }
 
-        uint16_t *dstIndex = (uint16_t*)(m_pIndexData + dstMesh->indexDataByteOffset);
-        uint16_t *dstIndexDepth = (uint16_t*)(m_pIndexDataDepth + dstMesh->indexDataByteOffset);
+        uint32_t *dstIndex = (uint32_t*)(m_pIndexData + dstMesh->indexDataByteOffset);
+        uint32_t *dstIndexDepth = (uint32_t*)(m_pIndexDataDepth + dstMesh->indexDataByteOffset);
         for (unsigned int f = 0; f < srcMesh->mNumFaces; f++)
         {
             assert(srcMesh->mFaces[f].mNumIndices == 3);

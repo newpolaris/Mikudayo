@@ -8,5 +8,4 @@ public:
 
     // Inherited from Visitor
     virtual bool Visit( SceneNode& node ) override;
-
 };

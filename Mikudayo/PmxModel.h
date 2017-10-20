@@ -79,8 +79,6 @@ public:
         int32_t IndexOffset;
 		uint32_t IndexCount;
         BoundingSphere BoundSphere;
-		float EdgeSize;
-        Color EdgeColor;
 	};
 	
 	struct Bone

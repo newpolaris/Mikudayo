@@ -105,7 +105,7 @@ void Mikudayo::Startup( void )
     // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
-    #if 1
+    #if 0
         { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
         { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
         { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
@@ -123,9 +123,11 @@ void Mikudayo::Startup( void )
 
 #if 1
     auto importedModel = std::make_shared<AssimpModel>();
-    auto testModel = L"Model";
+    // const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
+    const std::wstring testModel = L"Model/vikings_islands/Islands.obj";
     auto modelPath = Utility::MakeStr( testModel );
-    importedModel->Load(modelPath.c_str());
+    if (importedModel->Load(modelPath.c_str()))
+        m_Scene->AddChild( importedModel );
 #endif
 
     ModelInfo info;
@@ -138,10 +140,10 @@ void Mikudayo::Startup( void )
     if (ModelManager::Load( info ))
     {
         auto& model = ModelManager::GetModel( info.Name );
-        auto instant = std::make_shared<PmxInstant>(model);
+        auto instant = std::make_shared<PmxInstant>( model );
         instant->LoadModel();
         instant->LoadMotion( motion );
-        m_Scene->AddChild( instant );
+        // m_Scene->AddChild( instant );
     }
 
     ModelInfo stage;
@@ -160,6 +162,7 @@ void Mikudayo::Startup( void )
     stage.DefaultShader = L"Stage";
 #else 
     stage.File = L"Model/Floor.pmx";
+    stage.File = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.pmx";
     stage.DefaultShader = L"Stage";
 #endif
     
@@ -168,7 +171,7 @@ void Mikudayo::Startup( void )
         auto& model = ModelManager::GetModel( stage.Name );
         auto instant = std::make_shared<PmxInstant>(model);
         instant->LoadModel();
-        m_Scene->AddChild( instant );
+        // m_Scene->AddChild( instant );
     }
 }
 
@@ -273,6 +276,11 @@ void Mikudayo::RenderScene( void )
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
     psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
 	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
+#if 1
+    Lighting::m_LightData[0].Type = Lighting::LightType::Directional;
+    Lighting::m_LightData[0].DirectionWS = m_SunDirection;
+    Lighting::m_LightData[0].Color = Color(m_SunColor/255.f);
+#endif
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );

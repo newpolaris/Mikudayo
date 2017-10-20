@@ -8,6 +8,6 @@ class OpaquePass : public RenderPass
 public:
 
     OpaquePass( RenderQueue Queue );
-    bool Visit( IMaterial& material ) override;
+    bool Enable( IMaterial& material ) override;
 };
 

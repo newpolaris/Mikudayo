@@ -28,11 +28,12 @@ public:
 	static int FormatFromFilename(const char *filename);
 
 	virtual bool Load(const char* filename) override;
-	bool Save(const char* filename) const;
+	bool Export(const char* filename) const;
 
 private:
 
-	bool LoadAssimp(const char *filename);
+    bool Import( const char* filename );
+	bool ImportAssimp(const char *filename);
 
 	void Optimize();
 	void OptimizeRemoveDuplicateVertices(bool depth);

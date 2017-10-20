@@ -22,4 +22,10 @@ namespace Utility
 	{
 		return std::wstring( str.begin(), str.end() );
 	}
+
+    // Don't care about any encoding error
+    std::string MakeStr( const std::wstring& str )
+    {
+        return std::string( str.begin(), str.end() );
+    }
 }

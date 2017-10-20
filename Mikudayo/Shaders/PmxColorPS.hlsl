@@ -1,4 +1,5 @@
 #include "CommonInclude.hlsli"
+#include "PmxHeader.hlsli"
 
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
@@ -14,7 +15,7 @@ static const int kSphereNone = 0;
 static const int kSphereMul = 1;
 static const int kSphereAdd = 2;
 
-cbuffer PassConstants : register(b1)
+cbuffer PSConstants : register(b1)
 {
     float3 SunDirectionVS;
     float3 SunColor;
