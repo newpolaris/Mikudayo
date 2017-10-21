@@ -1,8 +1,11 @@
 #include "stdafx.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include "ModelManager.h"
 #include "Model.h"
 #include "PmxModel.h"
-#include "BaseModel.h"
+#include "PmxInstant.h"
+#include "ModelAssimp.h"
 
 namespace ModelManager {
     std::map<std::wstring, std::shared_ptr<IModel>> m_Models;
@@ -21,21 +24,43 @@ void ModelManager::Shutdown()
     BaseModel::Shutdown();
 }
 
-bool ModelManager::Load( const ModelInfo& Info )
+ModelType GetModelType( const std::wstring& FileName )
 {
-    std::shared_ptr<IModel> model;
-    if (Info.Type == kModelPMX)
-        model = std::make_shared<PmxModel>();
-    else if (Info.Type == kModelDefault)
-        model = std::make_shared<BaseModel>();
-    if (!model->Load( Info ))
-        return false;
-    m_Models[Info.Name] = model;
-    return true;
+    auto path = boost::filesystem::path( FileName );
+    auto ext = boost::to_lower_copy( path.extension().generic_wstring() );
+    if (ext == L"pmx")
+        return kModelPMX;
+    return kModelDefault;
 }
 
-IModel& ModelManager::GetModel( const std::wstring& Name )
+SceneNodePtr ModelManager::Load( const ModelInfo& info )
 {
-    ASSERT(m_Models.count(Name) > 0);
-    return *m_Models[Name];
+    ModelType type = GetModelType( info.ModelFile );
+    if (type == kModelPMX)
+    {
+        if (m_Models.count( info.ModelFile )) 
+        {
+            auto model = std::make_shared<PmxModel>();
+            if (!model->Load( info ))
+                return nullptr;
+            m_Models[info.ModelFile] = model;
+        }
+        auto base = m_Models[info.ModelFile];
+        auto model = std::make_shared<PmxInstant>(*base);
+        if (!model->Load())
+            return nullptr;
+        model->LoadMotion( info.MotionFile );
+        return model;
+    }
+    auto model = std::make_shared<AssimpModel>();
+    if (model->Load( info ))
+        return model;
+    return nullptr;
+}
+
+SceneNodePtr ModelManager::Load( const std::wstring& FileName )
+{
+    ModelInfo info;
+    info.ModelFile = FileName;
+    return Load( info );
 }

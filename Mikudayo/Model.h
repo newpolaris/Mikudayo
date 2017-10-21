@@ -2,8 +2,9 @@
 
 using namespace Math;
 
-enum EModelType
+enum ModelType
 {
+    kModelNone,
     kModelDefault,
     kModelPMX,
 };
@@ -23,9 +24,8 @@ struct CustomShaderInfo
 
 struct ModelInfo
 {
-    EModelType Type;
-    std::wstring Name;
-    std::wstring File;
+    std::wstring ModelFile;
+    std::wstring MotionFile;
     std::wstring DefaultShader = L"Default";
     CustomShaderInfo Shader;
 };
@@ -38,7 +38,7 @@ public:
     virtual ~IModel();
 
     virtual void Clear();
-    virtual bool Load( const ModelInfo& Info ) = 0;
+    virtual bool Load( const ModelInfo& info ) = 0;
 
 protected:
 };

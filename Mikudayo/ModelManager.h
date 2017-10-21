@@ -1,11 +1,14 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include "Model.h"
+#include "SceneNode.h"
 
 namespace ModelManager {
     void Initialize();
     void Shutdown();
-    bool Load(const ModelInfo& Info);
-    IModel& GetModel( const std::wstring& Name );
+
+    SceneNodePtr Load( const ModelInfo& Info );
+    SceneNodePtr Load( const std::wstring& FileName );
 }

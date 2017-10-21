@@ -27,7 +27,7 @@ public:
 	static const char *s_FormatString[];
 	static int FormatFromFilename(const char *filename);
 
-	virtual bool Load(const char* filename) override;
+    virtual bool Load( const ModelInfo& Info ) override;
 	bool Export(const char* filename) const;
 
 private:

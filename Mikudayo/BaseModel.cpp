@@ -181,9 +181,7 @@ void BaseModel::Render( GraphicsContext& gfxContext, Visitor& visitor )
 
 bool BaseModel::Load( const ModelInfo& info )
 {
-    m_Type = info.Type;
-    m_Name = info.Name;
-    m_FileName = info.File;
+    m_FileName = info.ModelFile;
     m_DefaultShader = info.DefaultShader;
 
     return true;

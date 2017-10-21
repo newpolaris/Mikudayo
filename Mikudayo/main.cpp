@@ -117,62 +117,46 @@ void Mikudayo::Startup( void )
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 
     m_Scene = std::make_shared<Scene>();
-
-    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
-    // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
-
+    SceneNodePtr instance;
 #if 1
-    auto importedModel = std::make_shared<AssimpModel>();
     // const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
     const std::wstring testModel = L"Model/vikings_islands/Islands.obj";
-    auto modelPath = Utility::MakeStr( testModel );
-    if (importedModel->Load(modelPath.c_str()))
-        m_Scene->AddChild( importedModel );
+    instance = ModelManager::Load( testModel );
+    m_Scene->AddChild( instance );
 #endif
 
+    // const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
+    // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
+
     ModelInfo info;
-    info.Type = kModelPMX;
-    info.Name = L"mikudayo";
-    info.File = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
-    info.File = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    info.File = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
-    info.File = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
-    if (ModelManager::Load( info ))
-    {
-        auto& model = ModelManager::GetModel( info.Name );
-        auto instant = std::make_shared<PmxInstant>( model );
-        instant->LoadModel();
-        instant->LoadMotion( motion );
-        // m_Scene->AddChild( instant );
-    }
+    info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
+    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
+    info.ModelFile = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
+    info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
+
+    instance = ModelManager::Load( info );
+    if (instance)
+        m_Scene->AddChild( instance );
 
     ModelInfo stage;
-    stage.Type = kModelPMX;
 
 // #define HALLOWEEN
 // #define BOARD
 
 #if BOARD
-    stage.Name = L"黒白";
-    stage.File = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+    stage.FileName = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
     stage.DefaultShader = L"Stage";
 #elif HALLOWEEN
-    stage.Name = L"HalloweenStage";
-    stage.File = L"Model/HalloweenStage/halloween.Pmx";
+    stage.FileName = L"Model/HalloweenStage/halloween.Pmx";
     stage.DefaultShader = L"Stage";
 #else 
-    stage.File = L"Model/Floor.pmx";
-    stage.File = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.pmx";
+    stage.ModelFile = L"Model/Floor.pmx";
+    stage.ModelFile = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.pmx";
     stage.DefaultShader = L"Stage";
 #endif
-    
-    if (ModelManager::Load( stage ))
-    {
-        auto& model = ModelManager::GetModel( stage.Name );
-        auto instant = std::make_shared<PmxInstant>(model);
-        instant->LoadModel();
-        // m_Scene->AddChild( instant );
-    }
+    instance = ModelManager::Load( stage );
+    if (instance)
+        m_Scene->AddChild( instance );
 }
 
 void Mikudayo::Cleanup( void )

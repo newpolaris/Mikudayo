@@ -168,7 +168,7 @@ bool PmxModel::Load( const ModelInfo& Info )
 {
     SetDefaultShader( Info.DefaultShader );
 
-    if (!LoadFromFile( Info.File ))
+    if (!LoadFromFile( Info.ModelFile ))
         return false;
     if (!SetCustomShader( Info.Shader ))
         return false;

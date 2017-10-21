@@ -9,6 +9,7 @@ class RenderPass;
 class Visitor;
 class btDynamicsWorld;
 
+typedef std::shared_ptr<class SceneNode> SceneNodePtr;
 class SceneNode : public std::enable_shared_from_this<SceneNode>
 {
 public:

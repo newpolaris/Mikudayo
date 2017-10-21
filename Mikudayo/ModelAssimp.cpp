@@ -14,6 +14,7 @@
 
 #include "stdafx.h"
 #include "ModelAssimp.h"
+#include "TextUtility.h"
 #include <assert.h>
 
 #include <assimp/Importer.hpp>
@@ -42,10 +43,12 @@ int AssimpModel::FormatFromFilename(const char *filename)
 	return format_none;
 }
 
-bool AssimpModel::Load(const char *filename)
+bool AssimpModel::Load( const ModelInfo& Info )
 {
-    m_FileName = Utility::MakeWStr(filename);
+    BaseModel::Load( Info );
 
+    const std::string name = Utility::MakeStr( m_FileName );
+    const char* filename = name.c_str();
     if (!Import(filename))
         return false;
 

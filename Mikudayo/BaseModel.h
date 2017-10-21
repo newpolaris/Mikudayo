@@ -71,8 +71,6 @@ public:
 
 protected:
 
-    EModelType m_Type;
-    std::wstring m_Name;
     std::wstring m_FileName;
     std::wstring m_DefaultShader;
 

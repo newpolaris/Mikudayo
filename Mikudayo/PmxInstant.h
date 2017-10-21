@@ -35,8 +35,8 @@ public:
 
     PmxInstant( IModel& model );
 
-    bool LoadModel();
-    bool LoadMotion( const std::wstring& motionPath );
+    bool Load();
+    bool LoadMotion( const std::wstring& motion );
 
     virtual void Accept( Visitor& visitor ) override;
     virtual void Render( GraphicsContext& Context, Visitor& visitor ) override;

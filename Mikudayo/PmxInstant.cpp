@@ -730,14 +730,14 @@ PmxInstant::PmxInstant( IModel& model ) :
 {
 }
 
-bool PmxInstant::LoadModel()
+bool PmxInstant::Load()
 {
     return m_Context->LoadModel();
 }
 
-bool PmxInstant::LoadMotion( const std::wstring& motionPath )
+bool PmxInstant::LoadMotion( const std::wstring& motion )
 {
-    return m_Context->LoadMotion( motionPath );
+    return m_Context->LoadMotion( motion );
 }
 
 void PmxInstant::Update( float deltaT )
