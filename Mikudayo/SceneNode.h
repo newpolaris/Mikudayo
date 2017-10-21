@@ -25,8 +25,8 @@ public:
 
 protected:
 
-    typedef std::vector< std::shared_ptr<SceneNode> > NodeList;
-    typedef std::multimap< std::string, std::shared_ptr<SceneNode> > NodeNameMap;
+    typedef std::vector<std::shared_ptr<SceneNode>> NodeList;
+    typedef std::multimap<std::string, std::shared_ptr<SceneNode>> NodeNameMap;
 
     RenderArgs* m_RenderArgs;
     NodeList m_Children;

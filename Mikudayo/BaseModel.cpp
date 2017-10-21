@@ -151,6 +151,7 @@ void BaseMaterial::Bind( GraphicsContext& gfxContext )
 
 BaseModel::BaseModel() : m_DefaultShader(L"Default")
 {
+    m_Transform = Matrix4::MakeScale( 10.f );
 }
 
 void BaseModel::Clear()
@@ -163,8 +164,7 @@ void BaseModel::Clear()
 
 void BaseModel::Render( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    Matrix4 m_ModelTransform( kIdentity );
-    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
+    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_Transform), &m_Transform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_VertexBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
 

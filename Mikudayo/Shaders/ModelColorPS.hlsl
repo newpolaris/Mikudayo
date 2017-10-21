@@ -66,7 +66,6 @@ float4 main(PixelShaderInput input) : SV_TARGET
 { 
     Material mat = Mat;
 
-    // float alpha = 1.0; // mat.opacity;
     float alpha = mat.opacity;
     float3 diffuse = mat.diffuse;
     if (mat.bDiffuseTexture)

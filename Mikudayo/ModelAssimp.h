@@ -27,13 +27,13 @@ public:
 	static const char *s_FormatString[];
 	static int FormatFromFilename(const char *filename);
 
-    virtual bool Load( const ModelInfo& Info ) override;
-	bool Export(const char* filename) const;
+    virtual bool Load( const ModelInfo& info ) override;
+	bool Save(const char* filename) const;
 
 private:
 
-    bool Import( const char* filename );
-	bool ImportAssimp(const char *filename);
+    bool Load( const char* filename );
+	bool LoadAssimp(const char *filename);
 
 	void Optimize();
 	void OptimizeRemoveDuplicateVertices(bool depth);

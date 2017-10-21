@@ -77,6 +77,7 @@ protected:
     Materials m_Materials;
     Meshes m_Meshes;
 
+    Matrix4 m_Transform;
     VertexBuffer m_VertexBuffer;
     IndexBuffer m_IndexBuffer;
     VertexBuffer m_VertexBufferDepth;

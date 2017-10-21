@@ -28,7 +28,7 @@ ModelType GetModelType( const std::wstring& FileName )
 {
     auto path = boost::filesystem::path( FileName );
     auto ext = boost::to_lower_copy( path.extension().generic_wstring() );
-    if (ext == L"pmx")
+    if (ext == L".pmx")
         return kModelPMX;
     return kModelDefault;
 }
@@ -38,7 +38,7 @@ SceneNodePtr ModelManager::Load( const ModelInfo& info )
     ModelType type = GetModelType( info.ModelFile );
     if (type == kModelPMX)
     {
-        if (m_Models.count( info.ModelFile )) 
+        if (m_Models.count( info.ModelFile ) == 0) 
         {
             auto model = std::make_shared<PmxModel>();
             if (!model->Load( info ))

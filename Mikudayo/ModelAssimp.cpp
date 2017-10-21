@@ -43,13 +43,13 @@ int AssimpModel::FormatFromFilename(const char *filename)
 	return format_none;
 }
 
-bool AssimpModel::Load( const ModelInfo& Info )
+bool AssimpModel::Load( const ModelInfo& info )
 {
-    BaseModel::Load( Info );
+    BaseModel::Load( info );
 
     const std::string name = Utility::MakeStr( m_FileName );
     const char* filename = name.c_str();
-    if (!Import(filename))
+    if (!Load(filename))
         return false;
 
     for (uint32_t i = 0; i < m_Header.materialCount; i++)
@@ -116,7 +116,7 @@ bool AssimpModel::Load( const ModelInfo& Info )
 	return true;
 }
 
-bool AssimpModel::Import( const char* filename )
+bool AssimpModel::Load( const char* filename )
 {
 	Clear();
 
@@ -127,7 +127,7 @@ bool AssimpModel::Import( const char* filename )
 	switch (format)
 	{
 	case format_none:
-		rval = ImportAssimp(filename);
+		rval = LoadAssimp(filename);
 		break;
 
 	case format_h3d:
@@ -147,7 +147,7 @@ bool AssimpModel::Import( const char* filename )
     return true;
 }
 
-bool AssimpModel::Export(const char *filename) const
+bool AssimpModel::Save(const char *filename) const
 {
 	int format = FormatFromFilename(filename);
 
@@ -166,7 +166,7 @@ bool AssimpModel::Export(const char *filename) const
 }
 
 
-bool AssimpModel::ImportAssimp(const char *filename)
+bool AssimpModel::LoadAssimp(const char* filename)
 {
     Assimp::Importer importer;
 
@@ -392,9 +392,7 @@ bool AssimpModel::ImportAssimp(const char *filename)
             if (srcMesh->mTextureCoords[0])
             {
                 dstTexcoord0[0] = srcMesh->mTextureCoords[0][v].x;
-				#if 1
                 dstTexcoord0[1] = 1-srcMesh->mTextureCoords[0][v].y;
-            	#endif
 			}
             else
             {

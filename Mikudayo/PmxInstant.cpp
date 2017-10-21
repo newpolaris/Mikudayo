@@ -237,6 +237,9 @@ bool PmxInstant::Context::LoadMotion( const std::wstring& motionPath )
 	using namespace std;
 	using namespace Animation;
 
+    if (motionPath.empty())
+        return false;
+
 	Utility::ByteArray ba = Utility::ReadFileSync( motionPath );
 	Utility::ByteStream bs(ba);
 

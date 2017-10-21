@@ -119,41 +119,42 @@ void Mikudayo::Startup( void )
     m_Scene = std::make_shared<Scene>();
     SceneNodePtr instance;
 #if 1
-    // const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
-    const std::wstring testModel = L"Model/vikings_islands/Islands.obj";
+    const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
+    // const std::wstring testModel = L"Model/vikings_islands/Islands.obj";
     instance = ModelManager::Load( testModel );
     m_Scene->AddChild( instance );
 #endif
 
-    // const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
     // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
+    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
 
     ModelInfo info;
     info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
     info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     info.ModelFile = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
     info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
+    info.MotionFile = motion;
 
     instance = ModelManager::Load( info );
     if (instance)
         m_Scene->AddChild( instance );
 
-    ModelInfo stage;
-
 // #define HALLOWEEN
 // #define BOARD
+// #define FLOOR
+// #define STAGE
 
+    ModelInfo stage;
 #if BOARD
     stage.FileName = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
-    stage.DefaultShader = L"Stage";
 #elif HALLOWEEN
     stage.FileName = L"Model/HalloweenStage/halloween.Pmx";
-    stage.DefaultShader = L"Stage";
-#else 
+#elif FLOOR
     stage.ModelFile = L"Model/Floor.pmx";
+#elif STAGE
     stage.ModelFile = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.pmx";
-    stage.DefaultShader = L"Stage";
 #endif
+    stage.DefaultShader = L"Stage";
     instance = ModelManager::Load( stage );
     if (instance)
         m_Scene->AddChild( instance );
