@@ -165,6 +165,7 @@ void Mikudayo::Startup( void )
 
 void Mikudayo::Cleanup( void )
 {
+    Physics::Stop();
     m_Scene.reset();
     ModelManager::Shutdown();
     PrimitiveUtility::Shutdown();
@@ -208,9 +209,10 @@ void Mikudayo::Update( float deltaT )
     if (!EngineProfiling::IsPaused())
         m_Frame = m_Frame + deltaT * 30.f;
     {
+        Physics::Wait();
+        m_Scene->UpdateSceneAfterPhysics( m_Frame );
         m_Scene->UpdateScene( m_Frame );
         Physics::Update( deltaT );
-        m_Scene->UpdateSceneAfterPhysics( m_Frame );
     }
     for (auto& primitive : m_Primitives)
         primitive->Update();

@@ -36,6 +36,14 @@ namespace Physics
     btSoftBodyWorldInfo* g_SoftBodyWorldInfo = &SoftBodyWorldInfo;
     btConstraintSolver* CreateSolverByType( SolverType t );
 
+	std::mutex mutexJob;
+	std::condition_variable condJob;
+    float m_deltaT = 0.f;
+	bool bStepJob = false;
+	bool bExitJob = false;
+	std::unique_ptr<std::thread> pJob;
+    void JobFunc();
+
     class BulletPicking
     {
     public:
@@ -224,6 +232,8 @@ btConstraintSolver* Physics::CreateSolverByType( SolverType t )
 
 void Physics::Initialize( void )
 {
+    pJob.reset( new std::thread( JobFunc ) );
+
     BulletDebug::Initialize();
     PrimitiveBatch::Initialize();
 
@@ -261,6 +271,17 @@ void Physics::Initialize( void )
 
 }
 
+void Physics::Stop()
+{
+    {
+        std::unique_lock<std::mutex> lk( mutexJob );
+        bStepJob = true;
+        bExitJob = true;
+        condJob.notify_one();
+    }
+	pJob->join();
+}
+
 void Physics::Shutdown( void )
 {
     SoftBodyWorldInfo.m_sparsesdf.Reset();
@@ -281,13 +302,39 @@ void Physics::Shutdown( void )
     g_DynamicsWorld = nullptr;
 }
 
+void Physics::JobFunc()
+{
+    while (true) 
+    {
+        {
+			std::unique_lock<std::mutex> lk(mutexJob);
+            condJob.wait( lk, [] { return bStepJob; } );
+            if (bExitJob)
+                break;
+
+            DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
+            ASSERT( DynamicsWorld.get() != nullptr );
+            DynamicsWorld->stepSimulation( m_deltaT, 60 );
+
+            bStepJob = false;
+        }
+        condJob.notify_one();
+	}
+}
+
+void Physics::Wait()
+{
+    std::unique_lock<std::mutex> lk( mutexJob );
+    condJob.wait( lk, [] { return !bStepJob; } );
+}
+
 void Physics::Update( float deltaT )
 {
-    ScopedTimer _prof( L"Physics" );
-
-    DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
-    ASSERT(DynamicsWorld.get() != nullptr);
-    DynamicsWorld->stepSimulation( deltaT, 1 );
+    std::unique_lock<std::mutex> lk( mutexJob );
+    if (bStepJob) return;
+    m_deltaT = deltaT;
+    bStepJob = true;
+	condJob.notify_one();
 }
 
 void Physics::Render( GraphicsContext& Context, const Matrix4& WorldToClip )
