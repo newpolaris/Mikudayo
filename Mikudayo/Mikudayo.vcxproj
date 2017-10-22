@@ -121,6 +121,7 @@
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MiniModel.cpp" />
+    <ClCompile Include="ModelAccessory.cpp" />
     <ClCompile Include="ModelAssimp.cpp" />
     <ClCompile Include="ModelH3D.cpp" />
     <ClCompile Include="ModelManager.cpp" />
@@ -169,6 +170,7 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MiniModel.h" />
     <ClInclude Include="IModel.h" />
+    <ClInclude Include="ModelAccessory.h" />
     <ClInclude Include="ModelAssimp.h" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="OpaquePass.h" />

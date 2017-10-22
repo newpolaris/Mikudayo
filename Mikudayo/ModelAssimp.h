@@ -27,12 +27,12 @@ public:
 	static const char *s_FormatString[];
 	static int FormatFromFilename(const char *filename);
 
-    virtual bool Load( const ModelInfo& info ) override;
+    virtual bool Load(const ModelInfo& info) override;
 	bool Save(const char* filename) const;
 
-private:
+protected:
 
-    bool Load( const char* filename );
+    bool Load(const char* filename);
 	bool LoadAssimp(const char *filename);
 
 	void Optimize();

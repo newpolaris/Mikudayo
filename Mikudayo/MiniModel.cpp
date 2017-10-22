@@ -136,35 +136,20 @@ bool MiniModel::Load( const ModelInfo& info )
     return true;
 }
 
-void MiniModel::LoadTextures(void)
+const ManagedTexture* MiniModel::LoadTexture( const std::string& name, bool bSRGB )
 {
-    auto LoadTexture = [&]( const std::string& name, bool bSRGB ) -> const ManagedTexture*
+    using Path = boost::filesystem::path;
+    if (name.empty())
+        return nullptr;
+    const Path modelPath = Path( Utility::MakeStr( m_FileName ) );
+    const Path imagePath = modelPath.parent_path() / name;
+    bool bExist = boost::filesystem::exists( imagePath );
+    if (bExist)
     {
-        using Path = boost::filesystem::path;
-        if (name.empty())
-            return nullptr;
-        const Path modelPath = Path( Utility::MakeStr( m_FileName ) );
-        const Path imagePath = modelPath.parent_path() / name;
-        bool bExist = boost::filesystem::exists( imagePath );
-        if (bExist)
-        {
-            auto wstrPath = imagePath.generic_wstring();
-            return TextureManager::LoadFromFile( wstrPath, bSRGB );
-        }
-        const ManagedTexture* defaultTex = &TextureManager::GetMagentaTex2D();
-        return defaultTex;
-    };
-
-    for (uint32_t materialIdx = 0; materialIdx < m_Header.materialCount; ++materialIdx)
-    {
-        const Material& pMaterial = m_pMaterial[materialIdx];
-        const ManagedTexture** MatTextures = m_Materials[materialIdx]->textures;
-
-        MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, true);
-        MatTextures[1] = LoadTexture(pMaterial.texSpecularPath, true);
-        MatTextures[2] = LoadTexture(pMaterial.texEmissivePath, true);
-        MatTextures[3] = LoadTexture(pMaterial.texNormalPath, false);
-        MatTextures[4] = LoadTexture(pMaterial.texLightmapPath, true);
-        MatTextures[5] = LoadTexture(pMaterial.texReflectionPath, true);
+        auto wstrPath = imagePath.generic_wstring();
+        return TextureManager::LoadFromFile( wstrPath, bSRGB );
     }
+    const ManagedTexture* defaultTex = &TextureManager::GetMagentaTex2D();
+    return defaultTex;
 }
+

@@ -35,7 +35,6 @@ class IModel
 {
 public:
 
-    IModel();
     virtual ~IModel();
 
     virtual void Clear();
@@ -43,10 +42,6 @@ public:
 
 protected:
 };
-
-inline IModel::IModel()
-{
-}
 
 inline IModel::~IModel()
 {

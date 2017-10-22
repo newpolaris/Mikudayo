@@ -19,9 +19,7 @@ struct BaseMaterial : IMaterial
     std::wstring name;
 
     bool IsTransparent() const override;
+    void Bind( GraphicsContext& gfxContext ) override;
     RenderPipelinePtr GetPipeline( RenderQueue Queue ) override;
-
-    void Accept( Visitor& visitor );
-    void Bind( GraphicsContext& gfxContext );
 };
 

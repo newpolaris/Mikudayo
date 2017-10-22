@@ -57,15 +57,22 @@ bool AssimpModel::Load( const ModelInfo& info )
     for (uint32_t i = 0; i < m_Header.materialCount; i++)
     {
         MaterialPtr material = std::make_shared<BaseMaterial>();
-        material->ambient = m_pMaterial[i].ambient;
-        material->diffuse = m_pMaterial[i].diffuse;
-        material->specular = m_pMaterial[i].specular;
-        material->ambient = m_pMaterial[i].ambient;
-        material->emissive = m_pMaterial[i].emissive;
-        material->transparent = m_pMaterial[i].transparent;
-        material->opacity = m_pMaterial[i].opacity;
-        material->shininess = m_pMaterial[i].shininess;
-        material->specularStrength = m_pMaterial[i].specularStrength;
+        const Material& pMaterial = m_pMaterial[i];
+        material->ambient = pMaterial.ambient;
+        material->diffuse = pMaterial.diffuse;
+        material->specular = pMaterial.specular;
+        material->emissive = pMaterial.emissive;
+        material->transparent = pMaterial.transparent;
+        material->opacity = pMaterial.opacity;
+        material->shininess = pMaterial.shininess;
+        material->specularStrength = pMaterial.specularStrength;
+        const ManagedTexture** MatTextures = material->textures;
+        MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, true);
+        MatTextures[1] = LoadTexture(pMaterial.texSpecularPath, true);
+        MatTextures[2] = LoadTexture(pMaterial.texEmissivePath, true);
+        MatTextures[3] = LoadTexture(pMaterial.texNormalPath, false);
+        MatTextures[4] = LoadTexture(pMaterial.texLightmapPath, true);
+        MatTextures[5] = LoadTexture(pMaterial.texReflectionPath, true);
 
         m_Materials.push_back( std::move( material ) );
     }
@@ -112,8 +119,6 @@ bool AssimpModel::Load( const ModelInfo& info )
     m_pVertexDataDepth = nullptr;
     delete [] m_pIndexDataDepth;
     m_pIndexDataDepth = nullptr;
-
-    LoadTextures();
 
 	return true;
 }

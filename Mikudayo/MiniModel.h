@@ -186,7 +186,7 @@ public:
 protected:
 
     virtual bool Load( const char* filename );
-    void LoadTextures( void );
+    const ManagedTexture* LoadTexture( const std::string& name, bool bSRGB );
 
 	bool ImportH3D(const char *filename);
 	bool SaveH3D(const char *filename) const;
