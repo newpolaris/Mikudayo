@@ -204,6 +204,7 @@ void PostEffects::GenerateBloom( ComputeContext& Context )
         Context.SetDynamicDescriptor(1, g_LumaLR.GetUAV());
         Context.SetDynamicDescriptor(0, g_SceneColorBuffer.GetSRV());
         Context.SetDynamicDescriptor(1, g_Exposure.GetSRV());
+        Context.SetDynamicDescriptor(2, g_EmissiveColorBuffer.GetSRV());
 
         Context.SetPipelineState(EnableHDR ? BloomExtractAndDownsampleHdrCS : BloomExtractAndDownsampleLdrCS);
         Context.Dispatch2D(kBloomWidth, kBloomHeight);

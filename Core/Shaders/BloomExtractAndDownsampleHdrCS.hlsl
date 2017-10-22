@@ -15,11 +15,12 @@
 #include "ShaderUtility.hlsli"
 #include "PostEffectsRS.hlsli"
 
-SamplerState BiLinearClamp : register( s0 );
-Texture2D<float3> SourceTex : register( t0 );
-StructuredBuffer<float> Exposure : register( t1 );
-RWTexture2D<float3> BloomResult : register( u0 );
-RWTexture2D<uint> LumaResult : register( u1 );
+SamplerState BiLinearClamp : register(s0);
+Texture2D<float3> SourceTex : register(t0);
+StructuredBuffer<float> Exposure : register(t1);
+Texture2D<float3> EmissiveTex : register(t2);
+RWTexture2D<float3> BloomResult : register(u0);
+RWTexture2D<uint> LumaResult : register(u1);
 
 cbuffer cb0
 {
@@ -68,7 +69,17 @@ void main( uint3 DTid : SV_DispatchThreadID )
     float weight4 = 1.0f / (luma4 + kShimmerFilterInverseStrength);
     float weightSum = weight1 + weight2 + weight3 + weight4;
 
-    BloomResult[DTid.xy] = (color1 * weight1 + color2 * weight2 + color3 * weight3 + color4 * weight4) / weightSum;
+    float3 bloom = (color1 * weight1 + color2 * weight2 + color3 * weight3 + color4 * weight4) / weightSum;
+
+    // Use 4 bilinear samples to guarantee we don't undersample when downsizing by more than 2x
+    float3 emissive1 = EmissiveTex.SampleLevel( BiLinearClamp, uv + float2(-offset.x, -offset.y), 0 );
+    float3 emissive2 = EmissiveTex.SampleLevel( BiLinearClamp, uv + float2( offset.x, -offset.y), 0 );
+    float3 emissive3 = EmissiveTex.SampleLevel( BiLinearClamp, uv + float2(-offset.x,  offset.y), 0 );
+    float3 emissive4 = EmissiveTex.SampleLevel( BiLinearClamp, uv + float2( offset.x,  offset.y), 0 );
+
+    float3 emissive = (emissive1 + emissive2 + emissive3 + emissive4);
+
+    BloomResult[DTid.xy] = bloom + emissive;
 
     float luma = (luma1 + luma2 + luma3 + luma4) * 0.25;
 

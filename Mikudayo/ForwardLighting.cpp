@@ -60,9 +60,16 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 
     {
         ScopedTimer _prof( L"Forward Pass", gfxContext );
-        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
+        gfxContext.ClearColor( g_EmissiveColorBuffer );
+        D3D11_RTV_HANDLE rtvs[] = {
+            g_SceneColorBuffer.GetRTV(),
+            g_EmissiveColorBuffer.GetRTV(),
+        };
+        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         scene->Render( m_basicPass, args );
         scene->Render( m_twoSidedPass, args );
+        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
+        
     }
     {
         ScopedTimer _prof( L"Outline Pass", gfxContext );

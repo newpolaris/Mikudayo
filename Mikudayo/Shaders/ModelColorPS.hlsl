@@ -1,5 +1,7 @@
 #include "CommonInclude.hlsli"
 
+#define AUTOLUMINOUS 0
+
 struct Material
 {
     float3  diffuse;
@@ -54,16 +56,33 @@ struct PixelShaderInput
     float3 normalWS : NORMAL;
     float4 color : COLOR0;
     float3 specular : COLOR1;
+    float4 emissive : COLOR2;
 };
 
-float4 main(PixelShaderInput input) : SV_TARGET
+struct PixelShaderOutput
+{
+    float4 color : SV_Target0;   // color pixel output (R11G11B10_FLOAT)
+    float4 emissive : SV_Target1; // 
+};
+
+[earlydepthstencil]
+PixelShaderOutput main(PixelShaderInput input)
 { 
+    PixelShaderOutput output;
     Material mat = Mat;
 
     float4 color = input.color;
+    float4 emissive = input.emissive;
     if (mat.bDiffuseTexture) {
         color *= texDiffuse.Sample( sampler0, input.texCoord );
+        emissive *= texDiffuse.Sample( sampler0, input.texCoord );
     }
     color.rgb += input.specular;
-    return color;
+#if AUTOLUMINOUS
+    if (any(input.emissive))
+        emissive *= max( 0, mat.shininess - 100 ) / 7.0;
+#endif
+    output.color = color;
+    output.emissive = emissive;
+    return output;
 }

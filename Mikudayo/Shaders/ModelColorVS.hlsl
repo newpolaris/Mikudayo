@@ -1,3 +1,5 @@
+#define AUTOLUMINOUS 0
+
 struct Material
 {
     float3  diffuse;
@@ -68,18 +70,20 @@ struct PixelShaderInput
     float3 normalWS : NORMAL;
     float4 color : COLOR0;
     float3 specular : COLOR1;
+    float4 emissive : COLOR2;
 };
 
 static float4 MaterialDiffuse = float4(Mat.diffuse, Mat.opacity);
 static float3 MaterialAmbient = Mat.ambient;
-static float3 MaterialEmmisive = Mat.emissive;
+static float3 MaterialEmissive = Mat.emissive;
 static float3 MaterialSpecular = Mat.specular;
 static float3 LightDiffuse = float3(1, 1, 1);
 static float3 LightAmbient = SunColor - 0.3;
 static float3 LightSpecular = SunColor;
 static float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
-static float3 AmbientColor  = MaterialAmbient  * LightAmbient + MaterialEmmisive;
+static float3 AmbientColor  = MaterialAmbient  * LightAmbient + MaterialEmissive;
 static float3 SpecularColor = MaterialSpecular * LightSpecular;
+static bool IsEmission = (100 < Mat.shininess) && (length(MaterialSpecular) < 0.01);
 
 // Simple shader to do vertex processing on the GPU.
 PixelShaderInput main(VertexShaderInput input)
@@ -100,6 +104,14 @@ PixelShaderInput main(VertexShaderInput input)
     output.color = saturate( output.color );
 #else
     output.color = output.color;
+#endif
+#if !AUTOLUMINOUS
+    output.emissive = float4(MaterialEmissive, MaterialDiffuse.a);
+#else
+    output.emissive = MaterialDiffuse;
+    output.emissive.rgb += MaterialEmissive / 2;
+    output.emissive.rgb *= 0.5;
+    output.emissive.rgb = IsEmission ? output.emissive.rgb : float3(0, 0, 0);
 #endif
 	output.texCoord = input.texcoord;
 
