@@ -5,6 +5,7 @@
 #include "KeyFrameAnimation.h"
 #include "PrimitiveUtility.h"
 #include "Visitor.h"
+#include "TaskManager.h"
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
 #include "Bullet/Joint.h"
@@ -427,15 +428,15 @@ void PmxInstant::Context::Update( float kFrameTime )
         //
         m_LocalPose = m_LocalPoseDefault;
 
-        const size_t numMotions = m_BoneMotions.size();
-		for (auto i = 0; i < numMotions; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+        TaskManager::parallel_for( 0, m_BoneMotions.size(), [&]( size_t i ) {
+            m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+            } );
         UpdatePose();
 		for (auto& ik : m_Model.m_IKs)
             UpdateIK( ik );
-		const size_t numBones = m_Model.m_Bones.size();
-        for (auto i = 0; i < numBones; i++)
+        TaskManager::parallel_for( 0, m_Model.m_Bones.size(), [&]( size_t i ) {
             PerformTransform( i );
+            } );
         UpdatePose();
 	}
 }
@@ -444,8 +445,9 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
 {
     (kFrameTime);
 
-    for (auto& it : m_RigidBodies)
-        it->SyncLocalTransform();
+    TaskManager::parallel_for( 0, m_RigidBodies.size(), [&]( size_t i ) {
+        m_RigidBodies[i]->SyncLocalTransform();
+        } );
 
     const size_t numBones = m_Model.m_Bones.size();
     for (auto i = 0; i < numBones; i++)
@@ -545,6 +547,7 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 			auto ikTargetVec = Vector3( invLinkMtx * ikTargetBonePos );
 			auto ikBoneVec = Vector3( invLinkMtx * ikBonePos );
 
+            // TODO: The left knee of Shimakazu does not match the right knee
         #if 1
 			auto axis = Cross( ikBoneVec, ikTargetVec );
 			auto axisLen = Length( axis );
