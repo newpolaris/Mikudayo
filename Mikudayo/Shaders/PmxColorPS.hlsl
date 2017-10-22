@@ -33,7 +33,6 @@ SamplerComparisonState shadowSampler : register(s2);
 
 float GetShadow( float3 ShadowCoord )
 {
-#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
     float result = ShadowTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else

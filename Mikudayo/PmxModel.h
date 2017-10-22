@@ -63,12 +63,14 @@ public:
         MaterialCB CB;
         bool bOutline = false;
         bool bCastShadowMap = false;
+        bool bTwoSided = false;
         RenderPipelineList Techniques;
         std::vector<TexturePath> TexturePathes;
         const ManagedTexture* Textures[kTextureMax];
-        bool IsTransparent() const override;
         bool IsOutline() const override;
         bool IsShadowCaster() const override;
+        bool IsTransparent() const override;
+        bool IsTwoSided() const override;
         RenderPipelinePtr GetPipeline( RenderQueue Queue ) override;
         void SetTexture( GraphicsContext& gfxContext ) const;
     };

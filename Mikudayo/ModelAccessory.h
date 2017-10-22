@@ -6,7 +6,7 @@ class ModelAccessory : public AssimpModel
 {
 public:
 
-    virtual bool Load( const ModelInfo& info ) override;
+    virtual void LoadMaterials() override;
 
 private:
 

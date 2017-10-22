@@ -1,74 +1,73 @@
 #include "stdafx.h"
-#include "BaseMaterial.h"
-#include "BaseMesh.h"
 #include "ModelAccessory.h"
+#include "Material.h"
 
-bool ModelAccessory::Load( const ModelInfo& info )
+struct DefaultMaterial : IMaterial
 {
-    BaseModel::Load( info );
+    Math::Vector4 diffuse;
+    Math::Vector3 specular;
+    Math::Vector3 ambient;
+    Math::Vector3 emissive;
+    float specularPower; // specular exponent
+    enum { kDiffuse, kTexCount = 1 };
+    const ManagedTexture* textures[kTexCount];
+    std::wstring name;
 
-    const std::string name = Utility::MakeStr( m_FileName );
-    const char* filename = name.c_str();
-    if (!AssimpModel::Load(filename))
-        return false;
+    bool IsTransparent() const override;
+    void Bind( GraphicsContext& gfxContext ) override;
+    RenderPipelinePtr GetPipeline( RenderQueue Queue ) override;
+};
 
+bool DefaultMaterial::IsTransparent() const
+{
+    bool bHasTransparentTexture = textures[kDiffuse] && textures[kDiffuse]->IsTransparent();
+    return diffuse.GetW() < 1.0f || bHasTransparentTexture;
+}
+
+void DefaultMaterial::Bind( GraphicsContext& gfxContext )
+{
+    D3D11_SRV_HANDLE SRV[kTexCount] = { nullptr };
+    for (auto i = 0; i < _countof( textures ); i++)
+    {
+        if (textures[i] == nullptr) continue;
+        SRV[i] = textures[i]->GetSRV();
+    }
+    gfxContext.SetDynamicDescriptors( 1, _countof( SRV ), SRV, { kBindPixel } );
+
+    __declspec(align(16)) struct {
+        Vector4 diffuse;
+        Vector3 specular;
+        Vector3 ambient;
+        Vector3 emissive;
+        float specularPower; // specular exponent
+        uint32_t bTexture[kTexCount];
+    } material = {
+        diffuse, specular, ambient, emissive, specularPower
+    };
+    for (auto i = 0; i < _countof( textures ); i++)
+        material.bTexture[i] = (SRV[i] == nullptr ? 0 : 1);
+    gfxContext.SetDynamicConstantBufferView( 4, sizeof( material ), &material, { kBindVertex, kBindPixel } );
+}
+
+RenderPipelinePtr DefaultMaterial::GetPipeline( RenderQueue Queue )
+{
+    return nullptr;
+}
+
+void ModelAccessory::LoadMaterials()
+{
     for (uint32_t i = 0; i < m_Header.materialCount; i++)
     {
-        MaterialPtr material = std::make_shared<BaseMaterial>();
-        material->ambient = m_pMaterial[i].ambient;
-        material->diffuse = m_pMaterial[i].diffuse;
-        material->specular = m_pMaterial[i].specular;
-        material->emissive = m_pMaterial[i].emissive;
-        material->transparent = m_pMaterial[i].transparent;
-        material->opacity = m_pMaterial[i].opacity;
-        material->shininess = m_pMaterial[i].shininess;
-        material->specularStrength = m_pMaterial[i].specularStrength;
-
+        std::shared_ptr<DefaultMaterial> material = std::make_shared<DefaultMaterial>();
+        const Material& pMaterial = m_pMaterial[i];
+        Vector4 diffuse = Vector4( pMaterial.diffuse, pMaterial.opacity );
+        material->ambient = pMaterial.ambient;
+        material->diffuse = diffuse;
+        material->specular = pMaterial.specular;
+        material->emissive = pMaterial.emissive;
+        material->specularPower = pMaterial.shininess;
+        const ManagedTexture** MatTextures = material->textures;
+        MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, true);
         m_Materials.push_back( std::move( material ) );
     }
-
-    assert( m_VertexStride > 0 );
-    assert( m_VertexStrideDepth > 0 );
-
-    for (uint32_t i = 0; i < m_Header.meshCount; i++)
-    {
-        MeshPtr mesh = std::make_shared<BaseMesh>();
-        mesh->boundingBox = Math::BoundingBox( m_pMesh[i].boundingBox.min, m_pMesh[i].boundingBox.max );
-        mesh->materialIndex = m_pMesh[i].materialIndex;
-        mesh->material = m_Materials[m_pMesh[i].materialIndex];
-        mesh->attribsEnabled = m_pMesh[i].attribsEnabled;
-        mesh->attribsEnabledDepth = m_pMesh[i].attribsEnabledDepth;
-        mesh->vertexStride = m_pMesh[i].vertexStride;
-        mesh->vertexStrideDepth = m_pMesh[i].vertexStrideDepth;
-        // Attrib attrib[maxAttribs];
-        // Attrib attribDepth[maxAttribs];
-        mesh->vertexDataByteOffset = m_pMesh[i].vertexDataByteOffset;
-        mesh->vertexCount = m_pMesh[i].vertexCount;
-        mesh->indexDataByteOffset = m_pMesh[i].indexDataByteOffset;
-        mesh->indexCount = m_pMesh[i].indexCount;
-        mesh->vertexDataByteOffsetDepth = m_pMesh[i].vertexDataByteOffsetDepth;
-        mesh->vertexCountDepth = m_pMesh[i].vertexCountDepth;
-        mesh->startIndex = m_pMesh[i].indexDataByteOffset / sizeof(uint32_t);
-        mesh->baseVertex = m_pMesh[i].vertexDataByteOffset / m_VertexStride;
-
-        m_Meshes.push_back( std::move( mesh ) );
-    }
-
-    assert( m_Meshes.size() > 0 );
-
-    m_VertexBuffer.Create(L"VertexBuffer", m_Header.vertexDataByteSize / m_VertexStride, m_VertexStride, m_pVertexData);
-    m_IndexBuffer.Create(L"IndexBuffer", m_Header.indexDataByteSize / sizeof(uint32_t), sizeof(uint32_t), m_pIndexData);
-    delete [] m_pVertexData;
-    m_pVertexData = nullptr;
-    delete [] m_pIndexData;
-    m_pIndexData = nullptr;
-
-    m_VertexBufferDepth.Create(L"VertexBufferDepth", m_Header.vertexDataByteSizeDepth / m_VertexStrideDepth, m_VertexStrideDepth, m_pVertexDataDepth);
-    m_IndexBufferDepth.Create(L"IndexBufferDepth", m_Header.indexDataByteSize / sizeof(uint32_t), sizeof(uint32_t), m_pIndexDataDepth);
-    delete [] m_pVertexDataDepth;
-    m_pVertexDataDepth = nullptr;
-    delete [] m_pIndexDataDepth;
-    m_pIndexDataDepth = nullptr;
-
-	return true;
 }

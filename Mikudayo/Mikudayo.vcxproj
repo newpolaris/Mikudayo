@@ -116,6 +116,7 @@
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
     <ClCompile Include="Bullet\RigidBody.cpp" />
     <ClCompile Include="DeferredLighting.cpp" />
+    <ClCompile Include="ForwardLighting.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="IndexOptimizePostTransform.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="Bullet\PrimitiveBatch.h" />
     <ClInclude Include="Bullet\RigidBody.h" />
     <ClInclude Include="DeferredLighting.h" />
+    <ClInclude Include="ForwardLighting.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="IndexOptimizePostTransform.h" />
     <ClInclude Include="KeyFrameAnimation.h" />

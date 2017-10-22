@@ -71,13 +71,13 @@ namespace PostEffects
     const float kInitialMinLog = -12.0f;
     const float kInitialMaxLog = 4.0f;
 
-    BoolVar EnableHDR("Graphics/HDR/Enable", false);
-    BoolVar EnableAdaptation("Graphics/HDR/Adaptive Exposure", true);
+    BoolVar EnableHDR("Graphics/HDR/Enable", true);
+    BoolVar EnableAdaptation("Graphics/HDR/Adaptive Exposure", false);
     ExpVar MinExposure("Graphics/HDR/Min Exposure", 1.0f / 64.0f, -8.0f, 0.0f, 0.25f);
     ExpVar MaxExposure("Graphics/HDR/Max Exposure", 64.0f, 0.0f, 8.0f, 0.25f);
     NumVar TargetLuminance("Graphics/HDR/Key", 0.08f, 0.01f, 0.99f, 0.01f);
     NumVar AdaptationRate("Graphics/HDR/Adaptation Rate", 0.05f, 0.01f, 1.0f, 0.01f);
-    ExpVar Exposure("Graphics/HDR/Exposure", 2.0f, -8.0f, 8.0f, 0.25f);
+    ExpVar Exposure("Graphics/HDR/Exposure", 1.0f, -8.0f, 8.0f, 0.25f);
     BoolVar DrawHistogram("Graphics/HDR/Draw Histogram", false);
     BoolVar BloomEnable("Graphics/Bloom/Enable", true);
     NumVar BloomThreshold("Graphics/Bloom/Threshold", 4.0f, 0.0f, 8.0f, 0.1f);		// The threshold luminance above which a pixel will start to bloom

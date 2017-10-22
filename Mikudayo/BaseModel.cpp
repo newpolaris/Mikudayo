@@ -24,25 +24,10 @@ void BaseModel::Initialize()
 {
     using namespace Graphics;
 
+    RenderPipelineList Default;
+    RenderPipelinePtr DepthPSO, ShadowPSO, OpaquePSO, TransparentPSO;
+    
 #if 0
-    RenderPipelinePtr DeferredGBufferPSO, OutlinePSO, DepthPSO, ShadowPSO;
-
-    DeferredGBufferPSO = std::make_shared<GraphicsPSO>();
-    DeferredGBufferPSO->SetInputLayout( _countof(VertElem), VertElem );
-    DeferredGBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pColorVS ) );
-    DeferredGBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
-    DeferredGBufferPSO->SetDepthStencilState( DepthStateReadWrite );
-    DeferredGBufferPSO->SetRasterizerState( RasterizerDefault );
-    DeferredGBufferPSO->Finalize();
-
-    OutlinePSO = std::make_shared<GraphicsPSO>();
-    OutlinePSO->SetInputLayout( _countof(VertElem), VertElem );
-    OutlinePSO->SetVertexShader( MY_SHADER_ARGS( g_pOutlineVS ) );
-    OutlinePSO->SetPixelShader( MY_SHADER_ARGS( g_pOutlinePS ) );
-    OutlinePSO->SetRasterizerState( RasterizerDefaultCW );
-    OutlinePSO->SetDepthStencilState( DepthStateReadWrite );
-    OutlinePSO->Finalize();
-
     DXGI_FORMAT DepthFormat = g_SceneDepthBuffer.GetFormat();
 
     DepthPSO = std::make_shared<GraphicsPSO>();
@@ -61,49 +46,24 @@ void BaseModel::Initialize()
     ShadowPSO->Finalize();
 #endif
 
-    RenderPipelineList Default;
-    RenderPipelinePtr OpaquePSO, TransparentPSO, GBufferPSO, FinalPSO;
-    {
-        OpaquePSO = std::make_shared<GraphicsPSO>();
-        // *OpaquePSO = *DepthPSO;
-        OpaquePSO->SetInputLayout( _countof( VertElem ), VertElem );
-        OpaquePSO->SetBlendState( BlendDisable );
-        OpaquePSO->SetRasterizerState( RasterizerDefault );
-        OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
-        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pModelColorVS ) );
-        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pModelColorPS ) );;
-        OpaquePSO->Finalize();
+    OpaquePSO = std::make_shared<GraphicsPSO>();
+    // *OpaquePSO = *DepthPSO;
+    OpaquePSO->SetInputLayout( _countof( VertElem ), VertElem );
+    OpaquePSO->SetBlendState( BlendDisable );
+    OpaquePSO->SetRasterizerState( RasterizerDefault );
+    OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
+    OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pModelColorVS ) );
+    OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pModelColorPS ) );;
+    OpaquePSO->Finalize();
 
-        TransparentPSO = std::make_shared<GraphicsPSO>();
-        *TransparentPSO = *OpaquePSO;
-        TransparentPSO->SetBlendState( BlendTraditional );
-        TransparentPSO->Finalize();
+    TransparentPSO = std::make_shared<GraphicsPSO>();
+    *TransparentPSO = *OpaquePSO;
+    TransparentPSO->SetBlendState( BlendTraditional );
+    TransparentPSO->Finalize();
 
-    #if 0
-        FinalPSO = std::make_shared<GraphicsPSO>();
-        FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        FinalPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
-        FinalPSO->SetRasterizerState( RasterizerDefault );
-        FinalPSO->SetDepthStencilState( DepthStateTestEqual );
-        FinalPSO->Finalize();
+    Default[kRenderQueueOpaque] = OpaquePSO;
+    Default[kRenderQueueTransparent] = TransparentPSO;
 
-        GBufferPSO = std::make_shared<GraphicsPSO>();
-        GBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        GBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
-        GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
-        GBufferPSO->SetRasterizerState( RasterizerDefault );
-        GBufferPSO->Finalize();
-#endif
-        
-        Default[kRenderQueueOpaque] = OpaquePSO;
-        Default[kRenderQueueTransparent] = TransparentPSO;
-        Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
-        Default[kRenderQueueDeferredFinal] = FinalPSO;
-        // Default[kRenderQueueOutline] = OutlinePSO;
-        // Default[kRenderQueueShadow] = ShadowPSO;
-    }
     Techniques.emplace( L"Default", std::move( Default ) );
 }
 

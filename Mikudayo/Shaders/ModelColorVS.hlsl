@@ -96,7 +96,11 @@ PixelShaderInput main(VertexShaderInput input)
     output.color.rgb = AmbientColor;
     output.color.rgb += max( 0, dot( output.normalWS, -SunDirectionWS ) ) * DiffuseColor.rgb;
     output.color.a = DiffuseColor.a;
+#if 0
     output.color = saturate( output.color );
+#else
+    output.color = output.color;
+#endif
 	output.texCoord = input.texcoord;
 
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );

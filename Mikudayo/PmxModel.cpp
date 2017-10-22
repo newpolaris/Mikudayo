@@ -84,7 +84,7 @@ void PmxModel::Initialize()
     ShadowPSO->Finalize();
 
     RenderPipelineList Default;
-    RenderPipelinePtr OpaquePSO, TransparentPSO, GBufferPSO, FinalPSO;
+    RenderPipelinePtr OpaquePSO, TransparentPSO, TransparentTwoSidedPSO, GBufferPSO, FinalPSO;
     {
         OpaquePSO = std::make_shared<GraphicsPSO>();
         OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
@@ -98,6 +98,11 @@ void PmxModel::Initialize()
         *TransparentPSO = *OpaquePSO;
         TransparentPSO->SetBlendState( BlendTraditional );
         TransparentPSO->Finalize();
+
+        TransparentTwoSidedPSO = std::make_shared<GraphicsPSO>();
+        *TransparentTwoSidedPSO = *TransparentPSO;
+        TransparentTwoSidedPSO->SetRasterizerState( RasterizerTwoSided );
+        TransparentTwoSidedPSO->Finalize();
 
         FinalPSO = std::make_shared<GraphicsPSO>();
         FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
@@ -117,13 +122,14 @@ void PmxModel::Initialize()
         
         Default[kRenderQueueOpaque] = OpaquePSO;
         Default[kRenderQueueTransparent] = TransparentPSO;
+        Default[kRenderQueueTransparentTwoSided] = TransparentTwoSidedPSO;
         Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
         Default[kRenderQueueDeferredFinal] = FinalPSO;
         Default[kRenderQueueOutline] = OutlinePSO;
         Default[kRenderQueueShadow] = ShadowPSO;
     }
     RenderPipelineList Stage;
-    RenderPipelinePtr Opaque2PSO, Transparent2PSO, Final2PSO;
+    RenderPipelinePtr Opaque2PSO, Transparent2PSO, TransparentTwoSided2PSO, Final2PSO;
     {
         Opaque2PSO = std::make_shared<GraphicsPSO>();
         *Opaque2PSO = *OpaquePSO;
@@ -135,6 +141,11 @@ void PmxModel::Initialize()
         Transparent2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
         Transparent2PSO->Finalize();
 
+        TransparentTwoSided2PSO = std::make_shared<GraphicsPSO>();
+        *TransparentTwoSided2PSO = *TransparentTwoSidedPSO;
+        TransparentTwoSided2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
+        TransparentTwoSided2PSO->Finalize();
+
         Final2PSO = std::make_shared<GraphicsPSO>();
         *Final2PSO = *FinalPSO;
         Final2PSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinal2PS ) );
@@ -143,6 +154,7 @@ void PmxModel::Initialize()
         Stage = Default;
         Stage[kRenderQueueOpaque] = Opaque2PSO;
         Stage[kRenderQueueTransparent] = Transparent2PSO;
+        Stage[kRenderQueueTransparentTwoSided] = TransparentTwoSided2PSO;
         Stage[kRenderQueueDeferredFinal] = Final2PSO;
     }
     Techniques.emplace( L"Default", std::move( Default ) );
@@ -285,6 +297,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 		mat.CB.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
         mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
         mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
+        mat.bTwoSided = material.BitFlag & Pmx::EMaterialFlag::kCullOff;
         if (Techniques.count( m_DefaultShader ))
             mat.Techniques = Techniques[m_DefaultShader];
         m_Materials.push_back(mat);
@@ -423,12 +436,6 @@ void PmxModel::Material::SetTexture( GraphicsContext& gfxContext ) const
     gfxContext.SetDynamicDescriptors( 1, _countof( SRV ), SRV, { kBindPixel } );
 }
 
-bool PmxModel::Material::IsTransparent() const
-{
-    bool bHasTransparentTexture = Textures[kTextureDiffuse] && Textures[kTextureDiffuse]->IsTransparent();
-    return CB.Diffuse.w < 1.0f || bHasTransparentTexture;
-}
-
 bool PmxModel::Material::IsOutline() const
 {
     return bOutline;
@@ -437,6 +444,17 @@ bool PmxModel::Material::IsOutline() const
 bool PmxModel::Material::IsShadowCaster() const
 { 
     return bCastShadowMap;
+}
+
+bool PmxModel::Material::IsTransparent() const
+{
+    bool bHasTransparentTexture = Textures[kTextureDiffuse] && Textures[kTextureDiffuse]->IsTransparent();
+    return CB.Diffuse.w < 1.0f || bHasTransparentTexture;
+}
+
+bool PmxModel::Material::IsTwoSided() const
+{
+    return bTwoSided;
 }
 
 RenderPipelinePtr PmxModel::Material::GetPipeline( RenderQueue Queue ) 

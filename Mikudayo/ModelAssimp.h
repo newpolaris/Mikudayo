@@ -34,6 +34,9 @@ protected:
 
     bool Load(const char* filename);
 	bool LoadAssimp(const char *filename);
+    virtual void LoadBuffers();
+    virtual void LoadMaterials();
+    virtual void LoadMeshes();
 
 	void Optimize();
 	void OptimizeRemoveDuplicateVertices(bool depth);

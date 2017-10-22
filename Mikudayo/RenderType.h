@@ -7,6 +7,7 @@ enum RenderQueue
 {
     kRenderQueueOpaque,
     kRenderQueueTransparent,
+    kRenderQueueTransparentTwoSided,
     kRenderQueueDeferredGBuffer,
     kRenderQueueDeferredFinal,
     kRenderQueueOutline,

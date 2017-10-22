@@ -21,7 +21,6 @@
 #include "PrimitiveUtility.h"
 #include "DebugHelper.h"
 #include "RenderArgs.h"
-#include "PmxModel.h"
 
 #include "CompiledShaders/ScreenQuadVS.h"
 #include "CompiledShaders/DeferredLightingVS.h"
