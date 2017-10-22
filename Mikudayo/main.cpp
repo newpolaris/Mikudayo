@@ -1,22 +1,17 @@
 ﻿#include "stdafx.h"
 #include "PrimitiveUtility.h"
-#include "Bullet/LinearMath.h"
 #include "Bullet/Physics.h"
 #include "Bullet/PhysicsPrimitive.h"
 #include "Bullet/PrimitiveBatch.h"
-#include "SoftBodyManager.h"
+#include "Bullet/LinearMath.h"
 #include "ModelManager.h"
 #include "RenderArgs.h"
-#include "DeferredLighting.h"
 #include "Scene.h"
 #include "ShadowCamera.h"
-#include "PmxModel.h"
-#include "PmxInstant.h"
-#include "OpaquePass.h"
 #include "DebugHelper.h"
 #include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
-#include "ModelAssimp.h"
+#include "ForwardLighting.h"
 #include "TaskManager.h"
 
 using namespace Math;
@@ -70,8 +65,6 @@ private:
 
 CREATE_APPLICATION( Mikudayo )
 
-SoftBodyManager manager;
-
 enum { kCameraMain, kCameraVirtual, kCameraShadow };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual", "CameraShadow" };
 EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNames );
@@ -95,8 +88,7 @@ void Mikudayo::Startup( void )
     Physics::Initialize();
     PrimitiveUtility::Initialize();
     ModelManager::Initialize();
-    Lighting::Initialize();
-    Lighting::CreateRandomLights( m_MinBound, m_MaxBound );
+    Forward::Initialize();
 
     const Vector3 eye = Vector3(0.0f, 100.0f, 100.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
@@ -173,7 +165,7 @@ void Mikudayo::Cleanup( void )
         model->Destroy();
     m_Primitives.clear();
     Physics::Shutdown();
-    Lighting::Shutdown();
+    Forward::Shutdown();
     TaskManager::Shutdown();
 }
 
@@ -204,8 +196,6 @@ void Mikudayo::Update( float deltaT )
 	m_MainScissor.right = (LONG)g_SceneColorBuffer.GetWidth();
 	m_MainScissor.bottom = (LONG)g_SceneColorBuffer.GetHeight();
 
-    Lighting::UpdateLights(GetCamera());
-
     if (!EngineProfiling::IsPaused())
         m_Frame = m_Frame + deltaT * 30.f;
     {
@@ -216,47 +206,12 @@ void Mikudayo::Update( float deltaT )
     }
     for (auto& primitive : m_Primitives)
         primitive->Update();
-
-    // TODO:
-    auto GetRayTo = [&]( float x, float y) {
-        auto& invView = m_Camera.GetCameraToWorld();
-        auto& proj = m_Camera.GetProjMatrix();
-        auto p00 = proj.GetX().GetX();
-        auto p11 = proj.GetY().GetY();
-        float vx = (+2.f * x / m_MainViewport.Width - 1.f) / p00;
-        float vy = (-2.f * y / m_MainViewport.Height + 1.f) / p11;
-        Vector3 Dir(XMVector3TransformNormal( Vector3( vx, vy, -1 ), Matrix4(invView) ));
-        return Normalize(Dir);
-    };
-
-    using namespace GameInput;
-    static bool bMouseDrag = false;
-    if (IsFirstReleased( DigitalInput::kMouse0 ))
-    {
-        bMouseDrag = false;
-        Physics::ReleasePickBody();
-    }
-    if (IsFirstPressed( DigitalInput::kMouse0 ) || bMouseDrag)
-    {
-        float sx = (float)GetMousePosition( 0 ), sy = (float)GetMousePosition( 1 );
-        Vector3 rayFrom = m_Camera.GetPosition();
-        Vector3 rayTo = GetRayTo( sx, sy ) * m_Camera.GetFarClip() + rayFrom;
-        if (!bMouseDrag)
-        {
-            Physics::PickBody( Convert( rayFrom ), Convert( rayTo ), Convert( m_Camera.GetForwardVec() ) );
-            bMouseDrag = true;
-        }
-        else
-        {
-            Physics::MovePickBody( Convert( rayFrom ), Convert( rayTo ), Convert( m_Camera.GetForwardVec() ) );
-        }
-    }
+    Physics::UpdatePicking( m_MainViewport, GetCamera() );
 }
 
 void Mikudayo::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
-
     RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     __declspec(align(16)) struct
@@ -269,11 +224,6 @@ void Mikudayo::RenderScene( void )
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
     psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
 	gfxContext.SetDynamicConstantBufferView( 5, sizeof(psConstants), &psConstants, { kBindVertex, kBindPixel } );
-#if 1
-    Lighting::m_LightData[0].Type = Lighting::LightType::Directional;
-    Lighting::m_LightData[0].DirectionWS = m_SunDirection;
-    Lighting::m_LightData[0].Color = Color(m_SunColor/255.f);
-#endif
 
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
@@ -308,7 +258,7 @@ void Mikudayo::RenderScene( void )
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
 
         ScopedTimer _prof( L"Render Color", gfxContext );
-        Lighting::Render( m_Scene, args );
+        Forward::Render( m_Scene, args );
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );

@@ -271,37 +271,6 @@ void Physics::Initialize( void )
 
 }
 
-void Physics::Stop()
-{
-    {
-        std::unique_lock<std::mutex> lk( mutexJob );
-        bStepJob = true;
-        bExitJob = true;
-        condJob.notify_one();
-    }
-	pJob->join();
-}
-
-void Physics::Shutdown( void )
-{
-    SoftBodyWorldInfo.m_sparsesdf.Reset();
-    PrimitiveBatch::Shutdown();
-    BulletDebug::Shutdown();
-
-    int Len = (int)DynamicsWorld->getSoftBodyArray().size();
-    for (int i = Len -1; i >= 0; i--)
-    {
-        btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
-        DynamicsWorld->removeSoftBody( psb );
-        delete psb;
-    }
-    ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
-        "Remove all rigidbody objects from world");
-
-    DynamicsWorld.reset( nullptr );
-    g_DynamicsWorld = nullptr;
-}
-
 void Physics::JobFunc()
 {
     while (true) 
@@ -320,21 +289,6 @@ void Physics::JobFunc()
         }
         condJob.notify_one();
 	}
-}
-
-void Physics::Wait()
-{
-    std::unique_lock<std::mutex> lk( mutexJob );
-    condJob.wait( lk, [] { return !bStepJob; } );
-}
-
-void Physics::Update( float deltaT )
-{
-    std::unique_lock<std::mutex> lk( mutexJob );
-    if (bStepJob) return;
-    m_deltaT = deltaT;
-    bStepJob = true;
-	condJob.notify_one();
 }
 
 void Physics::Render( GraphicsContext& Context, const Matrix4& WorldToClip )
@@ -371,4 +325,88 @@ bool Physics::MovePickBody( const btVector3& From, const btVector3& To, const bt
 void Physics::ReleasePickBody()
 {
     m_Picking.ReleasePickBody();
+}
+
+void Physics::Stop()
+{
+    {
+        std::unique_lock<std::mutex> lk( mutexJob );
+        bStepJob = true;
+        bExitJob = true;
+        condJob.notify_one();
+    }
+	pJob->join();
+}
+
+void Physics::Shutdown( void )
+{
+    SoftBodyWorldInfo.m_sparsesdf.Reset();
+    PrimitiveBatch::Shutdown();
+    BulletDebug::Shutdown();
+
+    int Len = (int)DynamicsWorld->getSoftBodyArray().size();
+    for (int i = Len -1; i >= 0; i--)
+    {
+        btSoftBody*	psb = DynamicsWorld->getSoftBodyArray()[i];
+        DynamicsWorld->removeSoftBody( psb );
+        delete psb;
+    }
+    ASSERT(DynamicsWorld->getNumCollisionObjects() == 0,
+        "Remove all rigidbody objects from world");
+
+    DynamicsWorld.reset( nullptr );
+    g_DynamicsWorld = nullptr;
+}
+
+
+void Physics::Update( float deltaT )
+{
+    std::unique_lock<std::mutex> lk( mutexJob );
+    if (bStepJob) return;
+    m_deltaT = deltaT;
+    bStepJob = true;
+	condJob.notify_one();
+}
+
+void Physics::UpdatePicking( D3D11_VIEWPORT MainViewport, const Math::BaseCamera& Camera )
+{
+    auto GetRayTo = [&]( float x, float y) {
+        auto& invView = Camera.GetCameraToWorld();
+        auto& proj = Camera.GetProjMatrix();
+        auto p00 = proj.GetX().GetX();
+        auto p11 = proj.GetY().GetY();
+        float vx = (+2.f * x / MainViewport.Width - 1.f) / p00;
+        float vy = (-2.f * y / MainViewport.Height + 1.f) / p11;
+        Vector3 Dir(XMVector3TransformNormal( Vector3( vx, vy, -1 ), Matrix4(invView) ));
+        return Normalize(Dir);
+    };
+
+    using namespace GameInput;
+    static bool bMouseDrag = false;
+    if (IsFirstReleased( DigitalInput::kMouse0 ))
+    {
+        bMouseDrag = false;
+        Physics::ReleasePickBody();
+    }
+    if (IsFirstPressed( DigitalInput::kMouse0 ) || bMouseDrag)
+    {
+        float sx = (float)GetMousePosition( 0 ), sy = (float)GetMousePosition( 1 );
+        Vector3 rayFrom = Camera.GetPosition();
+        Vector3 rayTo = GetRayTo( sx, sy ) * Camera.GetFarClip() + rayFrom;
+        if (!bMouseDrag)
+        {
+            Physics::PickBody( Convert( rayFrom ), Convert( rayTo ), Convert( Camera.GetForwardVec() ) );
+            bMouseDrag = true;
+        }
+        else
+        {
+            Physics::MovePickBody( Convert( rayFrom ), Convert( rayTo ), Convert( Camera.GetForwardVec() ) );
+        }
+    }
+}
+
+void Physics::Wait()
+{
+    std::unique_lock<std::mutex> lk( mutexJob );
+    condJob.wait( lk, [] { return !bStepJob; } );
 }
