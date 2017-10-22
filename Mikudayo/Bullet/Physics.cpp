@@ -283,6 +283,8 @@ void Physics::Shutdown( void )
 
 void Physics::Update( float deltaT )
 {
+    ScopedTimer _prof( L"Physics" );
+
     DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
     ASSERT(DynamicsWorld.get() != nullptr);
     DynamicsWorld->stepSimulation( deltaT, 1 );

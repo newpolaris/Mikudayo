@@ -419,7 +419,6 @@ void PmxInstant::Context::Update( float kFrameTime )
 				m_VertexMorphedPos.data() );
 		}
 	}
-
 	{
         //
         // in initialize m_LocalPoseDefault and in every motion data

@@ -2,7 +2,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "ModelManager.h"
-#include "Model.h"
+#include "IModel.h"
 #include "PmxModel.h"
 #include "PmxInstant.h"
 #include "ModelAssimp.h"

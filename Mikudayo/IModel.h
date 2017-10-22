@@ -4,9 +4,9 @@ using namespace Math;
 
 enum ModelType
 {
-    kModelNone,
     kModelDefault,
     kModelPMX,
+    kModelUnknown,
 };
 
 struct TextureInfo
@@ -27,6 +27,7 @@ struct ModelInfo
     std::wstring ModelFile;
     std::wstring MotionFile;
     std::wstring DefaultShader = L"Default";
+    ModelType Type = kModelUnknown;
     CustomShaderInfo Shader;
 };
 
@@ -42,3 +43,16 @@ public:
 
 protected:
 };
+
+inline IModel::IModel()
+{
+}
+
+inline IModel::~IModel()
+{
+    Clear();
+}
+
+inline void IModel::Clear()
+{
+}

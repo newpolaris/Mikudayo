@@ -103,6 +103,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BaseMaterial.cpp" />
+    <ClCompile Include="BaseMesh.cpp" />
     <ClCompile Include="BaseModel.cpp" />
     <ClCompile Include="Bone.cpp" />
     <ClCompile Include="Bullet\BaseJoint.cpp" />
@@ -119,7 +121,6 @@
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MiniModel.cpp" />
-    <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelAssimp.cpp" />
     <ClCompile Include="ModelH3D.cpp" />
     <ClCompile Include="ModelManager.cpp" />
@@ -145,7 +146,10 @@
     <ClCompile Include="Vmd.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BaseMaterial.h" />
+    <ClInclude Include="BaseMesh.h" />
     <ClInclude Include="BaseModel.h" />
+    <ClInclude Include="BaseModelTypes.h" />
     <ClInclude Include="Bone.h" />
     <ClInclude Include="Bullet\BaseJoint.h" />
     <ClInclude Include="Bullet\BaseRigidBody.h" />
@@ -164,7 +168,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MiniModel.h" />
-    <ClInclude Include="Model.h" />
+    <ClInclude Include="IModel.h" />
     <ClInclude Include="ModelAssimp.h" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="OpaquePass.h" />

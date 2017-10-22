@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <string>
-#include "Model.h"
+#include "IModel.h"
 #include "SceneNode.h"
 
 namespace ModelManager {

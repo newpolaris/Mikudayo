@@ -51,6 +51,7 @@ private:
 
     Vector3 m_SunColor;
     Vector3 m_SunDirection;
+    Vector3 m_CameraPosition;
 
     Matrix4 m_ViewMatrix;
     Matrix4 m_ProjMatrix;
@@ -184,6 +185,7 @@ void Mikudayo::Update( float deltaT )
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
 
+    m_CameraPosition = GetCamera().GetPosition();
     m_ViewMatrix = GetCamera().GetViewMatrix();
     m_ProjMatrix = GetCamera().GetProjMatrix();
     m_ViewProjMatrix = GetCamera().GetViewProjMatrix();
@@ -200,16 +202,17 @@ void Mikudayo::Update( float deltaT )
 
     Lighting::UpdateLights(GetCamera());
 
-    m_Scene->UpdateScene( m_Frame );
-    Physics::Update( deltaT );
+    if (!EngineProfiling::IsPaused())
+        m_Frame = m_Frame + deltaT * 30.f;
+    {
+        m_Scene->UpdateScene( m_Frame );
+        Physics::Update( deltaT );
+        m_Scene->UpdateSceneAfterPhysics( m_Frame );
+    }
     for (auto& primitive : m_Primitives)
         primitive->Update();
 
-    if (!EngineProfiling::IsPaused())
-        m_Frame = m_Frame + deltaT * 30.f;
-
-    m_Scene->UpdateSceneAfterPhysics( m_Frame );
-
+    // TODO:
     auto GetRayTo = [&]( float x, float y) {
         auto& invView = m_Camera.GetCameraToWorld();
         auto& proj = m_Camera.GetProjMatrix();
@@ -257,10 +260,10 @@ void Mikudayo::RenderScene( void )
         Vector3 LightColor;
         float ShadowTexelSize[4];
     } psConstants;
-    psConstants.LightDirection = m_Camera.GetViewMatrix().Get3x3() * m_SunDirection;
+    psConstants.LightDirection = m_SunDirection;
     psConstants.LightColor = m_SunColor / Vector3( 255.f, 255.f, 255.f );
     psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
-	gfxContext.SetDynamicConstantBufferView( 1, sizeof(psConstants), &psConstants, { kBindPixel } );
+	gfxContext.SetDynamicConstantBufferView( 5, sizeof(psConstants), &psConstants, { kBindVertex, kBindPixel } );
 #if 1
     Lighting::m_LightData[0].Type = Lighting::LightType::Directional;
     Lighting::m_LightData[0].DirectionWS = m_SunDirection;
@@ -291,10 +294,12 @@ void Mikudayo::RenderScene( void )
             Matrix4 view;
             Matrix4 projection;
             Matrix4 viewToShadow;
+            Vector3 cameraPosition;
         } vsConstants;
         vsConstants.view = m_ViewMatrix;
         vsConstants.projection = m_ProjMatrix;
         vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
+        vsConstants.cameraPosition = m_CameraPosition;
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
 
         ScopedTimer _prof( L"Render Color", gfxContext );
@@ -318,7 +323,7 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
-    Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
+    // Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
     Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 }
 

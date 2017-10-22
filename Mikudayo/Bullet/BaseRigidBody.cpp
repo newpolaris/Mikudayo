@@ -170,9 +170,8 @@ void BaseRigidBody::SyncLocalTransform()
         {
             m_BoneRef.UpdateLocalTransform();
             tr.setOrigin( Convert(m_BoneRef.GetTransform().GetTranslation()) );
-        #if 1 // Update rigid-body
+            // Update rigid-body
             m_Body->setCenterOfMassTransform( tr * m_Trans );
-        #endif
         }
         m_BoneRef.SetTransform( tr );
     }

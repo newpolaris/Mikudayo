@@ -111,9 +111,6 @@
     <ClCompile Include="Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BaseModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -130,6 +127,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MiniModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseMaterial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -233,9 +236,6 @@
     <ClInclude Include="RenderArgs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -252,6 +252,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MiniModel.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseMaterial.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseMesh.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseModelTypes.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IModel.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

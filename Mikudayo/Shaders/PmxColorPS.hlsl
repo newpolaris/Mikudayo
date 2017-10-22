@@ -15,7 +15,7 @@ static const int kSphereNone = 0;
 static const int kSphereMul = 1;
 static const int kSphereAdd = 2;
 
-cbuffer PSConstants : register(b1)
+cbuffer PSConstants : register(b5)
 {
     float3 SunDirectionVS;
     float3 SunColor;

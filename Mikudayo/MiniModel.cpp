@@ -13,6 +13,7 @@
 
 #include "stdafx.h"
 #include "MiniModel.h"
+#include "BaseMaterial.h"
 #include <string.h>
 #include <float.h>
 

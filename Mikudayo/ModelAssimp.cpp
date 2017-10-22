@@ -15,6 +15,8 @@
 #include "stdafx.h"
 #include "ModelAssimp.h"
 #include "TextUtility.h"
+#include "BaseMaterial.h"
+#include "BaseMesh.h"
 #include <assert.h>
 
 #include <assimp/Importer.hpp>

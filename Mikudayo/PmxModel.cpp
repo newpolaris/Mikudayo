@@ -1,7 +1,7 @@
 ﻿#include "stdafx.h"
 #include "PmxModel.h"
 #include "KeyFrameAnimation.h"
-#include "Model.h"
+#include "IModel.h"
 #include "Pmx.h"
 #include "Color.h"
 

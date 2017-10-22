@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "Math/BoundingBox.h"
-#include "Model.h"
+#include "IModel.h"
 #include "Mesh.h"
 #include "Material.h"
 #include "Pmx.h"
