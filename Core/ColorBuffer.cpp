@@ -14,6 +14,7 @@
 #include "pch.h"
 #include "GraphicsCore.h"
 #include "ColorBuffer.h"
+#include "DirectXTex.h" // HasAlpha
 
 void ColorBuffer::CreateDerivedViews( ID3D11Device* Device, DXGI_FORMAT Format, uint32_t ArraySize, uint32_t NumMips )
 {
@@ -140,4 +141,9 @@ void ColorBuffer::Destroy()
 	for (uint32_t i = 0; i < kUAVSize; ++i)
 		m_UAVHandle[i].Reset();
 	PixelBuffer::Destroy();
+}
+
+bool ColorBuffer::IsTransparent() const
+{
+    return HasAlpha( m_Format );
 }

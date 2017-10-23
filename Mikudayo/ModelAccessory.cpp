@@ -2,6 +2,7 @@
 #include "ModelAccessory.h"
 #include "Material.h"
 
+class IColorBuffer;
 struct DefaultMaterial : IMaterial
 {
     Math::Vector4 diffuse;
@@ -10,7 +11,7 @@ struct DefaultMaterial : IMaterial
     Math::Vector3 emissive;
     float specularPower; // specular exponent
     enum { kDiffuse, kTexCount = 1 };
-    const ManagedTexture* textures[kTexCount];
+    const IColorBuffer* textures[kTexCount];
     std::wstring name;
 
     bool IsTransparent() const override;
@@ -66,7 +67,7 @@ void ModelAccessory::LoadMaterials()
         material->specular = pMaterial.specular;
         material->emissive = pMaterial.emissive;
         material->specularPower = pMaterial.shininess;
-        const ManagedTexture** MatTextures = material->textures;
+        const IColorBuffer** MatTextures = material->textures;
         MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, true);
         m_Materials.push_back( std::move( material ) );
     }

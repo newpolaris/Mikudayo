@@ -136,11 +136,13 @@ bool MiniModel::Load( const ModelInfo& info )
     return true;
 }
 
-const ManagedTexture* MiniModel::LoadTexture( const std::string& name, bool bSRGB )
+const IColorBuffer* MiniModel::LoadTexture( const std::string& name, bool bSRGB )
 {
     using Path = boost::filesystem::path;
     if (name.empty())
         return nullptr;
+    if (Path(name).filename() == "screen.bmp")
+        return &Graphics::g_PreviousColorBuffer;
     const Path modelPath = Path( Utility::MakeStr( m_FileName ) );
     const Path imagePath = modelPath.parent_path() / name;
     bool bExist = boost::filesystem::exists( imagePath );

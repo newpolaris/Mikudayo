@@ -16,12 +16,13 @@
 
 #include "pch.h"
 #include "GpuResource.h"
+#include "IColorBuffer.h"
 #include "Mapping.h"
 #include "Utility.h"
 #include "TextUtility.h"
 #include "FileUtility.h"
 
-class Texture : public GpuResource
+class Texture : public GpuResource, public IColorBuffer
 {
 	friend class CommandContext;
 
@@ -42,7 +43,7 @@ public:
 		m_SRV = nullptr;
 	}
 
-	virtual const D3D11_SRV_HANDLE GetSRV() const { return m_SRV.Get(); }
+	virtual const D3D11_SRV_HANDLE GetSRV() const override { return m_SRV.Get(); }
     void SetProperty( void );
 
 	bool operator!() { return m_SRV == nullptr; }

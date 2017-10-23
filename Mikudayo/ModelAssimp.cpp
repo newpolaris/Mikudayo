@@ -446,7 +446,7 @@ void AssimpModel::LoadMaterials()
         material->opacity = pMaterial.opacity;
         material->shininess = pMaterial.shininess;
         material->specularStrength = pMaterial.specularStrength;
-        const ManagedTexture** MatTextures = material->textures;
+        const IColorBuffer** MatTextures = material->textures;
         MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, true);
         MatTextures[1] = LoadTexture(pMaterial.texSpecularPath, true);
         MatTextures[2] = LoadTexture(pMaterial.texEmissivePath, true);

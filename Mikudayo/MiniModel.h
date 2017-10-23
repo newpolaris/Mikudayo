@@ -21,6 +21,7 @@
 
 using namespace Math;
 
+class IColorBuffer;
 class MiniModel : public BaseModel
 {
 public:
@@ -186,7 +187,7 @@ public:
 protected:
 
     virtual bool Load( const char* filename );
-    const ManagedTexture* LoadTexture( const std::string& name, bool bSRGB );
+    const IColorBuffer* LoadTexture( const std::string& name, bool bSRGB );
 
 	bool ImportH3D(const char *filename);
 	bool SaveH3D(const char *filename) const;

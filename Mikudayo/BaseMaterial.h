@@ -15,7 +15,7 @@ struct BaseMaterial : IMaterial
     float shininess; // specular exponent
     float specularStrength; // multiplier on top of specular color
     enum { kDiffuse, kSpecular, kEmissive, kNormal, kLightmap, kReflection, kTexCount = 6 };
-    const ManagedTexture* textures[kTexCount];
+    const IColorBuffer* textures[kTexCount];
     std::wstring name;
 
     bool IsTransparent() const override;

@@ -18,6 +18,7 @@
 #include "RenderBonePass.h"
 #include "ForwardLighting.h"
 #include "TaskManager.h"
+#include "TemporalEffects.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -44,8 +45,8 @@ private:
     Camera m_Camera;
     Camera m_SecondCamera;
     ShadowCamera m_SunShadow;
-    std::auto_ptr<CameraController> m_CameraController;
-    std::auto_ptr<CameraController> m_SecondCameraController;
+    std::unique_ptr<CameraController> m_CameraController;
+    std::unique_ptr<CameraController> m_SecondCameraController;
 	Motion m_Motion;
 
     const Vector3 m_MinBound = Vector3( -100, 0, -350 );
@@ -103,6 +104,9 @@ void Mikudayo::Startup( void )
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
+    // TemporalEffects::EnableTAA = true;
+    // PostEffects::EnableHDR = true;
+
     // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
@@ -158,6 +162,10 @@ void Mikudayo::Startup( void )
     instance = ModelManager::Load( stage );
     if (instance)
         m_Scene->AddChild( instance );
+
+    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
+    if (instance)
+        m_Scene->AddChild( instance );
 }
 
 void Mikudayo::Cleanup( void )
@@ -190,6 +198,16 @@ void Mikudayo::Update( float deltaT )
     m_ViewMatrix = GetCamera().GetViewMatrix();
     m_ProjMatrix = GetCamera().GetProjMatrix();
     m_ViewProjMatrix = GetCamera().GetViewProjMatrix();
+
+    // We use viewport offsets to jitter sample positions from frame to frame (for TAA.)
+    // D3D has a design quirk with fractional offsets such that the implicit scissor
+    // region of a viewport is floor(TopLeftXY) and floor(TopLeftXY + WidthHeight), so
+    // having a negative fractional top left, e.g. (-0.25, -0.25) would also shift the
+    // BottomRight corner up by a whole integer.  One solution is to pad your viewport
+    // dimensions with an extra pixel.  My solution is to only use positive fractional offsets,
+    // but that means that the average sample position is +0.5, which I use when I disable
+    // temporal AA.
+    TemporalEffects::GetJitterOffset(m_MainViewport.TopLeftX, m_MainViewport.TopLeftY);
 
 	m_MainViewport.Width = (float)g_SceneColorBuffer.GetWidth();
 	m_MainViewport.Height = (float)g_SceneColorBuffer.GetHeight();
@@ -273,6 +291,9 @@ void Mikudayo::RenderScene( void )
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
     }
     gfxContext.SetRenderTarget( nullptr );
+
+    TemporalEffects::ResolveImage(gfxContext);
+
 	gfxContext.Finish();
 }
 
@@ -285,8 +306,8 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
     // Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
     // Utility::DebugTexture( Context, g_aBloomUAV1[0].GetSRV() );
-    Utility::DebugTexture( Context, g_EmissiveColorBuffer.GetSRV() );
-    Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
+    // Utility::DebugTexture( Context, g_EmissiveColorBuffer.GetSRV() );
+	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 }
 
 const BaseCamera& Mikudayo::GetCamera()

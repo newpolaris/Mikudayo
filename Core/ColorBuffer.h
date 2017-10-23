@@ -17,8 +17,9 @@
 #include "Color.h"
 #include "EsramAllocator.h"
 #include "Mapping.h"
+#include "IColorBuffer.h"
 
-class ColorBuffer : public PixelBuffer
+class ColorBuffer : public PixelBuffer, public IColorBuffer
 {
 public:
 	ColorBuffer( Color ClearColor = Color(0.0f, 0.0f, 0.0f, 0.0f) )
@@ -49,6 +50,8 @@ public:
 	const D3D11_SRV_HANDLE GetSRV( void ) const { return m_SRVHandle.Get(); }
 	const D3D11_RTV_HANDLE GetRTV( void ) const { return m_RTVHandle.Get(); }
 	const D3D11_UAV_HANDLE GetUAV( void ) const { return m_UAVHandle[0].Get(); }
+
+    bool IsTransparent() const;
 	
 	void SetClearColor( Color ClearColor ) { m_ClearColor = ClearColor; }
 
