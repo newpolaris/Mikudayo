@@ -7,7 +7,12 @@
 #include "ModelManager.h"
 #include "RenderArgs.h"
 #include "Scene.h"
+#include "Motion.h"
+#include "Camera.h"
 #include "ShadowCamera.h"
+#include "MikuCamera.h"
+#include "CameraController.h"
+#include "MikuCameraController.h"
 #include "DebugHelper.h"
 #include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
@@ -41,6 +46,7 @@ private:
     ShadowCamera m_SunShadow;
     std::auto_ptr<CameraController> m_CameraController;
     std::auto_ptr<CameraController> m_SecondCameraController;
+	Motion m_Motion;
 
     const Vector3 m_MinBound = Vector3( -100, 0, -350 );
     const Vector3 m_MaxBound = Vector3( 100, 25, 100 );

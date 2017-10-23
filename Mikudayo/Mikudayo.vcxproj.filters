@@ -144,6 +144,15 @@
     <ClCompile Include="TaskManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MikuCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MikuCameraController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Motion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -282,6 +291,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TaskManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MikuCamera.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MikuCameraController.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Motion.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
