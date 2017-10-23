@@ -7,7 +7,6 @@
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
-#include "CompiledShaders/PmxColor2PS.h"
 #include "CompiledShaders/OutlineVS.h"
 #include "CompiledShaders/OutlinePS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
@@ -128,37 +127,7 @@ void PmxModel::Initialize()
         Default[kRenderQueueOutline] = OutlinePSO;
         Default[kRenderQueueShadow] = ShadowPSO;
     }
-    RenderPipelineList Stage;
-    RenderPipelinePtr Opaque2PSO, Transparent2PSO, TransparentTwoSided2PSO, Final2PSO;
-    {
-        Opaque2PSO = std::make_shared<GraphicsPSO>();
-        *Opaque2PSO = *OpaquePSO;
-        Opaque2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
-        Opaque2PSO->Finalize();
-
-        Transparent2PSO = std::make_shared<GraphicsPSO>();
-        *Transparent2PSO = *TransparentPSO;
-        Transparent2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
-        Transparent2PSO->Finalize();
-
-        TransparentTwoSided2PSO = std::make_shared<GraphicsPSO>();
-        *TransparentTwoSided2PSO = *TransparentTwoSidedPSO;
-        TransparentTwoSided2PSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
-        TransparentTwoSided2PSO->Finalize();
-
-        Final2PSO = std::make_shared<GraphicsPSO>();
-        *Final2PSO = *FinalPSO;
-        Final2PSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinal2PS ) );
-        Final2PSO->Finalize();
-        
-        Stage = Default;
-        Stage[kRenderQueueOpaque] = Opaque2PSO;
-        Stage[kRenderQueueTransparent] = Transparent2PSO;
-        Stage[kRenderQueueTransparentTwoSided] = TransparentTwoSided2PSO;
-        Stage[kRenderQueueDeferredFinal] = Final2PSO;
-    }
     Techniques.emplace( L"Default", std::move( Default ) );
-    Techniques.emplace( L"Stage", std::move( Stage ) );
 }
 
 void PmxModel::Shutdown()

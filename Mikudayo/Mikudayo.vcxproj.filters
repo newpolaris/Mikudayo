@@ -334,9 +334,6 @@
     <FxCompile Include="Shaders\DepthViewerVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PmxColor2PS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\DeferredFinal2PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>

@@ -149,7 +149,6 @@ void Mikudayo::Startup( void )
 #elif STAGE
     stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
 #endif
-    stage.DefaultShader = L"Stage";
     instance = ModelManager::Load( stage );
     if (instance)
         m_Scene->AddChild( instance );

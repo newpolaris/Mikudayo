@@ -70,16 +70,16 @@ static const int kSphereMul = 1;
 static const int kSphereAdd = 2;
 
 static float4 MaterialDiffuse = float4(Mat.diffuse, Mat.alpha);
-static float3 MaterialAmbient = Mat.ambient;
-static float3 MaterialEmissive = float3(0, 0, 0);
+static float3 MaterialAmbient = Mat.diffuse;
+static float3 MaterialEmissive = Mat.ambient;
 static float3 MaterialSpecular = Mat.specular;
-static float3 LightDiffuse = float3(0, 0, 0);
+static float3 LightDiffuse = SunColor;
 static float3 LightAmbient = SunColor;
 static float3 LightSpecular = SunColor;
-static bool IsEmission = (100 < Mat.specularPower) && (length(MaterialSpecular) < 0.05);
 #if !AUTOLUMINOUS
 static float3 AutoLuminousColor = float3(0, 0, 0);
 #else
+static bool IsEmission = (100 < Mat.specularPower) && (length(MaterialSpecular) < 0.05);
 static float3 AutoLuminousColor = (IsEmission ? MaterialDiffuse.rgb : float3(0, 0, 0));
 #endif
 static float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
@@ -89,7 +89,7 @@ static float3 SpecularColor = MaterialSpecular * LightSpecular;
 // Simple shader to do vertex processing on the GPU.
 PixelShaderInput main(VertexShaderInput input)
 {
-	PixelShaderInput output;
+	PixelShaderInput output = (PixelShaderInput)0;
     Material mat = Mat;
 
     float3 position = BoneSkinning( input.position, input.boneWeight, input.boneID );

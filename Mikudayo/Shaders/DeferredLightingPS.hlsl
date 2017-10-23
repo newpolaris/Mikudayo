@@ -2,8 +2,8 @@
 
 struct PixelShaderOutput
 {
-    float3 Diffuse : SV_Target0;   // Diffuse Albedo (R11G11B11_FLOAT)
-    float3 Specular : SV_Target1;   // Specular Color (R11G11B11_FLOAT)
+    float3 Diffuse : SV_Target0;   // Diffuse Albedo (R11G11B10_FLOAT)
+    float3 Specular : SV_Target1;   // Specular Color (R11G11B10_FLOAT)
 };
 
 SamplerState linearRepeat : register(s0);

@@ -62,7 +62,7 @@ struct PixelShaderInput
 struct PixelShaderOutput
 {
     float4 color : SV_Target0;   // color pixel output (R11G11B10_FLOAT)
-    float4 emissive : SV_Target1; // 
+    float4 emissive : SV_Target1; // emissive color output (R11G11B10_FLOAT)
 };
 
 [earlydepthstencil]
