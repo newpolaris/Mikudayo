@@ -172,6 +172,7 @@
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="IndexOptimizePostTransform.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
+    <ClInclude Include="LinearColor.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MikuCamera.h" />

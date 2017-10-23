@@ -1,7 +1,7 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
-#define AUTOLUMINOUS 0
+#define AUTOLUMINOUS 1
 
 cbuffer Constants: register(b0)
 {
@@ -106,7 +106,6 @@ PixelShaderInput main(VertexShaderInput input)
     }
     output.color.a = DiffuseColor.a;
     output.color = saturate( output.color );
-    output.emissive = float4(MaterialEmissive, MaterialDiffuse.a);
 	output.texCoord = input.texcoord;
     if ( mat.sphereOperation != kSphereNone ) {
         float2 normalVS = mul( (float3x3)view, output.normalWS ).xy;
@@ -118,7 +117,7 @@ PixelShaderInput main(VertexShaderInput input)
 #if AUTOLUMINOUS
     if (IsEmission)
     {
-        output.emissive.rgb += MaterialDiffuse.rgb;
+        output.emissive = MaterialDiffuse;
         // from Autoluminous 'EmittionPower0'
         float factor = max( 1, (mat.specularPower - 100) / 7 );
         output.emissive.rgb *= factor*2;

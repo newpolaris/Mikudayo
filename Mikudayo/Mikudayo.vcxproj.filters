@@ -302,6 +302,9 @@
     <ClInclude Include="Motion.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="LinearColor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ModelPrimitiveVS.hlsl">

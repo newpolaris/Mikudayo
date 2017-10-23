@@ -91,10 +91,8 @@ PixelShaderOutput main(PixelShaderInput input)
     float4 color = input.color;
     float4 emissive = input.emissive;
 
-    if (mat.bUseTexture) {
+    if (mat.bUseTexture)
         color *= texDiffuse.Sample( sampler0, input.texCoord );
-        emissive *= texDiffuse.Sample( sampler0, input.texCoord );
-    }
 
     if (mat.sphereOperation != kSphereNone) {
         float4 texColor = texSphere.Sample( sampler0, input.spTex );
@@ -112,6 +110,6 @@ PixelShaderOutput main(PixelShaderInput input)
 
     color.rgb += input.specular;
     output.color = color;
-    output.emissive = emissive;
+    output.emissive = emissive * color;
     return output;
 }
