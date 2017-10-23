@@ -1,6 +1,6 @@
 #include "CommonInclude.hlsli"
 
-#define AUTOLUMINOUS 0
+#define AUTOLUMINOUS 1
 
 struct Material
 {
@@ -78,10 +78,6 @@ PixelShaderOutput main(PixelShaderInput input)
         emissive *= texDiffuse.Sample( sampler0, input.texCoord );
     }
     color.rgb += input.specular;
-#if AUTOLUMINOUS
-    if (any(input.emissive))
-        emissive *= max( 0, mat.shininess - 100 ) / 7.0;
-#endif
     output.color = color;
     output.emissive = emissive;
     return output;

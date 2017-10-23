@@ -1,4 +1,4 @@
-#define AUTOLUMINOUS 0
+#define AUTOLUMINOUS 1
 
 struct Material
 {
@@ -80,10 +80,15 @@ static float3 MaterialSpecular = Mat.specular;
 static float3 LightDiffuse = float3(1, 1, 1);
 static float3 LightAmbient = SunColor - 0.3;
 static float3 LightSpecular = SunColor;
+static bool IsEmission = (100 < Mat.shininess) && (length(MaterialSpecular) < 0.05);
+#if !AUTOLUMINOUS
+static float3 AutoLuminousColor = float3(0, 0, 0);
+#else
+static float3 AutoLuminousColor = (IsEmission ? MaterialDiffuse.rgb : float3(0, 0, 0));
+#endif
 static float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
-static float3 AmbientColor  = MaterialAmbient  * LightAmbient + MaterialEmissive;
+static float3 AmbientColor = MaterialAmbient * LightAmbient + MaterialEmissive + AutoLuminousColor;
 static float3 SpecularColor = MaterialSpecular * LightSpecular;
-static bool IsEmission = (100 < Mat.shininess) && (length(MaterialSpecular) < 0.01);
 
 // Simple shader to do vertex processing on the GPU.
 PixelShaderInput main(VertexShaderInput input)
@@ -100,22 +105,20 @@ PixelShaderInput main(VertexShaderInput input)
     output.color.rgb = AmbientColor;
     output.color.rgb += max( 0, dot( output.normalWS, -SunDirectionWS ) ) * DiffuseColor.rgb;
     output.color.a = DiffuseColor.a;
-#if 0
-    output.color = saturate( output.color );
-#else
     output.color = output.color;
-#endif
-#if !AUTOLUMINOUS
     output.emissive = float4(MaterialEmissive, MaterialDiffuse.a);
-#else
-    output.emissive = MaterialDiffuse;
-    output.emissive.rgb += MaterialEmissive / 2;
-    output.emissive.rgb *= 0.5;
-    output.emissive.rgb = IsEmission ? output.emissive.rgb : float3(0, 0, 0);
-#endif
 	output.texCoord = input.texcoord;
-
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );
     output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.shininess ) * SpecularColor;
+#if AUTOLUMINOUS
+    if (IsEmission)
+    {
+        output.emissive.rgb += MaterialDiffuse.rgb;
+        // from Autoluminous 'EmittionPower0'
+        float factor = max( 1, (mat.shininess - 100) / 7 );
+        output.emissive.rgb *= factor*2;
+        output.color.rgb *= factor*2;
+    }
+#endif
 	return output;
 }
