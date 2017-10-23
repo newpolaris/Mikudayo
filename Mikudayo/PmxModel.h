@@ -53,7 +53,7 @@ public:
 		int32_t bUseTexture;
 		int32_t bUseToon;
         float EdgeSize;
-        Color EdgeColor;
+        XMFLOAT4 EdgeColor;
 	};
 
     struct Material : public IMaterial

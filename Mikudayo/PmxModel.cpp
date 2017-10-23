@@ -44,6 +44,21 @@ namespace {
     };
 
     std::map<std::wstring, RenderPipelineList> Techniques;
+
+#define LinearColor 1
+#if LinearColor
+    bool bSRGB = true;
+    template <typename T>
+    T ConvertColor(T t) {
+        return FromSRGB( t );
+    }
+#else
+    bool bSRGB = false;
+    template <typename T>
+    T ConvertColor(T t) {
+        return t;
+    }
+#endif
 }
 
 void PmxModel::Initialize()
@@ -240,9 +255,9 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         mat.ShaderName = m_DefaultShader;
         mat.TexturePathes.resize(kTextureMax);
         if (material.DiffuseTexureIndex >= 0)
-            mat.TexturePathes[kTextureDiffuse] = { true, pmx.m_Textures[material.DiffuseTexureIndex] };
+            mat.TexturePathes[kTextureDiffuse] = { bSRGB, pmx.m_Textures[material.DiffuseTexureIndex] };
         if (material.SphereTextureIndex >= 0)
-            mat.TexturePathes[kTextureSphere] = { true, pmx.m_Textures[material.SphereTextureIndex] };
+            mat.TexturePathes[kTextureSphere] = { bSRGB, pmx.m_Textures[material.SphereTextureIndex] };
 
         std::wstring ToonName;
         if (material.bDefaultToon)
@@ -250,20 +265,20 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         else if (material.Toon >= 0)
             ToonName = pmx.m_Textures[material.Toon];
         if (!ToonName.empty())
-            mat.TexturePathes[kTextureToon] = { true, ToonName };
+            mat.TexturePathes[kTextureToon] = { bSRGB, ToonName };
 
         MaterialCB cb = {};
-		cb.Diffuse = FromSRGB(material.Diffuse);
-		cb.Specular = FromSRGB(material.Specular);
+		cb.Diffuse = ConvertColor(material.Diffuse);
+		cb.Specular = ConvertColor(material.Specular);
 		cb.SpecularPower = material.SpecularPower;
-        cb.Ambient = FromSRGB(material.Ambient);
+        cb.Ambient = ConvertColor(material.Ambient);
         cb.SphereOperation = material.SphereOperation;
         if (mat.TexturePathes[kTextureSphere].Path.empty())
             cb.SphereOperation = Pmx::ESphereOpeation::kNone;
 
         mat.CB = cb;
 		mat.CB.EdgeSize = material.EdgeSize;
-		mat.CB.EdgeColor = Color(Vector4(material.EdgeColor)).FromSRGB();
+        mat.CB.EdgeColor = ConvertColor(material.EdgeColor);
         mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
         mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
         mat.bTwoSided = material.BitFlag & Pmx::EMaterialFlag::kCullOff;
