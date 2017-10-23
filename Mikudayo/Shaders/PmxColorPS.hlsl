@@ -1,14 +1,40 @@
 #include "CommonInclude.hlsli"
-#include "PmxHeader.hlsli"
 
-// Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
-    float4 posHS : SV_POSITION;
-    float3 posVS : POSITION0;
-    float3 normalVS : NORMAL;
-    float2 uv : TEXTURE0;
-    float3 shadowCoord : TEXTURE1;
+    float4 positionHS : SV_POSITION;
+    float3 eyeWS : POSITION0;
+    float2 texCoord : TEXCOORD0;
+    float2 spTex : TEXCOORD1;
+    float3 normalWS : NORMAL;
+    float4 color : COLOR0;
+    float3 specular : COLOR1;
+    float4 emissive : COLOR2;
+};
+
+struct PixelShaderOutput
+{
+    float4 color : SV_Target0;   // color pixel output (R11G11B10_FLOAT)
+    float4 emissive : SV_Target1; // 
+};
+
+struct Material
+{
+	float3 diffuse;
+	float alpha;
+	float3 specular;
+	float specularPower;
+	float3 ambient;
+    int sphereOperation;
+    int bUseTexture;
+    int bUseToon;
+    float EdgeSize;
+    float4 EdgeColor;
+};
+
+cbuffer MaterialConstants : register(b4)
+{
+    Material Mat;
 };
 
 static const int kSphereNone = 0;
@@ -17,14 +43,14 @@ static const int kSphereAdd = 2;
 
 cbuffer PSConstants : register(b5)
 {
-    float3 SunDirectionVS;
+    float3 SunDirectionWS;
     float3 SunColor;
     float4 ShadowTexelSize;
 }
 
 Texture2D<float4> texDiffuse : register(t1);
-Texture2D<float3> texSphere : register(t2);
-Texture2D<float3> texToon : register(t3);
+Texture2D<float4> texSphere : register(t2);
+Texture2D<float4> texToon : register(t3);
 Texture2D<float> ShadowTexture : register(t7);
 
 SamplerState sampler0 : register(s0);
@@ -56,61 +82,34 @@ float GetShadow( float3 ShadowCoord )
     return result * result;
 }
 
-// A pass-through function for the (interpolated) color data.
-float4 main(PixelShaderInput input) : SV_TARGET
-{
-    float3 lightVecVS = normalize(-SunDirectionVS);
-    float3 normalVS = normalize(input.normalVS);
-    float intensity = dot(lightVecVS, normalVS) * 0.5 + 0.5;
-    float2 toonCoord = float2(0.5, 1.0 - intensity);
+[earlydepthstencil]
+PixelShaderOutput main(PixelShaderInput input)
+{ 
+    PixelShaderOutput output;
+    Material mat = Mat;
 
-    float3 toEyeV = -input.posVS;
-    float3 halfV = normalize(toEyeV + lightVecVS);
+    float4 color = input.color;
+    float4 emissive = input.emissive;
 
-    float NdotH = dot(normalVS, halfV);
-    float specularFactor = pow(max(NdotH, 0.001f), material.specularPower);
-    float3 sunDiffuse = SunColor * max(0, dot(lightVecVS, normalVS));
-    float3 sunSpecular = SunColor * specularFactor;
-
-    float3 diffuse = material.diffuse;
-    float3 ambient = material.ambient;
-    float3 specular = material.specular;
-
-    float texAlpha = 1.0;
-    float3 texColor = float3(1.0, 1.0, 1.0);
-    if (bUseTexture)
-    {
-        float4 tex = texDiffuse.Sample(sampler0, input.uv);
-        texColor = tex.xyz;
-        texAlpha = tex.w;
+    if (mat.bUseTexture) {
+        color *= texDiffuse.Sample( sampler0, input.texCoord );
+        emissive *= texDiffuse.Sample( sampler0, input.texCoord );
     }
-    float2 sphereCoord = 0.5 + 0.5*float2(1.0, -1.0) * normalVS.xy;
-    if (sphereOperation == kSphereAdd)
-        texColor += texSphere.Sample(sampler0, sphereCoord);
-    else if (sphereOperation == kSphereMul)
-        texColor *= texSphere.Sample(sampler0, sphereCoord);
-    if (bUseToon)
-        texColor *= texToon.Sample(sampler0, toonCoord);
 
-    diffuse = texColor * diffuse;
-    ambient = texColor * ambient;
-
-#if ENABLE_STAGE
-    LightingResult lit = DoLighting(Lights, material.specularPower, input.posVS, normalVS);
-    float3 color = diffuse * lit.Diffuse.xyz + ambient + specular * lit.Specular.xyz;
-    float alpha = texAlpha * material.alpha;
-
-    Light light = (Light)0;
-    light.DirectionVS = float4(SunDirectionVS, 1);
-    light.Color = float4(SunColor, 1);
-    LightingResult sunLit = DoDirectionalLight( light, material.specularPower, -input.posVS, normalVS );
-    float shadow = GetShadow(input.shadowCoord);
-    float3 sunColor = diffuse * sunLit.Diffuse.xyz + specular * sunLit.Specular.xyz;
-    color += shadow * sunColor;
-#else
-    float3 color = diffuse*SunColor + ambient + specular * specularFactor;
-    float alpha = texAlpha * material.alpha;
-#endif
-
-    return float4(color, alpha);
+    if (mat.sphereOperation != kSphereNone) {
+        float4 texColor = texSphere.Sample( sampler0, input.spTex );
+        if (mat.sphereOperation == kSphereAdd)
+            color.rgb += texColor.rgb;
+        else
+            color.rgb *= texColor.rgb;
+        color.a *= texColor.a;
+    }
+    if (mat.bUseToon) {
+        float lightNormal = dot( input.normalWS, -SunDirectionWS );
+        color *= texToon.Sample( sampler0, float2(0, 0.5 - lightNormal * 0.5) );
+    }
+    color.rgb += input.specular;
+    output.color = color;
+    output.emissive = emissive;
+    return output;
 }

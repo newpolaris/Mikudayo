@@ -113,7 +113,7 @@ void Mikudayo::Startup( void )
 
     m_Scene = std::make_shared<Scene>();
     SceneNodePtr instance;
-#if 1
+#if 0
     const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
     // const std::wstring testModel = L"Model/vikings_islands/Islands.obj";
     instance = ModelManager::Load( testModel );
@@ -134,10 +134,10 @@ void Mikudayo::Startup( void )
     if (instance)
         m_Scene->AddChild( instance );
 
-// #define HALLOWEEN
-// #define BOARD
-// #define FLOOR
-// #define STAGE
+// #define HALLOWEEN 1
+// #define BOARD 1
+// #define FLOOR 1
+#define STAGE 1
 
     ModelInfo stage;
 #if BOARD
@@ -147,7 +147,7 @@ void Mikudayo::Startup( void )
 #elif FLOOR
     stage.ModelFile = L"Model/Floor.pmx";
 #elif STAGE
-    stage.ModelFile = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.pmx";
+    stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
 #endif
     stage.DefaultShader = L"Stage";
     instance = ModelManager::Load( stage );

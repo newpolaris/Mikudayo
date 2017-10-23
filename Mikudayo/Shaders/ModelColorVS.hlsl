@@ -36,7 +36,7 @@ cbuffer Constants: register(b0)
     float3 cameraPosition;
 };
 
-cbuffer Constants : register(b2)
+cbuffer Model : register(b2)
 {
 	matrix model;
 };
@@ -105,7 +105,6 @@ PixelShaderInput main(VertexShaderInput input)
     output.color.rgb = AmbientColor;
     output.color.rgb += max( 0, dot( output.normalWS, -SunDirectionWS ) ) * DiffuseColor.rgb;
     output.color.a = DiffuseColor.a;
-    output.color = output.color;
     output.emissive = float4(MaterialEmissive, MaterialDiffuse.a);
 	output.texCoord = input.texcoord;
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );

@@ -14,6 +14,11 @@ void RenderPass::SetRenderArgs( RenderArgs& args )
     m_RenderArgs = &args;
 }
 
+bool RenderPass::Visit( IMesh& mesh )
+{
+    return true;
+}
+
 bool RenderPass::Visit( IMaterial& material ) 
 { 
     if (!Enable( material ))

@@ -20,6 +20,7 @@ public:
     // Inherited from Visitor
     virtual bool Visit( SceneNode& node ) override;
     virtual bool Visit( IMaterial& material ) override;
+    virtual bool Visit( IMesh& mesh ) override;
 
     RenderQueue m_RenderQueue;
     RenderArgs* m_RenderArgs = nullptr;
