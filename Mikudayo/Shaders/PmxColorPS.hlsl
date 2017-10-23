@@ -104,10 +104,12 @@ PixelShaderOutput main(PixelShaderInput input)
             color.rgb *= texColor.rgb;
         color.a *= texColor.a;
     }
+
     if (mat.bUseToon) {
         float lightNormal = dot( input.normalWS, -SunDirectionWS );
-        color *= texToon.Sample( sampler0, float2(0, 0.5 - lightNormal * 0.5) );
+        color *= texToon.Sample( sampler1, float2(0, 0.5 - lightNormal * 0.5) );
     }
+
     color.rgb += input.specular;
     output.color = color;
     output.emissive = emissive;
