@@ -1,7 +1,7 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
-#define AUTOLUMINOUS 1
+#define AUTOLUMINOUS 0
 
 cbuffer Constants: register(b0)
 {
@@ -73,7 +73,7 @@ static float4 MaterialDiffuse = float4(Mat.diffuse, Mat.alpha);
 static float3 MaterialAmbient = Mat.diffuse;
 static float3 MaterialEmissive = Mat.ambient;
 static float3 MaterialSpecular = Mat.specular;
-static float3 LightDiffuse = SunColor;
+static float3 LightDiffuse = float3(0,0,0);
 static float3 LightAmbient = SunColor;
 static float3 LightSpecular = SunColor;
 #if !AUTOLUMINOUS
