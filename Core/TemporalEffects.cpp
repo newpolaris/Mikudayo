@@ -68,10 +68,6 @@ void TemporalEffects::Initialize( void )
 
 void TemporalEffects::Shutdown( void )
 {
-    s_TemporalBlendCS.Destroy();
-    s_BoundNeighborhoodCS.Destroy();
-    s_SharpenTAACS.Destroy();
-    s_ResolveTAACS.Destroy();
 }
 
 void TemporalEffects::Update( uint64_t FrameIndex )

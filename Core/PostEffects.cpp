@@ -491,6 +491,6 @@ void PostEffects::Render( void )
         Context.Dispatch(1, 32);
         Context.TransitionResource(g_SceneColorBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     }
-
+    Context.CopyBuffer( g_PreviousColorBuffer, g_SceneColorBuffer );
     Context.Finish();
 }
