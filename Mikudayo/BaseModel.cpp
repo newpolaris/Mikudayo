@@ -90,6 +90,14 @@ void BaseModel::Clear()
     m_IndexBufferDepth.Destroy();
 }
 
+bool BaseModel::Load( const ModelInfo& info )
+{
+    m_FileName = info.ModelFile;
+    m_DefaultShader = info.DefaultShader;
+
+    return true;
+}
+
 void BaseModel::Render( GraphicsContext& gfxContext, Visitor& visitor )
 {
     gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_Transform), &m_Transform, { kBindVertex } );
@@ -107,10 +115,12 @@ void BaseModel::Render( GraphicsContext& gfxContext, Visitor& visitor )
 	}
 }
 
-bool BaseModel::Load( const ModelInfo& info )
+Math::Matrix4 BaseModel::GetTransform() const
 {
-    m_FileName = info.ModelFile;
-    m_DefaultShader = info.DefaultShader;
+    return m_Transform;
+}
 
-    return true;
+void BaseModel::SetTransform( const Math::Matrix4& transform )
+{
+    m_Transform = transform;
 }

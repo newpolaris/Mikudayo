@@ -342,7 +342,7 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     Quaternion orientation( kIdentity );
     if (m_Model.m_Bones[i].bInherentRotation) {
         int32_t InherentRefIndex = m_Model.m_Bones[i].ParentInherentBoneIndex;
-        // ASSERT( InherentRefIndex >= 0 );
+        ASSERT( InherentRefIndex >= 0 );
         if (InherentRefIndex < 0) 
             return;
         PmxModel::Bone* parentBoneRef = &m_Model.m_Bones[InherentRefIndex];
@@ -363,7 +363,7 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     Vector3 translation( kZero );
     if (m_Model.m_Bones[i].bInherentTranslation) {
         int32_t InherentRefIndex = m_Model.m_Bones[i].ParentInherentBoneIndex;
-        // ASSERT( InherentRefIndex >= 0 );
+        ASSERT( InherentRefIndex >= 0 );
         if (InherentRefIndex < 0) 
             return;
         PmxModel::Bone* parentBoneRef = &m_Model.m_Bones[InherentRefIndex];

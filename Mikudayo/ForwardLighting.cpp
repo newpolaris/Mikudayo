@@ -16,7 +16,9 @@
 #include "PrimitiveUtility.h"
 #include "DebugHelper.h"
 #include "RenderArgs.h"
+#include "Scene.h"
 #include "Material.h"
+
 #include "ModelManager.h"
 #include "PmxModel.h"
 #include "SceneNode.h"
@@ -49,23 +51,72 @@ namespace Forward
         }
     };
 
+    class MirrorPass : public RenderPass
+    {
+    public:
+
+        MirrorPass(ScenePtr& scene) : 
+            RenderPass( kRenderQueueTransparent ), m_Scene(scene) {}
+
+        bool Enable( SceneNode& node ) override;
+        bool Visit( SceneNode& node ) override;
+
+        ScenePtr& m_Scene;
+    };
+
+    struct MirroredPass : public RenderPass {
+        MirroredPass( SceneNode& node ) : m_Node( node ) {}
+        bool Enable( SceneNode& node ) override
+        {
+            return &m_Node != &node;
+        }
+        SceneNode& m_Node;
+    };
+
     BasicPass m_BasicPass;
     OutlinePass m_OutlinePass;
     TwoSidedPass m_TwoSidedPass;
-
-    std::shared_ptr<Scene> m_MirrorScene;
     GraphicsPSO m_MirrorPSO;
     GraphicsPSO m_MirroredPSO;
 };
 
+bool Forward::MirrorPass::Enable( SceneNode& node )
+{
+    return kSceneMirror == node.GetType();
+}
+
+bool Forward::MirrorPass::Visit( SceneNode& node )
+{
+    if (!Enable( node ))
+        return false;
+    if (m_RenderArgs == nullptr)
+        return false;
+    GraphicsContext& context = m_RenderArgs->gfxContext;
+    // Stencil mask
+    ScopedTimer _prof( L"Stencil Pass", context );
+    context.ClearStencil( g_SceneDepthBuffer, 0 );
+    context.SetPipelineState( m_MirrorPSO );
+    Matrix4 model = node.GetTransform();
+    context.SetDynamicConstantBufferView( 2, sizeof( model ), &model, { kBindVertex } );
+    RenderPass pass;
+    node.Render( context, pass );
+
+    // Render with clip enabled shader
+    MirroredPass mirrorPass( node );
+    m_RenderArgs->m_ModelMatrix = Matrix4::MakeScale( Vector3( 1, -1, 1 ) );
+    context.SetPipelineState( m_MirroredPSO );
+    m_Scene->Render( mirrorPass, *m_RenderArgs );
+    m_RenderArgs->m_ModelMatrix = Matrix4( kIdentity );
+
+    // m_Scene->Render( , );
+    // Render mirror with alpha-blend
+    // node.Render( context, *this );
+
+    return true;
+}
+
 void Forward::Initialize( void )
 {
-    m_MirrorScene = std::make_shared<Scene>();
-    SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
-    OrthogonalTransform rotation( Quaternion( -3.14/2, 0, 0 ) );
-    mirror->SetTransform( rotation );
-    m_MirrorScene->AddChild( mirror );
-
     D3D11_DEPTH_STENCIL_DESC depth1 = DepthStateReadOnly;
     depth1.StencilEnable = TRUE;
     depth1.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
@@ -104,30 +155,16 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         scene->Render( m_BasicPass, args );
         scene->Render( m_TwoSidedPass, args );
-
-        RenderPass pass;
-        {
-            ScopedTimer _prof( L"Stencil Pass", gfxContext );
-            gfxContext.ClearStencil( g_SceneDepthBuffer, 0 );
-            gfxContext.SetPipelineState( m_MirrorPSO );
-            m_MirrorScene->Render( pass, args );
-        }
-        {
-            ScopedTimer _prof( L"Mirror Pass", gfxContext );
-            args.m_ModelMatrix = Matrix4::MakeScale( Vector3( 1, -1, 1 ) );
-            gfxContext.SetPipelineState( m_MirroredPSO );
-            scene->Render( pass, args );
-            args.m_ModelMatrix = Matrix4( kIdentity );
-            gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
-        }
     }
     {
         ScopedTimer _prof( L"Outline Pass", gfxContext );
         scene->Render( m_OutlinePass, args );
     }
+
+    MirrorPass mirror( scene );
+    scene->Render( mirror, args );
 }
 
 void Forward::Shutdown( void )
 {
-    m_MirrorScene.reset();
 }

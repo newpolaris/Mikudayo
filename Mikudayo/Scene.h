@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include "SceneNode.h"
 
+using ScenePtr = std::shared_ptr<class Scene>;
 class Scene : public SceneNode
 {
 public:

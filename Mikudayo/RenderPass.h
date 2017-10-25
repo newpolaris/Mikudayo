@@ -17,6 +17,7 @@ public:
     void SetRenderArgs( RenderArgs& args );
 
     virtual bool Enable( IMaterial& material );
+    virtual bool Enable( SceneNode& node );
     // Inherited from Visitor
     virtual bool Visit( SceneNode& node ) override;
     virtual bool Visit( IMaterial& material ) override;

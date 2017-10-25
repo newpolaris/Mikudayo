@@ -42,6 +42,8 @@ bool RenderPass::Visit( IMaterial& material )
 
 bool RenderPass::Visit( SceneNode& node )
 {
+    if (!Enable( node ))
+        return false;
     if (m_RenderArgs != nullptr)
     {
         Matrix4 modelTransform = node.GetTransform();
@@ -49,7 +51,11 @@ bool RenderPass::Visit( SceneNode& node )
         GraphicsContext& context = m_RenderArgs->gfxContext;
         context.SetDynamicConstantBufferView(2, sizeof(modelMatrix), &modelMatrix, { kBindVertex });
         node.Render( context, *this );
-
     }
     return true;
+}
+
+bool RenderPass::Enable( SceneNode& node )
+{
+    return node.GetType() != kSceneMirror;
 }

@@ -4,7 +4,7 @@
 
 using namespace Math;
 
-SceneNode::SceneNode() : m_RenderArgs(nullptr)
+SceneNode::SceneNode() : m_RenderArgs(nullptr), m_NodeType(kSceneNormal)
 {
 }
 
@@ -38,6 +38,16 @@ void SceneNode::Update( float deltaT )
 void SceneNode::UpdateAfterPhysics( float deltaT )
 {
     (deltaT);
+}
+
+SceneNodeType SceneNode::GetType() const
+{
+    return m_NodeType;
+}
+
+void SceneNode::SetType(SceneNodeType type)
+{
+    m_NodeType = type;
 }
 
 Matrix4 SceneNode::GetTransform() const

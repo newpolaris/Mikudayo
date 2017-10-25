@@ -17,6 +17,9 @@ public:
     virtual bool Load( const ModelInfo& info ) override;
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor ) override;
 
+    virtual Math::Matrix4 GetTransform() const override;
+    virtual void SetTransform( const Math::Matrix4& transform ) override;
+
 protected:
 
     std::wstring m_FileName;
