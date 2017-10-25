@@ -606,7 +606,7 @@ namespace EngineProfiling
 void NestedTimingTree::PushProfilingMarker( const wstring& name, CommandContext* Context )
 {
 	int threadIndex = EngineProfiling::GetCurrentThreadIndex();
-    if (threadIndex < 0 || threadIndex >= 64)
+    if (threadIndex < 0)
 		return;
 
     ASSERT(sm_CurrentNode != nullptr);
@@ -617,7 +617,7 @@ void NestedTimingTree::PushProfilingMarker( const wstring& name, CommandContext*
 void NestedTimingTree::PopProfilingMarker( CommandContext* Context )
 {
 	int threadIndex = EngineProfiling::GetCurrentThreadIndex();
-    if (threadIndex < 0 || threadIndex >= 64)
+    if (threadIndex < 0)
 		return;
 
     ASSERT(sm_CurrentNode != nullptr);
