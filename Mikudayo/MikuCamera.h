@@ -26,8 +26,6 @@ namespace Math
 		float GetAspectRatio() const { return m_AspectRatio; }
 		float GetDistance() const { return m_Distance; }
 		Vector3 GetDistanceVector() const;
-		float GetNearClip() const { return m_NearClip; }
-		float GetFarClip() const { return m_FarClip; }
 		Quaternion GetRotationUI() const { return m_Rotation; }
 		Vector3 GetPositionUI() const { return m_Position; }
 
@@ -40,8 +38,6 @@ namespace Math
 
 		float m_VerticalFOV;			// Field of view angle in radians
 		float m_AspectRatio;
-		float m_NearClip;
-		float m_FarClip;
         float m_OrthFovY;               // (MMD Default fovY)/2 = 30.f/2 = 15.f
 
 		// MMD camera parameter
