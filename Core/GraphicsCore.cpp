@@ -651,7 +651,7 @@ void Graphics::Initialize( void )
 
 	g_PreDisplayBuffer.Create(L"PreDisplay Buffer", g_DisplayWidth, g_DisplayHeight, 1, SwapChainFormat);
 
-    GpuTimeManager::Initialize(1024);
+    GpuTimeManager::Initialize(1024*4);
 	SetNativeResolution();
     TemporalEffects::Initialize();
     PostEffects::Initialize();

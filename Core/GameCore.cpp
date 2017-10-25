@@ -18,6 +18,7 @@
 #include "BufferManager.h"
 #include "CommandContext.h"
 #include "PostEffects.h"
+#include <thread>
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     #pragma comment(lib, "runtimeobject.lib")
@@ -54,31 +55,46 @@ namespace GameCore
 		GameInput::Shutdown();
 	}
 
+    typedef std::packaged_task<void(void)> Task;
+    std::thread s_RenderThread;
+    std::future<void> s_Future;
+
 	bool UpdateApplication( IGameApp& game )
 	{
         EngineProfiling::Begin();
 
 		float DeltaTime = Graphics::GetFrameTime();
+        GameInput::Update( DeltaTime );
+        EngineTuning::Update( DeltaTime );
+        game.Update( DeltaTime );
 
-		GameInput::Update( DeltaTime );
-		EngineTuning::Update( DeltaTime );
+        Task task( [&]
+        {
+            game.RenderScene();
 
-		game.Update( DeltaTime );
-		game.RenderScene();
+            PostEffects::Render();
 
-        PostEffects::Render();
+            GraphicsContext& UiContext = GraphicsContext::Begin( L"Render UI" );
+            UiContext.ClearColor( g_OverlayBuffer );
+            UiContext.SetRenderTarget( g_OverlayBuffer.GetRTV() );
+            UiContext.SetViewportAndScissor( 0, 0, g_OverlayBuffer.GetWidth(), g_OverlayBuffer.GetHeight() );
+            game.RenderUI( UiContext );
 
-        GraphicsContext& UiContext = GraphicsContext::Begin(L"Render UI");
-        UiContext.ClearColor(g_OverlayBuffer);
-        UiContext.SetRenderTarget(g_OverlayBuffer.GetRTV());
-        UiContext.SetViewportAndScissor(0, 0, g_OverlayBuffer.GetWidth(), g_OverlayBuffer.GetHeight());
-        game.RenderUI(UiContext);
+            EngineTuning::Display( UiContext, 10.0f, 40.0f, 1900.0f, 1040.0f );
 
-        EngineTuning::Display( UiContext, 10.0f, 40.0f, 1900.0f, 1040.0f );
+            UiContext.Finish();
+            Graphics::Present();
 
-        UiContext.Finish();
+            } );
 
-		Graphics::Present();
+        s_Future = task.get_future();
+        std::thread thread( std::forward<Task>(task) );
+        s_RenderThread.swap( thread );
+
+        if (s_RenderThread.joinable())
+            s_RenderThread.join();
+        if (s_Future.valid())
+            s_Future.get();
 
         EngineProfiling::End();
 
