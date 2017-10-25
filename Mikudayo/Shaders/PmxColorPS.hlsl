@@ -1,5 +1,9 @@
 #include "CommonInclude.hlsli"
 
+//
+// Use code full.fx, AutoLuminous4.fx
+//
+
 struct PixelShaderInput
 {
     float4 positionHS : SV_POSITION;
@@ -110,6 +114,6 @@ PixelShaderOutput main(PixelShaderInput input)
 
     color.rgb += input.specular;
     output.color = color;
-    output.emissive = emissive * color;
+    output.emissive = color * emissive;
     return output;
 }

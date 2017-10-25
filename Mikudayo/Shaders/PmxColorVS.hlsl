@@ -1,6 +1,10 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
+//
+// Use code full.fx, AutoLuminous.fx
+//
+
 #define AUTOLUMINOUS 1
 
 cbuffer Constants: register(b0)
@@ -114,6 +118,7 @@ PixelShaderInput main(VertexShaderInput input)
     }
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );
     output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.specularPower ) * SpecularColor;
+    output.emissive = float4(0, 0, 0, MaterialDiffuse.a);
 #if AUTOLUMINOUS
     if (IsEmission)
     {
