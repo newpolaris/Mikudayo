@@ -15,6 +15,7 @@ public:
     RenderPass( RenderQueue Queue = kRenderQueueEmpty );
 
     void SetRenderArgs( RenderArgs& args );
+    void SetRenderQueue( RenderQueue queue );
 
     virtual bool Enable( IMaterial& material );
     virtual bool Enable( SceneNode& node );

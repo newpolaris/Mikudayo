@@ -6,6 +6,7 @@
 
 #include "CompiledShaders/ModelColorVS.h"
 #include "CompiledShaders/ModelColorPS.h"
+#include "CompiledShaders/ModelColor2PS.h"
 
 namespace {
     std::map<std::wstring, RenderPipelineList> Techniques;
@@ -56,13 +57,15 @@ void BaseModel::Initialize()
     OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pModelColorPS ) );;
     OpaquePSO->Finalize();
 
-    TransparentPSO = std::make_shared<GraphicsPSO>();
-    *TransparentPSO = *OpaquePSO;
-    TransparentPSO->SetBlendState( BlendTraditional );
-    TransparentPSO->Finalize();
+    AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
 
-    Default[kRenderQueueOpaque] = OpaquePSO;
-    Default[kRenderQueueTransparent] = TransparentPSO;
+    RenderPipelinePtr ReflectedPSO = std::make_shared<GraphicsPSO>();
+    *ReflectedPSO = *OpaquePSO;
+    ReflectedPSO->SetPixelShader( MY_SHADER_ARGS( g_pModelColor2PS ) );
+    ReflectedPSO->SetRasterizerState( RasterizerDefaultCW );
+    ReflectedPSO->Finalize();
+
+    AutoFillPSO( ReflectedPSO, kRenderQueueReflectOpaque, Default );
 
     Techniques.emplace( L"Default", std::move( Default ) );
 }
@@ -100,7 +103,6 @@ bool BaseModel::Load( const ModelInfo& info )
 
 void BaseModel::Render( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_Transform), &m_Transform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_VertexBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_IndexBuffer.IndexBufferView() );
 

@@ -74,7 +74,7 @@ CREATE_APPLICATION( Mikudayo )
 
 enum { kCameraMain, kCameraVirtual, kCameraShadow };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual", "CameraShadow" };
-EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNames );
+EnumVar m_CameraType("Application/Camera/Camera Type", kCameraVirtual, 3, CameraNames );
 
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
@@ -167,7 +167,8 @@ void Mikudayo::Startup( void )
     info.MotionFile = motion;
 
     instance = ModelManager::Load( info );
-    // if (instance) m_Scene->AddChild( instance );
+    if (instance)
+        m_Scene->AddChild( instance );
 
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
     OrthogonalTransform rotation( Quaternion( -3.14/2, 0, 0 ) );
@@ -248,7 +249,7 @@ void Mikudayo::Update( float deltaT )
 void Mikudayo::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
-    RenderArgs args = { gfxContext, Matrix4(kIdentity), m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
+    RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     __declspec(align(16)) struct
     {
@@ -312,13 +313,14 @@ void Mikudayo::RenderScene( void )
 
 void Mikudayo::RenderUI( GraphicsContext& Context )
 {
-    RenderArgs args = { Context, Matrix4(kIdentity), m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
+    RenderArgs args = { Context, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
     // Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
     // Utility::DebugTexture( Context, g_aBloomUAV1[0].GetSRV() );
+    // Utility::DebugTexture( Context, g_ReflectColorBuffer.GetSRV() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 }
 

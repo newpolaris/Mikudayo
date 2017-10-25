@@ -7,6 +7,8 @@
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
+#include "CompiledShaders/PmxColor2PS.h"
+#include "CompiledShaders/PmxColor3PS.h"
 #include "CompiledShaders/OutlineVS.h"
 #include "CompiledShaders/OutlinePS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
@@ -98,7 +100,7 @@ void PmxModel::Initialize()
     ShadowPSO->Finalize();
 
     RenderPipelineList Default;
-    RenderPipelinePtr OpaquePSO, TransparentPSO, TransparentTwoSidedPSO, GBufferPSO, FinalPSO;
+    RenderPipelinePtr OpaquePSO, GBufferPSO, FinalPSO;
     {
         OpaquePSO = std::make_shared<GraphicsPSO>();
         OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
@@ -108,15 +110,7 @@ void PmxModel::Initialize()
         OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
         OpaquePSO->Finalize();
 
-        TransparentPSO = std::make_shared<GraphicsPSO>();
-        *TransparentPSO = *OpaquePSO;
-        TransparentPSO->SetBlendState( BlendTraditional );
-        TransparentPSO->Finalize();
-
-        TransparentTwoSidedPSO = std::make_shared<GraphicsPSO>();
-        *TransparentTwoSidedPSO = *TransparentPSO;
-        TransparentTwoSidedPSO->SetRasterizerState( RasterizerTwoSided );
-        TransparentTwoSidedPSO->Finalize();
+        AutoFillPSO( OpaquePSO, 0, Default );
 
         FinalPSO = std::make_shared<GraphicsPSO>();
         FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
@@ -133,14 +127,28 @@ void PmxModel::Initialize()
         GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
-        
-        Default[kRenderQueueOpaque] = OpaquePSO;
-        Default[kRenderQueueTransparent] = TransparentPSO;
-        Default[kRenderQueueTransparentTwoSided] = TransparentTwoSidedPSO;
+
+        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
+
+        RenderPipelinePtr ReflectedPSO = std::make_shared<GraphicsPSO>();
+        *ReflectedPSO = *OpaquePSO;
+        ReflectedPSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
+        ReflectedPSO->SetDepthStencilState( DepthStateReadWrite );
+        ReflectedPSO->SetRasterizerState( RasterizerDefaultCW );
+        ReflectedPSO->Finalize();
+
+        AutoFillPSO( ReflectedPSO, kRenderQueueReflectOpaque, Default );
+
+        RenderPipelinePtr ReflectorPSO = std::make_shared<GraphicsPSO>();
+        *ReflectorPSO = *OpaquePSO;
+        ReflectorPSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor3PS ) );
+        ReflectorPSO->Finalize();
+
+        AutoFillPSO( ReflectorPSO, kRenderQueueReflectorOpaque, Default );
+
         Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
         Default[kRenderQueueDeferredFinal] = FinalPSO;
         Default[kRenderQueueOutline] = OutlinePSO;
-        Default[kRenderQueueShadow] = ShadowPSO;
     }
     Techniques.emplace( L"Default", std::move( Default ) );
 }

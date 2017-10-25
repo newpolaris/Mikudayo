@@ -101,7 +101,7 @@ void ColorBuffer::Create( const std::wstring& Name, uint32_t Width, uint32_t Hei
 	NumMips = (NumMips == 0 ? ComputeNumMips( Width, Height ) : NumMips);
 	
 	uint32_t Flags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	if (m_FragmentCount == 1)
+	if (m_FragmentCount == 1 && Format != DXGI_FORMAT_B5G6R5_UNORM)
 		Flags |= D3D11_BIND_UNORDERED_ACCESS;
 
 	TextureDesc Desc = DescribeTex2D( Width, Height, 1, NumMips, Format, Flags );

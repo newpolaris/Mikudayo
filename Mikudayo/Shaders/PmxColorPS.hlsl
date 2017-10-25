@@ -1,5 +1,6 @@
 #include "CommonInclude.hlsli"
 
+#define AUTOLUMINOUS 1
 //
 // Use code full.fx, AutoLuminous4.fx
 //
@@ -71,6 +72,8 @@ Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float4> texSphere : register(t2);
 Texture2D<float4> texToon : register(t3);
 Texture2D<float> ShadowTexture : register(t7);
+Texture2D<float4> texReflectDiffuse : register(t63);
+Texture2D<float4> texReflectEmmisive : register(t64);
 
 SamplerState sampler0 : register(s0);
 SamplerState sampler1 : register(s1);
@@ -106,12 +109,17 @@ float DistanceFromReflector( float3 position )
     return dot(reflectPlane.xyz, position.xyz) + reflectPlane.a;
 }
 
+#if !REFLECTED
+[earlydepthstencil]
+#endif
 PixelShaderOutput main(PixelShaderInput input)
 { 
     PixelShaderOutput output;
     Material mat = Mat;
 
+#if REFLECTED
     clip(-DistanceFromReflector( input.positionWS ));
+#endif
 
     float4 color = input.color;
     float4 emissive = input.emissive;
@@ -134,6 +142,19 @@ PixelShaderOutput main(PixelShaderInput input)
     }
 
     color.rgb += input.specular;
+
+#if REFLECTOR
+    int width, height, numLevels;
+    texReflectDiffuse.GetDimensions(1, width, height, numLevels);
+    float2 texCoord = input.positionCS.xy/input.positionCS.w*float2(1, -1)/2 + 0.5;
+    texCoord += float2(0.5 / width, 0.5 / height);
+
+    float4 texMirrorColor = texReflectDiffuse.Sample( sampler0, texCoord );
+    color *= texMirrorColor;
+    float4 texMirrorEmmisive = texReflectEmmisive.Sample( sampler0, texCoord );
+    emissive *= texMirrorEmmisive;
+#endif
+
     output.color = color;
     output.emissive = color * emissive;
     return output;

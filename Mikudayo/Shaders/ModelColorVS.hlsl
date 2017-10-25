@@ -65,6 +65,8 @@ struct VertexShaderInput
 struct PixelShaderInput
 {
     float4 positionHS : SV_POSITION;
+    float4 positionCS : POSITION1;
+    float3 positionWS : POSITION2;
     float3 eyeWS : POSITION0;
     float2 texCoord : TEXCOORD0;
     float3 normalWS : NORMAL;
@@ -99,7 +101,9 @@ PixelShaderInput main(VertexShaderInput input)
     // Transform the vertex position into projected space.
     matrix worldViewProjMatrix = mul( projection, mul( view, model ) );
     float4 position = float4(input.position, 1);
+    output.positionWS  = mul( (float3x3)model, input.position );
     output.positionHS = mul( worldViewProjMatrix, position );
+    output.positionCS = output.positionHS;
     output.eyeWS = cameraPosition - mul( (float3x3)model, input.position );
     output.normalWS = normalize(mul( (float3x3)model, input.normal ));
     output.color.rgb = AmbientColor;

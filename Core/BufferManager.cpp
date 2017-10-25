@@ -21,7 +21,10 @@
 namespace Graphics
 {
     DepthBuffer g_SceneDepthBuffer;
+    DepthBuffer g_ReflectDepthBuffer;
     ColorBuffer g_SceneColorBuffer;
+    ColorBuffer g_ReflectColorBuffer;
+    ColorBuffer g_ReflectEmissiveBuffer;
     ColorBuffer g_PreviousColorBuffer;
     ColorBuffer g_EmissiveColorBuffer;
     ColorBuffer g_PostEffectsBuffer;
@@ -87,7 +90,7 @@ namespace Graphics
 
 #define T2X_COLOR_FORMAT DXGI_FORMAT_R10G10B10A2_UNORM
 #define HDR_MOTION_FORMAT DXGI_FORMAT_R16G16B16A16_FLOAT
-#define DSV_FORMAT DXGI_FORMAT_D24_UNORM_S8_UINT
+#define DSV_FORMAT DXGI_FORMAT_D32_FLOAT
 
 void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t bufferHeight )
 {
@@ -113,6 +116,8 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
         g_SceneColorBuffer.Create( L"Main Color Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
         g_PreviousColorBuffer.Create( L"Previous Main Color Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
         g_EmissiveColorBuffer.Create( L"Emissive Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
+        g_ReflectColorBuffer.Create( L"Main Color Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
+        g_ReflectEmissiveBuffer.Create( L"Emissive Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT, esram );
         g_VelocityBuffer.Create( L"Motion Vectors", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
         g_PostEffectsBuffer.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
         g_PostEffectsBufferTyped.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT );
@@ -126,6 +131,7 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
             g_MinMaxDepth32.Create(L"MinMaxDepth 32x32", bufferWidth5, bufferHeight5, 1, DXGI_FORMAT_R32_UINT, esram );
 
             g_SceneDepthBuffer.Create( L"Scene Depth Buffer", bufferWidth, bufferHeight, DSV_FORMAT, esram );
+            g_ReflectDepthBuffer.Create( L"Scene Depth Buffer", bufferWidth, bufferHeight, DSV_FORMAT, esram );
 
             esram.PushStack(); // Begin opaque geometry
 
@@ -243,6 +249,10 @@ void Graphics::ResizeDisplayDependentBuffers(uint32_t NativeWidth, uint32_t Nati
 
 void Graphics::DestroyRenderingBuffers()
 {
+    g_ReflectColorBuffer.Destroy();
+    g_ReflectEmissiveBuffer.Destroy();
+    g_ReflectDepthBuffer.Destroy();
+
     g_SceneDepthBuffer.Destroy();
     g_SceneColorBuffer.Destroy();
     g_PreviousColorBuffer.Destroy();
