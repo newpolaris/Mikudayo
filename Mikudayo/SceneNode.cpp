@@ -2,6 +2,8 @@
 #include "SceneNode.h"
 #include "Visitor.h"
 
+using namespace Math;
+
 SceneNode::SceneNode() : m_RenderArgs(nullptr)
 {
 }
@@ -36,4 +38,13 @@ void SceneNode::Update( float deltaT )
 void SceneNode::UpdateAfterPhysics( float deltaT )
 {
     (deltaT);
+}
+
+Matrix4 SceneNode::GetTransform() const
+{
+    return Matrix4( kIdentity );
+}
+
+void SceneNode::SetTransform( const Math::Matrix4& )
+{
 }

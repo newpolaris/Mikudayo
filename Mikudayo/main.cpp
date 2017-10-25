@@ -43,10 +43,10 @@ private:
     const BaseCamera& GetCamera();
 
     Camera m_Camera;
-    Camera m_SecondCamera;
+    MikuCamera m_SecondCamera;
     ShadowCamera m_SunShadow;
     std::unique_ptr<CameraController> m_CameraController;
-    std::unique_ptr<CameraController> m_SecondCameraController;
+    std::unique_ptr<MikuCameraController> m_SecondCameraController;
 	Motion m_Motion;
 
     const Vector3 m_MinBound = Vector3( -100, 0, -350 );
@@ -74,7 +74,7 @@ CREATE_APPLICATION( Mikudayo )
 
 enum { kCameraMain, kCameraVirtual, kCameraShadow };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual", "CameraShadow" };
-EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNames );
+EnumVar m_CameraType("Application/Camera/Camera Type", kCameraVirtual, 3, CameraNames );
 
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
@@ -102,7 +102,7 @@ void Mikudayo::Startup( void )
     m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 2000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
-    m_SecondCameraController.reset(new CameraController(m_SecondCamera, Vector3(kYUnitVector)));
+    m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
@@ -130,20 +130,6 @@ void Mikudayo::Startup( void )
     m_Scene->AddChild( instance );
 #endif
 
-    // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
-    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
-
-    ModelInfo info;
-    info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
-    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    info.ModelFile = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
-    info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
-    info.MotionFile = motion;
-
-    instance = ModelManager::Load( info );
-    if (instance)
-        m_Scene->AddChild( instance );
-
 // #define HALLOWEEN 1
 // #define BOARD 1
 // #define FLOOR 1
@@ -151,19 +137,36 @@ void Mikudayo::Startup( void )
 
     ModelInfo stage;
 #if BOARD
-    stage.FileName = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
+    stage.ModelFile = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
 #elif HALLOWEEN
-    stage.FileName = L"Model/HalloweenStage/halloween.Pmx";
+    stage.ModelFile = L"Model/HalloweenStage/halloween.Pmx";
 #elif FLOOR
     stage.ModelFile = L"Model/Floor.pmx";
 #elif STAGE
+    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
+    if (instance)
+        m_Scene->AddChild( instance );
     stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
 #endif
     instance = ModelManager::Load( stage );
     if (instance)
         m_Scene->AddChild( instance );
 
-    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
+    // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
+    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
+    const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
+
+    m_Motion.LoadMotion( cameraMotion );
+
+    ModelInfo info;
+    info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
+    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
+    info.ModelFile = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
+    info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
+    // info.ModelFile = L"Model/Tda式初音ミク背中見せデフォ服 Ver1.00/Tda式初音ミク背中見せデフォ服 ver1.0无高光.pmx";
+    info.MotionFile = motion;
+
+    instance = ModelManager::Load( info );
     if (instance)
         m_Scene->AddChild( instance );
 }
@@ -177,8 +180,8 @@ void Mikudayo::Cleanup( void )
     for (auto& model : m_Primitives)
         model->Destroy();
     m_Primitives.clear();
-    Physics::Shutdown();
     Forward::Shutdown();
+    Physics::Shutdown();
     TaskManager::Shutdown();
 }
 
@@ -190,6 +193,8 @@ void Mikudayo::Update( float deltaT )
         m_CameraController->Update( deltaT );
     else
         m_SecondCameraController->Update( deltaT );
+
+    m_Motion.Animate( m_SecondCamera );
 
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
@@ -222,10 +227,13 @@ void Mikudayo::Update( float deltaT )
     if (!EngineProfiling::IsPaused())
         m_Frame = m_Frame + deltaT * 30.f;
     {
+        // TODO: Try lock (delay physics update - motion only)
         Physics::Wait();
         m_Scene->UpdateSceneAfterPhysics( m_Frame );
+        // TODO: Move draw call and fix frame step
         m_Scene->UpdateScene( m_Frame );
         Physics::Update( deltaT );
+        m_Motion.Update( m_Frame );
     }
     for (auto& primitive : m_Primitives)
         primitive->Update();
@@ -235,7 +243,7 @@ void Mikudayo::Update( float deltaT )
 void Mikudayo::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
-    RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
+    RenderArgs args = { gfxContext, Matrix4(kIdentity), m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     __declspec(align(16)) struct
     {
@@ -299,7 +307,7 @@ void Mikudayo::RenderScene( void )
 
 void Mikudayo::RenderUI( GraphicsContext& Context )
 {
-    RenderArgs args = { Context, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
+    RenderArgs args = { Context, Matrix4(kIdentity), m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );

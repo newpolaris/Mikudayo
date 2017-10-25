@@ -22,6 +22,8 @@ public:
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor );
     virtual void Update( float deltaT );
     virtual void UpdateAfterPhysics( float deltaT );
+    virtual Math::Matrix4 GetTransform() const;
+    virtual void SetTransform( const Math::Matrix4& transform );
 
 protected:
 

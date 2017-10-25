@@ -61,6 +61,9 @@ struct PmxInstant::Context final
     void Update( float kFrameTime );
     void UpdateAfterPhysics( float kFrameTime );
 
+    Matrix4 GetTransform() const;
+    void SetTransform( const Matrix4& transform );
+
     const OrthogonalTransform GetTransform( uint32_t i ) const;
     void UpdateLocalTransform( uint32_t i );
     void SetLocalTransform( uint32_t i, const OrthogonalTransform& transform );
@@ -132,7 +135,6 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
     auto numByte = GetVectorSize(SkinData);
 
     gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
-    gfxContext.SetDynamicConstantBufferView( 2, sizeof(m_ModelTransform), &m_ModelTransform, { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
@@ -339,8 +341,10 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
 {
     Quaternion orientation( kIdentity );
     if (m_Model.m_Bones[i].bInherentRotation) {
-        uint32_t InherentRefIndex = m_Model.m_Bones[i].ParentInherentBoneIndex;
-        ASSERT( InherentRefIndex >= 0 );
+        int32_t InherentRefIndex = m_Model.m_Bones[i].ParentInherentBoneIndex;
+        // ASSERT( InherentRefIndex >= 0 );
+        if (InherentRefIndex < 0) 
+            return;
         PmxModel::Bone* parentBoneRef = &m_Model.m_Bones[InherentRefIndex];
         // If parent also Inherenet, then it has updated value. So, use cached one
         if (parentBoneRef->bInherentRotation) {
@@ -358,8 +362,10 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     orientation = Normalize( orientation );
     Vector3 translation( kZero );
     if (m_Model.m_Bones[i].bInherentTranslation) {
-        uint32_t InherentRefIndex = m_Model.m_Bones[i].ParentInherentBoneIndex;
-        ASSERT( InherentRefIndex >= 0 );
+        int32_t InherentRefIndex = m_Model.m_Bones[i].ParentInherentBoneIndex;
+        // ASSERT( InherentRefIndex >= 0 );
+        if (InherentRefIndex < 0) 
+            return;
         PmxModel::Bone* parentBoneRef = &m_Model.m_Bones[InherentRefIndex];
         if (parentBoneRef) {
             if (parentBoneRef->bInherentTranslation) {
@@ -450,6 +456,16 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
     const size_t numBones = m_Model.m_Bones.size();
     for (auto i = 0; i < numBones; i++)
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+}
+
+Matrix4 PmxInstant::Context::GetTransform() const
+{
+    return m_ModelTransform;
+}
+
+void PmxInstant::Context::SetTransform( const Matrix4& transform )
+{
+    m_ModelTransform = transform;
 }
 
 const OrthogonalTransform PmxInstant::Context::GetTransform( uint32_t i ) const
@@ -781,6 +797,16 @@ void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
 {
     (Context), (visitor);
     m_Context->DrawBone();
+}
+
+Math::Matrix4 PmxInstant::GetTransform() const
+{
+    return m_Context->GetTransform();
+}
+
+void PmxInstant::SetTransform( const Math::Matrix4& transform )
+{
+    m_Context->SetTransform( transform );
 }
 
 BoneRef::BoneRef( PmxInstant* inst, uint32_t i ) : m_Instance( inst ), m_Index( i )
