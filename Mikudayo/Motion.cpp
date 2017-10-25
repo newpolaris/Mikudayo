@@ -29,7 +29,7 @@ void Motion::LoadMotion( const std::wstring& path )
 		key.Data.bPerspective = frame.TurnOffPerspective == 0;
 		key.Data.Distance = frame.Distance;
 		key.Data.FovY = static_cast<float>(frame.ViewAngle) * XM_PI / 180.f;
-		key.Data.Rotation = Quaternion( frame.Rotation.y, frame.Rotation.x, frame.Rotation.z );
+		key.Data.Rotation = Quaternion( -frame.Rotation.x, -frame.Rotation.y, frame.Rotation.z );
 		key.Data.Position = frame.Position;
 
 		//
@@ -43,6 +43,7 @@ void Motion::LoadMotion( const std::wstring& path )
 
 		m_CameraMotion.InsertKeyFrame( key );
 	}
+    m_CameraMotion.SortKeyFrame();
 }
 
 void Motion::Update( float kFrameTime )
@@ -57,6 +58,5 @@ void Motion::Animate( Math::MikuCamera& camera )
 	camera.SetDistance( m_CameraFrame.Distance );
 	camera.SetPositionUI( m_CameraFrame.Position );
 	camera.SetRotationUI( m_CameraFrame.Rotation );
-
 	camera.UpdateProjMatrix();
 }
