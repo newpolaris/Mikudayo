@@ -283,7 +283,7 @@ void Physics::JobFunc()
 
             DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
             ASSERT( DynamicsWorld.get() != nullptr );
-            DynamicsWorld->stepSimulation( m_deltaT, 60 );
+            DynamicsWorld->stepSimulation( m_deltaT, 2 );
 
             bStepJob = false;
         }
