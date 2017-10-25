@@ -8,6 +8,7 @@ struct PixelShaderInput
 {
     float4 positionHS : SV_POSITION;
     float3 eyeWS : POSITION0;
+    float4 positionWS : POSITION1;
     float2 texCoord : TEXCOORD0;
     float2 spTex : TEXCOORD1;
     float3 normalWS : NORMAL;
@@ -36,6 +37,14 @@ struct Material
     float4 EdgeColor;
 };
 
+cbuffer Constants: register(b0)
+{
+	matrix view;
+	matrix projection;
+    matrix viewToShadow;
+    float3 cameraPositionWS;
+};
+
 cbuffer MaterialConstants : register(b4)
 {
     Material Mat;
@@ -50,6 +59,12 @@ cbuffer PSConstants : register(b5)
     float3 SunDirectionWS;
     float3 SunColor;
     float4 ShadowTexelSize;
+}
+
+cbuffer Reflector : register(b11)
+{
+    float3 reflectorPositionWS;
+    float3 reflectorNormalWS;
 }
 
 Texture2D<float4> texDiffuse : register(t1);
@@ -86,11 +101,20 @@ float GetShadow( float3 ShadowCoord )
     return result * result;
 }
 
+float DistanceFromReflector( float4 position )
+{
+    float innerAngle = dot( position.xyz - reflectorPositionWS, reflectorNormalWS );
+    float innderViewAngle = dot( cameraPositionWS - reflectorPositionWS, reflectorNormalWS );
+    return innerAngle * innderViewAngle;
+}
+
 [earlydepthstencil]
 PixelShaderOutput main(PixelShaderInput input)
 { 
     PixelShaderOutput output;
     Material mat = Mat;
+
+    clip(DistanceFromReflector( input.positionWS ));
 
     float4 color = input.color;
     float4 emissive = input.emissive;

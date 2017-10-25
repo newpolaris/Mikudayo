@@ -5,13 +5,19 @@
 
 enum RenderQueue
 {
-    kRenderQueueOpaque,
+    kRenderQueueOpaque = 0,
+    kRenderQueueOpaqueTwoSided,
     kRenderQueueTransparent,
     kRenderQueueTransparentTwoSided,
     kRenderQueueDeferredGBuffer,
     kRenderQueueDeferredFinal,
     kRenderQueueOutline,
     kRenderQueueShadow,
+    kRenderQueueReflectStencil,
+    kRenderQueueReflectOpaque,
+    kRenderQueueReflectOpaqueTwoSided,
+    kRenderQueueReflectTransparent,
+    kRenderQueueReflectTransparentTwoSided,
     kRenderQueueEmpty,
     kRenderQueueMax
 };
