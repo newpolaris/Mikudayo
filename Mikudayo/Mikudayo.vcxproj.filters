@@ -364,6 +364,9 @@
     <FxCompile Include="Shaders\ModelColorVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\PmxMirrorPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Shadow.hlsli">

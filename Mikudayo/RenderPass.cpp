@@ -16,11 +16,6 @@ void RenderPass::SetRenderArgs( RenderArgs& args )
     m_RenderArgs = &args;
 }
 
-void RenderPass::SetRenderQueue( RenderQueue queue )
-{
-    m_RenderQueue = queue;
-}
-
 bool RenderPass::Visit( IMesh& )
 {
     return true;
@@ -51,8 +46,9 @@ bool RenderPass::Visit( SceneNode& node )
         return false;
     if (m_RenderArgs != nullptr)
     {
+        Matrix4 modelTransform = node.GetTransform();
+        Matrix4 modelMatrix = m_RenderArgs->m_ModelMatrix * modelTransform;
         GraphicsContext& context = m_RenderArgs->gfxContext;
-        Matrix4 modelMatrix = node.GetTransform();
         context.SetDynamicConstantBufferView(2, sizeof(modelMatrix), &modelMatrix, { kBindVertex });
         node.Render( context, *this );
     }

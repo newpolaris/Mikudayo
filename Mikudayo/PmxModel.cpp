@@ -61,32 +61,6 @@ namespace {
 #endif
 }
 
-void AutoFillPSO( RenderPipelinePtr& basePSO, uint32_t baseIndex, RenderPipelineList& list )
-{
-    RenderPipelinePtr baseTowSidedPSO, transparentPSO, transparentTwoSidedPSO;
-
-    baseTowSidedPSO = std::make_shared<GraphicsPSO>();
-    *baseTowSidedPSO = *basePSO;
-    baseTowSidedPSO->SetRasterizerState( RasterizerTwoSided );
-    baseTowSidedPSO->Finalize();
-
-    transparentPSO = std::make_shared<GraphicsPSO>();
-    *transparentPSO = *basePSO;
-    transparentPSO->SetBlendState( BlendTraditional );
-    transparentPSO->Finalize();
-
-    transparentTwoSidedPSO = std::make_shared<GraphicsPSO>();
-    *transparentTwoSidedPSO = *transparentPSO;
-    transparentTwoSidedPSO->SetRasterizerState( RasterizerTwoSided );
-    transparentTwoSidedPSO->Finalize();
-
-    list[baseIndex] = basePSO;
-    list[baseIndex + 1] = baseTowSidedPSO;
-    list[baseIndex + 2] = transparentPSO;
-    list[baseIndex + 3] = transparentTwoSidedPSO;
-};
-
-
 void PmxModel::Initialize()
 {
     RenderPipelinePtr DeferredGBufferPSO, OutlinePSO, DepthPSO, ShadowPSO;
@@ -124,7 +98,7 @@ void PmxModel::Initialize()
     ShadowPSO->Finalize();
 
     RenderPipelineList Default;
-    RenderPipelinePtr OpaquePSO, GBufferPSO, FinalPSO;
+    RenderPipelinePtr OpaquePSO, TransparentPSO, TransparentTwoSidedPSO, GBufferPSO, FinalPSO;
     {
         OpaquePSO = std::make_shared<GraphicsPSO>();
         OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
@@ -134,7 +108,15 @@ void PmxModel::Initialize()
         OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
         OpaquePSO->Finalize();
 
-        AutoFillPSO( OpaquePSO, 0, Default );
+        TransparentPSO = std::make_shared<GraphicsPSO>();
+        *TransparentPSO = *OpaquePSO;
+        TransparentPSO->SetBlendState( BlendTraditional );
+        TransparentPSO->Finalize();
+
+        TransparentTwoSidedPSO = std::make_shared<GraphicsPSO>();
+        *TransparentTwoSidedPSO = *TransparentPSO;
+        TransparentTwoSidedPSO->SetRasterizerState( RasterizerTwoSided );
+        TransparentTwoSidedPSO->Finalize();
 
         FinalPSO = std::make_shared<GraphicsPSO>();
         FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
@@ -151,38 +133,14 @@ void PmxModel::Initialize()
         GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
-
-        D3D11_DEPTH_STENCIL_DESC depth2 = DepthStateReadWrite;
-        depth2.StencilEnable = TRUE;
-        depth2.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
-
-        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
-
-        RenderPipelinePtr ReflectPSO = std::make_shared<GraphicsPSO>();
-        *ReflectPSO = *OpaquePSO;
-        ReflectPSO->SetDepthStencilState( depth2 );
-        ReflectPSO->SetRasterizerState( RasterizerDefaultCW );
-        ReflectPSO->SetStencilRef( 1 );
-        ReflectPSO->Finalize();
-
-        AutoFillPSO( ReflectPSO, kRenderQueueReflectOpaque, Default );
-
-        D3D11_DEPTH_STENCIL_DESC depth1 = DepthStateReadOnly;
-        depth1.StencilEnable = TRUE;
-        depth1.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
-
-        RenderPipelinePtr stencilPSO = std::make_shared<GraphicsPSO>();
-        stencilPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        stencilPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        stencilPSO->SetDepthStencilState( depth1 );
-        stencilPSO->SetStencilRef( 1 );
-        stencilPSO->Finalize();
-
+        
+        Default[kRenderQueueOpaque] = OpaquePSO;
+        Default[kRenderQueueTransparent] = TransparentPSO;
+        Default[kRenderQueueTransparentTwoSided] = TransparentTwoSidedPSO;
         Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
         Default[kRenderQueueDeferredFinal] = FinalPSO;
         Default[kRenderQueueOutline] = OutlinePSO;
         Default[kRenderQueueShadow] = ShadowPSO;
-        Default[kRenderQueueReflectStencil] = stencilPSO;
     }
     Techniques.emplace( L"Default", std::move( Default ) );
 }
