@@ -122,6 +122,8 @@ void Mikudayo::Startup( void )
         m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
 
     m_Scene = std::make_shared<Scene>();
+
+#if 1
     SceneNodePtr instance;
 #if 0
     const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
@@ -175,6 +177,7 @@ void Mikudayo::Startup( void )
     mirror->SetTransform( rotation );
     mirror->SetType( kSceneMirror );
     m_Scene->AddChild( mirror );
+#endif
 }
 
 void Mikudayo::Cleanup( void )
@@ -328,9 +331,9 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
 const BaseCamera& Mikudayo::GetCamera()
 {
     if (m_CameraType == kCameraVirtual)
-        return m_SecondCamera;
+        return m_Camera;
     else if (m_CameraType == kCameraShadow)
         return m_SunShadow;
     else
-        return m_Camera;
+        return m_SecondCamera;
 }

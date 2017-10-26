@@ -213,7 +213,7 @@ CameraFrame CameraFrame::Default()
 	static CameraFrame frame;
 	frame.bPerspective = true;
 	frame.Distance = -45.f;
-	frame.FovY = 30.f;
+	frame.FovY = 30.f * XM_PI / 180.f;
 	frame.Position = Vector3( 0.f, 10.f, 0.f );
 	return frame;
 }
