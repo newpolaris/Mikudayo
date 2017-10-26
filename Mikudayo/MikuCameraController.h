@@ -18,6 +18,7 @@ namespace GameCore
 	using namespace Math;
 
 	enum ECameraMove { kCameraMoveMMD, kCameraMove3D, kCameraMoveMotion };
+    extern EnumVar CameraMove;
 	class MikuCameraController
 	{
 	public:

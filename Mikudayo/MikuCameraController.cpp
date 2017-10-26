@@ -121,7 +121,7 @@ void MikuCameraController::UpdateFromInput( ECameraMove kCameraMove, float delta
 	}
 
 	if (kCameraMove == kCameraMove3D ||
-		kCameraMove == kCameraMoveMMD && GameInput::IsPressed( GameInput::kMouse0 ))
+		kCameraMove == kCameraMoveMMD && GameInput::IsPressed( GameInput::kMouse1 ))
 	{
 		// don't apply momentum to mouse inputs
 		yaw += GameInput::GetAnalogInput(GameInput::kAnalogMouseX) * m_MouseSensitivityX;

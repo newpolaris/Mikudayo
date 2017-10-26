@@ -107,7 +107,7 @@ void Mikudayo::Startup( void )
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
 
-    // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
+    g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
     #if 0
@@ -195,12 +195,13 @@ void Mikudayo::Update( float deltaT )
 {
     ScopedTimer _prof( L"Update" );
 
-    if (m_CameraType == kCameraMain)
-        m_CameraController->Update( deltaT );
-    else
-        m_SecondCameraController->Update( deltaT );
+    if (CameraMove == kCameraMoveMotion)
+        m_Motion.Animate( m_SecondCamera );
 
-    m_Motion.Animate( m_SecondCamera );
+    if (m_CameraType == kCameraVirtual)
+        m_CameraController->Update( deltaT );
+    else if (m_CameraType == kCameraMain)
+        m_SecondCameraController->Update( deltaT );
 
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
