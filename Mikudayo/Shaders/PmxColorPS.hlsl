@@ -140,26 +140,23 @@ PixelShaderOutput main(PixelShaderInput input)
 #endif
 
     float4 color = input.color;
-    float4 shadowColor = float4(saturate( AmbientColor ), color.a);
     float4 emissive = input.emissive;
 
-    if (mat.bUseTexture) {
-        float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
-        color *= texColor;
-        shadowColor *= texColor;
-    }
+    if (mat.bUseTexture)
+        color *= texDiffuse.Sample( sampler0, input.texCoord );
 
     if (mat.sphereOperation != kSphereNone) {
         float4 texColor = texSphere.Sample( sampler0, input.spTex );
-        if (mat.sphereOperation == kSphereAdd) {
+        if (mat.sphereOperation == kSphereAdd)
             color.rgb += texColor.rgb;
-            shadowColor.rgb += texColor.rgb;
-        } else {
+        else
             color.rgb *= texColor.rgb;
-            shadowColor.rgb *= texColor.rgb;
-        }
         color.a *= texColor.a;
-        shadowColor.a *= texColor.a;
+    }
+
+    if (mat.bUseToon) {
+        float lightNormal = dot( input.normalWS, -SunDirectionWS );
+        color *= texToon.Sample( sampler1, float2(0, 0.5 - lightNormal * 0.5) );
     }
 
     color.rgb += input.specular;
@@ -171,29 +168,6 @@ PixelShaderOutput main(PixelShaderInput input)
     emissive *= texMirrorEmmisive;
 #endif
 
-    // Complete projection by doing division by w.
-    float3 shadowPositionNS = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
-    float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
-
-    if (any(saturate(shadowCoord) == shadowCoord))
-    {
-    #if 1
-        float comp = texShadow.Sample( sampler1, shadowCoord );
-
-    #elif 0
-        // float comp = 1 - saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord), 0.0f)*1500 - 0.3f);
-        float comp = 1 - (shadowPositionNS.z > texShadow.Sample( sampler1, shadowCoord ));
-    #else
-        float comp = GetShadow( shadowCoord );
-        if (mat.bUseToon) {
-            float lightIntensity = dot( input.normalWS, -SunDirectionWS );
-            comp = min( saturate( lightIntensity ) * 3, comp );
-            shadowColor.rgb *= MaterialToon;
-        }
-        color = lerp( shadowColor, color, comp );
-    #endif
-        color = float4(comp.xxx, 1);
-    }
     output.color = color;
     output.emissive = color * emissive;
     return output;

@@ -49,8 +49,8 @@ private:
     std::unique_ptr<MikuCameraController> m_SecondCameraController;
 	Motion m_Motion;
 
-    const Vector3 m_MinBound = Vector3( -100, 0, -350 );
-    const Vector3 m_MaxBound = Vector3( 100, 25, 100 );
+    const Vector3 m_MinBound = Vector3( -50, 0, -50 );
+    const Vector3 m_MaxBound = Vector3( 50, 25, 50 );
 
     Vector3 m_SunColor;
     Vector3 m_SunDirection;
@@ -297,6 +297,7 @@ void Mikudayo::RenderScene( void )
         vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
         vsConstants.cameraPosition = m_CameraPosition;
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
+        gfxContext.SetDynamicDescriptor( 62, g_ShadowBuffer.GetSRV(), { kBindPixel } );
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Forward::Render( m_Scene, args );
@@ -322,7 +323,7 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
-    // Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
+    Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
     // Utility::DebugTexture( Context, g_aBloomUAV1[0].GetSRV() );
     // Utility::DebugTexture( Context, g_ReflectColorBuffer.GetSRV() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );

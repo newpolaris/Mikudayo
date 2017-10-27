@@ -47,7 +47,7 @@ namespace {
 
     std::map<std::wstring, RenderPipelineList> Techniques;
 
-#define LinearColor 1
+#define LinearColor 0
 #if LinearColor
     bool bSRGB = true;
     template <typename T>
