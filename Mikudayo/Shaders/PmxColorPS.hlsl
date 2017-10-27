@@ -8,8 +8,7 @@
 struct PixelShaderInput
 {
     float4 positionHS : SV_POSITION;
-    float4 positionCS : POSITION1;
-    float3 positionWS : POSITION2;
+    float3 positionWS : POSITION1;
     float3 eyeWS : POSITION0;
     float2 texCoord : TEXCOORD0;
     float2 spTex : TEXCOORD1;
@@ -144,14 +143,9 @@ PixelShaderOutput main(PixelShaderInput input)
     color.rgb += input.specular;
 
 #if REFLECTOR
-    int width, height, numLevels;
-    texReflectDiffuse.GetDimensions(1, width, height, numLevels);
-    float2 texCoord = input.positionCS.xy/input.positionCS.w*float2(1, -1)/2 + 0.5;
-    texCoord += float2(0.5 / width, 0.5 / height);
-
-    float4 texMirrorColor = texReflectDiffuse.Sample( sampler0, texCoord );
+    float4 texMirrorColor = texReflectDiffuse.Load( int3(input.positionHS.xy, 0) );
     color *= texMirrorColor;
-    float4 texMirrorEmmisive = texReflectEmmisive.Sample( sampler0, texCoord );
+    float4 texMirrorEmmisive = texReflectEmmisive.Load( int3(input.positionHS.xy, 0) );
     emissive *= texMirrorEmmisive;
 #endif
 
