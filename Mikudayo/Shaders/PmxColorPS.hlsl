@@ -1,4 +1,5 @@
 #include "CommonInclude.hlsli"
+#include "MultiLight.hlsli"
 
 #define SKII1 1500
 #define Toon 3
@@ -113,7 +114,12 @@ float DistanceFromReflector( float3 position )
     return dot(reflectPlane.xyz, position.xyz) + reflectPlane.a;
 }
 
+static float3 LightSpecular = SunColor;
+static float3 LightDirection = SunDirectionWS;
+static float3 MaterialSpecular = Mat.specular;
 static float3 MaterialToon = (Mat.bUseToon ? texToon.Sample( sampler0, float2(0, 1) ).xyz : float3(1, 1, 1));
+static float3 SpecularColor = MaterialSpecular * LightSpecular;
+static float SpecularPower = Mat.specularPower;
 
 #if !REFLECTED
 [earlydepthstencil]
@@ -127,8 +133,19 @@ PixelShaderOutput main(PixelShaderInput input)
     clip(-DistanceFromReflector( input.positionWS ));
 #endif
 
+    float3 normal = normalize( input.normalWS );
+    float3 view = normalize(input.eyeWS);
+    float3 HalfVector = normalize( view + -LightDirection );
+    float3 Specular = pow( max( 0, dot( HalfVector, normal ) ), SpecularPower + SP_Power ) * (SpecularColor + SP_Add) * SP_Scale * MainLightParam;
+
+    for (int i = 0; i < 16; i++)
+    {
+        HalfVector = normalize( view + -normalize( LightPos[i] ) );
+        Specular += 0.16*pow( max( 0, dot( HalfVector, normal ) ), SpecularPower + SP_Power ) * (SpecularColor + SP_Add) * SP_Scale * SubLightParam;
+    }
+
     float4 color = input.color;
-    float4 shadowColor = float4(saturate(input.ambient), color.a);
+    float4 shadowColor = input.color;
     float4 emissive = input.emissive;
 
     if (mat.bUseTexture) {
@@ -150,7 +167,17 @@ PixelShaderOutput main(PixelShaderInput input)
         shadowColor.a *= texColor.a;
     }
 
-    color.rgb += input.specular;
+    float3 Rim = pow( 1 - saturate(max(0, dot(normal, view))), RimPow ) * RimLight * pow( color.rgb, 2 );
+    color.rgb += Rim;
+    shadowColor.rgb += Rim;
+    color.rgb += Specular;
+    shadowColor.rgb += Specular*0.5;
+    
+    color.rgb *= BaseBias;
+    shadowColor.rgb *= ShadowBias;
+    
+    color.a = saturate(color.a);
+    shadowColor.a = saturate(shadowColor.a);
 
 #if REFLECTOR
     float4 texMirrorColor = texReflectDiffuse.Load( int3(input.positionHS.xy, 0) );

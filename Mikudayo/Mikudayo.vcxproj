@@ -324,6 +324,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\CommonInclude.hlsli" />
+    <None Include="Shaders\MultiLight.hlsli" />
     <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\PmxHeader.hlsli" />
     <None Include="Shaders\Shadow.hlsli" />

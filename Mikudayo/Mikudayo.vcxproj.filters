@@ -403,5 +403,8 @@
     <None Include="Shaders\PmxHeader.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\MultiLight.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
