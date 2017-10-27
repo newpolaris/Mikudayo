@@ -69,6 +69,7 @@ struct PixelShaderInput
     float4 color : COLOR0;
     float3 specular : COLOR1;
     float4 emissive : COLOR2;
+    float3 ambient : COLOR3;
 };
 
 static const int kSphereNone = 0;
@@ -133,5 +134,6 @@ PixelShaderInput main(VertexShaderInput input)
         output.color.rgb += lerp(float3(1, 1, 1), output.color.rgb, 0.0) * factor;
     }
 #endif
+    output.ambient = AmbientColor;
 	return output;
 }

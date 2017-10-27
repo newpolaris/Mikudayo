@@ -1,6 +1,8 @@
 #include "CommonInclude.hlsli"
 
-#define AUTOLUMINOUS 1
+#define SKII1 1500
+#define Toon 3
+
 //
 // Use code full.fx, AutoLuminous4.fx
 //
@@ -17,6 +19,7 @@ struct PixelShaderInput
     float4 color : COLOR0;
     float3 specular : COLOR1;
     float4 emissive : COLOR2;
+    float3 ambient : COLOR3;
 };
 
 struct PixelShaderOutput
@@ -110,22 +113,7 @@ float DistanceFromReflector( float3 position )
     return dot(reflectPlane.xyz, position.xyz) + reflectPlane.a;
 }
 
-static float4 MaterialDiffuse = float4(Mat.diffuse, Mat.alpha);
-static float3 MaterialAmbient = Mat.diffuse;
-static float3 MaterialEmissive = Mat.ambient;
-static float3 MaterialSpecular = Mat.specular;
-static float3 MaterialToon = texToon.Sample( sampler0, float2(0, 1) ).xyz;
-static float3 LightDiffuse = float3(0,0,0);
-static float3 LightAmbient = SunColor;
-static float3 LightSpecular = SunColor;
-#if !AUTOLUMINOUS
-static float3 AutoLuminousColor = float3(0, 0, 0);
-#else
-static bool IsEmission = (100 < Mat.specularPower) && (length(MaterialSpecular) < 0.05);
-static float3 AutoLuminousColor = (IsEmission ? MaterialDiffuse.rgb : float3(0, 0, 0));
-#endif
-static float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
-static float3 AmbientColor = MaterialAmbient * LightAmbient + MaterialEmissive + AutoLuminousColor;
+static float3 MaterialToon = (Mat.bUseToon ? texToon.Sample( sampler0, float2(0, 1) ).xyz : float3(1, 1, 1));
 
 #if !REFLECTED
 [earlydepthstencil]
@@ -140,23 +128,26 @@ PixelShaderOutput main(PixelShaderInput input)
 #endif
 
     float4 color = input.color;
+    float4 shadowColor = float4(saturate(input.ambient), color.a);
     float4 emissive = input.emissive;
 
-    if (mat.bUseTexture)
-        color *= texDiffuse.Sample( sampler0, input.texCoord );
+    if (mat.bUseTexture) {
+        float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
+        color *= texColor;
+        shadowColor *= texColor;
+    }
 
     if (mat.sphereOperation != kSphereNone) {
         float4 texColor = texSphere.Sample( sampler0, input.spTex );
-        if (mat.sphereOperation == kSphereAdd)
+        if (mat.sphereOperation == kSphereAdd) {
             color.rgb += texColor.rgb;
-        else
+            shadowColor.rgb += texColor.rgb;
+        } else {
             color.rgb *= texColor.rgb;
+            shadowColor.rgb *= texColor.rgb;
+        }
         color.a *= texColor.a;
-    }
-
-    if (mat.bUseToon) {
-        float lightNormal = dot( input.normalWS, -SunDirectionWS );
-        color *= texToon.Sample( sampler1, float2(0, 0.5 - lightNormal * 0.5) );
+        shadowColor.a *= texColor.a;
     }
 
     color.rgb += input.specular;
@@ -164,10 +155,25 @@ PixelShaderOutput main(PixelShaderInput input)
 #if REFLECTOR
     float4 texMirrorColor = texReflectDiffuse.Load( int3(input.positionHS.xy, 0) );
     color *= texMirrorColor;
+    shadowColor *= texMirrorColor;
     float4 texMirrorEmmisive = texReflectEmmisive.Load( int3(input.positionHS.xy, 0) );
     emissive *= texMirrorEmmisive;
 #endif
 
+    // Complete projection by doing division by w.
+    float3 shadowPositionNS = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
+
+    if (any(saturate(shadowCoord) == shadowCoord))
+    {
+        float comp = saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord), 0.0f)*SKII1 - 0.3f);
+        if (mat.bUseToon) {
+            float lightIntensity = dot( normalize(input.normalWS), -SunDirectionWS );
+            comp = min( saturate( lightIntensity )*Toon, comp );
+            shadowColor.rgb *= MaterialToon;
+        }
+        color = lerp( shadowColor, color, comp );
+    }
     output.color = color;
     output.emissive = color * emissive;
     return output;
