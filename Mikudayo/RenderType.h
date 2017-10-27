@@ -5,7 +5,8 @@
 
 enum RenderQueue
 {
-    kRenderQueueOpaque = 0,
+    kRenderQueueDepth = 0,
+    kRenderQueueOpaque,
     kRenderQueueOpaqueTwoSided,
     kRenderQueueTransparent,
     kRenderQueueTransparentTwoSided,

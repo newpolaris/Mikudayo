@@ -34,10 +34,12 @@ namespace Forward
 
         DefaultPass( RenderQueue Queue = kRenderQueueOpaque ) : RenderPass( Queue ), m_BaseQueue( Queue ) {}
         uint32_t GetOffset( IMaterial& material ) {
+            int index = 0;
             if (!material.IsTransparent())
-                return !material.IsTwoSided() ? kRenderQueueOpaque : kRenderQueueOpaqueTwoSided;
+                index = !material.IsTwoSided() ? kRenderQueueOpaque : kRenderQueueOpaqueTwoSided;
             else
-                return !material.IsTwoSided() ? kRenderQueueTransparent : kRenderQueueTransparentTwoSided;
+                index = !material.IsTwoSided() ? kRenderQueueTransparent : kRenderQueueTransparentTwoSided;
+            return index - kRenderQueueOpaque;
         }
         virtual bool Enable( IMaterial& material ) {
             RenderQueue target = RenderQueue(m_BaseQueue + GetOffset( material ));

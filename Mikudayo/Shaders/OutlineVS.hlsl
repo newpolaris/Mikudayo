@@ -19,7 +19,7 @@ cbuffer Model : register(b2)
 struct VertexInput
 {
 	float3 normal : NORMAL;
-	float2 uv : TEXTURE;
+	float2 texcoord : TEXTURE;
 	uint4 boneID : BONE_ID;
 	float4 boneWeight : BONE_WEIGHT;
 	float edgeScale : EDGE_SCALE;

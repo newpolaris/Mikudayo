@@ -149,6 +149,8 @@ void PmxModel::Initialize()
         Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
         Default[kRenderQueueDeferredFinal] = FinalPSO;
         Default[kRenderQueueOutline] = OutlinePSO;
+        Default[kRenderQueueShadow] = ShadowPSO;
+        Default[kRenderQueueDepth] = DepthPSO;
     }
     Techniques.emplace( L"Default", std::move( Default ) );
 }
