@@ -4,6 +4,7 @@
 #include "IModel.h"
 #include "Pmx.h"
 #include "Color.h"
+#include "LinearColor.h"
 
 #include "CompiledShaders/PmxColorVS.h"
 #include "CompiledShaders/PmxColorPS.h"
@@ -47,20 +48,6 @@ namespace {
 
     std::map<std::wstring, RenderPipelineList> Techniques;
 
-#define LinearColor 0
-#if LinearColor
-    bool bSRGB = true;
-    template <typename T>
-    T ConvertColor(T t) {
-        return FromSRGB( t );
-    }
-#else
-    bool bSRGB = false;
-    template <typename T>
-    T ConvertColor(T t) {
-        return t;
-    }
-#endif
 }
 
 void PmxModel::Initialize()
@@ -265,9 +252,9 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         mat.ShaderName = m_DefaultShader;
         mat.TexturePathes.resize(kTextureMax);
         if (material.DiffuseTexureIndex >= 0)
-            mat.TexturePathes[kTextureDiffuse] = { bSRGB, pmx.m_Textures[material.DiffuseTexureIndex] };
+            mat.TexturePathes[kTextureDiffuse] = { Gamma::bSRGB, pmx.m_Textures[material.DiffuseTexureIndex] };
         if (material.SphereTextureIndex >= 0)
-            mat.TexturePathes[kTextureSphere] = { bSRGB, pmx.m_Textures[material.SphereTextureIndex] };
+            mat.TexturePathes[kTextureSphere] = { Gamma::bSRGB, pmx.m_Textures[material.SphereTextureIndex] };
 
         std::wstring ToonName;
         if (material.bDefaultToon)
@@ -275,20 +262,20 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         else if (material.Toon >= 0)
             ToonName = pmx.m_Textures[material.Toon];
         if (!ToonName.empty())
-            mat.TexturePathes[kTextureToon] = { bSRGB, ToonName };
+            mat.TexturePathes[kTextureToon] = { Gamma::bSRGB, ToonName };
 
         MaterialCB cb = {};
-		cb.Diffuse = ConvertColor(material.Diffuse);
-		cb.Specular = ConvertColor(material.Specular);
+		cb.Diffuse = Gamma::Convert(material.Diffuse);
+		cb.Specular = Gamma::Convert(material.Specular);
 		cb.SpecularPower = material.SpecularPower;
-        cb.Ambient = ConvertColor(material.Ambient);
+        cb.Ambient = Gamma::Convert(material.Ambient);
         cb.SphereOperation = material.SphereOperation;
         if (mat.TexturePathes[kTextureSphere].Path.empty())
             cb.SphereOperation = Pmx::ESphereOpeation::kNone;
 
         mat.CB = cb;
 		mat.CB.EdgeSize = material.EdgeSize;
-        mat.CB.EdgeColor = ConvertColor(material.EdgeColor);
+        mat.CB.EdgeColor = Gamma::Convert(material.EdgeColor);
         mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
         mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
         mat.bTwoSided = material.BitFlag & Pmx::EMaterialFlag::kCullOff;
