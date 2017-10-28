@@ -102,17 +102,7 @@ void FXAA::Initialize( void )
 
 void FXAA::Shutdown(void)
 {
-    Pass1HdrCS.Destroy();
-    Pass1LdrCS.Destroy();
-    ResolveWorkCS.Destroy();
-    Pass2HCS.Destroy();
-    Pass2VCS.Destroy();
-    Pass2HDebugCS.Destroy();
-    Pass2VDebugCS.Destroy();
-
     IndirectParameters.Destroy();
-
-	FXAAPS.Destroy();
 }
 
 void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )

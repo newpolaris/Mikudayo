@@ -189,14 +189,25 @@ PixelShaderOutput main(PixelShaderInput input)
 #endif
 
     // Complete projection by doing division by w.
-    float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    float3 shadowPositionNS = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
+
     if (any(saturate(shadowCoord) == shadowCoord))
     {
-        float ShadowRate = 1.0;
-        float X_SHADOWPOWER = 1.0;
-        float shadowness = GetShadow( shadowCoord );
-        shadowColor.rgb *= (1 - (1 - ShadowRate) * X_SHADOWPOWER);
-        color = lerp(shadowColor, color, shadowness);
+        float comp = 0;
+		float U = SoftShadowParam / SHADOWMAP_SIZE;
+		float V = SoftShadowParam / SHADOWMAP_SIZE;
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(0,0)) , 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(U,0)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(-U,0)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(0,V)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(0,-V)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(U,V)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(-U,V)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(-U,-V)), 0.0f)*SKII1-0.3f);
+        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(U,-V)), 0.0f)*SKII1-0.3f);
+        comp = saturate(comp/9);
+        color = lerp(shadowColor, color, comp);
     }
     output.color = color;
     output.emissive = color * emissive;

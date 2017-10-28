@@ -38,6 +38,9 @@
     <Filter Include="Shaders\Shadow">
       <UniqueIdentifier>{d50d1eb2-3f4d-4059-bd48-9897b2d84265}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Diffuse">
+      <UniqueIdentifier>{73e31801-3507-4102-ad0e-0913a37c8a02}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -250,6 +253,9 @@
     <ClInclude Include="IColorBuffer.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Diffuse.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -406,6 +412,9 @@
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="MotionBlur.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Diffuse.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
@@ -637,6 +646,12 @@
     </FxCompile>
     <FxCompile Include="Shaders\DebugDrawHistogramCS.hlsl">
       <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DiffusePass2PS.hlsl">
+      <Filter>Shaders\Diffuse</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DiffusePass1PS.hlsl">
+      <Filter>Shaders\Diffuse</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

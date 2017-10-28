@@ -31,6 +31,7 @@
     <ClInclude Include="DepthBuffer.h" />
     <ClInclude Include="DepthOfField.h" />
     <ClInclude Include="DepthStencilState.h" />
+    <ClInclude Include="Diffuse.h" />
     <ClInclude Include="Encoding.h" />
     <ClInclude Include="EngineProfiling.h" />
     <ClInclude Include="EngineTuning.h" />
@@ -100,6 +101,7 @@
     <ClCompile Include="DepthBuffer.cpp" />
     <ClCompile Include="DepthOfField.cpp" />
     <ClCompile Include="DepthStencilState.cpp" />
+    <ClCompile Include="Diffuse.cpp" />
     <ClCompile Include="Encoding.cpp" />
     <ClCompile Include="EngineProfiling.cpp" />
     <ClCompile Include="EngineTuning.cpp" />
@@ -223,6 +225,16 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DiffusePass2PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DiffusePass1PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\DownsampleBloomAllCS.hlsl" />
     <FxCompile Include="Shaders\DownsampleBloomCS.hlsl" />

@@ -11,7 +11,7 @@ static float SubLightParam = 0.5;
 static float MainHLamb = 0.25;
 static float SubHLamb = 0.5;
 static float ShadowLimitLength = 0;
-static float SoftShadowParam = 8;
+static float SoftShadowParam = 2.5;
 #define SHADOWMAP_SIZE 4096
 
 static float3 LightPos[16] = {

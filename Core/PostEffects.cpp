@@ -21,6 +21,7 @@
 #include "BufferManager.h"
 #include "MotionBlur.h"
 #include "DepthOfField.h"
+#include "Diffuse.h"
 #include "FXAA.h"
 #include "TextureManager.h"
 
@@ -161,6 +162,7 @@ void PostEffects::Initialize( void )
     g_Exposure.Create(L"Exposure", 8, 4, initExposure);
 
     FXAA::Initialize();
+    Diffuse::Initialize();
     MotionBlur::Initialize();
     DepthOfField::Initialize();
 }
@@ -170,6 +172,7 @@ void PostEffects::Shutdown( void )
     g_Exposure.Destroy();
 
     FXAA::Shutdown();
+    Diffuse::Shutdown();
     MotionBlur::Shutdown();
     DepthOfField::Shutdown();
 }
@@ -477,6 +480,9 @@ void PostEffects::Render( void )
 
     if (!g_bTypedUAVLoadSupport_R11G11B10_FLOAT)
         CopyBackPostBuffer(Context);
+
+    if (Diffuse::Enable)
+        Diffuse::Render( Context );
 
     if (DrawHistogram)
     {
