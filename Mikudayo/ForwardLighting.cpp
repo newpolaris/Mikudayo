@@ -149,7 +149,7 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
 {
     GraphicsContext& gfxContext = args.gfxContext;
     {
-        ScopedTimer( L"Forward Pass", gfxContext );
+        ScopedTimer _forward( L"Forward Pass", gfxContext );
         gfxContext.ClearColor( g_EmissiveColorBuffer );
         D3D11_RTV_HANDLE rtvs[] = {
             g_SceneColorBuffer.GetRTV(),
@@ -160,11 +160,11 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
         scene->Render( defaultPass, args );
     }
     {
-        ScopedTimer( L"Outline Pass", gfxContext );
+        ScopedTimer _outline( L"Outline Pass", gfxContext );
         scene->Render( m_OutlinePass, args );
     }
     {
-        ScopedTimer( L"Reflect Pass", gfxContext );
+        ScopedTimer _reflect( L"Reflect Pass", gfxContext );
         MirrorPass mirror( scene );
         scene->Render( mirror, args );
     }
