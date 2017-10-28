@@ -45,9 +45,7 @@ void Diffuse::Render( ComputeContext& Compute )
     ColorBuffer& Target = g_SceneColorBuffer;
 
     GraphicsContext& Context = Compute.GetGraphicsContext();
-    Context.SetConstants( 0, 1.0f / g_SceneColorBuffer.GetWidth(), 1.0f / g_SceneColorBuffer.GetHeight(), { kBindVertex } );
-	// float Constants[] = { 1.0f / Target.GetWidth(), 1.0f / Target.GetHeight(), (float)ContrastThreshold, (float)ContrastThresholdMin, (float)SubpixelRemoval };
-    // Context.SetConstants( 0, _countof(Constants), Constants, { kBindVertex } );
+    Context.SetConstants( 0, (float)g_SceneColorBuffer.GetWidth(), (float)g_SceneColorBuffer.GetHeight(), { kBindPixel } );
     Context.SetPipelineState( DiffusePass1 );
     Context.SetDynamicSampler( 0, SamplerLinearClamp, { kBindPixel } );
     Context.SetDynamicDescriptor( 0, g_SceneColorBuffer.GetSRV(), { kBindPixel } );

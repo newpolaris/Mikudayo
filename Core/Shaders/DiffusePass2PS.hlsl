@@ -40,17 +40,18 @@ float4 main( float4 position : SV_Position, float2 texcoord : TexCoords0 ) : SV_
 
     [unroll]
 	for(int i = -SAMP_NUM; i <= SAMP_NUM; i++) {
-        float2 stex = texcoord + float2(0, SampStep.y * (float)i) + ViewportOffset;
+        float2 stex = texcoord + float2(0, SampStep.y * (float)i);
         float e = exp(-pow((float)i / (SAMP_NUM / 2.0), 2) / 2);
-		sum += SourceColor.Sample(LinearSampler, stex);
+		sum += SourceColor.Sample(LinearSampler, stex) * e;
         n += e;
     }
     
     color = sum / n;
+    return float4(color, 1);
     colorOrg = OriginColor.Sample(LinearSampler, texcoord );
-    colorSrc = pow( colorOrg.rgb, 2 );
+    colorSrc = pow( colorOrg, 2 );
     
-    color.rgb = color.rgb + colorSrc.rgb - color.rgb * colorSrc.rgb;
+    color = color + colorSrc - color * colorSrc;
     
     #if MIX_TYPE==0
         color = BrightnessCompare(color, colorOrg);

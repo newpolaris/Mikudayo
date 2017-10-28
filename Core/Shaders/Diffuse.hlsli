@@ -10,6 +10,4 @@ cbuffer Constants : register(b0)
 static float Scaling = 0.1;
 static float Strength = 0.7;
 static float Extent = 0.002;
-static const float2 ViewportOffset = (float2(0.5,0.5)/ViewportSize);
 static const float2 SampStep = (float2(Extent,Extent)/ViewportSize*ViewportSize.y) * Scaling;
-

@@ -480,6 +480,9 @@
     <None Include="Shaders\ToneMappingUtility.hlsli">
       <Filter>Shaders\HDR</Filter>
     </None>
+    <None Include="Shaders\Diffuse.hlsli">
+      <Filter>Shaders\Diffuse</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">

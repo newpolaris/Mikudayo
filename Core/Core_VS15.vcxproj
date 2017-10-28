@@ -153,6 +153,7 @@
     <None Include="Math\Functions.inl" />
     <None Include="packages.config" />
     <None Include="Shaders\ColorSpaceUtility.hlsli" />
+    <None Include="Shaders\Diffuse.hlsli" />
     <None Include="Shaders\FXAAPass1CS.hlsli" />
     <None Include="Shaders\FXAAPass2CS.hlsli" />
     <None Include="Shaders\FXAAPS.hlsli" />

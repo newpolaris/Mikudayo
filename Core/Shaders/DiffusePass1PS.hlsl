@@ -10,11 +10,11 @@ float4 main( float4 position : SV_Position, float2 texcoord : TexCoords0 ) : SV_
 
 	[unroll]
 	for (int i = -SAMP_NUM; i <= SAMP_NUM; i++) {
-		float2 stex = texcoord + float2(SampStep.x * (float)i, 0) + ViewportOffset;
+		float2 stex = texcoord + float2(SampStep.x * (float)i, 0);
 		float e = exp(-pow((float)i / (SAMP_NUM / 2.0), 2) / 2);
-		float3 color = SourceColor.Sample(LinearSampler, stex);
-		color = pow( color, 2 );
-		sum += color * e;
+		float3 orgColor = SourceColor.Sample(LinearSampler, stex);
+		orgColor = pow( orgColor, 1 );
+		sum += orgColor * e;
 		n += e;
 	}
 	color = sum / n;
