@@ -16,6 +16,7 @@ namespace Diffuse
     GraphicsPSO DiffusePass2;
 
     BoolVar Enable("Graphics/Diffuse/Enable", true);
+    NumVar Extent( "Graphics/Diffuse/Extent", 0.012f, 0.0f, 0.064f, 0.001f );
 }
 
 void Diffuse::Initialize( void )
@@ -43,9 +44,10 @@ void Diffuse::Render( ComputeContext& Compute )
     ScopedTimer _prof(L"Diffuse", Compute);
 
     ColorBuffer& Target = g_SceneColorBuffer;
-
+    float ExtentY = Extent;
+    float ExtentX = Extent * Target.GetHeight() / Target.GetWidth();
     GraphicsContext& Context = Compute.GetGraphicsContext();
-    Context.SetConstants( 0, (float)g_SceneColorBuffer.GetWidth(), (float)g_SceneColorBuffer.GetHeight(), { kBindPixel } );
+    Context.SetConstants( 0, ExtentX, ExtentY, { kBindPixel } );
     Context.SetPipelineState( DiffusePass1 );
     Context.SetDynamicSampler( 0, SamplerLinearClamp, { kBindPixel } );
     Context.SetDynamicDescriptor( 0, g_SceneColorBuffer.GetSRV(), { kBindPixel } );

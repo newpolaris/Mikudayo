@@ -47,7 +47,6 @@ float4 main( float4 position : SV_Position, float2 texcoord : TexCoords0 ) : SV_
     }
     
     color = sum / n;
-    return float4(color, 1);
     colorOrg = OriginColor.Sample(LinearSampler, texcoord );
     colorSrc = pow( colorOrg, 2 );
     
