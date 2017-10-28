@@ -123,7 +123,6 @@ void Mikudayo::Startup( void )
 
     m_Scene = std::make_shared<Scene>();
 
-#if 1
     SceneNodePtr instance;
 #if 0
     const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
@@ -134,8 +133,8 @@ void Mikudayo::Startup( void )
 
 // #define HALLOWEEN 1
 // #define BOARD 1
-// #define FLOOR 1
-#define STAGE 1
+#define FLOOR 1
+// #define STAGE 1
 
     ModelInfo stage;
 #if BOARD
@@ -172,6 +171,7 @@ void Mikudayo::Startup( void )
     if (instance)
         m_Scene->AddChild( instance );
 
+#if 0
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
     OrthogonalTransform rotation( Quaternion( -3.14/2, 0, 0 ) );
     mirror->SetTransform( rotation );

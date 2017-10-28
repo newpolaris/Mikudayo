@@ -86,8 +86,9 @@ SamplerComparisonState shadowSampler : register(s2);
 
 float GetShadow( float3 ShadowCoord )
 {
+#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
-    float result = texTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
+    float result = texShadow.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else
     const float Dilation = 2.0;
     float d1 = Dilation * ShadowTexelSize.x * 0.125;
