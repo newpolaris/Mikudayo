@@ -161,20 +161,23 @@ PixelShaderOutput main(PixelShaderInput input)
 #endif
 
     // Complete projection by doing division by w.
-    float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
-    // float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
+    float3 shadowPositionNS = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
 
+#if 0
     if (any(shadowCoord == saturate(shadowCoord)))
     {
         float comp = GetShadow( shadowCoord );
-        // float comp = saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord), 0.0f)*SKII1 - 0.3f);
-        if (mat.bUseToon) {
-            float lightIntensity = dot( normalize(input.normalWS), -SunDirectionWS );
-            comp = min( saturate( lightIntensity )*Toon, comp );
-            shadowColor.rgb *= MaterialToon;
-        }
-        color = lerp( shadowColor, color, comp );
+        color = float4(comp.xxx, 1);
     }
+#else 
+    if (any(saturate(shadowCoord) == shadowCoord))
+    {
+        float comp = texShadow.Sample( sampler1, shadowCoord ) +0.000 > shadowPositionNS.z ;
+        // float comp = saturate(max(- shadowPositionNS.z + texShadow.Sample(sampler1, shadowCoord), 0.0f)*SKII1 - 0.3f);
+        color = float4(comp.xxx, 1);
+    }
+#endif
     output.color = color;
     output.emissive = color * emissive;
     return output;

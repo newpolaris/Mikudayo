@@ -80,7 +80,7 @@ NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
 // Default values in MMD. Due to RH coord, z is inverted.
 NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -0.5f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
@@ -273,8 +273,8 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof(L"Render Shadow Map", gfxContext);
         float Radius = Length( m_MaxBound - m_MinBound ) / Scalar(2);
         Vector3 SunPosition = -m_SunDirection * Radius;
-        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2),
-            (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
+        // m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2), (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
+        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius * 2 ), m_Camera );
 
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );

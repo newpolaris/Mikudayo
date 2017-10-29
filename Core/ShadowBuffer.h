@@ -22,7 +22,7 @@ class GraphicsContext;
 class ShadowBuffer : public DepthBuffer
 {
 public:
-    ShadowBuffer() : m_DepthFormat(DXGI_FORMAT_D16_UNORM) {}
+    ShadowBuffer() : m_DepthFormat(DXGI_FORMAT_D32_FLOAT) {}
 
     void Create( const std::wstring& Name, uint32_t Width, uint32_t Height );
     void Create( const std::wstring& Name, uint32_t Width, uint32_t Height, EsramAllocator& Allocator );

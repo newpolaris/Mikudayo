@@ -48,6 +48,63 @@ void ShadowCamera::UpdateMatrix(
 
     // Transform from clip space to texture space
     m_ShadowMatrix = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3(0.5f, 0.5f, 0.0f) ) ) * m_ViewProjMatrix;
-    // m_ShadowMatrix = m_ViewProjMatrix;
+    m_ShadowMatrix = m_ViewProjMatrix;
+}
+
+void ShadowCamera::UpdateMatrix( Vector3 LightDirection, Vector3 ShadowCenter, Vector3 ShadowBounds, BaseCamera& camera )
+{
+    SetPosition( ShadowCenter );
+
+    SetLookDirection( LightDirection, Vector3(kYUnitVector) );
+    SetProjMatrix( OrthographicMatrix(ShadowBounds.GetX(), ShadowBounds.GetY(), -ShadowBounds.GetZ(), ShadowBounds.GetZ(), m_ReverseZ) );
+    SetProjMatrix( PerspectiveMatrix(XM_PI / 4, 1.0f, 10.f, 1000, m_ReverseZ ) );
+
+	m_ViewMatrix = Matrix4(~m_CameraToWorld);
+	m_ViewProjMatrix = m_ProjMatrix * m_ViewMatrix;
+    // Update();
+
+    float c_near = 1, c_far = 1000;
+    auto m_matViewPrime = camera.GetViewMatrix();
+    auto m_matProjPrime = camera.GetProjMatrix();
+    auto m_matViewProjPrime = m_matProjPrime * m_matViewPrime;
+
+	// Generate the shadow buffer transform matrix and the
+	// corresponding texture transform matrix (the shadow buffer
+	// matrix maps from screen space to shadow-buffer pre-projection
+	// space; the texture transform matrix just tacks on the extra
+	// texture scaling.)
+
+    // For a directional light, basically we want to look at the
+    // screen-space cube from some point on the "infinite plane"
+    // (past the end of zFar).
+
+    Vector3 m_lightDir = Normalize(-LightDirection);
+    Matrix4 view, proj;
+    // Light position in post-perspective screen space.
+    Vector3 lightdir = camera.GetViewMatrix().Get3x3() * m_lightDir;
+    Vector4 lightPos = camera.GetProjMatrix() * Vector4( lightdir, 0 );
+    lightPos = camera.GetViewProjMatrix() * Vector4( m_lightDir, 0 );
+    lightPos /= lightPos.GetW();
+
+    Vector3 center( 0, 0, 0.5 );
+    Vector3 yaxis( 0, 1, 0 );
+    if (fabsf( Dot( Vector3( lightPos ), yaxis ) ) > 0.99f)
+        yaxis = Vector3( 0, 0, 1 );;
+
+    float fRadius = 1.0f;
+    Vector3 lightpos = Vector3(lightPos);
+    float fDist = Length( lightpos - center );
+    view = Matrix4(XMMatrixLookAtRH( lightpos, center, yaxis ));
+    float	fAngle = 2.0f * asinf( fRadius / fDist );
+    float	n = fDist - fRadius * 2.f;
+    float	f = fDist + fRadius * 2.f;
+    if (n < 0.001f) { n = 0.001f; }
+
+    proj = PerspectiveMatrix( fAngle, 1.0, n, f, m_ReverseZ );
+    m_ProjMatrix = proj * view * Invert(m_matViewPrime) * m_matProjPrime * m_matViewPrime;
+    m_ViewMatrix = Matrix4(kIdentity);
+    m_ViewProjMatrix = m_ProjMatrix * m_ViewMatrix;
+    //  build the composite matrix that transforms from world space into post-projective light space
+    m_ShadowMatrix = m_ViewProjMatrix;
 }
 

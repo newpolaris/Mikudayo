@@ -77,6 +77,8 @@
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
     </ClCompile>
+    <Link />
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
     <ClCompile>
@@ -86,6 +88,8 @@
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
     </ClCompile>
+    <Link />
+    <Link />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
