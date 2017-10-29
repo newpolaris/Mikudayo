@@ -48,6 +48,6 @@ void ShadowCamera::UpdateMatrix(
 
     // Transform from clip space to texture space
     m_ShadowMatrix = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3(0.5f, 0.5f, 0.0f) ) ) * m_ViewProjMatrix;
-    m_ShadowMatrix = m_ViewProjMatrix;
+    // m_ShadowMatrix = m_ViewProjMatrix;
 }
 

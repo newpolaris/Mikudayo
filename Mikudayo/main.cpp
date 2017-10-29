@@ -161,10 +161,10 @@ void Mikudayo::Startup( void )
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
-    info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
-    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     info.ModelFile = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
+    info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
     info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
+    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     // info.ModelFile = L"Model/Tda式初音ミク背中見せデフォ服 Ver1.00/Tda式初音ミク背中見せデフォ服 ver1.0无高光.pmx";
     info.MotionFile = motion;
 
@@ -273,7 +273,7 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof(L"Render Shadow Map", gfxContext);
         float Radius = Length( m_MaxBound - m_MinBound ) / Scalar(2);
         Vector3 SunPosition = -m_SunDirection * Radius;
-        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius*2 ),
+        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2),
             (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
 
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );

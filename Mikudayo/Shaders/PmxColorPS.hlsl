@@ -1,5 +1,4 @@
 #include "CommonInclude.hlsli"
-#include "MultiLight.hlsli"
 
 #define SKII1 1500
 #define Toon 3
@@ -86,9 +85,8 @@ SamplerComparisonState shadowSampler : register(s2);
 
 float GetShadow( float3 ShadowCoord )
 {
-#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
-    float result = texShadow.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
+    float result = texTexture.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else
     const float Dilation = 2.0;
     float d1 = Dilation * ShadowTexelSize.x * 0.125;
@@ -115,12 +113,7 @@ float DistanceFromReflector( float3 position )
     return dot(reflectPlane.xyz, position.xyz) + reflectPlane.a;
 }
 
-static float3 LightSpecular = SunColor;
-static float3 LightDirection = SunDirectionWS;
-static float3 MaterialSpecular = Mat.specular;
 static float3 MaterialToon = (Mat.bUseToon ? texToon.Sample( sampler0, float2(0, 1) ).xyz : float3(1, 1, 1));
-static float3 SpecularColor = MaterialSpecular * LightSpecular;
-static float SpecularPower = Mat.specularPower;
 
 #if !REFLECTED
 [earlydepthstencil]
@@ -134,19 +127,8 @@ PixelShaderOutput main(PixelShaderInput input)
     clip(-DistanceFromReflector( input.positionWS ));
 #endif
 
-    float3 normal = normalize( input.normalWS );
-    float3 view = normalize(input.eyeWS);
-    float3 HalfVector = normalize( view + -LightDirection );
-    float3 Specular = pow( max( 0, dot( HalfVector, normal ) ), SpecularPower + SP_Power ) * (SpecularColor + SP_Add) * SP_Scale * MainLightParam;
-
-    for (int i = 0; i < 16; i++)
-    {
-        HalfVector = normalize( view + -normalize( LightPos[i] ) );
-        Specular += 0.16*pow( max( 0, dot( HalfVector, normal ) ), SpecularPower + SP_Power ) * (SpecularColor + SP_Add) * SP_Scale * SubLightParam;
-    }
-
     float4 color = input.color;
-    float4 shadowColor = input.color;
+    float4 shadowColor = float4(float3(0.5,0.5,0.5), color.a);
     float4 emissive = input.emissive;
 
     if (mat.bUseTexture) {
@@ -168,17 +150,7 @@ PixelShaderOutput main(PixelShaderInput input)
         shadowColor.a *= texColor.a;
     }
 
-    float3 Rim = pow( 1 - saturate(max(0, dot(normal, view))), RimPow ) * RimLight * pow( color.rgb, 2 );
-    color.rgb += Rim;
-    shadowColor.rgb += Rim;
-    color.rgb += Specular;
-    shadowColor.rgb += Specular*0.5;
-    
-    color.rgb *= BaseBias;
-    shadowColor.rgb *= ShadowBias;
-    
-    color.a = saturate(color.a);
-    shadowColor.a = saturate(shadowColor.a);
+    color.rgb += input.specular;
 
 #if REFLECTOR
     float4 texMirrorColor = texReflectDiffuse.Load( int3(input.positionHS.xy, 0) );
@@ -189,25 +161,19 @@ PixelShaderOutput main(PixelShaderInput input)
 #endif
 
     // Complete projection by doing division by w.
-    float3 shadowPositionNS = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
-    float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
+    float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    // float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
 
-    if (any(saturate(shadowCoord) == shadowCoord))
+    if (any(shadowCoord == saturate(shadowCoord)))
     {
-        float comp = 0;
-		float U = SoftShadowParam / SHADOWMAP_SIZE;
-		float V = SoftShadowParam / SHADOWMAP_SIZE;
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(0,0)) , 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(U,0)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(-U,0)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(0,V)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(0,-V)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(U,V)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(-U,V)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(-U,-V)), 0.0f)*SKII1-0.3f);
-        comp += saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord+float2(U,-V)), 0.0f)*SKII1-0.3f);
-        comp = saturate(comp/9);
-        color = lerp(shadowColor, color, comp);
+        float comp = GetShadow( shadowCoord );
+        // float comp = saturate(max(shadowPositionNS.z - texShadow.Sample(sampler1, shadowCoord), 0.0f)*SKII1 - 0.3f);
+        if (mat.bUseToon) {
+            float lightIntensity = dot( normalize(input.normalWS), -SunDirectionWS );
+            comp = min( saturate( lightIntensity )*Toon, comp );
+            shadowColor.rgb *= MaterialToon;
+        }
+        color = lerp( shadowColor, color, comp );
     }
     output.color = color;
     output.emissive = color * emissive;
