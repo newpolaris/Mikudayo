@@ -1,13 +1,11 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
-#include "MultiLight.hlsli"
 
 //
 // Use code full.fx, AutoLuminous.fx
 //
 
-#define AUTOLUMINOUS 1
-
+#define AUTOLUMINOUS 0
 
 cbuffer Constants: register(b0)
 {
@@ -48,7 +46,6 @@ cbuffer LightConstants : register(b5)
     float3 SunColor;
     float4 ShadowTexelSize;
 }
-static float3 LightDirection = SunDirectionWS;
 
 // Per-vertex data used as input to the vertex shader.
 struct VertexShaderInput
@@ -71,7 +68,6 @@ struct PixelShaderInput
     float2 spTex : TEXCOORD1;
     float3 normalWS : NORMAL;
     float4 color : COLOR0;
-    float3 specular : COLOR1;
     float4 emissive : COLOR2;
     float3 ambient : COLOR3;
 };
@@ -85,6 +81,7 @@ static float3 MaterialAmbient = Mat.diffuse;
 static float3 MaterialEmissive = Mat.ambient;
 static float3 MaterialSpecular = Mat.specular;
 static const float4 MaterialToon = Mat.MaterialToon;
+static const float3 LightDirection = SunDirectionWS;
 static float3 LightDiffuse = float3(0,0,0);
 static float3 LightAmbient = SunColor;
 static float3 LightSpecular = SunColor;
@@ -95,7 +92,7 @@ static bool IsEmission = (100 < Mat.specularPower) && (length(MaterialSpecular) 
 static float3 AutoLuminousColor = (IsEmission ? MaterialDiffuse.rgb : float3(0, 0, 0));
 #endif
 static float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
-static float3 AmbientColor = saturate(MaterialAmbient * LightAmbient + MaterialEmissive + AutoLuminousColor);
+static float3 AmbientColor = MaterialAmbient * LightAmbient + MaterialEmissive + AutoLuminousColor;
 static float3 SpecularColor = MaterialSpecular * LightSpecular;
 
 // Simple shader to do vertex processing on the GPU.
@@ -114,23 +111,18 @@ PixelShaderInput main(VertexShaderInput input)
     output.shadowPositionCS = mul( viewToShadow, float4(output.positionWS, 1) );
     output.eyeWS = cameraPosition - mul( (float3x3)model, position );
     output.normalWS = normalize(mul( (float3x3)model, normal ));
-
-    output.color.rgb = max(0, dot(output.normalWS, -LightDirection) * MainHLamb + (1 - MainHLamb))*AmbientColor*MainLightParam;
-    float3 subsum = 0;
-    for (int i = 0; i < 16; i++) {
-        subsum += max(0, dot(output.normalWS, normalize(LightPos[i])) * SubHLamb + (1 - SubHLamb))*AmbientColor*SubLightParam;
+    output.color.rgb = AmbientColor;
+    if (!mat.bUseToon) {
+        output.color.rgb += max( 0, dot( output.normalWS, -LightDirection ) ) * DiffuseColor.rgb;
     }
-    
-    output.color.rgb += (subsum / (16 * LightScale))*1.0;
-    output.color.a = smoothstep( 0, 0.9, DiffuseColor.a );
+    output.color.a = DiffuseColor.a;
+    output.color = saturate( output.color );
 	output.texCoord = input.texcoord;
     if ( mat.sphereOperation != kSphereNone ) {
         float2 normalVS = mul( (float3x3)view, output.normalWS ).xy;
         output.spTex.x = normalVS.x * 0.5 + 0.5;
         output.spTex.y = normalVS.y * -0.5 + 0.5;
     }
-    float3 halfVector = normalize( normalize( output.eyeWS ) + -LightDirection );
-    output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.specularPower ) * SpecularColor;
     output.emissive = float4(0, 0, 0, MaterialDiffuse.a);
 #if AUTOLUMINOUS
     if (IsEmission)

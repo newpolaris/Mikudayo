@@ -273,8 +273,8 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof(L"Render Shadow Map", gfxContext);
         float Radius = Length( m_MaxBound - m_MinBound ) / Scalar(2);
         Vector3 SunPosition = -m_SunDirection * Radius;
-        // m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2), (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
-        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius * 2 ), m_Camera );
+        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2), (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
+        // m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius * 2 ), m_Camera );
 
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
