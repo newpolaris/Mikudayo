@@ -170,6 +170,61 @@ bool PmxModel::Load( const ModelInfo& Info )
     return true;
 }
 
+std::wstring PmxModel::GetImagePath( const std::wstring& FilePath )
+{
+    using Path = boost::filesystem::path;
+
+    Path imagePath = Path(m_TextureRoot) / FilePath;
+    bool bExist = boost::filesystem::exists( imagePath );
+    if (!bExist)
+    {
+        const std::wregex toonPattern( L"toon[0-9]{1,2}.bmp", std::regex_constants::icase );
+        if (!std::regex_match( FilePath.begin(), FilePath.end(), toonPattern ))
+            return L"";
+        imagePath = Path( "toon" ) / FilePath;
+    }
+    return imagePath.generic_wstring();;
+}
+
+// PMD, PMX use MaterialToon left-bottom (0, 1)
+Color PmxModel::GetMaterialToon( const std::wstring& FilePath )
+{
+    Color Empty = Color( 1.f, 1.f, 1.f );
+    const std::wstring filePath = GetImagePath( FilePath );
+    if (filePath.empty())
+        return Empty;
+
+    // Try to determine the file type from the image file.
+    FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeU( filePath.c_str() );
+    if ( fif == FIF_UNKNOWN )
+        fif = FreeImage_GetFIFFromFilenameU( filePath.c_str() );
+
+    if (fif == FIF_UNKNOWN || !FreeImage_FIFSupportsReading( fif ))
+        return Empty;
+
+    FIBITMAP* dib = FreeImage_LoadU( fif, filePath.c_str() );
+    if ( dib == nullptr || FreeImage_HasPixels( dib ) == FALSE )
+        return Empty;
+
+    const unsigned textureHeight = FreeImage_GetHeight( dib );
+    // FreeImage use left-bottom origin 
+    const unsigned lastY = 0;
+
+    int bpp = FreeImage_GetBPP(dib);
+    Color color;
+    if (bpp == 8) {
+        BYTE gray;
+        FreeImage_GetPixelIndex( dib, 0, lastY, &gray );
+        color = Color( gray, gray, gray );
+    } else {
+        RGBQUAD quad;
+        FreeImage_GetPixelColor( dib, 0, lastY, &quad );
+        color = Color( quad.rgbRed, quad.rgbGreen, quad.rgbBlue );
+    }
+    FreeImage_Unload( dib );
+    return color;
+}
+
 bool PmxModel::GenerateResource( void )
 {
 	m_IndexBuffer.Create( m_Name + L"_IndexBuf", static_cast<uint32_t>(m_Indices.size()),
@@ -182,11 +237,15 @@ bool PmxModel::GenerateResource( void )
             auto& tex = material.TexturePathes[i];
             if (!tex.Path.empty())
                 material.Textures[i] = LoadTexture( tex.Path, tex.bSRGB );
-            if (material.Textures[kTextureToon])
-                material.CB.bUseToon = TRUE;
-            if (material.Textures[kTextureDiffuse])
-                material.CB.bUseTexture = TRUE;
         }
+        if (material.Textures[kTextureToon])
+        {
+            material.CB.bUseToon = TRUE;
+            material.CB.MaterialToon = GetMaterialToon( material.TexturePathes[kTextureToon].Path );
+        }
+        if (material.Textures[kTextureDiffuse])
+            material.CB.bUseTexture = TRUE;
+
 	}
     return true;
 }
@@ -272,6 +331,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         cb.SphereOperation = material.SphereOperation;
         if (mat.TexturePathes[kTextureSphere].Path.empty())
             cb.SphereOperation = Pmx::ESphereOpeation::kNone;
+        cb.MaterialToon = Color( 1.f, 1.f, 1.f );
 
         mat.CB = cb;
 		mat.CB.EdgeSize = material.EdgeSize;
@@ -362,22 +422,9 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
 const ManagedTexture* PmxModel::LoadTexture( std::wstring ImageName, bool bSRGB )
 {
-    using Path = boost::filesystem::path;
-    ASSERT(!ImageName.empty());
-
-    const Path imagePath = Path(m_TextureRoot) / ImageName;
-    bool bExist = boost::filesystem::exists( imagePath );
-    if (bExist)
-    {
-        auto wstrPath = imagePath.generic_wstring();
-        return TextureManager::LoadFromFile( wstrPath, bSRGB );
-    }
-    const std::wregex toonPattern( L"toon[0-9]{1,2}.bmp", std::regex_constants::icase );
-    if (std::regex_match( ImageName.begin(), ImageName.end(), toonPattern ))
-    {
-        auto toonPath = Path( "toon" ) / ImageName;
-        return TextureManager::LoadFromFile( toonPath.generic_wstring(), bSRGB );
-    }
+    const std::wstring filePath = GetImagePath( ImageName );
+    if (!filePath.empty())
+        return TextureManager::LoadFromFile( filePath, bSRGB );
     return &TextureManager::GetMagentaTex2D();
 }
 

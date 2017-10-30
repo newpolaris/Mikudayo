@@ -54,6 +54,7 @@ public:
 		int32_t bUseToon;
         float EdgeSize;
         XMFLOAT4 EdgeColor;
+        Color MaterialToon;
 	};
 
     struct Material : public IMaterial
@@ -148,6 +149,8 @@ public:
 
 protected:
 
+    std::wstring GetImagePath( const std::wstring& FilePath );
+    Color GetMaterialToon( const std::wstring& FilePath );
     bool GenerateResource( void );
     bool LoadFromFile( const std::wstring& FilePath );
     const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );

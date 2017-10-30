@@ -651,6 +651,7 @@ void Graphics::Initialize( void )
 
 	g_PreDisplayBuffer.Create(L"PreDisplay Buffer", g_DisplayWidth, g_DisplayHeight, 1, SwapChainFormat);
 
+    FreeImage_Initialise(TRUE);
     GpuTimeManager::Initialize(1024);
 	SetNativeResolution();
     TemporalEffects::Initialize();
@@ -714,6 +715,8 @@ void Graphics::Shutdown( void )
 #endif
 
 	SAFE_RELEASE(g_Device);
+
+    FreeImage_DeInitialise();
 }
 
 void Graphics::PreparePresentLDR( void )

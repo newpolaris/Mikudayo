@@ -34,6 +34,7 @@ struct Material
     int bUseToon;
     float EdgeSize;
     float4 EdgeColor;
+    float4 MaterialToon;
 };
 
 cbuffer MaterialConstants : register(b4)
@@ -83,6 +84,7 @@ static float4 MaterialDiffuse = float4(Mat.diffuse, Mat.alpha);
 static float3 MaterialAmbient = Mat.diffuse;
 static float3 MaterialEmissive = Mat.ambient;
 static float3 MaterialSpecular = Mat.specular;
+static const float4 MaterialToon = Mat.MaterialToon;
 static float3 LightDiffuse = float3(0,0,0);
 static float3 LightAmbient = SunColor;
 static float3 LightSpecular = SunColor;

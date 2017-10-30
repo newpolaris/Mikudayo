@@ -46,3 +46,7 @@
 #include "VectorMath.h"
 #include "EngineTuning.h"
 #include "EngineProfiling.h"
+
+// FreeImage
+#define FREEIMAGE_LIB
+#include <FreeImage.h>

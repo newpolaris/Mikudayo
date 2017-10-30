@@ -26,6 +26,7 @@ public:
 	Color( const XMVECTORF32& vec );
 	Color( float r, float g, float b, float a = 1.0f );
 	Color( uint16_t r, uint16_t g, uint16_t b, uint16_t a = 255, uint16_t bitDepth = 8 );
+    Color( BYTE r, BYTE g, BYTE b );
 	explicit Color( uint32_t rgbaLittleEndian );
 		
 	float R() const { return XMVectorGetX(m_value); }

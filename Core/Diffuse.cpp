@@ -15,7 +15,7 @@ namespace Diffuse
     GraphicsPSO DiffusePass1;
     GraphicsPSO DiffusePass2;
 
-    BoolVar Enable("Graphics/Diffuse/Enable", true);
+    BoolVar Enable("Graphics/Diffuse/Enable", false);
     NumVar Extent( "Graphics/Diffuse/Extent", 0.012f, 0.0f, 0.064f, 0.001f );
 }
 

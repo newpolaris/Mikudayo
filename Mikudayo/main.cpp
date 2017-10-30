@@ -107,7 +107,7 @@ void Mikudayo::Startup( void )
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
 
-    // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
+    g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
     #if 0
