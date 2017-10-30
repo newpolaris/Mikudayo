@@ -3,6 +3,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include "VectorMath.h"
 
 namespace Math
@@ -12,7 +13,7 @@ namespace Math
     class BoundingBox
     {
     public:
-        BoundingBox()
+        BoundingBox() : m_Min( FLT_MAX ), m_Max( FLT_MIN )
         {
         }
 
@@ -20,9 +21,18 @@ namespace Math
         {
         }
 
+        BoundingBox( const std::vector<Vector3>& list ) : m_Min( FLT_MAX ), m_Max( FLT_MIN )
+        {
+            for (auto& vec : list)
+                Merge( vec );
+        }
+
+        Vector3 GetCenter() const;
         const Vector3& GetMin( void ) const;
         const Vector3& GetMax( void ) const;
         FrustumCorner GetCorners( void ) const;
+
+        void Merge( const Vector3& vec );
 
 		friend BoundingBox operator* ( const OrthogonalTransform& xform, const BoundingBox& box );	// Fast
 		friend BoundingBox operator* ( const AffineTransform& xform, const BoundingBox& box );		// Slow
@@ -61,6 +71,11 @@ namespace Math
 	{
 		return m_Max;
 	}
+
+    inline Vector3 BoundingBox::GetCenter() const
+    {
+        return (m_Min + m_Max) / 2;
+    }
 
     inline BoundingBox operator* ( const OrthogonalTransform& xform, const BoundingBox& box )
     {

@@ -24,7 +24,7 @@ namespace GameCore
     public:
         ShadowCamera() {}
 
-        void ShadowCamera::UpdateMatrix( Vector3 LightDirection, Vector3 ShadowCenter, Vector3 ShadowBounds, BaseCamera& camera );
+        void UpdateMatrix( Vector3 LightDirection, Vector3 ShadowCenter, Vector3 ShadowBounds, BaseCamera& camera );
         void UpdateMatrix( 
             Vector3 LightDirection,		// Direction parallel to light, in direction of travel
             Vector3 ShadowCenter,		// Center location on far bounding plane of shadowed region
@@ -40,11 +40,9 @@ namespace GameCore
     private:
 
         Matrix4 m_ShadowMatrix;
-
-        float m_fMinInfinityZ = 300.f;
-        bool m_bSlideBack = 0;
-        float m_fSlideBack = 0.f;
-        float m_ppNear, m_ppFar;
+        bool mLightFrustumCameraCalculated = false;
+        float mOptAdjustFactorTweak = 1.0f;
+        float mCosCamLightDirThreshold = 0.9f;
     };
 
 }
