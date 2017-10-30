@@ -241,7 +241,7 @@ bool PmxModel::GenerateResource( void )
         if (material.Textures[kTextureToon])
         {
             material.CB.bUseToon = TRUE;
-            material.CB.MaterialToon = GetMaterialToon( material.TexturePathes[kTextureToon].Path );
+            material.CB.MaterialToon = Gamma::Convert(GetMaterialToon( material.TexturePathes[kTextureToon].Path ));
         }
         if (material.Textures[kTextureDiffuse])
             material.CB.bUseTexture = TRUE;

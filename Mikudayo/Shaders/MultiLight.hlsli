@@ -1,5 +1,5 @@
-static float3 BaseBias = float3(1,1,1)*1.1;
-static float3 ShadowBias = float3(1,0.8,0.8);
+static const float3 BaseBias = float3(1,1,1)*1.1;
+static const float3 ShadowBias = float3(1,0.8,0.8);
 static float SP_Power = 1.0;
 static float SP_Scale = 0.2;
 static float3 SP_Add = float3(0.2,0.1,0.1);
