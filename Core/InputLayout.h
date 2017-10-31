@@ -15,6 +15,7 @@ struct InputDesc
     D3D11_INPUT_CLASSIFICATION InputSlotClass;
     UINT InstanceDataStepRate;
 };
+std::size_t hash_value( const InputDesc& Desc );
 
 class InputLayout
 {

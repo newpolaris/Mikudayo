@@ -124,7 +124,7 @@ namespace Pmx
             SdefUnit sdef;
             QdefUnit qdef;
         };
-        float EdgeSize;
+        float EdgeScale;
 
         void Fill( bufferstream & is, bool bRH, uint8_t numAddUV, uint8_t boneByteSize );
     };

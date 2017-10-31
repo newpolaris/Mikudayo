@@ -124,7 +124,7 @@ void DebugDraw::flush( GraphicsContext& UiContext, const Matrix4& WorldToClip )
         UiContext.SetDynamicVB( 0, Lines.size(), sizeof(Vertex), Lines.data() );
         UiContext.Draw( static_cast<UINT>(Lines.size()), 0 );
     }
-    Lines.resize( 0 );
+    Lines.clear();
 
     // Print reportErrorWarning
     const XMFLOAT2 WarningPos( 10.f, 100.f );
