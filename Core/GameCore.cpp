@@ -19,6 +19,8 @@
 #include "CommandContext.h"
 #include "PostEffects.h"
 
+#include <shellapi.h> // for ExtractIcon()
+
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     #pragma comment(lib, "runtimeobject.lib")
 #else
@@ -292,6 +294,18 @@ namespace GameCore
 
         HINSTANCE hInst = GetModuleHandle(0);
 
+        WCHAR szExePath[MAX_PATH];
+        GetModuleFileName(NULL, szExePath, MAX_PATH);
+        HICON hIcon = ExtractIcon( hInst, szExePath, 0 );
+        if (hIcon == nullptr)
+            hIcon = LoadIcon(hInst, IDI_APPLICATION);
+        else
+        {
+            HWND hWnd = GetConsoleWindow();
+            ::SendMessage( hWnd, WM_SETICON, ICON_SMALL, reinterpret_cast<WPARAM>(hIcon) );
+            ::SendMessage( hWnd, WM_SETICON, ICON_BIG, reinterpret_cast<WPARAM>(hIcon) );
+        }
+
         // Register class
         WNDCLASSEX wcex;
         wcex.cbSize = sizeof(WNDCLASSEX);
@@ -300,12 +314,12 @@ namespace GameCore
         wcex.cbClsExtra = 0;
         wcex.cbWndExtra = 0;
         wcex.hInstance = hInst;
-        wcex.hIcon = LoadIcon(hInst, IDI_APPLICATION);
+        wcex.hIcon = hIcon;
         wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
         wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
         wcex.lpszMenuName = nullptr;
         wcex.lpszClassName = className;
-        wcex.hIconSm = LoadIcon(hInst, IDI_APPLICATION);
+        wcex.hIconSm = hIcon;
         ASSERT(0 != RegisterClassEx(&wcex), "Unable to register a window");
 
         // Create window
