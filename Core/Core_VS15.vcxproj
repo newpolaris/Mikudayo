@@ -61,6 +61,7 @@
     <ClInclude Include="SamplerManager.h" />
     <ClInclude Include="ShadowBuffer.h" />
     <ClInclude Include="ShadowCamera.h" />
+    <ClInclude Include="SMAA.h" />
     <ClInclude Include="SSAO.h" />
     <ClInclude Include="SystemTime.h" />
     <ClInclude Include="TemporalEffects.h" />
@@ -141,6 +142,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShadowBuffer.cpp" />
     <ClCompile Include="ShadowCamera.cpp" />
+    <ClCompile Include="SMAA.cpp" />
     <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="SystemTime.cpp" />
     <ClCompile Include="TemporalEffects.cpp" />

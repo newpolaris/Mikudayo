@@ -33,6 +33,8 @@
 #include "TemporalEffects.h"
 #include "SSAO.h"
 #include "DebugHelper.h"
+#define FREEIMAGE_LIB
+#include "FreeImage.h"
 
 // This macro determines whether to detect if there is an HDR display and enable HDR10 output.
 // Currently, with HDR display enabled, the pixel magnfication functionality is broken.

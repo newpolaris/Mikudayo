@@ -159,6 +159,9 @@
     <ClCompile Include="LinearColor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Bullet\BaseSoftBody.cpp">
+      <Filter>Source Files\Bullet</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -313,6 +316,9 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\BaseSoftBody.h">
+      <Filter>Source Files\Bullet</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

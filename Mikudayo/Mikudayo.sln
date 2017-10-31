@@ -49,6 +49,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibWebP", "..\3rdParty\Free
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenEXR", "..\3rdParty\FreeImage\Source\OpenEXR\OpenEXR.2013.vcxproj", "{17A4874B-0606-4687-90B6-F91F8CB3B8AF}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FxLib", "..\FxLib\FxLib.vcxproj", "{FF24EC3B-172B-4120-8F21-435502FA2F4E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -233,6 +235,15 @@ Global
 		{17A4874B-0606-4687-90B6-F91F8CB3B8AF}.Release|x64.ActiveCfg = Release|x64
 		{17A4874B-0606-4687-90B6-F91F8CB3B8AF}.Release|x64.Build.0 = Release|x64
 		{17A4874B-0606-4687-90B6-F91F8CB3B8AF}.Release|x86.ActiveCfg = Release|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Debug|x64.ActiveCfg = Debug|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Debug|x64.Build.0 = Debug|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Debug|x86.ActiveCfg = Debug|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Profile|x64.ActiveCfg = Profile|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Profile|x64.Build.0 = Profile|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Profile|x86.ActiveCfg = Profile|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Release|x64.ActiveCfg = Release|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Release|x64.Build.0 = Release|x64
+		{FF24EC3B-172B-4120-8F21-435502FA2F4E}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

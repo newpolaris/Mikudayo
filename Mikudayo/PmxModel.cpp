@@ -297,7 +297,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
             }
             break;
         }
-		m_VertexAttribute[i].EdgeSize = pmx.m_Vertices[i].EdgeSize;
+		m_VertexAttribute[i].EdgeSize = pmx.m_Vertices[i].EdgeScale;
 	}
     std::copy(pmx.m_Indices.begin(), pmx.m_Indices.end(), std::back_inserter(m_Indices));
 

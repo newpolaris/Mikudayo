@@ -5,24 +5,11 @@
 #include "BufferManager.h"
 #include "CommandContext.h"
 
-#include "CompiledShaders/FXAAPass1_RGB_CS.h"
-#include "CompiledShaders/FXAAPass1_Luma_CS.h"
-#include "CompiledShaders/FXAAPass1_RGB2_CS.h"
-#include "CompiledShaders/FXAAPass1_Luma2_CS.h"
-#include "CompiledShaders/FXAAResolveWorkQueueCS.h"
-#include "CompiledShaders/FXAAPass2HCS.h"
-#include "CompiledShaders/FXAAPass2VCS.h"
-#include "CompiledShaders/FXAAPass2H2CS.h"
-#include "CompiledShaders/FXAAPass2V2CS.h"
-#include "CompiledShaders/FXAAPass2HDebugCS.h"
-#include "CompiledShaders/FXAAPass2VDebugCS.h"
-
 #include "CompiledShaders/ScreenQuadVS.h"
-#include "CompiledShaders/FXAAPS.h"
 
 using namespace Graphics;
 
-namespace FXAA
+namespace SMAA 
 {
     // Compute Shader
     ComputePSO Pass1HdrCS;
@@ -32,15 +19,9 @@ namespace FXAA
     ComputePSO Pass2VCS;
     ComputePSO Pass2HDebugCS;
     ComputePSO Pass2VDebugCS;
-    IndirectArgsBuffer IndirectParameters;
 
-    // Pixel Shader
-    GraphicsPSO FXAAPS;
-
-    BoolVar Enable("Graphics/AA/FXAA/Enable", false);
+    BoolVar Enable("Graphics/AA/SMAA/Enable", false);
     BoolVar DebugDraw("Graphics/AA/FXAA/Debug", false);
-    // TODO: PostEffects modification is needed.
-    BoolVar ForceCS("Graphics/AA/FXAA/ForceCS", false);
 
     // With a properly encoded luma buffer, [0.25 = "low", 0.2 = "medium", 0.15 = "high", 0.1 = "ultra"]
     NumVar ContrastThreshold("Graphics/AA/FXAA/Contrast Threshold", 0.166f, 0.05f, 0.5f, 0.025f);
@@ -54,8 +35,9 @@ namespace FXAA
     BoolVar ForceOffPreComputedLuma("Graphics/AA/FXAA/Always Recompute Log-Luma", false);
 }
 
-void FXAA::Initialize( void )
+void SMAA::Initialize( void )
 {
+#if 0
 #define CreatePSO( ObjName, ShaderByteCode ) \
     ObjName.SetComputeShader( MY_SHADER_ARGS(ShaderByteCode) ); \
     ObjName.Finalize();
@@ -86,3 +68,9 @@ void FXAA::Initialize( void )
 	FXAAPS.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
 	FXAAPS.SetPixelShader( MY_SHADER_ARGS( g_pFXAAPS ) );
 	FXAAPS.Finalize();
+#endif
+}
+
+void SMAA::Shutdown( void )
+{
+}

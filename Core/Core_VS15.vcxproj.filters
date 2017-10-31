@@ -41,6 +41,9 @@
     <Filter Include="Shaders\Diffuse">
       <UniqueIdentifier>{73e31801-3507-4102-ad0e-0913a37c8a02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\SMAA">
+      <UniqueIdentifier>{26562145-0509-4fd2-a42f-37c51ac96cc1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -256,6 +259,9 @@
     <ClInclude Include="Diffuse.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="SMAA.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -422,6 +428,9 @@
     </ClCompile>
     <ClCompile Include="Math\BoundingBox.cpp">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="SMAA.cpp">
+      <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
