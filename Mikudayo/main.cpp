@@ -324,7 +324,7 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
-    Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
+    // Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
     // Utility::DebugTexture( Context, g_aBloomUAV1[0].GetSRV() );
     // Utility::DebugTexture( Context, g_ReflectColorBuffer.GetSRV() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
