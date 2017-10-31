@@ -120,7 +120,7 @@
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="IndexOptimizePostTransform.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
-    <ClCompile Include="LienarColor.cpp" />
+    <ClCompile Include="LinearColor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MikuCamera.cpp" />
     <ClCompile Include="MikuCameraController.cpp" />

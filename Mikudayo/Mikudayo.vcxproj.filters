@@ -156,7 +156,7 @@
     <ClCompile Include="RenderType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LienarColor.cpp">
+    <ClCompile Include="LinearColor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
