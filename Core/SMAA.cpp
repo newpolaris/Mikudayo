@@ -88,19 +88,7 @@ namespace SMAA
     ComputePSO Pass2HDebugCS;
     ComputePSO Pass2VDebugCS;
 
-    BoolVar Enable("Graphics/AA/SMAA/Enable", true);
-    BoolVar DebugDraw("Graphics/AA/SMAA/Debug", false);
-
-    // With a properly encoded luma buffer, [0.25 = "low", 0.2 = "medium", 0.15 = "high", 0.1 = "ultra"]
-    NumVar ContrastThreshold("Graphics/AA/FXAA/Contrast Threshold", 0.166f, 0.05f, 0.5f, 0.025f);
-    NumVar ContrastThresholdMin("Graphics/AA/FXAA/Contrast Threshold Min", 0.0833f, 0.05f, 0.5f, 0.025f);
-
-    // Controls how much to blur isolated pixels that have little-to-no edge length.
-    NumVar SubpixelRemoval("Graphics/AA/FXAA/Subpixel Removal", 0.50f, 0.0f, 1.0f, 0.25f);
-
-    // This is for testing the performance of computing luma on the fly rather than reusing
-    // the luma buffer output of tone mapping.
-    BoolVar ForceOffPreComputedLuma("Graphics/AA/FXAA/Always Recompute Log-Luma", false);
+    BoolVar Enable("Graphics/AA/SMAA/Enable", false);
 
     FullscreenTriangle m_Triangle;
     Texture m_AreaTexture;
@@ -137,6 +125,8 @@ void SMAA::Shutdown( void )
 
 void SMAA::Render(ComputeContext& Context, bool bUsePreComputedLuma )
 {
+    ScopedTimer _prof2( L"SMAA", Context );
+
     GraphicsContext& gfxContext = Context.GetGraphicsContext();
     gfxContext.ClearColor( g_SMAAEdge );
     gfxContext.ClearColor( g_SMAABlend );

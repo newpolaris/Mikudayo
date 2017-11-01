@@ -23,6 +23,7 @@
 #include "DepthOfField.h"
 #include "Diffuse.h"
 #include "FXAA.h"
+#include "SMAA.h"
 #include "TextureManager.h"
 
 #include "CompiledShaders/ToneMapCS.h"
@@ -165,6 +166,7 @@ void PostEffects::Initialize( void )
     Diffuse::Initialize();
     MotionBlur::Initialize();
     DepthOfField::Initialize();
+    SMAA::Initialize();
 }
 
 void PostEffects::Shutdown( void )
@@ -175,6 +177,7 @@ void PostEffects::Shutdown( void )
     Diffuse::Shutdown();
     MotionBlur::Shutdown();
     DepthOfField::Shutdown();
+    SMAA::Shutdown();
 }
 
 //--------------------------------------------------------------------------------------
@@ -461,6 +464,7 @@ void PostEffects::CopyBackPostBuffer( ComputeContext& Context )
     Context.SetDynamicDescriptor(0, g_SceneColorBuffer.GetUAV());
     Context.SetDynamicDescriptor(0, g_PostEffectsBuffer.GetSRV());
     Context.Dispatch2D(g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight());
+    Context.SetDynamicDescriptor(0, D3D11_UAV_HANDLE(nullptr));
 }
 
 void PostEffects::Render( void )
@@ -484,6 +488,14 @@ void PostEffects::Render( void )
     if (Diffuse::Enable)
         Diffuse::Render( Context );
 
+    if (SMAA::Enable)
+        SMAA::Render( Context, TRUE );
+
+    if (SMAA::Enable)
+        Context.CopyBuffer( g_SceneColorBuffer, g_PreviousColorBuffer );
+    else
+        Context.CopyBuffer( g_PreviousColorBuffer, g_SceneColorBuffer );
+
     if (DrawHistogram)
     {
         ScopedTimer _prof(L"Draw Debug Histogram", Context);
@@ -497,6 +509,5 @@ void PostEffects::Render( void )
         Context.Dispatch(1, 32);
         Context.TransitionResource(g_SceneColorBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     }
-    Context.CopyBuffer( g_PreviousColorBuffer, g_SceneColorBuffer );
     Context.Finish();
 }
