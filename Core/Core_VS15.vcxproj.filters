@@ -671,5 +671,11 @@
     <FxCompile Include="Shaders\DiffusePass1PS.hlsl">
       <Filter>Shaders\Diffuse</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\SMAA.fx">
+      <Filter>Shaders\SMAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SMAA.hlsl">
+      <Filter>Shaders\SMAA</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

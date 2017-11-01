@@ -86,6 +86,8 @@ namespace Graphics
     extern StructuredBuffer g_FXAAWorkQueueV;
     extern TypedBuffer g_FXAAColorQueueH;
     extern TypedBuffer g_FXAAColorQueueV;
+    extern ColorBuffer g_SMAAEdge;
+    extern ColorBuffer g_SMAABlend;
 
     void InitializeRenderingBuffers(uint32_t NativeWidth, uint32_t NativeHeight );
     void ResizeDisplayDependentBuffers(uint32_t NativeWidth, uint32_t NativeHeight);

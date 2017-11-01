@@ -9,6 +9,7 @@
 #include "FileUtility.h"
 #include "InputLayout.h"
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 using Microsoft::WRL::ComPtr;
 using Path = boost::filesystem::path;
@@ -43,7 +44,8 @@ namespace {
         const std::string& EntryPoint,
         const std::string& Profile,
         const void* Pointer,
-        size_t Length )
+        size_t Length,
+        ID3DInclude* pInclude )
     {
         UINT flags = 0;
 #ifdef _DEBUG
@@ -55,7 +57,7 @@ namespace {
 
         ASSERT_SUCCEEDED( D3DCompile(
             Pointer, Length,
-            Name.c_str(), nullptr, nullptr,
+            Name.c_str(), nullptr, pInclude,
             EntryPoint.c_str(), Profile.c_str(), flags, 0,
             byteCode.GetAddressOf(), errors.GetAddressOf() ) );
 
@@ -76,7 +78,8 @@ namespace {
         const std::string& Profile,
         const void* Pointer,
         size_t Length,
-        size_t HashCode )
+        size_t HashCode,
+        ID3DInclude* pInclude )
     {
         namespace fs = boost::filesystem;
 
@@ -100,7 +103,8 @@ namespace {
                 DEBUGPRINT( "Use shader cache %s", tag.c_str() );
                 size_t ShaderLength;
                 Read( bs, ShaderLength );
-                ASSERT( ba->size() == sizeof( size_t ) * 2 + ShaderLength );
+                // HashCode + ShaderLength + ShaderData
+                ASSERT( ba->size() == sizeof(size_t)*2 + ShaderLength );
                 ComPtr<ID3DBlob> blob;
                 ASSERT_SUCCEEDED( D3DCreateBlob( ShaderLength, blob.GetAddressOf() ) );
                 bs.read( (char*)blob->GetBufferPointer(), blob->GetBufferSize() );
@@ -108,7 +112,7 @@ namespace {
             }
             DEBUGPRINT( "Shader cache hash mis-matched recompile shader %s", tag.c_str() );
         }
-        auto blob = CompileShader( Name, EntryPoint, Profile, Pointer, Length );
+        auto blob = CompileShader( Name, EntryPoint, Profile, Pointer, Length, pInclude );
         if (!blob)
             return nullptr;
         const size_t ShaderLength = blob->GetBufferSize();
@@ -198,7 +202,7 @@ void eval::operator()( const shader_compiler_desc& desc )
     ComPtr<ID3DBlob> byteCode = CheckShaderCache( 
         m_SourceName, desc.entrypoint, desc.profile,
         m_Blob->GetBufferPointer(), m_Blob->GetBufferSize(), 
-        hashCode);
+        hashCode, &m_Include);
 
     if (byteCode)
         m_ShaderByteCode[desc.name] = byteCode;
@@ -275,6 +279,7 @@ void eval::operator()( const pixel_config& config, GraphicsPSO& PSO )
 void eval::operator()( const geometry_config& config, GraphicsPSO& PSO )
 {
     auto tag = m_SourceName + "_" + config.name;
+    if (boost::to_lower_copy( config.name ) == "null") return;
     auto& code = m_ShaderByteCode[config.name];
     PSO.SetGeometryShader( tag, code->GetBufferPointer(), code->GetBufferSize() );
 }
@@ -294,9 +299,6 @@ bool FxContainer::Load()
     buffer << in.rdbuf();
     std::string str = buffer.str();
 
-    client::ast::program program;
-    if (!FxParse( str, program ))
-        return false;
     auto path = Path(m_FilePath);
     auto source = path.filename().generic_string();
     auto parent = path.parent_path().generic_wstring();
@@ -309,9 +311,28 @@ bool FxContainer::Load()
         str.data(), str.length(), source.c_str(), nullptr, &include,
         blob.GetAddressOf(), error.GetAddressOf() ));
 
+    if (error)
+    {
+        // The message is a 'error/warning' from the HLSL compiler.
+        char const* message = static_cast<char const*>(error->GetBufferPointer());
+        std::string output( message );
+        std::wstring woutput = Utility::MakeWStr( output );
+        OutputDebugString( woutput.c_str() );
+        return false;
+    }
+
+    std::string fullstr( reinterpret_cast<char*>(blob->GetBufferPointer()), blob->GetBufferSize() );
+    client::ast::program program;
+    if (!FxParse( fullstr, program ))
+        return false;
+
+    ComPtr<ID3DBlob> shortblob;
+    ASSERT_SUCCEEDED( D3DCreateBlob( str.length(), shortblob.GetAddressOf() ) );
+    memcpy( shortblob->GetBufferPointer(), str.c_str(), str.length() );
+
     try 
     {
-        client::ast::eval eval( blob, include, source );
+        client::ast::eval eval( shortblob, include, source );
         eval(program);
 
         m_ShaderByteCode.swap(eval.m_ShaderByteCode);

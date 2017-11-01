@@ -17,7 +17,7 @@ void FxManager::Shutdown()
     m_FxList.clear();
 }
 
-std::shared_ptr<FxTechniqueSet> FxManager::GetTechniques( const std::string& Fx )
+FxTechniqueSetPtr FxManager::GetTechniques( const std::string& Fx )
 {
     auto it = m_FxTechniques.find(Fx);
     if (it == m_FxTechniques.end())
@@ -30,6 +30,13 @@ std::shared_ptr<FxTechniqueSet> FxManager::GetTechniques( const std::string& Fx 
         return set;
     }
     return it->second;
+}
+
+void FxManager::Load( const FxInfo& Fx )
+{
+    auto cont = std::make_shared<FxContainer>( Fx.FilePath );
+    if (cont->Load())
+        m_FxList[Fx.Name].swap( cont );
 }
 
 void FxManager::Load( const std::vector<FxInfo>& Fx )

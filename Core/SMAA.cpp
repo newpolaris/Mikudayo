@@ -4,10 +4,78 @@
 #include "GraphicsCore.h"
 #include "BufferManager.h"
 #include "CommandContext.h"
+#include "FxManager.h"
+#include "FxTechnique.h"
+#include "FxTechniqueSet.h"
+#include "InputLayout.h"
+#include "TextureManager.h"
+#include "SearchTex.h"
+#include "AreaTex.h"
 
 #include "CompiledShaders/ScreenQuadVS.h"
 
 using namespace Graphics;
+
+namespace
+{
+    struct Vertex {
+        XMFLOAT3 position;
+        XMFLOAT2 texcoord;
+    };
+
+    std::vector<InputDesc> m_InputLayout = {
+        { "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D10_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D10_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    class FullscreenTriangle {
+    public:
+        FullscreenTriangle();
+        ~FullscreenTriangle();
+        void Create( void );
+        void Clear( void );
+        void Draw( GraphicsContext& context );
+
+    private:
+        VertexBuffer m_Buffer;
+    };
+
+    FullscreenTriangle::FullscreenTriangle()
+    {
+    }
+
+    FullscreenTriangle::~FullscreenTriangle() 
+    {
+        Clear();
+    }
+
+    void FullscreenTriangle::Create( void )
+    {
+        Vertex vertices[3];
+
+        vertices[0].position = XMFLOAT3( -1.0f, -1.0f, 1.0f );
+        vertices[1].position = XMFLOAT3( -1.0f, 3.0f, 1.0f );
+        vertices[2].position = XMFLOAT3( 3.0f, -1.0f, 1.0f );
+
+        vertices[0].texcoord = XMFLOAT2( 0.0f, 1.0f );
+        vertices[1].texcoord = XMFLOAT2( 0.0f, -1.0f );
+        vertices[2].texcoord = XMFLOAT2( 2.0f, 1.0f );
+
+        m_Buffer.Create( L"FullscreenTriangle", 3, sizeof(vertices[0]), vertices );
+    }
+
+    void FullscreenTriangle::Clear( void )
+    {
+        m_Buffer.Destroy();
+    }
+
+    void FullscreenTriangle::Draw(GraphicsContext& context) {
+        const UINT offset = 0;
+        const UINT stride = sizeof( Vertex );
+        context.SetVertexBuffer( 0, m_Buffer.VertexBufferView() );
+        context.Draw( 3, 0 );
+    }
+}
 
 namespace SMAA 
 {
@@ -20,8 +88,8 @@ namespace SMAA
     ComputePSO Pass2HDebugCS;
     ComputePSO Pass2VDebugCS;
 
-    BoolVar Enable("Graphics/AA/SMAA/Enable", false);
-    BoolVar DebugDraw("Graphics/AA/FXAA/Debug", false);
+    BoolVar Enable("Graphics/AA/SMAA/Enable", true);
+    BoolVar DebugDraw("Graphics/AA/SMAA/Debug", false);
 
     // With a properly encoded luma buffer, [0.25 = "low", 0.2 = "medium", 0.15 = "high", 0.1 = "ultra"]
     NumVar ContrastThreshold("Graphics/AA/FXAA/Contrast Threshold", 0.166f, 0.05f, 0.5f, 0.025f);
@@ -33,44 +101,60 @@ namespace SMAA
     // This is for testing the performance of computing luma on the fly rather than reusing
     // the luma buffer output of tone mapping.
     BoolVar ForceOffPreComputedLuma("Graphics/AA/FXAA/Always Recompute Log-Luma", false);
+
+    FullscreenTriangle m_Triangle;
+    Texture m_AreaTexture;
+    Texture m_SearchTexture;
+    FxTechniquePtr m_EdgeDetection;
+    FxTechniquePtr m_BlendingWeightCalculation;
+    FxTechniquePtr m_NeighborhoodBlending;
 }
 
 void SMAA::Initialize( void )
 {
-#if 0
-#define CreatePSO( ObjName, ShaderByteCode ) \
-    ObjName.SetComputeShader( MY_SHADER_ARGS(ShaderByteCode) ); \
-    ObjName.Finalize();
+    FxInfo fx { "SMAA", L"Shaders/SMAA.fx" };
+    FxManager::Load( fx );
+    FxTechniqueSetPtr techniques = FxManager::GetTechniques( "SMAA" );
+    m_EdgeDetection = techniques->RequestTechnique( "LumaEdgeDetection", m_InputLayout );
+    m_BlendingWeightCalculation = techniques->RequestTechnique( "BlendingWeightCalculation", m_InputLayout );
+    m_NeighborhoodBlending = techniques->RequestTechnique( "NeighborhoodBlending", m_InputLayout );
 
-    CreatePSO(ResolveWorkCS, g_pFXAAResolveWorkQueueCS);
-    if (g_bTypedUAVLoadSupport_R11G11B10_FLOAT)
-    {
-        CreatePSO(Pass1LdrCS, g_pFXAAPass1_RGB2_CS);    // Use RGB and recompute log-luma; pre-computed luma is unavailable
-        CreatePSO(Pass1HdrCS, g_pFXAAPass1_Luma2_CS);   // Use pre-computed luma
-        CreatePSO(Pass2HCS, g_pFXAAPass2H2CS);
-        CreatePSO(Pass2VCS, g_pFXAAPass2V2CS);
-    }
-    else
-    {
-        CreatePSO(Pass1LdrCS, g_pFXAAPass1_RGB_CS);     // Use RGB and recompute log-luma; pre-computed luma is unavailable
-        CreatePSO(Pass1HdrCS, g_pFXAAPass1_Luma_CS);    // Use pre-computed luma
-        CreatePSO(Pass2HCS, g_pFXAAPass2HCS);
-        CreatePSO(Pass2VCS, g_pFXAAPass2VCS);
-    }
-    CreatePSO(Pass2HDebugCS, g_pFXAAPass2HDebugCS);
-    CreatePSO(Pass2VDebugCS, g_pFXAAPass2VDebugCS);
-#undef CreatePSO
-
-    __declspec(align(16)) const uint32_t initArgs[6] = { 0, 1, 1, 0, 1, 1 };
-    IndirectParameters.Create(L"FXAA Indirect Parameters", 2, sizeof(uint32_t) * _countof(initArgs), initArgs);
-
-	FXAAPS.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	FXAAPS.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) );
-	FXAAPS.SetPixelShader( MY_SHADER_ARGS( g_pFXAAPS ) );
-	FXAAPS.Finalize();
-#endif
+    m_Triangle.Create();
+    m_AreaTexture.Create( AREATEX_WIDTH, AREATEX_HEIGHT, DXGI_FORMAT_R8G8_UNORM, areaTexBytes );
+    m_SearchTexture.Create( AREATEX_WIDTH, AREATEX_HEIGHT, DXGI_FORMAT_R8_UNORM, searchTexBytes );
 }
 
 void SMAA::Shutdown( void )
 {
+    m_Triangle.Clear();
+    m_EdgeDetection.reset();
+    m_BlendingWeightCalculation.reset();
+    m_NeighborhoodBlending.reset();
+
+    m_AreaTexture.Destroy();
+    m_SearchTexture.Destroy();
+}
+
+void SMAA::Render(ComputeContext& Context, bool bUsePreComputedLuma )
+{
+    GraphicsContext& gfxContext = Context.GetGraphicsContext();
+    gfxContext.ClearColor( g_SMAAEdge );
+    gfxContext.ClearColor( g_SMAABlend );
+
+    gfxContext.SetViewportAndScissor( 0, 0, g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight() );
+    D3D11_SRV_HANDLE precomputed[] = { m_AreaTexture.GetSRV(), m_SearchTexture.GetSRV() };
+    gfxContext.SetDynamicDescriptors( 0, 2, precomputed, { kBindPixel } );
+
+    auto draw = [&]( GraphicsContext& context ) { m_Triangle.Draw( context ); };
+    gfxContext.SetRenderTarget( g_SMAAEdge.GetRTV(), nullptr );
+    gfxContext.SetDynamicDescriptor( 2, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
+    m_EdgeDetection->Render( gfxContext, draw );
+
+    gfxContext.SetRenderTarget( g_SMAABlend.GetRTV(), nullptr );
+    gfxContext.SetDynamicDescriptor( 3, g_SMAAEdge.GetSRV(), { kBindPixel } );
+    m_BlendingWeightCalculation->Render( gfxContext, draw );
+
+    gfxContext.SetRenderTarget( g_PreviousColorBuffer.GetRTV(), nullptr );
+    gfxContext.SetDynamicDescriptor( 4, g_SMAABlend.GetSRV(), { kBindPixel } );
+    m_NeighborhoodBlending->Render( gfxContext, draw );
 }

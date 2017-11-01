@@ -83,6 +83,8 @@ namespace Graphics
     StructuredBuffer g_FXAAWorkQueueV;
     TypedBuffer g_FXAAColorQueueH(DXGI_FORMAT_R11G11B10_FLOAT);
     TypedBuffer g_FXAAColorQueueV(DXGI_FORMAT_R11G11B10_FLOAT);
+    ColorBuffer g_SMAAEdge;
+    ColorBuffer g_SMAABlend;
 
     // For testing GenerateMipMaps()
     ColorBuffer g_GenMipsBuffer;
@@ -224,6 +226,8 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
                 g_FXAAWorkQueueV.Create( L"FXAA Vertical Work Queue", 512*1024, 4, esram );
                 g_FXAAColorQueueH.Create( L"FXAA Horizontal Color Queue", 512*1024, 4, esram );
                 g_FXAAColorQueueV.Create( L"FXAA Vertical Color Queue", 512*1024, 4, esram );
+                g_SMAAEdge.Create( L"SMAA Edge", g_DisplayWidth, g_DisplayHeight, 1, DXGI_FORMAT_R8G8B8A8_UNORM, esram );
+                g_SMAABlend.Create( L"SMAA Blend", g_DisplayWidth, g_DisplayHeight, 1, DXGI_FORMAT_R8G8B8A8_UNORM, esram );
             esram.PopStack();	// End antialiasing
 
         esram.PopStack();	// End post processing
@@ -323,6 +327,7 @@ void Graphics::DestroyRenderingBuffers()
     g_FXAAWorkQueueV.Destroy();
     g_FXAAColorQueueH.Destroy();
     g_FXAAColorQueueV.Destroy();
-
+    g_SMAAEdge.Destroy();
+    g_SMAABlend.Destroy();
     g_GenMipsBuffer.Destroy();
 }

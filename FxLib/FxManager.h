@@ -8,12 +8,13 @@ struct FxInfo
     std::wstring FilePath;
 };
 
-class FxTechniqueSet;
+using FxTechniqueSetPtr = std::shared_ptr<class FxTechniqueSet>;
 
 namespace FxManager
 {
     void Initialize();
     void Shutdown();
-    std::shared_ptr<FxTechniqueSet> GetTechniques(const std::string& Fx);
+    void Load( const FxInfo& Fx );
     void Load( const std::vector<FxInfo>& Fx );
+    FxTechniqueSetPtr GetTechniques(const std::string& Fx);
 }

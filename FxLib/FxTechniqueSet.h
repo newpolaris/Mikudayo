@@ -1,24 +1,26 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
-class FxContainer;
-struct FxTechnique;
-struct FxSampler;
 struct InputDesc;
+
+using FxTechniquePtr = std::shared_ptr<struct FxTechnique>;
+using FxContainerPtr = std::shared_ptr<class FxContainer>;
+using FxSamplerPtr = std::shared_ptr<struct FxSampler>;
 
 class FxTechniqueSet
 {
 public:
 
-    FxTechniqueSet(const std::shared_ptr<FxContainer>& Container);
+    FxTechniqueSet(const FxContainerPtr& Container);
 
-    std::shared_ptr<FxTechnique> RequestTechnique(const std::string& TechName, const std::vector<InputDesc>& Desc);
+    FxTechniquePtr RequestTechnique(const std::string& TechName, const std::vector<InputDesc>& Desc);
 
 protected:
 
-    std::shared_ptr<FxContainer> m_Container;
-    std::vector<std::shared_ptr<FxSampler>> m_Sampler;
-    std::map<std::pair<size_t, std::string>, std::shared_ptr<FxTechnique>> m_Technique;
+    FxContainerPtr m_Container;
+    std::vector<FxSamplerPtr> m_Sampler;
+    std::map<std::pair<size_t, std::string>, FxTechniquePtr> m_Technique;
 };
 

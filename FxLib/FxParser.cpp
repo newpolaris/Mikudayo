@@ -69,6 +69,13 @@ BOOST_FUSION_ADAPT_STRUCT(
     (auto, BackFace)
 )
 BOOST_FUSION_ADAPT_STRUCT(
+    D3D11_DEPTH_STENCILOP_DESC,
+    (auto, StencilFailOp)
+    (auto, StencilDepthFailOp)
+    (auto, StencilPassOp)
+    (auto, StencilFunc)
+)
+BOOST_FUSION_ADAPT_STRUCT(
     client::ast::depth_stencil_state,
     (auto, name)
     (auto, desc)
@@ -154,6 +161,13 @@ namespace client { namespace assign_operator {
         at_c<i>( _val( ctx ) ) = _attr( ctx ); 
     };
 
+    // i'th struct's j'th memeber
+    template <uint32_t i, uint32_t j>
+    auto const s = []( auto &ctx ) {
+        auto& nth_element = at_c<i>( _val( ctx ) );
+        at_c<j>( nth_element ) = _attr( ctx );
+    };
+
     uint32_t n;
     struct _n {};
 
@@ -232,7 +246,8 @@ namespace client { namespace symbol {
                 _address(MIRROR_ONCE)
                 ;
         }
-    } adress;
+    };
+    const auto adress = x3::no_case[address_()]; 
     #undef _address
     #define _blend_op(name) (#name, D3D11_BLEND_OP_##name)
     struct blend_op_ : x3::symbols<D3D11_BLEND_OP>
@@ -307,6 +322,27 @@ namespace client { namespace symbol {
         }
     } comparison_func;
     #undef _comparison_func
+
+    #define _stencil_op(name) (#name, D3D11_STENCIL_OP_##name)
+    struct stencil_op_ : x3::symbols<D3D11_STENCIL_OP>
+    {
+        stencil_op_()
+        {
+            add
+                _stencil_op(KEEP)
+                _stencil_op(ZERO)
+                _stencil_op(REPLACE)
+                _stencil_op(INCR_SAT)
+                _stencil_op(DECR_SAT)
+                _stencil_op(INVERT)
+                _stencil_op(INCR)
+                _stencil_op(DECR)
+                ;
+        }
+    };
+    const auto stencil_op = x3::no_case[stencil_op_()]; 
+    #undef _stencil_op
+
     struct fill_ : x3::symbols<D3D11_FILL_MODE>
     {
         fill_()
@@ -489,6 +525,14 @@ namespace client { namespace parser {
             |   lit("StencilEnable") >> '=' >> sym::bool_[a<3>] >> ';'
             |   lit("StencilReadMask") >> '=' >> x3::uint8[a<4>] >> ';'
             |   lit("StencilWriteMask") >> '=' >> x3::uint8[a<5>] >> ';'
+            |   lit("FrontFaceStencilFail") >> '=' >> sym::stencil_op[s<6,0>] >> ';'
+            |   lit("FrontFaceStencilZFail") >> '=' >> sym::stencil_op[s<6,1>] >> ';'
+            |   lit("FrontFaceStencilPass") >> '=' >> sym::stencil_op[s<6,2>] >> ';'
+            |   lit("FrontFaceStencilFunc") >> '=' >> sym::comparison_func[s<6,3>] >> ';'
+            |   lit("BackFaceStencilFail") >> '=' >> sym::stencil_op[s<7,0>] >> ';'
+            |   lit("BackFaceStencilZFail") >> '=' >> sym::stencil_op[s<7,1>] >> ';'
+            |   lit("BackFaceStencilPass") >> '=' >> sym::stencil_op[s<7,2>] >> ';'
+            |   lit("BackFaceStencilFunc") >> '=' >> sym::comparison_func[s<7,3>] >> ';'
         )
         ;
     auto const depth_stencil_state_def = 
@@ -686,6 +730,14 @@ namespace client { namespace parser {
         >> block
         ;
 
+    x3::rule<class line_text, std::string> const
+        line_text = "line_text";
+    auto const line_text_def = 
+           x3::lexeme["#line"] 
+        >> x3::no_skip[*(char_ - x3::eol)]
+        ;
+
+
     x3::rule<class buffer_text, std::string> const
         buffer_text = "buffer_text";
     auto const buffer_text_def =
@@ -710,6 +762,7 @@ namespace client { namespace parser {
         | function_text
         | struct_text
         | include_text
+        | line_text
         | texture_text
 		| buffer_text
         | variable_sytax_text
@@ -733,7 +786,7 @@ namespace client { namespace parser {
         pass_desc, 
         program,
         statement,
-        block, function_text, struct_text, include_text, texture_text, buffer_text, variable_sytax_text);
+        block, function_text, struct_text, include_text, line_text, texture_text, buffer_text, variable_sytax_text);
 
     struct expression_class
     {
@@ -763,7 +816,8 @@ bool FxParse(const std::string& Text, client::ast::program& Program)
     namespace x3 = boost::spirit::x3;
     using namespace client;
 
-    x3::phrase_parse(iter, end, parser::program, parser::skip, Program);
-    ASSERT(iter == Text.end());
-    return iter == Text.end();
+    bool r = x3::phrase_parse(iter, end, parser::program, parser::skip, Program);
+    bool success = r && (iter == Text.end() || *iter == '\0');
+    ASSERT(success);
+    return success;
 }

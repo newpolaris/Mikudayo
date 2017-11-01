@@ -32,7 +32,7 @@ void SamplerDesc::DestroyAll()
 	s_SamplerCache.clear();
 }
 
-SamplerDesc::SamplerDesc( const D3D11_SAMPLER_DESC& Desc )
+SamplerDesc::SamplerDesc( const D3D11_SAMPLER_DESC& Desc ) : m_SamplerState(nullptr)
 {
     Filter = Desc.Filter;
     AddressU = Desc.AddressU;

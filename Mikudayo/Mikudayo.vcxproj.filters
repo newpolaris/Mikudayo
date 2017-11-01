@@ -314,9 +314,6 @@
     <ClInclude Include="LinearColor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="Bullet\BaseSoftBody.h">
       <Filter>Source Files\Bullet</Filter>
     </ClInclude>

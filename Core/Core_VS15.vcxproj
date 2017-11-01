@@ -290,6 +290,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\SharpenTAACS.hlsl" />
+    <None Include="Shaders\SMAA.fx">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Shaders\SMAA.hlsl">
+      <FileType>Document</FileType>
+    </None>
     <FxCompile Include="Shaders\TemporalBlendCS.hlsl" />
     <FxCompile Include="Shaders\TextAntialiasPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -329,6 +335,9 @@
   <ItemGroup>
     <ProjectReference Include="..\3rdParty\DirectXTex\DirectXTex_Desktop_2017_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FxLib\FxLib.vcxproj">
+      <Project>{ff24ec3b-172b-4120-8f21-435502fa2f4e}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -384,7 +393,7 @@
       <SDLCheck>false</SDLCheck>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\zlib-win64;$(SolutionDir)..\3rdParty\DirectXTex;$(SolutionDir)..\3rdParty\FreeImage\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\zlib-win64;$(SolutionDir)..\3rdParty\DirectXTex;$(SolutionDir)..\3rdParty\FreeImage\Source;$(SolutionDir)..\FxLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -392,7 +401,7 @@
       <SDLCheck>false</SDLCheck>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\zlib-win64;$(SolutionDir)..\3rdParty\DirectXTex;$(SolutionDir)..\3rdParty\FreeImage\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\zlib-win64;$(SolutionDir)..\3rdParty\DirectXTex;$(SolutionDir)..\3rdParty\FreeImage\Source;$(SolutionDir)..\FxLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -403,7 +412,7 @@
       <SDLCheck>false</SDLCheck>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\zlib-win64;$(SolutionDir)..\3rdParty\DirectXTex;$(SolutionDir)..\3rdParty\FreeImage\Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\zlib-win64;$(SolutionDir)..\3rdParty\DirectXTex;$(SolutionDir)..\3rdParty\FreeImage\Source;$(SolutionDir)..\FxLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

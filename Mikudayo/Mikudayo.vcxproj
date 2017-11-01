@@ -197,7 +197,6 @@
     <ClInclude Include="RenderBonePass.h" />
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="RenderType.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
     <ClInclude Include="ShadowCasterPass.h" />
@@ -351,6 +350,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Core\Core_VS14.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FxLib\FxLib.vcxproj">
+      <Project>{ff24ec3b-172b-4120-8f21-435502fa2f4e}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -97,8 +97,8 @@ void Mikudayo::Startup( void )
     ModelManager::Initialize();
     Forward::Initialize();
 
-    const Vector3 eye = Vector3(0.0f, 50.0f, 50.0f);
-    m_Camera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
+    const Vector3 eye = Vector3(0.0f, 20.0f, 15.0f);
+    m_Camera.SetEyeAtUp( eye, Vector3(0.0, 20.f, 0.f), Vector3(kYUnitVector) );
     m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 2000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
@@ -107,7 +107,7 @@ void Mikudayo::Startup( void )
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
 
-    g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
+    // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
 
     std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
     #if 0

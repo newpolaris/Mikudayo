@@ -5,7 +5,7 @@
 #include "InputLayout.h"
 #include <boost/functional/hash.hpp>
 
-FxTechniqueSet::FxTechniqueSet(const std::shared_ptr<FxContainer>& Container) :
+FxTechniqueSet::FxTechniqueSet(const FxContainerPtr& Container) :
     m_Container(Container)
 {
     std::vector<FxSampler> sampler = m_Container->GetSampler();
@@ -18,7 +18,7 @@ FxTechniqueSet::FxTechniqueSet(const std::shared_ptr<FxContainer>& Container) :
     }
 }
 
-std::shared_ptr<FxTechnique> FxTechniqueSet::RequestTechnique(
+FxTechniquePtr FxTechniqueSet::RequestTechnique(
     const std::string& TechName,
     const std::vector<InputDesc>& Desc)
 {
