@@ -271,6 +271,7 @@ void Graphics::DestroyRenderingBuffers()
     g_SceneColorMSBuffer.Destroy();
     g_PreviousColorBuffer.Destroy();
     g_EmissiveColorBuffer.Destroy();
+    g_EmissiveColorMSBuffer.Destroy();
     g_VelocityBuffer.Destroy();
     g_OverlayBuffer.Destroy();
     g_HorizontalBuffer.Destroy();

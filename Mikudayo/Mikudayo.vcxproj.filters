@@ -156,9 +156,6 @@
     <ClCompile Include="RenderType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LinearColor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Bullet\BaseSoftBody.cpp">
       <Filter>Source Files\Bullet</Filter>
     </ClCompile>
@@ -309,9 +306,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Motion.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LinearColor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\BaseSoftBody.h">

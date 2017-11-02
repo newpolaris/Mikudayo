@@ -262,6 +262,9 @@
     <ClInclude Include="SMAA.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="LinearColor.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -432,6 +435,9 @@
     <ClCompile Include="SMAA.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="LinearColor.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Math\Functions.inl">
@@ -498,6 +504,8 @@
     <None Include="Shaders\Diffuse.hlsli">
       <Filter>Shaders\Diffuse</Filter>
     </None>
+    <None Include="Shaders\SMAA.fx" />
+    <None Include="Shaders\SMAA.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
@@ -671,11 +679,8 @@
     <FxCompile Include="Shaders\DiffusePass1PS.hlsl">
       <Filter>Shaders\Diffuse</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\SMAA.fx">
-      <Filter>Shaders\SMAA</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\SMAA.hlsl">
-      <Filter>Shaders\SMAA</Filter>
+    <FxCompile Include="Shaders\RemoveGammaPS.hlsl">
+      <Filter>Shaders\HDR</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

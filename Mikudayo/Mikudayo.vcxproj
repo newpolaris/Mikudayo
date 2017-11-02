@@ -121,7 +121,6 @@
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="IndexOptimizePostTransform.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
-    <ClCompile Include="LinearColor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MikuCamera.cpp" />
     <ClCompile Include="MikuCameraController.cpp" />
@@ -176,7 +175,6 @@
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="IndexOptimizePostTransform.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
-    <ClInclude Include="LinearColor.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MikuCamera.h" />

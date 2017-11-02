@@ -20,6 +20,7 @@
 #include "WICTextureLoader.h"
 #include "DDSTextureLoader.h"
 #include "DirectXTex.h"
+#include "LinearColor.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -80,7 +81,9 @@ void Texture::Create( size_t Width, size_t Height, DXGI_FORMAT Format, const voi
 
 bool Texture::CreateWICFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
 {
-	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_DEFAULT;
+    // to support MMD texture
+    UINT sRGBFlag = Gamma::bSRGB ? DirectX::WIC_LOADER_DEFAULT : DirectX::WIC_LOADER_IGNORE_SRGB;
+	UINT loadFlag = sRGB ? DirectX::WIC_LOADER_FORCE_SRGB : sRGBFlag;
     GraphicsContext& gfxContext = GraphicsContext::Begin();
     // Load texture and generate mips at the same time
 	HRESULT hr = DirectX::CreateWICTextureFromMemoryEx(

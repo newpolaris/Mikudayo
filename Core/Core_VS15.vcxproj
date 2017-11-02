@@ -43,6 +43,7 @@
     <ClInclude Include="GraphRenderer.h" />
     <ClInclude Include="IColorBuffer.h" />
     <ClInclude Include="LinearAllocator.h" />
+    <ClInclude Include="LinearColor.h" />
     <ClInclude Include="LoaderHelpers.h" />
     <ClInclude Include="Mapping.h" />
     <ClInclude Include="GameCore.h" />
@@ -117,6 +118,7 @@
     <ClCompile Include="GraphRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="LinearAllocator.cpp" />
+    <ClCompile Include="LinearColor.cpp" />
     <ClCompile Include="Math\BoundingBox.cpp" />
     <ClCompile Include="Math\BoundingSphere.cpp" />
     <ClCompile Include="Math\DualQuaternion.cpp" />
@@ -277,6 +279,14 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\RemoveGammaPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\ResolveTAACS.hlsl" />
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
