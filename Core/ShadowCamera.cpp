@@ -115,7 +115,7 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
 
     //  these are the limits specified by the physical camera
     //  gamma is the "tilt angle" between the light and the view direction.
-    float fCosGamma = Dot( lightDir, camera.GetForwardVec());
+    float fCosGamma = Dot( lightDir, -camera.GetForwardVec());
     float fLSPSM_NoptWeight = 1.0f;
     float ZNEAR_MIN = 1.0f, ZFAR_MAX = 800.f;
     float m_zNear = ZNEAR_MIN, m_zFar = ZFAR_MAX;
@@ -127,19 +127,18 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
 
     //  compute the "light-space" basis, using the algorithm described in the paper
     //  note:  since bodyB is defined in eye space, all of these vectors should also be defined in eye space
-    Vector3 rightVector, upVector, viewVector;
+    Vector3 rightVector, upVector, lookVector;
 
     Matrix4 cameraView = camera.GetViewMatrix();
-    const Vector3 eyeVector( 0.f, 0.f, -1.f );  // eye vector in eye space is always -Z 
+    const Vector3 viewVector( 0.f, 0.f, 1.f );
 
     //  note: lightDir points away from the scene, so it is already the "negative" up direction;
     //  no need to re-negate it.
     upVector = cameraView.Get3x3() * lightDir;
-    rightVector = Cross( eyeVector, upVector );
-    rightVector = Normalize( rightVector );
-    viewVector = Cross( upVector, rightVector );
+    rightVector = Cross( upVector, viewVector );
+    lookVector = Cross( rightVector, upVector );
 
-    Matrix4 lightSpaceBasis( rightVector, upVector, viewVector, Vector3());
+    Matrix4 lightSpaceBasis( rightVector, upVector, lookVector, Vector3(kZero));
     lightSpaceBasis = Transpose( lightSpaceBasis );
 
     //  rotate all points into this new basis
