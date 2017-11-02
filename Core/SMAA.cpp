@@ -11,8 +11,10 @@
 #include "TextureManager.h"
 #include "SearchTex.h"
 #include "AreaTex.h"
+#include "LinearColor.h"
 
 #include "CompiledShaders/ScreenQuadVS.h"
+#include "CompiledShaders/RemoveGammaPS.h"
 
 using namespace Graphics;
 
@@ -79,17 +81,9 @@ namespace
 
 namespace SMAA 
 {
-    // Compute Shader
-    ComputePSO Pass1HdrCS;
-    ComputePSO Pass1LdrCS;
-    ComputePSO ResolveWorkCS;
-    ComputePSO Pass2HCS;
-    ComputePSO Pass2VCS;
-    ComputePSO Pass2HDebugCS;
-    ComputePSO Pass2VDebugCS;
+    BoolVar Enable("Graphics/AA/SMAA/Enable", true);
 
-    BoolVar Enable("Graphics/AA/SMAA/Enable", false);
-
+    GraphicsPSO m_RemoveGammaPSO;
     FullscreenTriangle m_Triangle;
     Texture m_AreaTexture;
     Texture m_SearchTexture;
@@ -110,6 +104,10 @@ void SMAA::Initialize( void )
     m_Triangle.Create();
     m_AreaTexture.Create( AREATEX_WIDTH, AREATEX_HEIGHT, DXGI_FORMAT_R8G8_UNORM, areaTexBytes );
     m_SearchTexture.Create( AREATEX_WIDTH, AREATEX_HEIGHT, DXGI_FORMAT_R8_UNORM, searchTexBytes );
+
+    m_RemoveGammaPSO.SetVertexShader( MY_SHADER_ARGS(g_pScreenQuadVS) );
+    m_RemoveGammaPSO.SetPixelShader( MY_SHADER_ARGS(g_pRemoveGammaPS) );
+    m_RemoveGammaPSO.Finalize();
 }
 
 void SMAA::Shutdown( void )
@@ -123,27 +121,41 @@ void SMAA::Shutdown( void )
     m_SearchTexture.Destroy();
 }
 
-void SMAA::Render(ComputeContext& Context, bool bUsePreComputedLuma )
+void SMAA::Render(ComputeContext& Context )
 {
-    ScopedTimer _prof2( L"SMAA", Context );
+    ScopedTimer _prof( L"SMAA", Context );
 
     GraphicsContext& gfxContext = Context.GetGraphicsContext();
+
+    // linear color source
+    ColorBuffer& Source = Gamma::bSRGB ? g_SceneColorBuffer : g_PreviousColorBuffer;
+    gfxContext.SetViewportAndScissor( 0, 0, Source.GetWidth(), Source.GetHeight() );
+    if (!Gamma::bSRGB)
+    {
+        gfxContext.SetDynamicDescriptor( 0, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
+        gfxContext.SetRenderTarget( g_PreviousColorBuffer.GetRTV() );
+        gfxContext.SetPipelineState( m_RemoveGammaPSO );
+        gfxContext.Draw( 3 );
+        gfxContext.SetRenderTarget( nullptr );
+        gfxContext.SetDynamicDescriptor( 0, nullptr, { kBindPixel } );
+    }
+
     gfxContext.ClearColor( g_SMAAEdge );
     gfxContext.ClearColor( g_SMAABlend );
 
-    gfxContext.SetViewportAndScissor( 0, 0, g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight() );
     D3D11_SRV_HANDLE precomputed[] = { m_AreaTexture.GetSRV(), m_SearchTexture.GetSRV() };
     gfxContext.SetDynamicDescriptors( 0, 2, precomputed, { kBindPixel } );
 
     auto draw = [&]( GraphicsContext& context ) { m_Triangle.Draw( context ); };
     gfxContext.SetRenderTarget( g_SMAAEdge.GetRTV(), nullptr );
-    gfxContext.SetDynamicDescriptor( 2, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
+    gfxContext.SetDynamicDescriptor( 2, Source.GetSRV(), { kBindPixel } );
     m_EdgeDetection->Render( gfxContext, draw );
 
     gfxContext.SetRenderTarget( g_SMAABlend.GetRTV(), nullptr );
     gfxContext.SetDynamicDescriptor( 3, g_SMAAEdge.GetSRV(), { kBindPixel } );
     m_BlendingWeightCalculation->Render( gfxContext, draw );
 
+    gfxContext.SetDynamicDescriptor( 2, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
     gfxContext.SetRenderTarget( g_PreviousColorBuffer.GetRTV(), nullptr );
     gfxContext.SetDynamicDescriptor( 4, g_SMAABlend.GetSRV(), { kBindPixel } );
     m_NeighborhoodBlending->Render( gfxContext, draw );

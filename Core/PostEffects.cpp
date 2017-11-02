@@ -489,7 +489,7 @@ void PostEffects::Render( void )
         Diffuse::Render( Context );
 
     if (SMAA::Enable)
-        SMAA::Render( Context, TRUE );
+        SMAA::Render( Context );
 
     if (SMAA::Enable)
         Context.CopyBuffer( g_SceneColorBuffer, g_PreviousColorBuffer );

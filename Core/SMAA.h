@@ -10,5 +10,5 @@ namespace SMAA
 
     void Initialize( void );
     void Shutdown( void );
-    void Render( ComputeContext& Context, bool bUsePreComputedLuma );
+    void Render( ComputeContext& Context );
 }
