@@ -603,6 +603,11 @@ void GraphicsContext::GenerateMips( D3D11_SRV_HANDLE SRV )
 	m_CommandList->GenerateMips( SRV );
 }
 
+void GraphicsContext::ResolveSubresource( GpuResource& Dest, UINT DestSubresource, GpuResource& Src, UINT SrcSubresouce, DXGI_FORMAT Format )
+{
+    m_CommandList->ResolveSubresource( Dest.GetResource(), DestSubresource, Src.GetResource(), SrcSubresouce, Format );
+}
+
 void GraphicsContext::SetViewport( const D3D11_VIEWPORT& vp )
 {
 	m_CommandList->RSSetViewports( 1, &vp );

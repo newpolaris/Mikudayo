@@ -249,6 +249,7 @@ public:
 	void ClearDepthAndStencil( DepthBuffer& Target );
 
 	void GenerateMips( D3D11_SRV_HANDLE SRV );
+    void ResolveSubresource( GpuResource& Dest, UINT DestSubresource, GpuResource& Src, UINT SrcSubresouce, DXGI_FORMAT Format );
 
 	void SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTVs[] );
 	void SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTVs[], D3D11_DSV_HANDLE DSV );

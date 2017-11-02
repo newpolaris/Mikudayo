@@ -52,7 +52,7 @@ namespace FXAA
     BoolVar Enable("Graphics/AA/FXAA/Enable", false);
     BoolVar DebugDraw("Graphics/AA/FXAA/Debug", false);
     // TODO: PostEffects modification is needed.
-    BoolVar ForceCS("Graphics/AA/FXAA/ForceCS", false);
+    BoolVar ForceCS("Graphics/AA/FXAA/ForceCS", true);
 
     // With a properly encoded luma buffer, [0.25 = "low", 0.2 = "medium", 0.15 = "high", 0.1 = "ultra"]
     NumVar ContrastThreshold("Graphics/AA/FXAA/Contrast Threshold", 0.166f, 0.05f, 0.5f, 0.025f);

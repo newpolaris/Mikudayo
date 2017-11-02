@@ -85,6 +85,7 @@ protected:
 	}
 
 	void CreateDerivedViews( ID3D11Device* Device, DXGI_FORMAT Format, uint32_t ArraySize, uint32_t NumMips = 1 );
+    TextureDesc DescribeTex2D( uint32_t Width, uint32_t Height, uint32_t DepthOrArraySize, uint32_t NumMips, DXGI_FORMAT Format, uint32_t BindFlags );
 
 	Color m_ClearColor;
 	static const uint32_t kUAVSize = 12;

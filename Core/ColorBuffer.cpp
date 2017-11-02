@@ -74,17 +74,17 @@ void ColorBuffer::CreateDerivedViews( ID3D11Device* Device, DXGI_FORMAT Format, 
 	// Create the shader resource view
 	Device->CreateShaderResourceView(Resource, &SRVDesc, m_SRVHandle.ReleaseAndGetAddressOf());
 
-	if (m_FragmentCount > 1)
-		return;
-
-	// Create the UAVs for each mip level (RWTexture2D)
-	for (uint32_t i = 0; i < kUAVSize; ++i)
-		m_UAVHandle[i].Reset();
-	for (uint32_t i = 0; i < NumMips; ++i)
-	{
-		Device->CreateUnorderedAccessView(Resource, &UAVDesc, m_UAVHandle[i].ReleaseAndGetAddressOf());
-		UAVDesc.Texture2D.MipSlice++;
-	}
+    if (m_FragmentCount == 1)
+    {
+        // Create the UAVs for each mip level (RWTexture2D)
+        for (uint32_t i = 0; i < kUAVSize; ++i)
+            m_UAVHandle[i].Reset();
+        for (uint32_t i = 0; i < NumMips; ++i)
+        {
+            Device->CreateUnorderedAccessView( Resource, &UAVDesc, m_UAVHandle[i].ReleaseAndGetAddressOf() );
+            UAVDesc.Texture2D.MipSlice++;
+        }
+    }
 }
 
 void ColorBuffer::CreateFromSwapChain( const std::wstring& Name, Microsoft::WRL::ComPtr<ID3D11Texture2D> BaseResource )
@@ -132,6 +132,14 @@ void ColorBuffer::CreateArray( const std::wstring& Name, uint32_t Width, uint32_
 	DXGI_FORMAT Format, EsramAllocator& )
 {
 	CreateArray(Name, Width, Height, ArrayCount, Format);
+}
+
+TextureDesc ColorBuffer::DescribeTex2D( uint32_t Width, uint32_t Height, uint32_t DepthOrArraySize, uint32_t NumMips, DXGI_FORMAT Format, uint32_t BindFlags )
+{
+    TextureDesc Desc = PixelBuffer::DescribeTex2D( Width, Height, DepthOrArraySize, NumMips, Format, BindFlags );
+    Desc.SampleDesc.Count =  m_FragmentCount;;
+    Desc.SampleDesc.Quality = 0;
+    return Desc;
 }
 
 void ColorBuffer::Destroy()
