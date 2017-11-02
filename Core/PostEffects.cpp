@@ -473,6 +473,10 @@ void PostEffects::Render( void )
     Context.SetDynamicSampler( 0, SamplerLinearClamp );
     Context.SetDynamicSampler( 1, SamplerLinearBorder );
 
+    GraphicsContext& gfxContext = Context.GetGraphicsContext();
+    gfxContext.ResolveSubresource( g_SceneColorBuffer, 0, g_SceneColorMSBuffer, 0, DXGI_FORMAT_R11G11B10_FLOAT );
+    gfxContext.ResolveSubresource( g_EmissiveColorBuffer, 0, g_EmissiveColorMSBuffer, 0, DXGI_FORMAT_R11G11B10_FLOAT );
+
     if (EnableHDR && !SSAO::DebugDraw && !(DepthOfField::Enable && DepthOfField::DebugMode >= 3))
         ProcessHDR(Context);
     else
@@ -485,9 +489,6 @@ void PostEffects::Render( void )
     if (!g_bTypedUAVLoadSupport_R11G11B10_FLOAT)
         CopyBackPostBuffer(Context);
 
-    if (Diffuse::Enable)
-        Diffuse::Render( Context );
-
     if (SMAA::Enable)
         SMAA::Render( Context );
 
@@ -495,6 +496,9 @@ void PostEffects::Render( void )
         Context.CopyBuffer( g_SceneColorBuffer, g_PreviousColorBuffer );
     else
         Context.CopyBuffer( g_PreviousColorBuffer, g_SceneColorBuffer );
+
+    if (Diffuse::Enable)
+        Diffuse::Render( Context );
 
     if (DrawHistogram)
     {

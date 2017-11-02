@@ -174,7 +174,7 @@ void Mikudayo::Startup( void )
 
 #if 0
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
-    OrthogonalTransform rotation( Quaternion( -3.14/2, 0, 0 ) );
+    OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
     mirror->SetTransform( rotation );
     mirror->SetType( kSceneMirror );
     m_Scene->AddChild( mirror );
@@ -282,8 +282,8 @@ void Mikudayo::RenderScene( void )
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     {
-        gfxContext.ClearColor( g_SceneColorBuffer );
-        gfxContext.ClearDepth( g_SceneDepthBuffer );
+        gfxContext.ClearColor( g_SceneColorMSBuffer );
+        gfxContext.ClearDepth( g_SceneDepthMSBuffer );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 
         struct VSConstants
@@ -324,7 +324,7 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
-    // Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
+    Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
     // Utility::DebugTexture( Context, g_aBloomUAV1[0].GetSRV() );
     // Utility::DebugTexture( Context, g_ReflectColorBuffer.GetSRV() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );

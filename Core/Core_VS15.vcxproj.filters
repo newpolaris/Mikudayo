@@ -504,8 +504,6 @@
     <None Include="Shaders\Diffuse.hlsli">
       <Filter>Shaders\Diffuse</Filter>
     </None>
-    <None Include="Shaders\SMAA.fx" />
-    <None Include="Shaders\SMAA.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">

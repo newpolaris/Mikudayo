@@ -205,7 +205,7 @@ PixelShaderOutput main(PixelShaderInput input)
             comp = min(saturate(dot(input.normalWS,-LightDirection)*Toon),comp);
             shadowColor *= MaterialToon;
         }
-        color = lerp(shadowColor, color, 1);
+        color = lerp(shadowColor, color, comp);
     }
 #endif
     output.color = color;

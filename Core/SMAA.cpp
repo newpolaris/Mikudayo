@@ -81,7 +81,7 @@ namespace
 
 namespace SMAA 
 {
-    BoolVar Enable("Graphics/AA/SMAA/Enable", true);
+    BoolVar Enable("Graphics/AA/SMAA/Enable", false);
 
     GraphicsPSO m_RemoveGammaPSO;
     FullscreenTriangle m_Triangle;

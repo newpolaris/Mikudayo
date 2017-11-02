@@ -111,10 +111,10 @@ bool Forward::MirrorPass::Visit( SceneNode& node )
     m_Scene->Render( reflectPass, *m_RenderArgs );
 
     D3D11_RTV_HANDLE rtvs2[] = {
-        g_SceneColorBuffer.GetRTV(),
-        g_EmissiveColorBuffer.GetRTV(),
+        g_SceneColorMSBuffer.GetRTV(),
+        g_EmissiveColorMSBuffer.GetRTV(),
     };
-    context.SetRenderTargets( _countof( rtvs2 ), rtvs2, g_SceneDepthBuffer.GetDSV() );
+    context.SetRenderTargets( _countof( rtvs2 ), rtvs2, g_SceneDepthMSBuffer.GetDSV() );
 
     // Render mirror with alpha-blend
     Matrix4 model = node.GetTransform();
@@ -150,12 +150,12 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
     GraphicsContext& gfxContext = args.gfxContext;
     {
         ScopedTimer _forward( L"Forward Pass", gfxContext );
-        gfxContext.ClearColor( g_EmissiveColorBuffer );
+        gfxContext.ClearColor( g_EmissiveColorMSBuffer );
         D3D11_RTV_HANDLE rtvs[] = {
-            g_SceneColorBuffer.GetRTV(),
-            g_EmissiveColorBuffer.GetRTV(),
+            g_SceneColorMSBuffer.GetRTV(),
+            g_EmissiveColorMSBuffer.GetRTV(),
         };
-        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthMSBuffer.GetDSV() );
         DefaultPass defaultPass;
         scene->Render( defaultPass, args );
     }
@@ -170,10 +170,10 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
     }
 
     D3D11_RTV_HANDLE rtvs[] = {
-        g_SceneColorBuffer.GetRTV(),
-        g_EmissiveColorBuffer.GetRTV(),
+        g_SceneColorMSBuffer.GetRTV(),
+        g_EmissiveColorMSBuffer.GetRTV(),
     };
-    gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthMSBuffer.GetDSV() );
 }
 
 void Forward::Shutdown( void )

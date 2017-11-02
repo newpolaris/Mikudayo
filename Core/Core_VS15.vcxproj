@@ -300,12 +300,6 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\SharpenTAACS.hlsl" />
-    <None Include="Shaders\SMAA.fx">
-      <FileType>Document</FileType>
-    </None>
-    <None Include="Shaders\SMAA.hlsl">
-      <FileType>Document</FileType>
-    </None>
     <FxCompile Include="Shaders\TemporalBlendCS.hlsl" />
     <FxCompile Include="Shaders\TextAntialiasPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
