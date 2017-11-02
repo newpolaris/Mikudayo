@@ -282,8 +282,8 @@ void Mikudayo::RenderScene( void )
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     {
-        gfxContext.ClearColor( g_SceneColorMSBuffer );
-        gfxContext.ClearDepth( g_SceneDepthMSBuffer );
+        gfxContext.ClearColor( g_SceneColorBuffer );
+        gfxContext.ClearDepth( g_SceneDepthBuffer );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 
         struct VSConstants
@@ -302,10 +302,6 @@ void Mikudayo::RenderScene( void )
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Forward::Render( m_Scene, args );
-
-        gfxContext.ResolveSubresource( g_SceneColorBuffer, 0, g_SceneColorMSBuffer, 0, DXGI_FORMAT_R11G11B10_FLOAT );
-        gfxContext.ResolveSubresource( g_EmissiveColorBuffer, 0, g_EmissiveColorMSBuffer, 0, DXGI_FORMAT_R11G11B10_FLOAT );
-        // gfxContext.ResolveSubresource( g_SceneDepthBuffer, 0, g_SceneDepthMSBuffer, 0, DXGI_FORMAT_D32_FLOAT );
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );
