@@ -20,54 +20,6 @@ using namespace GameCore;
 
 BoolVar RecenterCamera( "Graphics/Camera/Recenter", true );
 
-namespace {
-	/** transform from normal to light space */
-	const Matrix4 msNormalToLightSpace(
-		Vector4(1,  0,  0,  0),		// x
-		Vector4(0,  0, -1,  0),		// y
-		Vector4(0,  1,  0,  0),		// z
-		Vector4(0,  0,  0,  1));	// w
-	/** transform  from light to normal space */
-	const Matrix4 msLightSpaceToNormal(
-		Vector4(1,  0,  0,  0),		// x
-		Vector4(0,  0,  1,  0),		// y
-		Vector4(0, -1,  0,  0),		// z
-		Vector4(0,  0,  0,  1));	// w
-
-}
-
-Matrix4 PerspectiveMatrixY( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ )
-{
-    float Y = 1.0f / std::tanf( VerticalFOV * 0.5f );
-    float X = Y * AspectRatio;
-
-    float Q1, Q2;
-
-    //
-    // ReverseZ puts far plane at Z=0 and near plane at Z=1.  This is never a bad idea, and it's
-    // actually a great idea with F32 depth buffers to redistribute precision more evenly across
-    // the entire range.  It requires clearing Z to 0.0f and using a GREATER variant depth test.
-    // Some care must also be done to properly reconstruct linear W in a pixel shader from hyperbolic Z.
-    //
-    if (bReverseZ)
-    {
-        Q1 = NearClip / (FarClip - NearClip);
-        Q2 = Q1 * FarClip;
-    }
-    else
-    {
-        Q1 = FarClip / (NearClip - FarClip);
-        Q2 = Q1 * NearClip;
-    }
-
-    return Matrix4(
-        Vector4( X, 0.0f, 0.0f, 0.0f ),
-        Vector4( 0.0f, Q1, 0.0f, -1.0f ),
-        Vector4( 0.0f, 0.0f, Y, 0.0f ),
-        Vector4( 0.0f, Q2, 0, 0.0f )
-    );
-}
-
 void ShadowCamera::UpdateMatrix(
     Vector3 LightDirection, Vector3 ShadowCenter, Vector3 ShadowBounds,
     uint32_t BufferWidth, uint32_t BufferHeight, uint32_t BufferPrecision )
@@ -111,32 +63,58 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
 	m_ViewMatrix = Matrix4(~m_CameraToWorld);
 	m_ViewProjMatrix = m_ProjMatrix * m_ViewMatrix;
 
-    Vector3 lightDir = Normalize(-LightVector);
+    Vector3 lightDir = Normalize(LightVector);
     Matrix4 invViewProj = Invert( camera.GetViewProjMatrix() );
     Vector3 cameraPos = camera.GetPosition();
 
     //  these are the limits specified by the physical camera
     //  gamma is the "tilt angle" between the light and the view direction.
-    float fCosGamma = Dot( lightDir, -camera.GetForwardVec());
-
+    Vector3 viewDir = camera.GetForwardVec();
+    float fCosGamma = Dot( lightDir, viewDir );
+    ASSERT( fabsf( fCosGamma ) < 0.99f );
     Frustum corners = camera.GetWorldSpaceFrustum();
     FrustumCorner corner = corners.GetFrustumCorners();
     std::vector<Vector3> bodyB;
     std::copy( corner.begin(), corner.end(), std::back_inserter( bodyB ) );
 
-    Vector3 rightVector, upVector, lookVector;
-
     Matrix4 cameraView = camera.GetViewMatrix();
     const Vector3 backVector = -camera.GetForwardVec();
 
-    upVector = lightDir;
-    rightVector = Cross( upVector, backVector );
-    lookVector = Cross( rightVector, upVector );
+    auto calcUpVec = []( Vector3 viewDir, Vector3 lightDir ) {
+        Vector3 left = Cross( lightDir, viewDir );
+        return Normalize(Cross( left, lightDir ));
+    };
+    Vector3 up = calcUpVec( viewDir, lightDir );
+    auto look = []( const Vector3 pos, const Vector3 dir, const Vector3 up ) {
+        Vector3 dirN;
+        Vector3 upN;
+        Vector3 lftN;
 
-    Matrix4 lightSpaceBasis( rightVector, upVector, lookVector, Vector3(kZero));
-    lightSpaceBasis = Transpose( lightSpaceBasis );
-    Matrix4 lightView = lightSpaceBasis * Matrix4::MakeTranslate( -cameraPos );
+        lftN = Cross( dir, up );
+        lftN = Normalize( lftN );
 
+        upN = Cross( lftN, dir );
+        upN = Normalize( upN );
+        dirN = Normalize( dir );
+
+        Matrix4 lightSpaceBasis( lftN, upN, -dirN, Vector3( kZero ) );
+        lightSpaceBasis = Transpose( lightSpaceBasis );
+        Matrix4 lightView = lightSpaceBasis * Matrix4::MakeTranslate( -pos );
+        return lightView;
+    };
+
+    auto look2 = []( const Vector3 pos, const Vector3 dir, const Vector3 up ) {
+        Vector3 right = Normalize(Cross( up, dir ));
+        Vector3 viewY = Normalize(Cross( dir, right ));
+        Vector3 viewZ = Normalize( dir );
+
+        Matrix3 basis = Transpose(Matrix3( right, viewY, viewZ ));
+        return Matrix4( basis, basis * -pos );
+    };
+
+    Matrix4 lightView = look( cameraPos, lightDir, up );
+
+    std::vector<Vector3> bodyCopyB = bodyB;
     for (auto& body : bodyB)
         body = lightView.Transform(body);
 
@@ -152,8 +130,8 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
     float z_f = z_n + d * sinGamma;
     float n = (z_n + Sqrt( z_f * z_n )) / sinGamma;
     float f = n + d;
-    Vector3 pos = cameraPos + upVector * -(n - nearDist);
-    Matrix4 viewMatrix = lightSpaceBasis * Matrix4::MakeTranslate( -pos );
+    Vector3 pos = cameraPos + up * -(n - nearDist);
+    lightView = look(pos, lightDir, up );
 
     float a, b;
     if (m_ReverseZ)
@@ -163,8 +141,8 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
     }
     else
     {
-        a = -f / (n - f);
-        b = a * n;
+        a = (f+n) / (f-n);
+        b = -2 * f*n / (f - n);
     }
 
     Matrix4 lispMatrix(
@@ -173,15 +151,37 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
         Vector4( 0, 0, 1, 0 ),
         Vector4( 0, b, 0, 0 ) );
 
-    Matrix4 lightProjection = lispMatrix * viewMatrix;
+    Matrix4 lightProjection = lispMatrix * lightView;
 
-    m_ShadowMatrix = lispMatrix * viewMatrix;
+    for (auto& body : bodyCopyB)
+        body = lightProjection.Transform(body);
 
-    m_ViewMatrix = viewMatrix;
-    m_ProjMatrix = lispMatrix;
-    m_ViewProjMatrix = m_ShadowMatrix;
-    //  build the composite matrix that transforms from world space into post-projective light space
-    m_ShadowMatrix = m_ViewProjMatrix;
+    Math::BoundingBox aabbCopy( bodyCopyB );
+
+    auto scaleTranslateToFit = [](const Vector3 min, const Vector3 max) {
+        XMFLOAT3 vMin = XMFLOAT3(min.GetX(), min.GetY(), min.GetZ() );
+        XMFLOAT3 vMax = XMFLOAT3(max.GetX(), max.GetY(), max.GetZ() );
+        float tx = -(vMax.x + vMin.x) / (vMax.x - vMin.x),
+            ty = - (vMax.y + vMin.y) / (vMax.y - vMin.y),
+            tz = -(vMax.z + vMin.z) / (vMax.z - vMin.z);
+        Matrix4 output(
+            Vector4( 2 / (vMax.x - vMin.x), 0, 0, 0 ),
+            Vector4( 0, 2 / (vMax.y - vMin.y), 0, 0 ),
+            Vector4( 0, 0, 2 / (vMax.z - vMin.z), 0 ),
+            Vector4( tx, ty, tz, 1 ) );
+        return output;
+    };
+    lightProjection = scaleTranslateToFit( aabbCopy.GetMin(), aabbCopy.GetMax() );
+    Matrix4 rh2lh = Matrix4::MakeScale( Vector3(1.f, 1.f, -1.f) );
+    Matrix4 fitDxNDC(
+        Vector4( 1, 0, 0, 0 ),
+        Vector4( 0, 1, 0, 0 ),
+        Vector4( 0, 0, 0.5, 0 ),
+        Vector4( 0, 0, 0.5, 1 ) );
+
+    m_ViewMatrix = lightView;
+    m_ProjMatrix = fitDxNDC * rh2lh * lightProjection * lispMatrix;
+    m_ShadowMatrix = m_ProjMatrix * m_ViewMatrix;
 
     m_ClipToWorld = Invert(m_ViewProjMatrix);
 	m_FrustumVS = Frustum( m_ProjMatrix );

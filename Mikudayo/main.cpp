@@ -79,9 +79,9 @@ EnumVar m_CameraType("Application/Camera/Camera Type", kCameraVirtual, 3, Camera
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
 // Default values in MMD. Due to RH coord, z is inverted.
-NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.0f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.0f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
@@ -99,7 +99,7 @@ void Mikudayo::Startup( void )
 
     const Vector3 eye = Vector3(0.0f, 20.0f, 15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(0.0, 20.f, 0.f), Vector3(kYUnitVector) );
-    m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 2000.0f );
+    m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 20000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
@@ -251,6 +251,7 @@ void Mikudayo::Update( float deltaT )
     Physics::UpdatePicking( m_MainViewport, GetCamera() );
 }
 
+std::vector<Vector3> s_corner;
 void Mikudayo::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
@@ -275,8 +276,22 @@ void Mikudayo::RenderScene( void )
         Vector3 SunPosition = -m_SunDirection * Radius;
         m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2), (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
         // m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius * 2 ), m_Camera );
+        Matrix4 invViewProj = Invert(m_SunShadow.GetViewProjMatrix());
+        std::vector<Vector3> corners = {
+            Vector3( -1, -1, 0 ),
+            Vector3( -1, -1, 1 ),
+            Vector3( -1, 1, 0 ),
+            Vector3( -1, 1, 1 ),
+            Vector3( 1, -1, 0 ),
+            Vector3( 1, -1, 1 ),
+            Vector3( 1, 1, 0 ),
+            Vector3( 1, 1, 1 )
+        };
+        s_corner.clear();
+        for (auto& k : corners)
+            s_corner.push_back(invViewProj.Transform( k ));
 
-        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetShadowMatrix() ), &m_SunShadow.GetShadowMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
@@ -309,6 +324,8 @@ void Mikudayo::RenderScene( void )
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
+        Matrix4 identity( kIdentity );
+        Utility::DebugCube( gfxContext, GetCamera().GetViewProjMatrix(), s_corner.data(), Color( 1.f, 0.f, 0.f, 0.36f ) );
     }
     gfxContext.SetRenderTarget( nullptr );
 
