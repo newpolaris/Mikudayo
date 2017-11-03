@@ -112,95 +112,79 @@ void ShadowCamera::UpdateMatrix( Vector3 LightVector, Vector3 ShadowCenter, Vect
 	m_ViewProjMatrix = m_ProjMatrix * m_ViewMatrix;
 
     Vector3 lightDir = Normalize(-LightVector);
+    Matrix4 invViewProj = Invert( camera.GetViewProjMatrix() );
+    Vector3 cameraPos = camera.GetPosition();
 
     //  these are the limits specified by the physical camera
     //  gamma is the "tilt angle" between the light and the view direction.
     float fCosGamma = Dot( lightDir, -camera.GetForwardVec());
-    float fLSPSM_NoptWeight = 1.0f;
-    float ZNEAR_MIN = 1.0f, ZFAR_MAX = 800.f;
-    float m_zNear = ZNEAR_MIN, m_zFar = ZFAR_MAX;
 
-    Frustum eyeFrustum = camera.GetViewSpaceFrustum();
+    Frustum corners = camera.GetWorldSpaceFrustum();
+    FrustumCorner corner = corners.GetFrustumCorners();
     std::vector<Vector3> bodyB;
-    FrustumCorner corner = eyeFrustum.GetFrustumCorners();
     std::copy( corner.begin(), corner.end(), std::back_inserter( bodyB ) );
 
-    //  compute the "light-space" basis, using the algorithm described in the paper
-    //  note:  since bodyB is defined in eye space, all of these vectors should also be defined in eye space
     Vector3 rightVector, upVector, lookVector;
 
     Matrix4 cameraView = camera.GetViewMatrix();
-    const Vector3 viewVector( 0.f, 0.f, 1.f );
+    const Vector3 backVector = -camera.GetForwardVec();
 
-    //  note: lightDir points away from the scene, so it is already the "negative" up direction;
-    //  no need to re-negate it.
-    upVector = cameraView.Get3x3() * lightDir;
-    rightVector = Cross( upVector, viewVector );
+    upVector = lightDir;
+    rightVector = Cross( upVector, backVector );
     lookVector = Cross( rightVector, upVector );
 
     Matrix4 lightSpaceBasis( rightVector, upVector, lookVector, Vector3(kZero));
     lightSpaceBasis = Transpose( lightSpaceBasis );
+    Matrix4 lightView = lightSpaceBasis * Matrix4::MakeTranslate( -cameraPos );
 
-    //  rotate all points into this new basis
     for (auto& body : bodyB)
-        body = lightSpaceBasis.Transform(body);
+        body = lightView.Transform(body);
 
-    Math::BoundingBox lightSpaceBox( bodyB );
-    Vector3 lightSpaceOrigin;
-    //  for some reason, the paper recommended using the x coordinate of the xformed viewpoint as
-    //  the x-origin for lightspace, but that doesn't seem to make sense...  instead, we'll take
-    //  the x-midpt of body B (like for the Y axis)
-    lightSpaceOrigin = lightSpaceBox.GetCenter();
+    Math::BoundingBox aabb( bodyB );
+    Vector3 nearPt( kZero );
+    nearPt = invViewProj.Transform( nearPt );
+
+    Scalar nearDist = Length( nearPt - cameraPos );
     float sinGamma = sqrtf( 1.f - fCosGamma*fCosGamma );
-    //  use average of the "real" near/far distance and the optimized near/far distance to get a more pleasant result
-    float Nopt0 = m_zNear + sqrtf( m_zNear*m_zFar );
-    float Nopt1 = ZNEAR_MIN + sqrtf( ZNEAR_MIN*ZFAR_MAX );
-    float fLSPSM_Nopt = (Nopt0 + Nopt1) / (2.f*sinGamma);
-    //  add a constant bias, to guarantee some minimum distance between the projection point and the near plane
-    fLSPSM_Nopt += 0.1f;
-    //  now use the weighting to scale between 0.1 and the computed Nopt
-    float Nopt = 0.1f + fLSPSM_NoptWeight * (fLSPSM_Nopt - 0.1f);
+    float factor = 1.0f / sinGamma;
+    float z_n = factor * nearDist;
+    float d = Abs( aabb.GetMax().GetY() - aabb.GetMin().GetY() );
+    float z_f = z_n + d * sinGamma;
+    float n = (z_n + Sqrt( z_f * z_n )) / sinGamma;
+    float f = n + d;
+    Vector3 pos = cameraPos + upVector * -(n - nearDist);
+    Matrix4 viewMatrix = lightSpaceBasis * Matrix4::MakeTranslate( -pos );
 
-    lightSpaceOrigin.SetZ( lightSpaceBox.GetMin().GetZ() - Nopt );
-
-    //  xlate all points in lsBodyB, to match the new lightspace origin, and compute the fov and aspect ratio
-    float maxx = 0.f, maxy = 0.f, maxz = 0.f;
-
-    std::vector<Vector3>::iterator ptIt = bodyB.begin();
-
-    while (ptIt != bodyB.end())
+    float a, b;
+    if (m_ReverseZ)
     {
-        Vector3 tmp = *ptIt++ - lightSpaceOrigin;
-        ASSERT( tmp.GetZ() > 0.f );
-        maxx = std::max( maxx, fabsf( tmp.GetX() / tmp.GetZ() ) );
-        maxy = std::max( maxy, fabsf( tmp.GetY() / tmp.GetZ() ) );
-        maxz = std::max( maxz, float(tmp.GetZ()) );
+        a = -n / (f - n);
+        b = a * f;
+    }
+    else
+    {
+        a = -f / (n - f);
+        b = a * n;
     }
 
-    float fovy = atanf( maxy );
-    float fovx = atanf( maxx );
+    Matrix4 lispMatrix(
+        Vector4( 1, 0, 0, 0 ),
+        Vector4( 0, a, 0, 1 ),
+        Vector4( 0, 0, 1, 0 ),
+        Vector4( 0, b, 0, 0 ) );
 
-    Matrix4 lsTranslate, lsPerspective;
-    lsTranslate = Matrix4::MakeTranslate( -lightSpaceOrigin );
-    lsPerspective = PerspectiveMatrix( 2.f*maxx*Nopt, 2.f*maxy*Nopt, Nopt, maxz, m_ReverseZ );
+    Matrix4 lightProjection = lispMatrix * viewMatrix;
 
-    lightSpaceBasis = lsPerspective * lsTranslate * lightSpaceBasis;
+    m_ShadowMatrix = lispMatrix * viewMatrix;
 
-    //  now rotate the entire post-projective cube, so that the shadow map is looking down the Y-axis
-    Matrix4 lsPermute(
-        Vector4( 1.f, 0.f, 0.f, 0.f ),
-        Vector4( 0.f, 0.f, -1.f, 0.f ),
-        Vector4( 0.f, 1.f, 0.f, 0.f ),
-        Vector4( 0.f, -0.5f, 1.5f, 1.f ) );
-
-    Matrix4 lsOrtho = OrthographicMatrix( 2.f, 1.f, 0.5f, 2.5f, m_ReverseZ );
-
-    m_ShadowMatrix = lsOrtho * lsPermute * lightSpaceBasis * camera.GetViewMatrix();
-
-    m_ViewMatrix = Matrix4(kIdentity);
-    m_ProjMatrix = m_ShadowMatrix;
+    m_ViewMatrix = viewMatrix;
+    m_ProjMatrix = lispMatrix;
     m_ViewProjMatrix = m_ShadowMatrix;
     //  build the composite matrix that transforms from world space into post-projective light space
     m_ShadowMatrix = m_ViewProjMatrix;
+
+    m_ClipToWorld = Invert(m_ViewProjMatrix);
+	m_FrustumVS = Frustum( m_ProjMatrix );
+    m_FrustumWS = Invert( m_ViewMatrix ) * m_FrustumVS;
 }
 
