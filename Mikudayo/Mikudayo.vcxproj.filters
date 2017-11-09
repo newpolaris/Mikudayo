@@ -22,6 +22,9 @@
     <Filter Include="Source Files\RenderPass">
       <UniqueIdentifier>{2a320a56-6c1f-42a4-8d4e-8c4d41d51dc5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Camera">
+      <UniqueIdentifier>{d613c282-6585-4939-b95d-5a62bf93c1d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -144,12 +147,6 @@
     <ClCompile Include="TaskManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MikuCamera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MikuCameraController.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Motion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -158,6 +155,24 @@
     </ClCompile>
     <ClCompile Include="Bullet\BaseSoftBody.cpp">
       <Filter>Source Files\Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="MikuCamera.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="MikuCameraController.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseShadowCamera.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Clipping.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowCameraLiSPSM.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowCameraUnitCube.cpp">
+      <Filter>Source Files\Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -299,17 +314,29 @@
     <ClInclude Include="TaskManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="MikuCamera.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MikuCameraController.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Motion.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\BaseSoftBody.h">
       <Filter>Source Files\Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="MikuCamera.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="MikuCameraController.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowCameraUnitCube.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseShadowCamera.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Clipping.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowCameraLiSPSM.h">
+      <Filter>Source Files\Camera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

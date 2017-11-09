@@ -138,6 +138,7 @@ public:
     std::map<std::wstring, uint32_t> m_BoneIndex;
 
     IndexBuffer m_IndexBuffer;
+    BoundingBox m_BoundingBox;
 
     static void Initialize();
     static void Shutdown();
@@ -154,6 +155,7 @@ protected:
     bool GenerateResource( void );
     bool LoadFromFile( const std::wstring& FilePath );
     const ManagedTexture* LoadTexture( std::wstring ImageName, bool bSRGB );
+    bool SetBoundingBox();
     bool SetCustomShader( const CustomShaderInfo& Data );
     bool SetDefaultShader( const std::wstring& Name );
 };

@@ -180,7 +180,7 @@ public:
     uint32_t m_VertexStride;
     uint32_t m_VertexStrideDepth;
 
-    const BoundingBox& GetBoundingBox() const;
+    Math::BoundingBox GetBoundingBox() const override;
 
     virtual bool Load( const ModelInfo& info ) override;
 
@@ -197,8 +197,8 @@ protected:
 	void ComputeAllBoundingBoxes();
 };
 
-inline const MiniModel::BoundingBox& MiniModel::GetBoundingBox() const
+inline Math::BoundingBox MiniModel::GetBoundingBox() const
 {
-    return m_Header.boundingBox;
+    return Math::BoundingBox(m_Header.boundingBox.min, m_Header.boundingBox.max);
 }
 

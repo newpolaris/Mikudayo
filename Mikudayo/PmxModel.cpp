@@ -428,6 +428,16 @@ const ManagedTexture* PmxModel::LoadTexture( std::wstring ImageName, bool bSRGB 
     return &TextureManager::GetMagentaTex2D();
 }
 
+bool PmxModel::SetBoundingBox()
+{
+    BoundingBox box;
+    for (auto& vert : m_VertexPosition)
+        box.Merge( vert );
+    m_BoundingBox = box;
+
+    return true;
+}
+
 bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
 {
     for (auto& matName : Data.MaterialNames)

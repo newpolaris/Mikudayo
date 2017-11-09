@@ -23,20 +23,21 @@ public:
     SceneNode();
 
     virtual void Accept( Visitor& visitor );
-    virtual void AddChild( std::shared_ptr<SceneNode> pNode );
+    virtual void AddChild( SceneNodePtr pNode );
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor );
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor );
     virtual void Update( float deltaT );
     virtual void UpdateAfterPhysics( float deltaT );
     virtual SceneNodeType GetType() const;
     virtual void SetType( SceneNodeType type );
+    virtual Math::BoundingBox GetBoundingBox() const;
     virtual Math::Matrix4 GetTransform() const;
     virtual void SetTransform( const Math::Matrix4& transform );
 
 protected:
 
-    typedef std::vector<std::shared_ptr<SceneNode>> NodeList;
-    typedef std::multimap<std::string, std::shared_ptr<SceneNode>> NodeNameMap;
+    typedef std::vector<SceneNodePtr> NodeList;
+    typedef std::multimap<std::string, SceneNodePtr> NodeNameMap;
 
     SceneNodeType m_NodeType;
     RenderArgs* m_RenderArgs;

@@ -4,16 +4,19 @@
 
 #include <array>
 #include <vector>
+#include <limits>
+#include "BoundingPlane.h"
 #include "VectorMath.h"
 
 namespace Math
 {
     using FrustumCorner = std::array<Vector3, 8>;
+    using FrustumPlanes = std::array<BoundingPlane, 6>;
 
     class BoundingBox
     {
     public:
-        BoundingBox() : m_Min( FLT_MAX ), m_Max( FLT_MIN )
+        BoundingBox() : m_Min( std::numeric_limits<float>::max() ), m_Max( std::numeric_limits<float>::lowest() )
         {
         }
 
@@ -21,24 +24,25 @@ namespace Math
         {
         }
 
-        BoundingBox( const std::vector<Vector3>& list ) : m_Min( FLT_MAX ), m_Max( FLT_MIN )
+        BoundingBox( const std::vector<Vector3>& list ) : m_Min( std::numeric_limits<float>::max() ), m_Max( std::numeric_limits<float>::lowest() )
         {
             for (auto& vec : list)
                 Merge( vec );
         }
 
-        Vector3 GetCenter() const;
+        Vector3 GetCenter( void ) const;
+        Vector3 GetExtent( void ) const;
         const Vector3& GetMin( void ) const;
         const Vector3& GetMax( void ) const;
         FrustumCorner GetCorners( void ) const;
+        FrustumPlanes GetPlanes( void ) const;
 
         void Merge( const Vector3& vec );
+        bool Intersect( float* hitDist, const Vector3& origPt, const Vector3& dir ) const;
 
 		friend BoundingBox operator* ( const OrthogonalTransform& xform, const BoundingBox& box );	// Fast
 		friend BoundingBox operator* ( const AffineTransform& xform, const BoundingBox& box );		// Slow
 		friend BoundingBox operator* ( const Matrix4& xform, const BoundingBox& box );				// Slowest (and most general)
-
-    protected:
 
         Vector3 m_Min;
         Vector3 m_Max;
@@ -88,13 +92,6 @@ namespace Math
     {
         Vector3 X = xform*box.GetMin();
         Vector3 Y = xform*box.GetMax();
-        return BoundingBox( Min(X, Y), Max(X, Y) );
-    }
-
-    inline BoundingBox operator* ( const Matrix4& xform, const BoundingBox& box )
-    {
-        Vector3 X = xform.Transform(box.GetMin());
-        Vector3 Y = xform.Transform(box.GetMax());
         return BoundingBox( Min(X, Y), Max(X, Y) );
     }
 }

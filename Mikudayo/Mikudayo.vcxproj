@@ -106,6 +106,7 @@
     <ClCompile Include="BaseMaterial.cpp" />
     <ClCompile Include="BaseMesh.cpp" />
     <ClCompile Include="BaseModel.cpp" />
+    <ClCompile Include="BaseShadowCamera.cpp" />
     <ClCompile Include="Bone.cpp" />
     <ClCompile Include="Bullet\BaseJoint.cpp" />
     <ClCompile Include="Bullet\BaseRigidBody.cpp" />
@@ -116,6 +117,7 @@
     <ClCompile Include="Bullet\PhysicsPrimitive.cpp" />
     <ClCompile Include="Bullet\PrimitiveBatch.cpp" />
     <ClCompile Include="Bullet\RigidBody.cpp" />
+    <ClCompile Include="Clipping.cpp" />
     <ClCompile Include="DeferredLighting.cpp" />
     <ClCompile Include="ForwardLighting.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
@@ -142,6 +144,8 @@
     <ClCompile Include="RenderType.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneNode.cpp" />
+    <ClCompile Include="ShadowCameraLiSPSM.cpp" />
+    <ClCompile Include="ShadowCameraUnitCube.cpp" />
     <ClCompile Include="ShadowCasterPass.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -158,6 +162,7 @@
     <ClInclude Include="BaseMesh.h" />
     <ClInclude Include="BaseModel.h" />
     <ClInclude Include="BaseModelTypes.h" />
+    <ClInclude Include="BaseShadowCamera.h" />
     <ClInclude Include="Bone.h" />
     <ClInclude Include="Bullet\BaseJoint.h" />
     <ClInclude Include="Bullet\BaseRigidBody.h" />
@@ -170,6 +175,7 @@
     <ClInclude Include="Bullet\PhysicsPrimitive.h" />
     <ClInclude Include="Bullet\PrimitiveBatch.h" />
     <ClInclude Include="Bullet\RigidBody.h" />
+    <ClInclude Include="Clipping.h" />
     <ClInclude Include="DeferredLighting.h" />
     <ClInclude Include="ForwardLighting.h" />
     <ClInclude Include="GeometryGenerator.h" />
@@ -197,6 +203,8 @@
     <ClInclude Include="RenderType.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
+    <ClInclude Include="ShadowCameraLiSPSM.h" />
+    <ClInclude Include="ShadowCameraUnitCube.h" />
     <ClInclude Include="ShadowCasterPass.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />

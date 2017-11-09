@@ -43,6 +43,7 @@ public:
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor ) override;
     virtual void Update( float deltaT ) override;
     virtual void UpdateAfterPhysics( float deltaT ) override;
+    virtual Math::BoundingBox GetBoundingBox() const override;
     virtual Math::Matrix4 GetTransform() const override;
     virtual void SetTransform( const Math::Matrix4& );
 

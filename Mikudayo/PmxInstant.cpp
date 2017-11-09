@@ -61,6 +61,7 @@ struct PmxInstant::Context final
     void Update( float kFrameTime );
     void UpdateAfterPhysics( float kFrameTime );
 
+    BoundingBox GetBoundingBox() const;
     Matrix4 GetTransform() const;
     void SetTransform( const Matrix4& transform );
 
@@ -458,6 +459,13 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
 }
 
+BoundingBox PmxInstant::Context::GetBoundingBox() const
+{
+	if (m_BoneMotions.size() > 0)
+        return m_ModelTransform * m_Skinning[m_Model.m_RootBoneIndex] * m_Model.m_BoundingBox;
+    return m_ModelTransform * m_Model.m_BoundingBox;
+}
+
 Matrix4 PmxInstant::Context::GetTransform() const
 {
     return m_ModelTransform;
@@ -797,6 +805,11 @@ void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
 {
     (Context), (visitor);
     m_Context->DrawBone();
+}
+
+BoundingBox PmxInstant::GetBoundingBox() const
+{
+    return m_Context->GetBoundingBox();
 }
 
 Math::Matrix4 PmxInstant::GetTransform() const

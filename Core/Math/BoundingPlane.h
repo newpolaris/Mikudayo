@@ -30,6 +30,8 @@ namespace Math
 
 		INLINE operator Vector4() const { return m_repr; }
 
+        // Can be negative value (not length)
+		Scalar GetDistance( void ) const { return m_repr.GetW(); }
 		Vector3 GetNormal( void ) const { return Vector3(m_repr); }
 
         // Returns the point on the plane closest to the origin

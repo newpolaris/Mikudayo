@@ -15,7 +15,7 @@ void SceneNode::Accept( Visitor& visitor )
         child->Accept( visitor );
 }
 
-void SceneNode::AddChild( std::shared_ptr<SceneNode> pNode )
+void SceneNode::AddChild( SceneNodePtr pNode )
 {
     m_Children.push_back( pNode );
 }
@@ -48,6 +48,11 @@ SceneNodeType SceneNode::GetType() const
 void SceneNode::SetType(SceneNodeType type)
 {
     m_NodeType = type;
+}
+
+BoundingBox SceneNode::GetBoundingBox() const
+{
+    return BoundingBox();
 }
 
 Matrix4 SceneNode::GetTransform() const

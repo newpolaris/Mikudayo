@@ -104,6 +104,16 @@ namespace Math
             NearRelative( m1.GetW(), m2.GetW(), eps );
     }
 
+    Matrix4 MatrixLookAtLH( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection )
+    {
+        return Matrix4(DirectX::XMMatrixLookAtLH( EyePosition, FocusPosition, UpDirection ));
+    }
+
+    Matrix4 MatrixLookAtRH( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection )
+    {
+        return Matrix4(DirectX::XMMatrixLookAtRH( EyePosition, FocusPosition, UpDirection ));
+    }
+
     Matrix4 PerspectiveMatrix( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ )
     {
         float Y = 1.0f / std::tanf( VerticalFOV * 0.5f );

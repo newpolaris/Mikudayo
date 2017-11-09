@@ -9,6 +9,8 @@ namespace Math
     bool NearRelative( const Matrix3& m1, const Matrix3& m2, const Vector3& eps );
     bool NearRelative( const Matrix4& m1, const Matrix4& m2, const Vector4& eps );
 
+    Matrix4 MatrixLookAtLH( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection );
+    Matrix4 MatrixLookAtRH( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection );
     Matrix4 PerspectiveMatrix( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ );
     Matrix4 OrthographicMatrix( float Width, float Height, float NearClip, float FarClip, bool bReverseZ );
     Matrix4 OrthographicMatrix( float Left, float Right, float Bottom, float Top, float NearClip, float FarClip, bool bReverseZ );
