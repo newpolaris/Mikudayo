@@ -71,7 +71,7 @@ namespace Math {
         outside.resize( poly.size() );
 
         for (size_t i = 0; i < poly.size(); i++)
-            outside[i] = A.DistanceFromPoint( poly[i] ) < 0.f;
+            outside[i] = A.DistanceFromPoint( poly[i] ) < 0.00015f;
 
         for (size_t i = 0; i < poly.size(); i++)
         {
@@ -108,7 +108,7 @@ namespace Math {
     {
         int i;
         for (i = 0; i < poly.size(); i++) {
-            if (DirectX::XMVector3NearEqual( poly[i], p, Scalar(0.001f) ))
+            if (NearRelative( poly[i], p, Scalar( 0.05f ) ))
                 return i;
         }
         return -1;
@@ -138,7 +138,6 @@ namespace Math {
     {
         PolyObject inter = interObj;
 
-        int size = int(obj.size());
         // you need at least 3 sides for a polygon
         if (3 > inter.size())
             return;
@@ -292,6 +291,8 @@ namespace Math {
         const BoundingFrustum& worldFrustum, const BoundingBox& sceneAABox )
     {
         FrustumCorner pts = worldFrustum.GetFrustumCorners();
+        // If the shadow map changes rapidly as the camera moves, 
+        // you must fix the relative error of 'findSamePointInVecPoint'
         PolyObject obj = calcViewFrustObject(pts);
         PolyObject clip = clipObjectByAABox( obj, sceneAABox );
         includeObjectLightVolume( points, clip, lightDir, sceneAABox );

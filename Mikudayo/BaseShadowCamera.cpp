@@ -3,7 +3,7 @@
 
 using namespace Math;
 
-void BaseShadowCamera::UpdateViewProjMatrix( const Math::Matrix4& View, const Math::Matrix4& Projection )
+void BaseShadowCamera::UpdateViewProjMatrix( const Matrix4& View, const Matrix4& Projection )
 {
     m_ViewMatrix = View;
     m_ProjMatrix = Projection;
@@ -13,5 +13,5 @@ void BaseShadowCamera::UpdateViewProjMatrix( const Math::Matrix4& View, const Ma
 	m_FrustumWS = m_CameraToWorld * m_FrustumVS;
 
     // Transform from clip space to texture space
-    m_ShadowMatrix = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3(0.5f, 0.5f, 0.0f) ) ) * m_ViewProjMatrix;
+    m_ShadowMatrix = Matrix4( AffineTransform( Matrix3::MakeScale( 0.5f, -0.5f, 1.0f ), Vector3( 0.5f, 0.5f, 0.0f ) ) ) * m_ViewProjMatrix;
 }

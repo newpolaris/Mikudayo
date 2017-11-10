@@ -171,7 +171,7 @@
     <ClCompile Include="ShadowCameraLiSPSM.cpp">
       <Filter>Source Files\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="ShadowCameraUnitCube.cpp">
+    <ClCompile Include="ShadowCameraUniform.cpp">
       <Filter>Source Files\Camera</Filter>
     </ClCompile>
   </ItemGroup>
@@ -326,9 +326,6 @@
     <ClInclude Include="MikuCameraController.h">
       <Filter>Source Files\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="ShadowCameraUnitCube.h">
-      <Filter>Source Files\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="BaseShadowCamera.h">
       <Filter>Source Files\Camera</Filter>
     </ClInclude>
@@ -336,6 +333,9 @@
       <Filter>Source Files\Camera</Filter>
     </ClInclude>
     <ClInclude Include="ShadowCameraLiSPSM.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowCameraUniform.h">
       <Filter>Source Files\Camera</Filter>
     </ClInclude>
   </ItemGroup>

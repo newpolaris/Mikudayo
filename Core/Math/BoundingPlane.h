@@ -29,6 +29,7 @@ namespace Math
 		explicit BoundingPlane( Vector4 plane ) : m_repr(plane) {}
 
 		INLINE operator Vector4() const { return m_repr; }
+		INLINE operator XMVECTOR() const { return m_repr; }
 
         // Can be negative value (not length)
 		Scalar GetDistance( void ) const { return m_repr.GetW(); }

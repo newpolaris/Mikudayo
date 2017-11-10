@@ -85,7 +85,6 @@ SamplerComparisonState shadowSampler : register(s2);
 
 float GetShadow( float3 ShadowCoord )
 {
-#define SINGLE_SAMPLE
 #ifdef SINGLE_SAMPLE
     float result = texShadow.SampleCmpLevelZero( shadowSampler, ShadowCoord.xy, ShadowCoord.z );
 #else
@@ -188,26 +187,13 @@ PixelShaderOutput main(PixelShaderInput input)
 #endif
 
     // Complete projection by doing division by w.
-    float3 shadowPositionNS = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
-    float2 shadowCoord = shadowPositionNS.xy * float2(0.5, -0.5) + 0.5;
-
-#if 0
-    if (any(shadowCoord == saturate(shadowCoord)))
+    float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    if (!any(saturate(shadowCoord.xy) != shadowCoord.xy))
     {
+        shadowCoord = saturate( shadowCoord );
         float comp = GetShadow( shadowCoord );
-        color = float4(comp.xxx, 1);
-    }
-#else 
-    if (any(saturate(shadowCoord) == shadowCoord))
-    {
-        float comp = saturate(max(- shadowPositionNS.z + texShadow.Sample(sampler1, shadowCoord), 0.0f)*SKII1 - 0.3f);
-        if (mat.bUseToon) {
-            comp = min(saturate(dot(input.normalWS,-LightDirection)*Toon),comp);
-            shadowColor *= MaterialToon;
-        }
         color = lerp(shadowColor, color, comp);
     }
-#endif
     output.color = color;
     output.emissive = color * emissive;
     return output;

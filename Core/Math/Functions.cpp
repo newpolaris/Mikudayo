@@ -1,9 +1,8 @@
 #include "pch.h"
 #include "Functions.h"
+#include "Math/BoundingBox.h"
 
-//
-// Uses code from "https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/"
-//
+const bool bLeftHand = false;
 
 namespace
 {
@@ -38,6 +37,9 @@ namespace Math
     bool AlmostEqualUlps( float A, float B, int maxUlpsDiff );
     bool AlmostEqualRelative( float A, float B, float maxRelDiff = FLT_EPSILON );
 
+    //
+    // Uses code from "https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/"
+    //
     bool AlmostEqualUlps( float A, float B, int maxUlpsDiff )
     {
         Float_t uA( A );
@@ -104,14 +106,46 @@ namespace Math
             NearRelative( m1.GetW(), m2.GetW(), eps );
     }
 
+    Matrix4 MatrixLookDirection( const Vector3& EyePosition, const Vector3& Direction, const Vector3 UpDirection )
+    {
+        Vector3 zaxis = Normalize( Direction );
+        Vector3 xaxis = Normalize( Cross( UpDirection, zaxis ) );
+        Vector3 yaxis = Cross( zaxis, xaxis );
+        Scalar tX = Dot( xaxis, EyePosition ), tY = Dot( yaxis, EyePosition ), tZ = Dot( zaxis, EyePosition );
+
+        return Matrix4(
+            Vector3( xaxis.GetX(), yaxis.GetX(), zaxis.GetX() ),
+            Vector3( xaxis.GetY(), yaxis.GetY(), zaxis.GetY() ),
+            Vector3( xaxis.GetZ(), yaxis.GetZ(), zaxis.GetZ() ),
+            Vector3( -tX, -tY, -tZ ) );
+    }
+
     Matrix4 MatrixLookAtLH( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection )
     {
-        return Matrix4(DirectX::XMMatrixLookAtLH( EyePosition, FocusPosition, UpDirection ));
+        Vector3 zaxis = Normalize( FocusPosition - EyePosition );
+        Vector3 xaxis = Normalize( Cross( UpDirection, zaxis ) );
+        Vector3 yaxis = Cross( zaxis, xaxis );
+        Scalar tX = Dot( xaxis, EyePosition ), tY = Dot( yaxis, EyePosition ), tZ = Dot( zaxis, EyePosition );
+
+        return Matrix4(
+            Vector3( xaxis.GetX(), yaxis.GetX(), zaxis.GetX() ),
+            Vector3( xaxis.GetY(), yaxis.GetY(), zaxis.GetY() ),
+            Vector3( xaxis.GetZ(), yaxis.GetZ(), zaxis.GetZ() ),
+            Vector3( -tX, -tY, -tZ ) );
     }
 
     Matrix4 MatrixLookAtRH( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection )
     {
-        return Matrix4(DirectX::XMMatrixLookAtRH( EyePosition, FocusPosition, UpDirection ));
+        Vector3 zaxis = Normalize( EyePosition - FocusPosition );
+        Vector3 xaxis = Normalize( Cross( UpDirection, zaxis ) );
+        Vector3 yaxis = Cross( zaxis, xaxis );
+        Scalar tX = Dot( xaxis, EyePosition ), tY = Dot( yaxis, EyePosition ), tZ = Dot( zaxis, EyePosition );
+
+        return Matrix4(
+            Vector3( xaxis.GetX(), yaxis.GetX(), zaxis.GetX() ),
+            Vector3( xaxis.GetY(), yaxis.GetY(), zaxis.GetY() ),
+            Vector3( xaxis.GetZ(), yaxis.GetZ(), zaxis.GetZ() ),
+            Vector3( -tX, -tY, -tZ ) );
     }
 
     Matrix4 PerspectiveMatrix( float VerticalFOV, float AspectRatio, float NearClip, float FarClip, bool bReverseZ )
@@ -171,7 +205,34 @@ namespace Math
         );
     }
 
-    Matrix4 OrthographicMatrix( float L, float R, float B, float T, float NearClip, float FarClip, bool bReverseZ )
+    Matrix4 OrthographicMatrixLH( float L, float R, float B, float T, float NearClip, float FarClip, bool bReverseZ )
+    {
+        auto RcpWidth = 1.f / (R - L);
+        auto RcpHeight = 1.f / (T - B);
+        auto X = RcpWidth * 2, Y = RcpHeight * 2,
+            XT = -(L + R) * RcpWidth, YT = -(T + B) * RcpHeight;
+
+        float Q1, Q2;
+        if (bReverseZ)
+        {
+            Q1 = 1 / (NearClip - FarClip);
+            Q2 = - Q1 * FarClip;
+        }
+        else
+        {
+            Q1 = 1 / (FarClip - NearClip);
+            Q2 = - Q1 * NearClip;
+        }
+
+        return Matrix4(
+            Vector4( X, 0.f, 0.f, 0.f ),
+            Vector4( 0.f, Y, 0.f, 0.f ),
+            Vector4( 0.f, 0.f, Q1, 0.f ),
+            Vector4( XT, YT, Q2, 1.f )
+        );
+    }
+
+    Matrix4 OrthographicMatrixRH( float L, float R, float B, float T, float NearClip, float FarClip, bool bReverseZ )
     {
         auto RcpWidth = 1.f / (R - L);
         auto RcpHeight = 1.f / (T - B);
@@ -196,5 +257,42 @@ namespace Math
             Vector4( 0.f, 0.f, Q1, 0.f ),
             Vector4( XT, YT, Q2, 1.f )
         );
+    }
+
+    Matrix4 MatrixScaleTranslateToFitLH( const BoundingBox& aabb, bool bReverseZ )
+    {
+        return OrthographicMatrix(
+            aabb.m_Min.GetX(), aabb.m_Max.GetX(),
+            aabb.m_Min.GetY(), aabb.m_Max.GetY(),
+            aabb.m_Min.GetZ(), aabb.m_Max.GetZ(),
+            bReverseZ );
+    }
+
+    Matrix4 MatrixScaleTranslateToFitRH( const BoundingBox& aabb, bool bReverseZ )
+    {
+        // In right hand system, function expect -far, -near value. So swap it.
+        return OrthographicMatrix(
+            aabb.m_Min.GetX(), aabb.m_Max.GetX(),
+            aabb.m_Min.GetY(), aabb.m_Max.GetY(),
+            -aabb.m_Max.GetZ(), -aabb.m_Min.GetZ(),
+            bReverseZ );
+    }
+
+    Matrix4 MatrixLookAt( const Vector3& EyePosition, const Vector3& FocusPosition, const Vector3& UpDirection )
+    {
+        const auto func = bLeftHand ? MatrixLookAtLH : MatrixLookAtRH;
+        return (func)( EyePosition, FocusPosition, UpDirection );
+    }
+
+    Matrix4 OrthographicMatrix( float L, float R, float B, float T, float NearClip, float FarClip, bool bReverseZ )
+    {
+        const auto func = bLeftHand ? OrthographicMatrixLH : OrthographicMatrixRH;
+        return (func)(L, R, B, T, NearClip, FarClip, bReverseZ);
+    }
+
+    Matrix4 MatrixScaleTranslateToFit( const BoundingBox& aabb, bool bReverseZ )
+    {
+        const auto func = bLeftHand ? MatrixScaleTranslateToFitLH : MatrixScaleTranslateToFitRH;
+        return (func)(aabb, bReverseZ);
     }
 }

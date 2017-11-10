@@ -9,8 +9,10 @@
 #include "Scene.h"
 #include "Motion.h"
 #include "Camera.h"
-#include "ShadowCamera.h"
 #include "MikuCamera.h"
+#include "ShadowCamera.h"
+#include "ShadowCameraUniform.h"
+#include "ShadowCameraLiSPSM.h"
 #include "CameraController.h"
 #include "MikuCameraController.h"
 #include "DebugHelper.h"
@@ -44,13 +46,10 @@ private:
 
     Camera m_Camera;
     MikuCamera m_SecondCamera;
-    ShadowCamera m_SunShadow;
+    ShadowCameraLiSPSM m_SunShadow;
     std::unique_ptr<CameraController> m_CameraController;
     std::unique_ptr<MikuCameraController> m_SecondCameraController;
 	Motion m_Motion;
-
-    const Vector3 m_MinBound = Vector3( -50, 0, -50 );
-    const Vector3 m_MaxBound = Vector3( 50, 25, 50 );
 
     Vector3 m_SunColor;
     Vector3 m_SunDirection;
@@ -79,9 +78,9 @@ EnumVar m_CameraType("Application/Camera/Camera Type", kCameraVirtual, 3, Camera
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
 // Default values in MMD. Due to RH coord, z is inverted.
-NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
 NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
 NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
@@ -133,7 +132,7 @@ void Mikudayo::Startup( void )
 
 // #define HALLOWEEN 1
 // #define BOARD 1
-#define FLOOR 1
+// #define FLOOR 1
 // #define STAGE 1
 
     ModelInfo stage;
@@ -251,7 +250,6 @@ void Mikudayo::Update( float deltaT )
     Physics::UpdatePicking( m_MainViewport, GetCamera() );
 }
 
-std::vector<Vector3> s_corner;
 void Mikudayo::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
@@ -272,26 +270,8 @@ void Mikudayo::RenderScene( void )
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
     {
         ScopedTimer _prof(L"Render Shadow Map", gfxContext);
-        float Radius = Length( m_MaxBound - m_MinBound ) / Scalar(2);
-        Vector3 SunPosition = -m_SunDirection * Radius;
-        m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar(Radius*2), (uint32_t)g_ShadowBuffer.GetWidth(), (uint32_t)g_ShadowBuffer.GetHeight(), 16);
-        // m_SunShadow.UpdateMatrix( m_SunDirection, SunPosition, Scalar( Radius * 2 ), m_Camera );
-        Matrix4 invViewProj = Invert(m_SunShadow.GetViewProjMatrix());
-        std::vector<Vector3> corners = {
-            Vector3( -1, -1, 0 ),
-            Vector3( -1, -1, 1 ),
-            Vector3( -1, 1, 0 ),
-            Vector3( -1, 1, 1 ),
-            Vector3( 1, -1, 0 ),
-            Vector3( 1, -1, 1 ),
-            Vector3( 1, 1, 0 ),
-            Vector3( 1, 1, 1 )
-        };
-        s_corner.clear();
-        for (auto& k : corners)
-            s_corner.push_back(invViewProj.Transform( k ));
-
-        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetShadowMatrix() ), &m_SunShadow.GetShadowMatrix(), { kBindVertex } );
+        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, m_Camera );
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
@@ -324,8 +304,6 @@ void Mikudayo::RenderScene( void )
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
         Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
-        Matrix4 identity( kIdentity );
-        Utility::DebugCube( gfxContext, GetCamera().GetViewProjMatrix(), s_corner.data(), Color( 1.f, 0.f, 0.f, 0.36f ) );
     }
     gfxContext.SetRenderTarget( nullptr );
 

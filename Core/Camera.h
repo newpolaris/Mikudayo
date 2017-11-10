@@ -38,6 +38,7 @@ namespace Math
 		void SetTransform( const AffineTransform& xform );
 		void SetTransform( const OrthogonalTransform& xform );
 
+        const Vector3& GetForwardZ() const;
 		const Quaternion GetRotation() const { return m_CameraToWorld.GetRotation(); }
 		const Vector3 GetRightVec() const { return m_Basis.GetX(); }
 		const Vector3 GetUpVec() const { return m_Basis.GetY(); }

@@ -70,3 +70,10 @@ TEST(CameraTest, LookAt)
 
     EXPECT_THAT( View, MatcherNearFast( 1e-5f, RefView ) );
 }
+
+TEST(NearTest, NearRelative)
+{
+    Vector3 p( -35.5096054f, 0.0257186890f, -33.2219009f );
+    Vector3 q( -35.5107422f, 0.0253906250f, -33.2226563f );
+    EXPECT_TRUE( NearRelative( p, q, Scalar( 0.05f ) ) );
+}

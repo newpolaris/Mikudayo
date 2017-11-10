@@ -82,7 +82,7 @@ void PmxModel::Initialize()
 
     ShadowPSO = std::make_shared<GraphicsPSO>();
     *ShadowPSO = *DepthPSO;
-    ShadowPSO->SetRasterizerState( RasterizerShadow );
+    ShadowPSO->SetRasterizerState( RasterizerShadowTwoSided );
     ShadowPSO->SetRenderTargetFormats( 0, nullptr, g_ShadowBuffer.GetFormat() );
     ShadowPSO->Finalize();
 
@@ -416,6 +416,8 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
     m_RigidBodies = std::move( pmx.m_RigidBodies );
     m_Joints = std::move( pmx.m_Joints );
+
+    SetBoundingBox();
 
     return true;
 }

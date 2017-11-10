@@ -51,6 +51,7 @@ BoundingFrustum::BoundingFrustum( const Matrix4& Matrix )
     for (uint32_t i = 0; i < 6; i++)
         m_FrustumPlanes[i] = BoundingPlane( Vector4( DirectX::XMPlaneNormalize( plane[i] ) ) );
 
+#if 0
     for (int i = 0; i < 8; i++)  // compute extrema
     {
     #if !NORMALIZE_PLANE
@@ -65,6 +66,24 @@ BoundingFrustum::BoundingFrustum( const Matrix4& Matrix )
 
         ASSERT( PlaneIntersection( m_FrustumCorners[i], p0, p1, p2 ) );
     }
+#else
+    // kNearLowerLeft, kNearUpperLeft, kNearLowerRight, kNearUpperRight,
+    // kFarLowerLeft, kFarUpperLeft, kFarLowerRight, kFarUpperRight
+
+    Matrix4 invViewProj = Invert( Matrix );
+    std::vector<Vector3> corners = {
+        Vector3( -1, -1, 0 ),
+        Vector3( -1, 1, 0 ),
+        Vector3( 1, -1, 0 ),
+        Vector3( 1, 1, 0 ),
+        Vector3( -1, -1, 1 ),
+        Vector3( -1, 1, 1 ),
+        Vector3( 1, -1, 1 ),
+        Vector3( 1, 1, 1 ),
+    };
+    for (uint8_t i = 0; i < 8; i++)
+        m_FrustumCorners[i] = invViewProj.Transform( corners[i] );
+#endif
 }
 
 // NVIDIA's PracticalPSM

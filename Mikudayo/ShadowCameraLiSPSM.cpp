@@ -8,7 +8,8 @@
 
 using namespace Math;
 
-BoolVar m_bUseLispSM("Application/Camera/Use LispSM", true);
+const bool bLeftHand = false;
+BoolVar m_bUseLispSM("Application/Camera/Use LispSM", false);
 
 //calculates the up vector for the light coordinate frame
 Vector3 calcUpVec( Vector3 viewDir, Vector3 lightDir )
@@ -21,25 +22,6 @@ Vector3 calcUpVec( Vector3 viewDir, Vector3 lightDir )
     return Normalize( Cross( left, lightDir ) );
 }
 
-Matrix4 look( const Vector3 pos, const Vector3 dir, const Vector3 up )
-{
-    Vector3 dirN;
-    Vector3 upN;
-    Vector3 lftN;
-
-    lftN = Cross( dir, up );
-    lftN = Normalize( lftN );
-
-    upN = Cross( lftN, dir );
-    upN = Normalize( upN );
-    dirN = Normalize( dir );
-
-    Matrix4 lightSpaceBasis( -lftN, upN, dirN, Vector3( kZero ) );
-    lightSpaceBasis = Transpose( lightSpaceBasis );
-    Matrix4 lightView = lightSpaceBasis * Matrix4::MakeTranslate( -pos );
-    return lightView;
-}
-
 VecPoint transformVecPoint( const VecPoint& B, Matrix4 mat )
 {
     VecPoint R;
@@ -49,16 +31,33 @@ VecPoint transformVecPoint( const VecPoint& B, Matrix4 mat )
     return R;
 }
 
-Matrix4 scaleTranslateToFit( BoundingBox& aabb, bool bReverseZ )
+void ShadowCameraLiSPSM::UpdateMatrix( const Scene& scene, Math::Vector3 LightDirection, const BaseCamera& Camera )
 {
-    return OrthographicMatrix(
-        aabb.m_Min.GetX(), aabb.m_Max.GetX(),
-        aabb.m_Min.GetY(), aabb.m_Max.GetY(),
-        aabb.m_Min.GetZ(), aabb.m_Max.GetZ(),
-        bReverseZ );
+    Matrix4 view = Camera.GetViewMatrix();
+    Matrix4 proj = Camera.GetProjMatrix();
+    Vector3 eyePos = Camera.GetPosition();
+    Vector3 viewDir = Camera.GetForwardVec();
+    // From light
+    Vector3 lightDir = Normalize(LightDirection);
+
+    //  these are the limits specified by the physical camera
+    //  gamma is the "tilt angle" between the light and the view direction.
+    BoundingFrustum sceneFrustum( proj*view );
+    BoundingBox sceneAABox;
+    for (auto& node : scene) {
+        auto box = node->GetBoundingBox();
+        sceneAABox.Merge( box );
+    }
+    VecPoint points;
+    calcFocusedLightVolumePoints( points, lightDir, sceneFrustum, sceneAABox );
+    std::vector<Vector3> B = points;
+    if (!m_bUseLispSM)
+        CalcUniformShadowMtx( eyePos, lightDir, viewDir, B );
+    else
+        CalcLispSMMtx( eyePos, lightDir, viewDir, B );
 }
 
-void ShadowCameraLiSPSM::CalcLispSMMtx( Vector3 eyePos, Vector3 lightDir, Vector3 viewDir, VecPoint& B )
+void ShadowCameraLiSPSM::CalcLispSMMtx( const Vector3& eyePos, const Vector3& lightDir, const Vector3& viewDir, const VecPoint& B )
 {
     float dotProd = Dot( viewDir, lightDir );
     float sinGamma = Sqrt( 1.0f - dotProd*dotProd );
@@ -66,16 +65,19 @@ void ShadowCameraLiSPSM::CalcLispSMMtx( Vector3 eyePos, Vector3 lightDir, Vector
     std::vector<Vector3> Bcopy = B;
     Vector3 up = calcUpVec( viewDir, lightDir );
 
+    // zaxis in light space
+    const Vector3 zaxis = bLeftHand ? lightDir: -lightDir;
+
 	//temporal light View
 	//look from position(eyePos)
 	//into direction(lightDir)
 	//with up vector(up)
-    Matrix4 lightView = look( eyePos, lightDir, up );
+    Matrix4 lightView = MatrixLookDirection( eyePos, zaxis, up );
 
 	//transform the light volume points from world into light space
-    B = transformVecPoint( B, lightView );
+    VecPoint B2 = transformVecPoint( B, lightView );
 
-    BoundingBox box( B );
+    BoundingBox box( B2 );
     Matrix4 lightProjection;
     {
         float nearDist = 1.0;
@@ -87,7 +89,7 @@ void ShadowCameraLiSPSM::CalcLispSMMtx( Vector3 eyePos, Vector3 lightDir, Vector
         float n = (z_n + Sqrt( z_f * z_n )) / sinGamma;
         float f = n + d;
         Vector3 pos = eyePos + up * -(n - nearDist);
-        lightView = look( pos, lightDir, up );
+        lightView = MatrixLookDirection( pos, zaxis, up );
 
         float a, b;
         a = f / (f - n);
@@ -109,60 +111,32 @@ void ShadowCameraLiSPSM::CalcLispSMMtx( Vector3 eyePos, Vector3 lightDir, Vector
 		//of the light space extents of the intersection body B
 		//and save the two extreme points min and max
         Math::BoundingBox aabb( Bcopy );
-        lightProjection = scaleTranslateToFit( aabb, m_ReverseZ );
+        lightProjection = MatrixScaleTranslateToFit( aabb, m_ReverseZ );
         lightProjection = lightProjection * lispMtx;
     }
 
     UpdateViewProjMatrix( lightView, lightProjection );
 }
 
-void ShadowCameraLiSPSM::UpdateMatrix( const Scene& Model, Math::Vector3 LightDirection, const BaseCamera& Camera )
+
+void ShadowCameraLiSPSM::CalcUniformShadowMtx( const Vector3& eyePos, const Vector3& lightDir, const Vector3& viewDir, const VecPoint& B )
 {
-#if 0
-    Matrix4 view = Camera.GetViewMatrix();
-    Matrix4 proj = Camera.GetProjMatrix();
-    Vector3 eyePos = Camera.GetPosition();
-    Vector3 viewDir = -Camera.GetForwardVec();
-
-    Vector3 lightDir = Normalize(LightDirection);
-
-    //  these are the limits specified by the physical camera
-    //  gamma is the "tilt angle" between the light and the view direction.
-    BoundingFrustum sceneFrustum( proj*view );
-    Vector3 minVec( std::numeric_limits<float>::max() ), maxVec( std::numeric_limits<float>::lowest() );
-    for (auto& model : Model) {
-        auto box = model->GetBoundingBox();
-        minVec = Min( box.GetMin(), minVec );
-        maxVec = Max( box.GetMax(), maxVec );
-    }
-    BoundingBox sceneAABox( minVec, maxVec );
-    VecPoint points;
-    calcFocusedLightVolumePoints( points, lightDir,
-        sceneFrustum, sceneAABox );
-    std::vector<Vector3> B = points;
-    if (!m_bUseLispSM)
-        CalcUniformShadowMtx( eyePos, lightDir, viewDir, B );
-    else
-        CalcLispSMMtx( eyePos, lightDir, viewDir, B );
-#endif
-}
-
-void ShadowCameraLiSPSM::CalcUniformShadowMtx( Vector3 eyePos, Vector3 lightDir, Vector3 viewDir, VecPoint& B )
-{
-    Matrix4 lightView = look( eyePos, lightDir, viewDir );
+    // zaxis in light space
+    const Vector3 zaxis = bLeftHand ? lightDir: -lightDir;
+    Matrix4 lightView = MatrixLookDirection( eyePos, zaxis, viewDir );
 
 	//transform the light volume points from world into light space
-    B = transformVecPoint( B, lightView );
+    VecPoint B2 = transformVecPoint( B, lightView );
 
 	//calculate the cubic hull (an AABB)
 	//of the light space extents of the intersection body B
 	//and save the two extreme points min and max
-    BoundingBox aabb(B);
+    BoundingBox aabb(B2);
 
 	//refit to unit cube
 	//this operation calculates a scale translate matrix that
 	//maps the two extreme points min and max into (-1,-1,-1) and (1,1,1)
-    Matrix4 lightProj = scaleTranslateToFit( aabb, m_ReverseZ );
+    Matrix4 lightProj = MatrixScaleTranslateToFit( aabb, m_ReverseZ );
 
     UpdateViewProjMatrix( lightView, lightProj );
 }

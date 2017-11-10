@@ -145,7 +145,7 @@
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneNode.cpp" />
     <ClCompile Include="ShadowCameraLiSPSM.cpp" />
-    <ClCompile Include="ShadowCameraUnitCube.cpp" />
+    <ClCompile Include="ShadowCameraUniform.cpp" />
     <ClCompile Include="ShadowCasterPass.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -204,7 +204,7 @@
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
     <ClInclude Include="ShadowCameraLiSPSM.h" />
-    <ClInclude Include="ShadowCameraUnitCube.h" />
+    <ClInclude Include="ShadowCameraUniform.h" />
     <ClInclude Include="ShadowCasterPass.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />

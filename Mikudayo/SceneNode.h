@@ -34,10 +34,17 @@ public:
     virtual Math::Matrix4 GetTransform() const;
     virtual void SetTransform( const Math::Matrix4& transform );
 
-protected:
-
     typedef std::vector<SceneNodePtr> NodeList;
     typedef std::multimap<std::string, SceneNodePtr> NodeNameMap;
+    typedef NodeList::iterator iterator;
+    typedef NodeList::const_iterator const_iterator;
+
+    iterator begin() { return m_Children.begin(); }
+    iterator end() { return m_Children.end(); }
+    const_iterator begin() const { return m_Children.begin(); }
+    const_iterator end() const { return m_Children.end(); }
+
+protected:
 
     SceneNodeType m_NodeType;
     RenderArgs* m_RenderArgs;
