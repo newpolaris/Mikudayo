@@ -70,7 +70,9 @@ struct PixelShaderInput
     float2 spTex : TEXCOORD1;
     float3 normalWS : NORMAL;
     float4 color : COLOR0;
+    float3 specular : COLOR1;
     float4 emissive : COLOR2;
+    float3 ambient : COLOR3;
 };
 
 static const int kSphereNone = 0;
@@ -92,7 +94,7 @@ static bool IsEmission = (100 < Mat.specularPower) && (length(MaterialSpecular) 
 static float3 AutoLuminousColor = (IsEmission ? MaterialDiffuse.rgb : float3(0, 0, 0));
 #endif
 static float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
-static float3 AmbientColor = saturate(MaterialAmbient * LightAmbient + MaterialEmissive + AutoLuminousColor);
+static float3 AmbientColor = MaterialAmbient * LightAmbient + MaterialEmissive + AutoLuminousColor;
 static float3 SpecularColor = MaterialSpecular * LightSpecular;
 
 // Simple shader to do vertex processing on the GPU.
@@ -111,22 +113,20 @@ PixelShaderInput main(VertexShaderInput input)
     output.shadowPositionCS = mul( viewToShadow, float4(output.positionWS, 1) );
     output.eyeWS = cameraPosition - mul( (float3x3)model, position );
     output.normalWS = normalize(mul( (float3x3)model, normal ));
-
-    output.color.rgb = max(0, dot(output.normalWS, -LightDirection) * MainHLamb + (1 - MainHLamb))*AmbientColor*MainLightParam;
-    float3 subsum = 0;
-    for (int i = 0; i < 16; i++) {
-        float3 p = float3(LightPos[i].xy, -LightPos[i].z);
-        subsum += max(0, dot(output.normalWS, normalize(p)) * SubHLamb + (1 - SubHLamb))*AmbientColor*SubLightParam;
+    output.color.rgb = AmbientColor;
+    if (!mat.bUseToon) {
+        output.color.rgb += max( 0, dot( output.normalWS, -SunDirectionWS ) ) * DiffuseColor.rgb;
     }
-    
-    output.color.rgb += (subsum / (16 * LightScale))*1.0;
-    output.color.a = smoothstep( 0, 0.9, DiffuseColor.a );
+    output.color.a = DiffuseColor.a;
+    output.color = saturate( output.color );
 	output.texCoord = input.texcoord;
     if ( mat.sphereOperation != kSphereNone ) {
         float2 normalVS = mul( (float3x3)view, output.normalWS ).xy;
         output.spTex.x = normalVS.x * 0.5 + 0.5;
         output.spTex.y = normalVS.y * -0.5 + 0.5;
     }
+    float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );
+    output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.specularPower ) * SpecularColor;
     output.emissive = float4(0, 0, 0, MaterialDiffuse.a);
 #if AUTOLUMINOUS
     if (IsEmission)
@@ -138,5 +138,6 @@ PixelShaderInput main(VertexShaderInput input)
         output.color.rgb += lerp(float3(1, 1, 1), output.color.rgb, 0.0) * factor;
     }
 #endif
+    output.ambient = AmbientColor;
 	return output;
 }
