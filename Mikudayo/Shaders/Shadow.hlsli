@@ -1,6 +1,9 @@
 #include "ShadowDefine.hlsli"
 #include "PCFKernels.hlsli"
 
+Texture2DArray<float> texShadow : register(t62);
+SamplerComparisonState samplerShadow : register(s2);
+
 //
 // Generates pseudorandom number in [0, 1]
 // the pseudorandom numbers will change with change of world space position
@@ -140,6 +143,15 @@ float SampletexShadow( float2 base_uv, float u, float v, float2 texShadowSizeInv
         float z = depth;
     #endif
     return texShadow.SampleCmpLevelZero(samplerShadow, float3(uv, cascadeIdx), z);
+}
+
+float2 ComputeReceiverPlaneDepthBias(float3 texCoordDX, float3 texCoordDY)
+{
+    float2 biasUV;
+    biasUV.x = texCoordDY.y * texCoordDX.z - texCoordDX.y * texCoordDY.z;
+    biasUV.y = texCoordDX.x * texCoordDY.z - texCoordDY.x * texCoordDX.z;
+    biasUV *= 1.0f / ((texCoordDX.x * texCoordDY.y) - (texCoordDX.y * texCoordDY.x));
+    return biasUV;
 }
 
 //
@@ -456,63 +468,44 @@ float SampleShadowMapFixedSizePCF(float3 shadowPos, float3 shadowPosDX, float3 s
     #endif
 }
 
-float3 GetShadow( float4 ShadowPosH[MaxSplit], float3 PosH )
+float GetShadow( float4 ShadowPosH, float3 PosH )
 {
     float Result = 1.f;
-
-    float3 CascadeIndicator = float3( 0.0, 0.0, 0.0 );
 
     float2 texShadowSize;
     float numSlices;
     texShadow.GetDimensions(texShadowSize.x, texShadowSize.y, numSlices);
     float2 ShadowTexelSize = 1.0 / texShadowSize;
 
-    [unroll]
-    for ( uint i = 0; i < MaxSplit; i++ )
+    // Complete projection by doing division by w.
+    float3 ShadowPos = ShadowPosH.xyz / ShadowPosH.w;
+
+    float2 TransTexCoord = ShadowPos.xy;
+    if (!any( saturate( TransTexCoord ) != TransTexCoord ))
     {
-        // Complete projection by doing division by w.
-        float3 ShadowPos = ShadowPosH[i].xyz / ShadowPosH[i].w;
+        ShadowPos = saturate( ShadowPos );
+        float3 shadowPosDX = ddx_fine( ShadowPos );
+        float3 shadowPosDY = ddy_fine( ShadowPos );
 
-        float2 TransTexCoord = ShadowPos.xy;
-        if (!any( saturate( TransTexCoord ) != TransTexCoord ))
-        {
-            uint cascadeIdx = i;
-            if (i == 0)
-                CascadeIndicator = float3( 0.1, 0.0, 0.0 );
-            else if (i == 1)
-                CascadeIndicator = float3( 0.0, 0.1, 0.0 );
-            else if (i == 2)
-                CascadeIndicator = float3( 0.0, 0.0, 0.1 );
-
-            float3 shadowPosDX = ddx_fine( ShadowPos );
-            float3 shadowPosDY = ddy_fine( ShadowPos );
-
+        uint cascadeIdx = 0;
 #if ShadowMode_ == ShadowModeSingle_
-            Result = SampleSingle( ShadowPos, cascadeIdx );
+        Result = SampleSingle( ShadowPos, cascadeIdx );
 #elif ShadowMode_ == ShadowModeWeighted_
-            Result = SampleWeighted( ShadowPos, cascadeIdx );
+        Result = SampleWeighted( ShadowPos, cascadeIdx );
 #elif ShadowMode_ == ShadowModePoisson_
-            Result = SamplePoissonDisk( ShadowPos, cascadeIdx );
+        Result = SamplePoissonDisk( ShadowPos, cascadeIdx );
 #elif ShadowMode_ == ShadowModePoissonRotated_
-            Result = SamplePoissonDiskRotated( ShadowPos, ShadowTexelSize, PosH, cascadeIdx );
+        Result = SamplePoissonDiskRotated( ShadowPos, ShadowTexelSize, PosH, cascadeIdx );
 #elif ShadowMode_ == ShadowModeOptimizedGaussinPCF_
-            Result = SampletexShadowOptimizedGaussinPCF( ShadowPos, shadowPosDX, shadowPosDY, cascadeIdx );
+        Result = SampletexShadowOptimizedGaussinPCF( ShadowPos, shadowPosDX, shadowPosDY, cascadeIdx );
 #elif ShadowMode_ == ShadowModePoissonStratified_
-            Result = ShadowModePoissonDiskStratified( ShadowPos, ShadowTexelSize, PosH, cascadeIdx );
+        Result = ShadowModePoissonDiskStratified( ShadowPos, ShadowTexelSize, PosH, cascadeIdx );
 #elif ShadowMode_ == ShadowModeFixedSizePCF_
-            Result = SampleShadowMapFixedSizePCF( Input, ShadowPos, shadowPosDX, shadowPosDY, cascadeIdx );
+        Result = SampleShadowMapFixedSizePCF( ShadowPos, shadowPosDX, shadowPosDY, cascadeIdx );
 #elif ShadowMode_ == ShadowModeGridPCF_
-            Result = SampleShadowMapGridPCF( shadowPosition, shadowPosDX, shadowPosDY, cascadeIdx );
+        Result = SampleShadowMapGridPCF( shadowPosition, shadowPosDX, shadowPosDY, cascadeIdx );
 #endif
-            CascadeIndicator = CascadeIndicator * Result;
-            break;
-        }
     }
 
-#if 1
-    return Result * Result * 0.5 + 0.5;
-#else
-    return CascadeIndicator;// Result * Result * 0.5 + 0.5;
-#endif
+    return Result;
 }
-

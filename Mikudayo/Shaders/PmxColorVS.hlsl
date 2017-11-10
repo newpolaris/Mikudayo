@@ -8,7 +8,6 @@
 
 #define AUTOLUMINOUS 0
 
-
 cbuffer Constants: register(b0)
 {
 	matrix view;

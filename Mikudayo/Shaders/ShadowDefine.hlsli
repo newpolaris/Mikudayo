@@ -1,5 +1,3 @@
-#define MaxSplit 4
-
 //
 // Poisson disk kerenl width
 //
@@ -8,7 +6,7 @@
 //
 // 2, 3, 5, 7
 //
-#define FilterSize_ 5
+#define FilterSize_ 3
 
 // Shadow filter method list
 #define ShadowModeSingle_ 0
@@ -21,3 +19,6 @@
 
 // Shadow filter method
 #define ShadowMode_ ShadowModeOptimizedGaussinPCF_
+
+// #define UsePlaneDepthBias_ 1
+static const float Bias = 0.f;
