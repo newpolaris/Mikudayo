@@ -5,6 +5,7 @@
 #include "KeyFrameAnimation.h"
 #include "PrimitiveUtility.h"
 #include "Visitor.h"
+#include "TaskManager.h"
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
 #include "Bullet/Joint.h"
@@ -73,6 +74,7 @@ protected:
 
     void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
     void PerformTransform( uint32_t i );
+    void SoftwareSkinning();
     void UpdateChildPose( int32_t idx );
     void UpdateIK( const PmxModel::IKAttr& ik );
     void UpdatePose();
@@ -163,15 +165,11 @@ void PmxInstant::Context::DrawBone()
 bool PmxInstant::Context::LoadModel()
 {
 	m_VertexMorphedPos = m_Model.m_VertexPosition;
-	m_AttributeBuffer.Create( m_Model.m_Name + L"_AttrBuf",
-		static_cast<uint32_t>(m_Model.m_VertexAttribute.size()),
-		sizeof( VertexProperty ),
-		m_Model.m_VertexAttribute.data() );
+	m_AttributeBuffer.Create( m_Model.m_Name + L"_AttrBuf", uint32_t(m_Model.m_VertexAttribute.size()),
+		sizeof( VertexProperty ), m_Model.m_VertexAttribute.data() );
 
-	m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf",
-		static_cast<uint32_t>(m_Model.m_VertexPosition.size()),
-		sizeof( XMFLOAT3 ),
-		m_Model.m_VertexPosition.data() );
+	m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", uint32_t(m_Model.m_VertexPosition.size()),
+		sizeof( XMFLOAT3 ), m_Model.m_VertexPosition.data() );
 
 	SetupSkeleton( m_Model.m_Bones );
 
@@ -386,6 +384,40 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     m_LocalPose[i].SetTranslation( translation );
 }
 
+#if 0
+float3 BoneSkinning( float3 position, float4 boneWeight, uint4 boneID )
+{
+    float3 pos = float3( 0, 0, 0 );
+    for (int i = 0; i < kWeight; i++)
+        pos += boneWeight[i] * mul( boneMatrix[boneID[i]], float4( position, 1.0 ) ).xyz;
+    return pos;
+}
+
+float3 BoneSkinningNormal( float3 normal, float4 boneWeight, uint4 boneID )
+{
+    float3 norm = float3(0, 0, 0);
+    for (int i = 0; i < kWeight; i++)
+	    norm += boneWeight[i] * mul( (float3x3)boneMatrix[boneID[i]], normal );
+    return norm;
+}
+#endif
+
+void PmxInstant::Context::SoftwareSkinning()
+{
+    std::vector<Vector3> position( m_VertexMorphedPos.size() );
+
+    TaskManager::parallel_for(0, position.size(), [&](size_t i) {
+        const auto& att = m_Model.m_VertexAttribute[i];
+        const Vector3 pos( m_VertexMorphedPos[i] );
+        Vector3 skinned( kZero );
+        for (uint32_t k = 0; k < 4; k++)
+            skinned += (m_Skinning[att.BoneID[k]] * pos) * Scalar(att.Weight[k]);
+        position[i] = skinned;
+    });
+    m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf",
+        uint32_t(position.size()), sizeof(Vector3), position.data() );
+}
+
 void PmxInstant::Context::Update( float kFrameTime )
 {
     if (m_MorphMotions.size() > 0)
@@ -426,7 +458,7 @@ void PmxInstant::Context::Update( float kFrameTime )
 				m_VertexMorphedPos.data() );
 		}
 	}
-	{
+    {
         //
         // in initialize m_LocalPoseDefault and in every motion data
         // position is already translated by offset from parent
@@ -435,16 +467,16 @@ void PmxInstant::Context::Update( float kFrameTime )
         m_LocalPose = m_LocalPoseDefault;
 
         const size_t numMotions = m_BoneMotions.size();
-		for (auto i = 0; i < numMotions; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+        for (auto i = 0; i < numMotions; i++)
+            m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
         UpdatePose();
-		for (auto& ik : m_Model.m_IKs)
+        for (auto& ik : m_Model.m_IKs)
             UpdateIK( ik );
-		const size_t numBones = m_Model.m_Bones.size();
+        const size_t numBones = m_Model.m_Bones.size();
         for (auto i = 0; i < numBones; i++)
             PerformTransform( i );
         UpdatePose();
-	}
+    }
 }
 
 void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
@@ -457,6 +489,8 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
     const size_t numBones = m_Model.m_Bones.size();
     for (auto i = 0; i < numBones; i++)
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+
+    SoftwareSkinning();
 }
 
 BoundingBox PmxInstant::Context::GetBoundingBox() const

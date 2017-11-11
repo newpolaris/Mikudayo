@@ -25,7 +25,7 @@ struct VertexInput
 // Simple shader to do vertex processing on the GPU.
 float4 main(VertexInput input) : SV_POSITION
 {
-    float3 pos = BoneSkinning( input.position, input.boneWeight, input.boneID );
+    float3 pos = input.position; // BoneSkinning( input.position, input.boneWeight, input.boneID );
 
     // Transform the vertex position into projected space.
     matrix modelToProjection = mul( viewToProjection, model );

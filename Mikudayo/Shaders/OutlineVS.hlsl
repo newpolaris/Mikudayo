@@ -29,8 +29,8 @@ struct VertexInput
 #if 1
 float4 main(VertexInput input) : SV_POSITION
 {
-    float3 pos = BoneSkinning( input.position, input.boneWeight, input.boneID );
-    float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
+    float3 pos = input.position;
+    float3 normal = input.normal;
     matrix toView = mul(view, model);
     float4 posVS = mul(toView, float4(pos, 1));
     float scale = length(posVS.xyz) / 1000 * edgeFactor;

@@ -153,8 +153,8 @@ void Mikudayo::Startup( void )
         m_Scene->AddChild( instance );
 
     // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
-    // const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
-    const std::wstring motion = L"";
+    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
+    // const std::wstring motion = L"";
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
 
     m_Motion.LoadMotion( cameraMotion );

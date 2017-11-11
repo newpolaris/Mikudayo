@@ -57,7 +57,7 @@ struct VertexShaderInput
 	uint4 boneID : BONE_ID;
 	float4 boneWeight : BONE_WEIGHT;
 	float edgeScale : EDGE_SCALE;
-    float3 position : POSITION;
+    float4 position : POSITION;
 };
 
 struct PixelShaderInput
@@ -103,8 +103,10 @@ PixelShaderInput main(VertexShaderInput input)
 	PixelShaderInput output = (PixelShaderInput)0;
     Material mat = Mat;
 
-    float3 position = BoneSkinning( input.position, input.boneWeight, input.boneID );
-    float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
+    // float3 position = BoneSkinning( input.position, input.boneWeight, input.boneID );
+    // float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
+    float3 position = input.position.xyz;
+    float3 normal = input.normal;
 
     // Transform the vertex position into projected space.
     matrix worldViewProjMatrix = mul( projection, mul( view, model ) );
