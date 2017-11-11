@@ -115,7 +115,6 @@ class VertexBuffer : public GpuBuffer
 {
 public:
 	VertexBuffer();
-	// There is no way to create SRV / UAV in vertex binding
 	virtual void CreateDerivedViews( void ) override {}
 };
 

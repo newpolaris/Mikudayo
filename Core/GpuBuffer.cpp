@@ -144,7 +144,9 @@ IndexBuffer::IndexBuffer()
 VertexBuffer::VertexBuffer()
 {
 	m_Usage = D3D11_USAGE_DEFAULT;
-	m_BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    m_BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	// which are not supported at the Vertex Shader on Feature Level < D3D_FEATURE_LEVEL_11_1
+    // m_BindFlags = D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 }
 
 StructuredBuffer::StructuredBuffer( bool bUseCounter ) : m_bUseCounter(bUseCounter)
