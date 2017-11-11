@@ -625,10 +625,16 @@ void GraphicsContext::SetViewport( FLOAT x, FLOAT y, FLOAT w, FLOAT h, FLOAT min
 	m_CommandList->RSSetViewports( 1, &vp );
 }
 
+// Needed to resterizer setting to enable scissor
 void GraphicsContext::SetScissor( const D3D11_RECT& rect )
 {
 	ASSERT(rect.left < rect.right && rect.top < rect.bottom);
 	m_CommandList->RSSetScissorRects( 1, &rect );
+}
+
+void GraphicsContext::SetStreamOutTargets( UINT Count, const D3D11_BUFFER_HANDLE Handle[], const UINT *pOffsets )
+{
+    m_CommandList->SOSetTargets( Count, Handle, pOffsets );
 }
 
 void GraphicsContext::SetIndexBuffer( const D3D11_INDEX_BUFFER_VIEW& Buffer )

@@ -18,15 +18,12 @@ cbuffer Model : register(b2)
 // Per-vertex data used as input to the vertex shader.
 struct VertexInput
 {
+    float3 position : POSITION;
 	float3 normal : NORMAL;
 	float2 texcoord : TEXTURE;
-	uint4 boneID : BONE_ID;
-	float4 boneWeight : BONE_WEIGHT;
 	float edgeScale : EDGE_SCALE;
-    float3 position : POSITION;
 };
 
-#if 1
 float4 main(VertexInput input) : SV_POSITION
 {
     float3 pos = input.position;
@@ -38,12 +35,3 @@ float4 main(VertexInput input) : SV_POSITION
     matrix viewToClip = mul(projection, toView);
     return mul(viewToClip, float4(pos, 1.0));
 }
-#else
-float4 main(VertexInput input) : SV_POSITION
-{
-    float3 pos = input.position + input.normal * EdgeSize * 0.01;
-    matrix clipToProj = mul(projection, mul(view, model));
-    pos = BoneSkinning( pos, input.boneWeight, input.boneID );
-    return mul(clipToProj, float4(pos, 1.0));
-}
-#endif

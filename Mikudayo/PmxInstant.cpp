@@ -25,15 +25,6 @@ namespace {
 		kTextureMax
 	};
 
-	struct VertexProperty
-	{
-		XMFLOAT3 Normal;
-		XMFLOAT2 UV;
-        uint32_t BoneID[4] = {0, };
-        float    Weight[4] = {0.f };
-		float    EdgeSize;
-	};
-
     template <typename T>
     size_t GetVectorSize( const std::vector<T>& vec )
     {
@@ -57,6 +48,7 @@ struct PmxInstant::Context final
     bool LoadMotion( const std::wstring& FilePath );
     void JoinWorld( btDynamicsWorld* world );
     void LeaveWorld( btDynamicsWorld* world );
+    void Skinning( GraphicsContext& gfxContext, Visitor& visitor );
     void SetPosition( const Vector3& postion );
     void SetupSkeleton( const std::vector<PmxModel::Bone>& Bones );
     void Update( float kFrameTime );
@@ -106,8 +98,14 @@ protected:
 
     std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
 
-    VertexBuffer m_AttributeBuffer;
     VertexBuffer m_PositionBuffer;
+    VertexBuffer m_PositionSkinBuffer;
+    VertexBuffer m_NormalBuffer;
+    VertexBuffer m_NormalSkinBuffer;
+    VertexBuffer m_TextureCoordBuffer;
+    VertexBuffer m_BoneIDBuffer;
+    VertexBuffer m_BoneWeightBuffer;
+    VertexBuffer m_EdgeScaleBuffer;
 };
 
 PmxInstant::Context::Context( PmxModel& model, PmxInstant* parent ) :
@@ -125,21 +123,22 @@ void PmxInstant::Context::Clear()
     ASSERT( g_DynamicsWorld != nullptr );
     LeaveWorld( g_DynamicsWorld );
 
-	m_AttributeBuffer.Destroy();
 	m_PositionBuffer.Destroy();
+    m_PositionSkinBuffer.Destroy();
+    m_NormalBuffer.Destroy();
+    m_NormalSkinBuffer.Destroy();
+    m_TextureCoordBuffer.Destroy();
+    m_BoneIDBuffer.Destroy();
+    m_BoneWeightBuffer.Destroy();
+    m_EdgeScaleBuffer.Destroy();
 }
 
 void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    std::vector<Matrix4> SkinData;
-    SkinData.reserve( m_Skinning.size() );
-    for (auto& orth : m_Skinning)
-        SkinData.emplace_back( orth );
-    auto numByte = GetVectorSize(SkinData);
-
-    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
-	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
-	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 0, m_PositionSkinBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_NormalSkinBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 2, m_TextureCoordBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 3, m_EdgeScaleBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
 
     for (auto& mesh : m_Model.m_Mesh)
@@ -164,12 +163,22 @@ void PmxInstant::Context::DrawBone()
 
 bool PmxInstant::Context::LoadModel()
 {
-	m_VertexMorphedPos = m_Model.m_VertexPosition;
-	m_AttributeBuffer.Create( m_Model.m_Name + L"_AttrBuf", uint32_t(m_Model.m_VertexAttribute.size()),
-		sizeof( VertexProperty ), m_Model.m_VertexAttribute.data() );
+	m_VertexMorphedPos = m_Model.m_Position;
 
-	m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", uint32_t(m_Model.m_VertexPosition.size()),
-		sizeof( XMFLOAT3 ), m_Model.m_VertexPosition.data() );
+    m_PositionSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
+    m_NormalSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
+
+#define BufferCreate( Buffer, Type ) \
+    Buffer.Create( m_Model.m_Name, uint32_t(m_Model.Type.size()), sizeof(m_Model.Type.front()), m_Model.Type.data() );
+
+    BufferCreate( m_PositionBuffer, m_Position );
+    BufferCreate( m_NormalBuffer, m_Normal );
+    BufferCreate( m_TextureCoordBuffer, m_TextureCoord );
+    BufferCreate( m_BoneIDBuffer, m_BoneID );
+    BufferCreate( m_BoneWeightBuffer, m_BoneWeight );
+    BufferCreate( m_EdgeScaleBuffer, m_EdgeScale );
+    BufferCreate( m_PositionSkinBuffer, m_Position );
+    BufferCreate( m_NormalSkinBuffer, m_Normal );
 
 	SetupSkeleton( m_Model.m_Bones );
 
@@ -293,6 +302,35 @@ void PmxInstant::Context::LeaveWorld( btDynamicsWorld* world )
     }
 }
 
+void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
+{
+    // If there's no motion data. Update is not needed.
+    if (m_BoneMotions.size() <= 0)
+        return;
+
+    std::vector<Matrix4> SkinData;
+    SkinData.reserve( m_Skinning.size() );
+    for (auto& orth : m_Skinning)
+        SkinData.emplace_back( orth );
+    auto numByte = GetVectorSize( SkinData );
+
+    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
+	gfxContext.SetVertexBuffer( 0, m_PositionBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_NormalBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 2, m_BoneIDBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 3, m_BoneWeightBuffer.VertexBufferView() );
+    D3D11_BUFFER_HANDLE handle[] = { m_PositionSkinBuffer.GetHandle(), m_NormalSkinBuffer.GetHandle() };
+    UINT offset[2] = { 0, 0 };
+    gfxContext.SetStreamOutTargets( 2, handle, offset );
+
+    auto& material = m_Model.m_Materials[0];
+    visitor.Visit( material );
+    gfxContext.Draw( UINT( m_Model.m_Position.size() ), 0 );
+
+    D3D11_BUFFER_HANDLE clear[] = { nullptr, nullptr };
+    gfxContext.SetStreamOutTargets( 2, clear, nullptr );
+}
+
 void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
 {
     if (frames.size() <= 0)
@@ -384,38 +422,22 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     m_LocalPose[i].SetTranslation( translation );
 }
 
-#if 0
-float3 BoneSkinning( float3 position, float4 boneWeight, uint4 boneID )
-{
-    float3 pos = float3( 0, 0, 0 );
-    for (int i = 0; i < kWeight; i++)
-        pos += boneWeight[i] * mul( boneMatrix[boneID[i]], float4( position, 1.0 ) ).xyz;
-    return pos;
-}
-
-float3 BoneSkinningNormal( float3 normal, float4 boneWeight, uint4 boneID )
-{
-    float3 norm = float3(0, 0, 0);
-    for (int i = 0; i < kWeight; i++)
-	    norm += boneWeight[i] * mul( (float3x3)boneMatrix[boneID[i]], normal );
-    return norm;
-}
-#endif
-
 void PmxInstant::Context::SoftwareSkinning()
-{
+{ 
     std::vector<Vector3> position( m_VertexMorphedPos.size() );
 
     TaskManager::parallel_for(0, position.size(), [&](size_t i) {
-        const auto& att = m_Model.m_VertexAttribute[i];
+        const auto& id = m_Model.m_BoneID[i];
+        const auto& weight = m_Model.m_BoneWeight[i];
         const Vector3 pos( m_VertexMorphedPos[i] );
         Vector3 skinned( kZero );
-        for (uint32_t k = 0; k < 4; k++)
-            skinned += (m_Skinning[att.BoneID[k]] * pos) * Scalar(att.Weight[k]);
+        skinned += (m_Skinning[id.x] * pos) * Scalar( weight.x );
+        skinned += (m_Skinning[id.y] * pos) * Scalar( weight.y );
+        skinned += (m_Skinning[id.z] * pos) * Scalar( weight.z );
+        skinned += (m_Skinning[id.w] * pos) * Scalar( weight.w );
         position[i] = skinned;
     });
-    m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf",
-        uint32_t(position.size()), sizeof(Vector3), position.data() );
+    m_PositionSkinBuffer.Create( m_Model.m_Name + L"_PosBuf", uint32_t(position.size()), sizeof(Vector3), position.data() );
 }
 
 void PmxInstant::Context::Update( float kFrameTime )
@@ -452,10 +474,7 @@ void PmxInstant::Context::Update( float kFrameTime )
 			for (auto i = 0; i < m_MorphDelta.size(); i++)
 				XMStoreFloat3( &m_VertexMorphedPos[baseFace.m_MorphIndices[i]], m_MorphDelta[i]);
 
-			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf",
-				static_cast<uint32_t>(m_VertexMorphedPos.size()),
-				sizeof( XMFLOAT3 ),
-				m_VertexMorphedPos.data() );
+			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", static_cast<uint32_t>(m_VertexMorphedPos.size()), sizeof( XMFLOAT3 ), m_VertexMorphedPos.data() );
 		}
 	}
     {
@@ -489,8 +508,6 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
     const size_t numBones = m_Model.m_Bones.size();
     for (auto i = 0; i < numBones; i++)
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
-
-    SoftwareSkinning();
 }
 
 BoundingBox PmxInstant::Context::GetBoundingBox() const
@@ -839,6 +856,11 @@ void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
 {
     (Context), (visitor);
     m_Context->DrawBone();
+}
+
+void PmxInstant::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
+{
+    m_Context->Skinning( gfxContext, visitor );
 }
 
 BoundingBox PmxInstant::GetBoundingBox() const

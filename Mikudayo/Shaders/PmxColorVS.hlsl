@@ -52,12 +52,10 @@ static float3 LightDirection = normalize(SunDirectionWS);
 // Per-vertex data used as input to the vertex shader.
 struct VertexShaderInput
 {
+    float3 position : POSITION;
 	float3 normal : NORMAL;
 	float2 texcoord : TEXTURE;
-	uint4 boneID : BONE_ID;
-	float4 boneWeight : BONE_WEIGHT;
 	float edgeScale : EDGE_SCALE;
-    float4 position : POSITION;
 };
 
 struct PixelShaderInput
@@ -100,12 +98,10 @@ static float3 SpecularColor = MaterialSpecular * LightSpecular;
 // Simple shader to do vertex processing on the GPU.
 PixelShaderInput main(VertexShaderInput input)
 {
-	PixelShaderInput output = (PixelShaderInput)0;
+    PixelShaderInput output = (PixelShaderInput)0;
     Material mat = Mat;
 
-    // float3 position = BoneSkinning( input.position, input.boneWeight, input.boneID );
-    // float3 normal = BoneSkinningNormal( input.normal, input.boneWeight, input.boneID );
-    float3 position = input.position.xyz;
+    float3 position = input.position;
     float3 normal = input.normal;
 
     // Transform the vertex position into projected space.

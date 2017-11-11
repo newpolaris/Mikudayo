@@ -12,6 +12,7 @@ enum RenderQueue
     kRenderQueueTransparentTwoSided,
     kRenderQueueDeferredGBuffer,
     kRenderQueueDeferredFinal,
+    kRenderQueueSkinning,
     kRenderQueueOutline,
     kRenderQueueShadow,
     kRenderQueueReflectOpaque,

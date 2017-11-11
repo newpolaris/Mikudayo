@@ -18,6 +18,7 @@
 #include "DebugHelper.h"
 #include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
+#include "SkinningPass.h"
 #include "ForwardLighting.h"
 #include "TaskManager.h"
 #include "TemporalEffects.h"
@@ -65,6 +66,7 @@ private:
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
     std::shared_ptr<Scene> m_Scene;
 
+    SkinningPass m_RenderSkinPass;
     RenderBonePass m_RenderBonePass;
 	ShadowCasterPass m_ShadowCasterPass;
 };
@@ -130,7 +132,7 @@ void Mikudayo::Startup( void )
     m_Scene->AddChild( instance );
 #endif
 
-// #define HALLOWEEN 1
+#define HALLOWEEN 1
 // #define BOARD 1
 // #define FLOOR 1
 // #define STAGE 1
@@ -240,7 +242,7 @@ void Mikudayo::Update( float deltaT )
         // TODO: Try lock (delay physics update - motion only)
         Physics::Wait();
         m_Scene->UpdateSceneAfterPhysics( m_Frame );
-        // TODO: Move draw call and fix frame step
+        // TODO: Move draw call here and fix frame step
         m_Scene->UpdateScene( m_Frame );
         Physics::Update( deltaT );
         m_Motion.Update( m_Frame );
@@ -266,6 +268,7 @@ void Mikudayo::RenderScene( void )
     psConstants.ShadowTexelSize[0] = 1.0f / g_ShadowBuffer.GetWidth();
 	gfxContext.SetDynamicConstantBufferView( 5, sizeof(psConstants), &psConstants, { kBindVertex, kBindPixel } );
 
+    m_Scene->Render( m_RenderSkinPass, args );
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
     {

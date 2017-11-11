@@ -1,49 +1,45 @@
-//--------------------------------------------------------------------------------
-// This file is a portion of the Hieroglyph 3 Rendering Engine.  It is distributed
-// under the MIT License, available in the root of this distribution and
-// at the following URL:
-//
-// http://www.opensource.org/licenses/mit-license.php
-//
+// Use code from 'Hieroglyph 3 Rendering Engine'
 // Copyright (c) Jason Zink
-//--------------------------------------------------------------------------------
 
 #include "pch.h"
 #include "Shader.h"
 #include "GraphicsCore.h"
 #include "TextUtility.h"
 #include "GpuResource.h"
+#include "StreamOutDesc.h"
 
 using namespace std;
 using Microsoft::WRL::ComPtr;
 using Graphics::g_Device;
-
-static std::map<std::wstring, std::shared_ptr<Shader>> s_ShaderMap;
+// In the streamout process, the bytecode of the vertex shader can be reused in the GS.
+using ShaderKey = std::pair<ShaderType, std::wstring>;
+static std::map<ShaderKey, std::shared_ptr<Shader>> s_ShaderMap;
 
 std::shared_ptr<Shader> Shader::Empty[] = {
     std::shared_ptr<Shader>( new Shader( kVertexShader, L"EmptyVS" )),
     std::shared_ptr<Shader>( new Shader( kHullShader, L"EmptyHS" )),
     std::shared_ptr<Shader>( new Shader( kDomainShader, L"EmptyDS" )),
     std::shared_ptr<Shader>( new Shader( kGeometryShader, L"EmptyGS" )),
+    std::shared_ptr<Shader>( new Shader( kStreamOutShader, L"EmptySO" )),
     std::shared_ptr<Shader>( new Shader( kPixelShader, L"EmptyPS" )),
     std::shared_ptr<Shader>( new Shader( kComputeShader, L"EmptyCS" )),
 };
 
-std::shared_ptr<Shader> Shader::Create( ShaderType Type, const ShaderByteCode& ByteCode )
+std::shared_ptr<Shader> Shader::Create( ShaderType Type, const ShaderByteCode& ByteCode, const StreamOutEntries* StreamOut )
 {
 	if (!ByteCode.valid())
 		return Empty[Type];
 
 	static mutex s_HashMapMutex;
 	lock_guard<mutex> CS( s_HashMapMutex );
-	auto iter = s_ShaderMap.find( ByteCode.Name );
+    auto iter = s_ShaderMap.find( { Type, ByteCode.Name } );
 
 	// Reserve space so the next inquiry will find that someone got here first.
 	if (iter == s_ShaderMap.end())
 	{
 		auto shader = std::shared_ptr<Shader>(new Shader(Type));
-		shader->Create(ByteCode);
-		s_ShaderMap.insert( { ByteCode.Name, shader } );
+		shader->Create(ByteCode, StreamOut );
+        s_ShaderMap.insert( { { Type, ByteCode.Name }, shader } );
 		return shader;
 	}
 	else
@@ -67,7 +63,7 @@ Shader::~Shader()
 {
 }
 
-void Shader::Create( const ShaderByteCode& ByteCode )
+void Shader::Create( const ShaderByteCode& ByteCode, const StreamOutEntries* StreamOut )
 {
 	ASSERT(!m_Shader);
 
@@ -95,8 +91,8 @@ void Shader::Create( const ShaderByteCode& ByteCode )
 		}
         case kDomainShader:
         {
-			ComPtr<ID3D11GeometryShader> Shader;
-			ASSERT_SUCCEEDED(g_Device->CreateGeometryShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
+			ComPtr<ID3D11DomainShader> Shader;
+			ASSERT_SUCCEEDED(g_Device->CreateDomainShader( ByteCode.pShaderBytecode, ByteCode.Length, nullptr, Shader.GetAddressOf()));
 			m_Shader.Swap(Shader);
             break;
         }
@@ -114,6 +110,27 @@ void Shader::Create( const ShaderByteCode& ByteCode )
 			m_Shader.Swap(Shader);
             break;
 		}
+        case kStreamOutShader:
+        {
+            ASSERT( StreamOut != nullptr );
+            std::vector<D3D11_SO_DECLARATION_ENTRY> streamout;
+            for (auto& entry : *StreamOut)
+            {
+                D3D11_SO_DECLARATION_ENTRY decl;
+                decl.Stream = entry.Stream;
+                decl.SemanticName = entry.SemanticName;
+                decl.SemanticIndex = entry.SemanticIndex;
+                decl.StartComponent = entry.StartComponent;
+                decl.ComponentCount = entry.ComponentCount;
+                decl.OutputSlot = entry.OutputSlot;
+                streamout.push_back( decl );
+            }
+            ComPtr<ID3D11GeometryShader> Shader;
+            ASSERT_SUCCEEDED( g_Device->CreateGeometryShaderWithStreamOutput(
+                ByteCode.pShaderBytecode, ByteCode.Length, streamout.data(), UINT(streamout.size()),
+                nullptr, 0, D3D11_SO_NO_RASTERIZED_STREAM, nullptr, Shader.GetAddressOf() ) );
+            m_Shader.Swap( Shader );
+        }
 	};
 
 	m_ShaderByteCode = ByteCode;
@@ -214,6 +231,7 @@ void Shader::Bind( ID3D11DeviceContext* pContext )
         pContext->PSSetShader( reinterpret_cast<ID3D11PixelShader*>(shader), nullptr, 0 );
         break;
     case kGeometryShader:
+    case kStreamOutShader:
         pContext->GSSetShader( reinterpret_cast<ID3D11GeometryShader*>(shader), nullptr, 0 );
         break;
     case kDomainShader:

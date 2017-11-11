@@ -19,15 +19,6 @@ class PmxModel : public IModel
 {
 public:
 
-    struct VertexAttribute
-    {
-        XMFLOAT3 Normal;
-        XMFLOAT2 UV;
-        uint32_t BoneID[4] = { 0, };
-        float    Weight[4] = { 0.f };
-        float    EdgeSize = 0.f;
-    };
-
     enum ETextureType
     {
         kTextureDiffuse,
@@ -119,8 +110,6 @@ public:
     std::wstring m_Name;
     std::wstring m_TextureRoot;
     std::wstring m_DefaultShader;
-    std::vector<XMFLOAT3> m_VertexPosition;
-    std::vector<VertexAttribute> m_VertexAttribute;
     std::vector<uint32_t> m_Indices;
     std::vector<Material> m_Materials;
     std::vector<Mesh> m_Mesh;
@@ -136,6 +125,13 @@ public:
 
     std::map<std::wstring, uint32_t> m_MaterialIndex;
     std::map<std::wstring, uint32_t> m_BoneIndex;
+
+    std::vector<XMFLOAT3> m_Position;
+    std::vector<XMFLOAT3> m_Normal;
+    std::vector<XMFLOAT2> m_TextureCoord;
+    std::vector<XMUINT4> m_BoneID;
+    std::vector<XMFLOAT4> m_BoneWeight;
+    std::vector<float> m_EdgeScale;
 
     IndexBuffer m_IndexBuffer;
     BoundingBox m_BoundingBox;
