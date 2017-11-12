@@ -6,6 +6,7 @@
 #include "PrimitiveUtility.h"
 #include "Visitor.h"
 #include "TaskManager.h"
+#include "Math/SimpleMath.h"
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
 #include "Bullet/Joint.h"
@@ -54,7 +55,7 @@ struct PmxInstant::Context final
     void Update( float kFrameTime );
     void UpdateAfterPhysics( float kFrameTime );
 
-    BoundingBox GetBoundingBox() const;
+    Math::BoundingBox GetBoundingBox() const;
     Matrix4 GetTransform() const;
     void SetTransform( const Matrix4& transform );
 
@@ -103,8 +104,6 @@ protected:
     VertexBuffer m_NormalBuffer;
     VertexBuffer m_NormalSkinBuffer;
     VertexBuffer m_TextureCoordBuffer;
-    VertexBuffer m_BoneIDBuffer;
-    VertexBuffer m_BoneWeightBuffer;
     VertexBuffer m_EdgeScaleBuffer;
 };
 
@@ -128,8 +127,6 @@ void PmxInstant::Context::Clear()
     m_NormalBuffer.Destroy();
     m_NormalSkinBuffer.Destroy();
     m_TextureCoordBuffer.Destroy();
-    m_BoneIDBuffer.Destroy();
-    m_BoneWeightBuffer.Destroy();
     m_EdgeScaleBuffer.Destroy();
 }
 
@@ -174,8 +171,6 @@ bool PmxInstant::Context::LoadModel()
     BufferCreate( m_PositionBuffer, m_Position );
     BufferCreate( m_NormalBuffer, m_Normal );
     BufferCreate( m_TextureCoordBuffer, m_TextureCoord );
-    BufferCreate( m_BoneIDBuffer, m_BoneID );
-    BufferCreate( m_BoneWeightBuffer, m_BoneWeight );
     BufferCreate( m_EdgeScaleBuffer, m_EdgeScale );
     BufferCreate( m_PositionSkinBuffer, m_Position );
     BufferCreate( m_NormalSkinBuffer, m_Normal );
@@ -312,17 +307,17 @@ void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visito
     SkinData.reserve( m_Skinning.size() );
     for (auto& orth : m_Skinning)
         SkinData.emplace_back( orth );
-    auto numByte = GetVectorSize( SkinData );
+    const auto numByte = GetVectorSize( SkinData );
+    gfxContext.SetDynamicConstantBufferView( 2, numByte, SkinData.data(), { kBindVertex } );
+    const auto numByte2 = GetVectorSize( m_Skinning );
+    gfxContext.SetDynamicConstantBufferView( 1, numByte2, m_Skinning.data(), { kBindVertex } );
 
-    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_NormalBuffer.VertexBufferView() );
-	gfxContext.SetVertexBuffer( 2, m_BoneIDBuffer.VertexBufferView() );
-	gfxContext.SetVertexBuffer( 3, m_BoneWeightBuffer.VertexBufferView() );
     D3D11_BUFFER_HANDLE handle[] = { m_PositionSkinBuffer.GetHandle(), m_NormalSkinBuffer.GetHandle() };
     UINT offset[2] = { 0, 0 };
     gfxContext.SetStreamOutTargets( 2, handle, offset );
-
+    gfxContext.SetDynamicDescriptor( 0, m_Model.m_SkinningUnitbuffer.GetSRV(), { kBindVertex } );
     auto& material = m_Model.m_Materials[0];
     visitor.Visit( material );
     gfxContext.Draw( UINT( m_Model.m_Position.size() ), 0 );
@@ -422,19 +417,80 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     m_LocalPose[i].SetTranslation( translation );
 }
 
+// TODO: SKINNING NORMAL
 void PmxInstant::Context::SoftwareSkinning()
 { 
-    std::vector<Vector3> position( m_VertexMorphedPos.size() );
+    //	影響度算出
+    auto CalcSdefWeight = []( float& _rWeight0, float& _rWeight1,
+        SimpleMath::Vector3 _rSdefR0, SimpleMath::Vector3 _rSdefR1 )
+    {
+        float	l0 = _rSdefR0.Length();
+        float	l1 = _rSdefR1.Length();
+        if (abs( l0 - l1 ) < 0.0001f)
+        {
+            _rWeight1 = 0.5f;
+        }
+        else
+        {
+            _rWeight1 = Clamp(l0 / (l0 + l1), 0, 1 );
+        }
+        _rWeight0 = 1.0f - _rWeight1;
+    };
 
+    auto SkinSDEF = [&]( Vector3& outpos, const Pmx::SdefUnit& unit, const Vector3& position )
+    {
+        const auto& w0 = unit.Weight;
+        const auto& w1 = 1 - unit.Weight;
+        auto sdefC = SimpleMath::Vector4( unit.C[0], unit.C[1], unit.C[2], 1 );
+        auto sdefR0 = SimpleMath::Vector4( unit.R0[0], unit.R0[1], unit.R0[2], 1.f );
+        auto sdefR1 = SimpleMath::Vector4( unit.R1[0], unit.R1[1], unit.R1[2], 1 );
+        auto Pos = SimpleMath::Vector3(position);
+        float w2, w3;
+        CalcSdefWeight( w2, w3, SimpleMath::Vector3(sdefR0 + sdefC), SimpleMath::Vector3(sdefR1 + sdefC) );
+        uint32_t b0 = unit.BoneIndex[0], b1 = unit.BoneIndex[1];
+        Matrix4 O0 = m_Skinning[b0];
+        Matrix4 O1 = m_Skinning[b1];
+        SimpleMath::Matrix m0 = O0;
+        SimpleMath::Matrix m1 = O1;
+        auto mrl = m0 * w0;
+        auto mrr = m1 * w1;
+        auto mrc = mrl + mrr;
+        auto _vPos = SimpleMath::Vector4::Transform( sdefC, mrc );
+        //	r0, r1による差分値を算出して加算
+        auto r0 = SimpleMath::Vector4::Transform( sdefR0, mrl + mrc * -w0 );
+        auto r1 = SimpleMath::Vector4::Transform( sdefR1, mrc * -w1 + mrr );
+        _vPos += r0 * w2 + r1 * w3;
+        //	回転して加算
+        auto q0 = SimpleMath::Quaternion(m_Skinning[b0].GetRotation()) * w0;
+        auto q1 = SimpleMath::Quaternion(m_Skinning[b1].GetRotation()) * w1;
+        auto qc = SimpleMath::Quaternion::Slerp( q0, q1, w3 );
+
+        SimpleMath::Vector3 result;
+        SimpleMath::Vector3::Transform( Pos - SimpleMath::Vector3( sdefC ), qc, result );
+        outpos = SimpleMath::Vector3(_vPos) + result;
+    };
+
+    std::vector<Vector3> position( m_VertexMorphedPos.size() );
     TaskManager::parallel_for(0, position.size(), [&](size_t i) {
-        const auto& id = m_Model.m_BoneID[i];
-        const auto& weight = m_Model.m_BoneWeight[i];
+        const auto& skin = m_Model.m_SkinningUnit[i];
         const Vector3 pos( m_VertexMorphedPos[i] );
         Vector3 skinned( kZero );
-        skinned += (m_Skinning[id.x] * pos) * Scalar( weight.x );
-        skinned += (m_Skinning[id.y] * pos) * Scalar( weight.y );
-        skinned += (m_Skinning[id.z] * pos) * Scalar( weight.z );
-        skinned += (m_Skinning[id.w] * pos) * Scalar( weight.w );
+        switch (skin.Type) {
+        case Pmx::kBdef1:
+            skinned = m_Skinning[skin.Unit.bdef1.BoneIndex] * pos;
+            break;
+        case Pmx::kBdef2:
+            skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[0]] * pos * skin.Unit.bdef2.Weight;
+            skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[1]] * pos * (1 - skin.Unit.bdef2.Weight );
+            break;
+        case Pmx::kBdef4:
+            for (int k = 0; k < 4; k++)
+                skinned += m_Skinning[skin.Unit.bdef4.BoneIndex[k]] * pos * skin.Unit.bdef4.Weight[k];
+            break;
+        case Pmx::kSdef:
+            SkinSDEF( skinned, skin.Unit.sdef, pos );
+            break;
+        };
         position[i] = skinned;
     });
     m_PositionSkinBuffer.Create( m_Model.m_Name + L"_PosBuf", uint32_t(position.size()), sizeof(Vector3), position.data() );
@@ -508,9 +564,11 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
     const size_t numBones = m_Model.m_Bones.size();
     for (auto i = 0; i < numBones; i++)
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+
+    // SoftwareSkinning();
 }
 
-BoundingBox PmxInstant::Context::GetBoundingBox() const
+Math::BoundingBox PmxInstant::Context::GetBoundingBox() const
 {
 	if (m_BoneMotions.size() > 0)
         return m_ModelTransform * m_Skinning[m_Model.m_RootBoneIndex] * m_Model.m_BoundingBox;
@@ -863,7 +921,7 @@ void PmxInstant::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
     m_Context->Skinning( gfxContext, visitor );
 }
 
-BoundingBox PmxInstant::GetBoundingBox() const
+Math::BoundingBox PmxInstant::GetBoundingBox() const
 {
     return m_Context->GetBoundingBox();
 }

@@ -18,6 +18,21 @@
 
 #define INLINE __forceinline
 
+// Common types
+using DirectX::XMFLOAT2;
+using DirectX::XMFLOAT3;
+using DirectX::XMFLOAT4;
+using DirectX::XMVECTOR;
+using DirectX::FXMVECTOR;
+using DirectX::XMVECTORF32;
+using DirectX::XMUINT2;
+using DirectX::XMUINT3;
+using DirectX::XMUINT4;
+using DirectX::XMINT2;
+using DirectX::XMINT3;
+using DirectX::XMINT4;
+using DirectX::XMMATRIX;
+
 namespace Math
 {
 	template <typename T> __forceinline T AlignUpWithMask( T value, size_t mask )
@@ -69,17 +84,18 @@ namespace Math
 			return 0;
 	}
 
-	using namespace DirectX;
+    using namespace DirectX;
 
 	INLINE XMVECTOR SplatZero()
 	{
-		return XMVectorZero();
+		return DirectX::XMVectorZero();
 	}
 
 #if !defined(_XM_NO_INTRINSICS_) && defined(_XM_SSE_INTRINSICS_)
 
 	INLINE XMVECTOR SplatOne( XMVECTOR zero = SplatZero() )
 	{
+        using namespace DirectX;
 		__m128i AllBits = _mm_castps_si128(_mm_cmpeq_ps(zero, zero));
 		return _mm_castsi128_ps(_mm_slli_epi32(_mm_srli_epi32(AllBits, 25), 23));	// return 0x3F800000
 		//return _mm_cvtepi32_ps(_mm_srli_epi32(SetAllBits(zero), 31));				// return (float)1;  (alternate method)

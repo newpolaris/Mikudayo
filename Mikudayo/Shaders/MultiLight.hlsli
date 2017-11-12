@@ -14,6 +14,7 @@ static float ShadowLimitLength = 0;
 static float SoftShadowParam = 0.5;
 #define SHADOWMAP_SIZE 4096
 
+// IF use right hand, z position is need to reverted
 static float3 LightPos[16] = {
     float3(0.53812504, 0.18565957, -0.43192),
     float3(0.13790712, 0.24864247, 0.44301823),

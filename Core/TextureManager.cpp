@@ -100,12 +100,13 @@ bool Texture::CreateWICFromMemory( const void* memBuffer, size_t bufferSize, boo
 
 bool Texture::CreateTGAFromMemory( const void* memBuffer, size_t bufferSize, bool sRGB )
 {
-    DirectX::ScratchImage image, mipChain;
+    using namespace DirectX;
+    ScratchImage image, mipChain;
     HRESULT hr = DirectX::LoadFromTGAMemory( memBuffer, bufferSize, nullptr, image );
     if (SUCCEEDED(hr))
-        hr = DirectX::GenerateMipMaps( image.GetImages(), image.GetImageCount(), image.GetMetadata(), TEX_FILTER_DEFAULT, 0, mipChain );
+        hr = GenerateMipMaps( image.GetImages(), image.GetImageCount(), image.GetMetadata(), TEX_FILTER_DEFAULT, 0, mipChain );
     if (SUCCEEDED(hr))
-        hr = DirectX::CreateShaderResourceViewEx( Graphics::g_Device, mipChain.GetImages(),
+        hr = CreateShaderResourceViewEx( Graphics::g_Device, mipChain.GetImages(),
             mipChain.GetImageCount(), mipChain.GetMetadata(),
             D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE,
             0, 0, sRGB, m_pResource.GetAddressOf(), m_SRV.GetAddressOf() );
@@ -133,6 +134,7 @@ bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, boo
 
 void Texture::SetProperty( void )
 {
+    using namespace DirectX;
     if (m_pResource) 
     {
         D3D11_RESOURCE_DIMENSION type;

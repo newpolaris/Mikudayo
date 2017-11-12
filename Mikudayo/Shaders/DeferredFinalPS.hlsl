@@ -1,5 +1,5 @@
 #include "CommonInclude.hlsli"
-#include "PmxHeader.hlsli"
+#include "MikuHeader.hlsli"
 
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput

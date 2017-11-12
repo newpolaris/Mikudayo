@@ -5,7 +5,7 @@ using namespace Math;
 
 inline bool NearZero(const Scalar& scalar)
 {
-    return std::abs( scalar ) < Scalar( g_XMEpsilon.v );
+    return std::abs( scalar ) < Scalar( DirectX::g_XMEpsilon.v );
 }
 
 namespace Math {

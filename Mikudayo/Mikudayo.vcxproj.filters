@@ -352,12 +352,6 @@
     <FxCompile Include="Shaders\ModelPrimitivePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PmxColorPS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmxColorVS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\BulletLinePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -385,12 +379,6 @@
     <FxCompile Include="Shaders\DeferredFinalPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\OutlinePS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\OutlineVS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\DepthViewerVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -403,16 +391,34 @@
     <FxCompile Include="Shaders\ModelColorVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PmxColor2PS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PmxColor3PS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\ModelColor2PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PmxSkinningSO.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuColorVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuColorPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuColor3PS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuColor2PS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuOutlinePS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MikuOutlineVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MultiLightColorVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MultiLightColorPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
@@ -426,17 +432,17 @@
     <None Include="Shaders\Skinning.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\PCFKernels.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="packages.config" />
     <None Include="Shaders\CommonInclude.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\PmxHeader.hlsli">
+    <None Include="Shaders\MultiLight.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\MultiLight.hlsli">
+    <None Include="Shaders\MikuHeader.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\PCFKernels.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
