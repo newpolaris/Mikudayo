@@ -302,16 +302,8 @@ void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visito
     // If there's no motion data. Update is not needed.
     if (m_BoneMotions.size() <= 0)
         return;
-
-    std::vector<Matrix4> SkinData;
-    SkinData.reserve( m_Skinning.size() );
-    for (auto& orth : m_Skinning)
-        SkinData.emplace_back( orth );
-    const auto numByte = GetVectorSize( SkinData );
-    gfxContext.SetDynamicConstantBufferView( 2, numByte, SkinData.data(), { kBindVertex } );
-    const auto numByte2 = GetVectorSize( m_Skinning );
-    gfxContext.SetDynamicConstantBufferView( 1, numByte2, m_Skinning.data(), { kBindVertex } );
-
+    const auto numByte = GetVectorSize( m_Skinning );
+    gfxContext.SetDynamicConstantBufferView( 0, numByte, m_Skinning.data(), { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_NormalBuffer.VertexBufferView() );
     D3D11_BUFFER_HANDLE handle[] = { m_PositionSkinBuffer.GetHandle(), m_NormalSkinBuffer.GetHandle() };
@@ -420,7 +412,6 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
 // TODO: SKINNING NORMAL
 void PmxInstant::Context::SoftwareSkinning()
 { 
-    //	影響度算出
     auto CalcSdefWeight = []( float& _rWeight0, float& _rWeight1,
         SimpleMath::Vector3 _rSdefR0, SimpleMath::Vector3 _rSdefR1 )
     {
@@ -439,35 +430,50 @@ void PmxInstant::Context::SoftwareSkinning()
 
     auto SkinSDEF = [&]( Vector3& outpos, const Pmx::SdefUnit& unit, const Vector3& position )
     {
-        const auto& w0 = unit.Weight;
-        const auto& w1 = 1 - unit.Weight;
-        auto sdefC = SimpleMath::Vector4( unit.C[0], unit.C[1], unit.C[2], 1 );
-        auto sdefR0 = SimpleMath::Vector4( unit.R0[0], unit.R0[1], unit.R0[2], 1.f );
-        auto sdefR1 = SimpleMath::Vector4( unit.R1[0], unit.R1[1], unit.R1[2], 1 );
-        auto Pos = SimpleMath::Vector3(position);
-        float w2, w3;
-        CalcSdefWeight( w2, w3, SimpleMath::Vector3(sdefR0 + sdefC), SimpleMath::Vector3(sdefR1 + sdefC) );
+    #if 0
+        float weight0 = unit.Weight;
+        float weight1 = 1 - unit.Weight;
+        Vector3 sdefC = Vector3( unit.C[0], unit.C[1], unit.C[2] );
+        Vector3 sdefR0 = Vector3( unit.R0[0], unit.R0[1], unit.R0[2] );
+        Vector3 sdefR1 = Vector3( unit.R1[0], unit.R1[1], unit.R1[2] );
+        Vector3 center = sdefC;
         uint32_t b0 = unit.BoneIndex[0], b1 = unit.BoneIndex[1];
-        Matrix4 O0 = m_Skinning[b0];
-        Matrix4 O1 = m_Skinning[b1];
-        SimpleMath::Matrix m0 = O0;
-        SimpleMath::Matrix m1 = O1;
-        auto mrl = m0 * w0;
-        auto mrr = m1 * w1;
-        auto mrc = mrl + mrr;
-        auto _vPos = SimpleMath::Vector4::Transform( sdefC, mrc );
-        //	r0, r1による差分値を算出して加算
-        auto r0 = SimpleMath::Vector4::Transform( sdefR0, mrl + mrc * -w0 );
-        auto r1 = SimpleMath::Vector4::Transform( sdefR1, mrc * -w1 + mrr );
-        _vPos += r0 * w2 + r1 * w3;
-        //	回転して加算
-        auto q0 = SimpleMath::Quaternion(m_Skinning[b0].GetRotation()) * w0;
-        auto q1 = SimpleMath::Quaternion(m_Skinning[b1].GetRotation()) * w1;
-        auto qc = SimpleMath::Quaternion::Slerp( q0, q1, w3 );
+        SimpleMath::Quaternion Q( Slerp( Quaternion(), m_LocalPose[b1].GetRotation(), weight1 ) * m_Skinning[b0].GetRotation() );
+        Matrix4 M = Matrix4(SimpleMath::Matrix::CreateFromQuaternion( Q ));
+        Vector3 pos = M.Transform( position - center )
+            + (center
+                + (m_Skinning[b0] * center - center + m_Skinning[b0] * sdefR0) * weight0
+                + (m_Skinning[b1] * center - center + m_Skinning[b1] * sdefR1) * weight1) * 0.5f;
+    #else
+        float weight0 = unit.Weight;
+        float weight1 = 1 - unit.Weight;
+        Vector3 sdefC = Vector3( unit.C[0], unit.C[1], unit.C[2] );
+        Vector3 sdefR0 = Vector3( unit.R0[0], unit.R0[1], unit.R0[2] );
+        Vector3 sdefR1 = Vector3( unit.R1[0], unit.R1[1], unit.R1[2] );
+        Vector3 center = sdefC;
+        uint32_t b0 = unit.BoneIndex[0], b1 = unit.BoneIndex[1];
+    #if 0
+        Quaternion L1 = Quaternion( SimpleMath::Quaternion::Lerp( SimpleMath::Quaternion(), SimpleMath::Quaternion( m_LocalPose[b1].GetRotation() ), weight1 ) );
+        // SimpleMath::Quaternion Q( m_Skinning[b0].GetRotation() * L1 );
+        SimpleMath::Quaternion Q( m_Skinning[b0].GetRotation() );
+        Matrix4 M = Matrix4(SimpleMath::Matrix::CreateFromQuaternion( Q ));
+        Vector3 pos = M.Transform( position - center )
+            + ( m_Skinning[b0] * center
+                + (m_Skinning[b0] * center + m_Skinning[b0] * sdefR0) * weight0
+                + (m_Skinning[b1] * center + m_Skinning[b1] * sdefR1) * weight1) * 0.5f;
 
-        SimpleMath::Vector3 result;
-        SimpleMath::Vector3::Transform( Pos - SimpleMath::Vector3( sdefC ), qc, result );
-        outpos = SimpleMath::Vector3(_vPos) + result;
+        pos = M.Transform( position - center ) + m_Skinning[b0] * center;
+        Vector3 prc = Vector3(Lerp( m_Skinning[b0]*sdefC, m_Skinning[b1]*sdefC, Scalar(weight0) ));
+        SimpleMath::Quaternion Q(Slerp( m_Skinning[b0].GetRotation(), m_Skinning[b1].GetRotation(), weight0 ));
+        Matrix4 M = Matrix4(SimpleMath::Matrix::CreateFromQuaternion( Q ));
+        Vector3 pos = prc + M.Transform( position - center );
+    #endif
+
+        Vector3 pos = weight0 * (m_Skinning[b0] * position) + weight1 * (m_Skinning[b1] * position);
+        // pos = (m_Skinning[b0] * position);
+
+    #endif
+        outpos = pos;
     };
 
     std::vector<Vector3> position( m_VertexMorphedPos.size() );
@@ -621,17 +627,17 @@ void PmxInstant::Context::UpdateChildPose( int32_t idx )
 #include <glm/gtx/quaternion.hpp>
 #pragma warning(pop)
 
-inline Vector3 Convert(const glm::vec3& v )
+inline Vector3 Convert2(const glm::vec3& v )
 {
     return Vector3( v.x, v.y, v.z );
 }
 
-inline glm::vec3 Convert(const Vector3& v )
+inline glm::vec3 Convert2(const Math::Vector3& v )
 {
     return glm::vec3( v.GetX(), v.GetY(), v.GetZ() );
 }
 
-inline glm::quat Convert( const Quaternion& q )
+inline glm::quat Convert2( const Math::Quaternion& q )
 {
     XMFLOAT4 v;
     XMStoreFloat4( &v, q);
@@ -716,11 +722,9 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
                     rotFinish = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
                 }
             #else
-                //
-                // MMD-Agent PMDIK
-                //
-                /* when this is the first iteration, we force rotating to the maximum angle toward limited direction */
-                /* this will help convergence the whole IK step earlier for most of models, especially for legs */
+                // Use code from 'MMD-Agent'
+                // when this is the first iteration, we force rotating to the maximum angle toward limited direction
+                // this will help convergence the whole IK step earlier for most of models, especially for legs
                 if (n == 0)
                 {
                     if (theta < 0.0f)
@@ -783,10 +787,9 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 			Quaternion q0( axis, -rotationAngle );
         #endif
 
-			// if (false)
 			if (ik.Link[k].bLimit)
 			{
-                Vector3 euler = Convert(glm::eulerAngles( Convert( q0 ) ));
+                Vector3 euler = Convert2(glm::eulerAngles( Convert2( q0 ) ));
                 // due to rightHand min, max is swap needed
                 Vector3 MinLimit = ik.Link[k].MaxLimit;
                 MinLimit -= Vector3( Scalar( 0.005 ) );
