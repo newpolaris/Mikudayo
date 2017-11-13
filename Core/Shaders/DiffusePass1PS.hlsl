@@ -3,7 +3,7 @@
 SamplerState LinearSampler : register(s0);
 Texture2D<float3> SourceColor : register(t0);
 
-float4 main( float4 position : SV_Position, float2 texcoord : TexCoords0 ) : SV_TARGET
+float4 main( float4 position : SV_POSITION, float2 texcoord : TEXCOORD0 ) : SV_TARGET
 {
 	float3 color, sum = 0;
 	float n = 0;
@@ -18,5 +18,5 @@ float4 main( float4 position : SV_Position, float2 texcoord : TexCoords0 ) : SV_
 		n += e;
 	}
 	color = sum / n;
-	return float4(color, 1);
+	return saturate(float4(color, 1));
 }

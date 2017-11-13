@@ -2,9 +2,10 @@
 #include "Diffuse.h"
 #include "GraphicsCore.h"
 #include "BufferManager.h"
+#include "FullScreenTriangle.h"
 #include "CommandContext.h"
 
-#include "CompiledShaders/ScreenQuadVS.h"
+#include "CompiledShaders/FullScreenTriangleVS.h"
 #include "CompiledShaders/DiffusePass1PS.h"
 #include "CompiledShaders/DiffusePass2PS.h"
 
@@ -15,15 +16,17 @@ namespace Diffuse
     GraphicsPSO DiffusePass1;
     GraphicsPSO DiffusePass2;
 
-    BoolVar Enable("Graphics/Diffuse/Enable", false);
+    BoolVar Enable( "Graphics/Diffuse/Enable", false );
     NumVar Extent( "Graphics/Diffuse/Extent", 0.012f, 0.0f, 0.064f, 0.001f );
 }
 
 void Diffuse::Initialize( void )
 {
+    std::vector<InputDesc> input = FullScreenTriangle::InputLayout;
 #define CreatePSO( ObjName, ShaderByteCode ) \
 	ObjName.SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST ); \
-	ObjName.SetVertexShader( MY_SHADER_ARGS( g_pScreenQuadVS ) ); \
+	ObjName.SetInputLayout( uint32_t(input.size()), input.data() ); \
+	ObjName.SetVertexShader( MY_SHADER_ARGS( g_pFullScreenTriangleVS ) ); \
 	ObjName.SetPixelShader( MY_SHADER_ARGS( ShaderByteCode ) ); \
     ObjName.Finalize();
 
@@ -53,11 +56,11 @@ void Diffuse::Render( ComputeContext& Compute )
     Context.SetDynamicDescriptor( 0, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
     Context.SetRenderTarget( g_PostEffectsBufferTyped.GetRTV() );
     Context.SetViewportAndScissor( 0, 0, g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight() );
-    Context.Draw(3);
+    FullScreenTriangle::Draw( Context );
     Context.SetPipelineState( DiffusePass2 );
     Context.SetRenderTarget( g_PreviousColorBuffer.GetRTV() );
     Context.SetDynamicDescriptor( 0, g_PostEffectsBufferTyped.GetSRV(), { kBindPixel } );
     Context.SetDynamicDescriptor( 1, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
-    Context.Draw(3);
+    FullScreenTriangle::Draw( Context );
     Context.CopyBuffer( g_SceneColorBuffer, g_PreviousColorBuffer );
 }
