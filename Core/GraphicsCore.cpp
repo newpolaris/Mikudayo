@@ -29,6 +29,7 @@
 #include "TextureManager.h"
 #include "SamplerManager.h"
 #include "GpuTimeManager.h"
+#include "FullScreenTriangle.h"
 #include "SystemTime.h"
 #include "TemporalEffects.h"
 #include "SSAO.h"
@@ -663,6 +664,7 @@ void Graphics::Initialize( void )
     // GraphRenderer::Initialize();
     // ParticleEffects::Initialize(kMaxNativeWidth, kMaxNativeHeight);
     Utility::Initialize();
+    FullScreenTriangle::Create();
 }
 
 void Graphics::Terminate( void )
@@ -675,6 +677,7 @@ void Graphics::Terminate( void )
 
 void Graphics::Shutdown( void )
 {
+    FullScreenTriangle::Clear();
 	CommandContext::DestroyAllContexts();
     g_CommandManager.Shutdown();
     GpuTimeManager::Shutdown();

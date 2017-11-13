@@ -271,6 +271,9 @@
     <ClInclude Include="StreamOutDesc.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="FullScreenTriangle.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -448,6 +451,9 @@
       <Filter>Source Files\Math</Filter>
     </ClCompile>
     <ClCompile Include="StreamOutDesc.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="FullScreenTriangle.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
@@ -691,6 +697,9 @@
     </FxCompile>
     <FxCompile Include="Shaders\RemoveGammaPS.hlsl">
       <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FullScreenTriangleVS.hlsl">
+      <Filter>Shaders\Misc</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

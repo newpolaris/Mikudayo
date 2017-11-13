@@ -389,7 +389,7 @@ namespace Pmx
     {
         wstring Name;
         wstring NameEnglish;
-        uint32_t BoneIndex;
+        int32_t BoneIndex;
         uint8_t CollisionGroupID; // (group that start from 0)
         uint16_t CollisionGroupMask; // (~non-collision group)
         RigidBodyShape Shape;

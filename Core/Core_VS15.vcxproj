@@ -37,6 +37,7 @@
     <ClInclude Include="EngineTuning.h" />
     <ClInclude Include="EsramAllocator.h" />
     <ClInclude Include="FileUtility.h" />
+    <ClInclude Include="FullScreenTriangle.h" />
     <ClInclude Include="FXAA.h" />
     <ClInclude Include="GameInput.h" />
     <ClInclude Include="GpuTimeManager.h" />
@@ -111,6 +112,7 @@
     <ClCompile Include="EngineProfiling.cpp" />
     <ClCompile Include="EngineTuning.cpp" />
     <ClCompile Include="FileUtility.cpp" />
+    <ClCompile Include="FullScreenTriangle.cpp" />
     <ClCompile Include="FXAA.cpp" />
     <ClCompile Include="GameCore.cpp" />
     <ClCompile Include="GameInput.cpp" />
@@ -250,6 +252,11 @@
     <FxCompile Include="Shaders\DownsampleBloomAllCS.hlsl" />
     <FxCompile Include="Shaders\DownsampleBloomCS.hlsl" />
     <FxCompile Include="Shaders\ExtractLumaCS.hlsl" />
+    <FxCompile Include="Shaders\FullScreenTriangleVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\FXAAPass1_Luma2_CS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass1_Luma_CS.hlsl" />
     <FxCompile Include="Shaders\FXAAPass1_RGB2_CS.hlsl" />
