@@ -409,73 +409,9 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     m_LocalPose[i].SetTranslation( translation );
 }
 
-// TODO: SKINNING NORMAL
+// UNDONE: SKINNING NORMAL
 void PmxInstant::Context::SoftwareSkinning()
 { 
-    auto CalcSdefWeight = []( float& _rWeight0, float& _rWeight1,
-        SimpleMath::Vector3 _rSdefR0, SimpleMath::Vector3 _rSdefR1 )
-    {
-        float	l0 = _rSdefR0.Length();
-        float	l1 = _rSdefR1.Length();
-        if (abs( l0 - l1 ) < 0.0001f)
-        {
-            _rWeight1 = 0.5f;
-        }
-        else
-        {
-            _rWeight1 = Clamp(l0 / (l0 + l1), 0, 1 );
-        }
-        _rWeight0 = 1.0f - _rWeight1;
-    };
-
-    auto SkinSDEF = [&]( Vector3& outpos, const Pmx::SdefUnit& unit, const Vector3& position )
-    {
-    #if 0
-        float weight0 = unit.Weight;
-        float weight1 = 1 - unit.Weight;
-        Vector3 sdefC = Vector3( unit.C[0], unit.C[1], unit.C[2] );
-        Vector3 sdefR0 = Vector3( unit.R0[0], unit.R0[1], unit.R0[2] );
-        Vector3 sdefR1 = Vector3( unit.R1[0], unit.R1[1], unit.R1[2] );
-        Vector3 center = sdefC;
-        uint32_t b0 = unit.BoneIndex[0], b1 = unit.BoneIndex[1];
-        SimpleMath::Quaternion Q( Slerp( Quaternion(), m_LocalPose[b1].GetRotation(), weight1 ) * m_Skinning[b0].GetRotation() );
-        Matrix4 M = Matrix4(SimpleMath::Matrix::CreateFromQuaternion( Q ));
-        Vector3 pos = M.Transform( position - center )
-            + (center
-                + (m_Skinning[b0] * center - center + m_Skinning[b0] * sdefR0) * weight0
-                + (m_Skinning[b1] * center - center + m_Skinning[b1] * sdefR1) * weight1) * 0.5f;
-    #else
-        float weight0 = unit.Weight;
-        float weight1 = 1 - unit.Weight;
-        Vector3 sdefC = Vector3( unit.C[0], unit.C[1], unit.C[2] );
-        Vector3 sdefR0 = Vector3( unit.R0[0], unit.R0[1], unit.R0[2] );
-        Vector3 sdefR1 = Vector3( unit.R1[0], unit.R1[1], unit.R1[2] );
-        Vector3 center = sdefC;
-        uint32_t b0 = unit.BoneIndex[0], b1 = unit.BoneIndex[1];
-    #if 0
-        Quaternion L1 = Quaternion( SimpleMath::Quaternion::Lerp( SimpleMath::Quaternion(), SimpleMath::Quaternion( m_LocalPose[b1].GetRotation() ), weight1 ) );
-        // SimpleMath::Quaternion Q( m_Skinning[b0].GetRotation() * L1 );
-        SimpleMath::Quaternion Q( m_Skinning[b0].GetRotation() );
-        Matrix4 M = Matrix4(SimpleMath::Matrix::CreateFromQuaternion( Q ));
-        Vector3 pos = M.Transform( position - center )
-            + ( m_Skinning[b0] * center
-                + (m_Skinning[b0] * center + m_Skinning[b0] * sdefR0) * weight0
-                + (m_Skinning[b1] * center + m_Skinning[b1] * sdefR1) * weight1) * 0.5f;
-
-        pos = M.Transform( position - center ) + m_Skinning[b0] * center;
-        Vector3 prc = Vector3(Lerp( m_Skinning[b0]*sdefC, m_Skinning[b1]*sdefC, Scalar(weight0) ));
-        SimpleMath::Quaternion Q(Slerp( m_Skinning[b0].GetRotation(), m_Skinning[b1].GetRotation(), weight0 ));
-        Matrix4 M = Matrix4(SimpleMath::Matrix::CreateFromQuaternion( Q ));
-        Vector3 pos = prc + M.Transform( position - center );
-    #endif
-
-        Vector3 pos = weight0 * (m_Skinning[b0] * position) + weight1 * (m_Skinning[b1] * position);
-        // pos = (m_Skinning[b0] * position);
-
-    #endif
-        outpos = pos;
-    };
-
     std::vector<Vector3> position( m_VertexMorphedPos.size() );
     TaskManager::parallel_for(0, position.size(), [&](size_t i) {
         const auto& skin = m_Model.m_SkinningUnit[i];
@@ -486,15 +422,13 @@ void PmxInstant::Context::SoftwareSkinning()
             skinned = m_Skinning[skin.Unit.bdef1.BoneIndex] * pos;
             break;
         case Pmx::kBdef2:
+        case Pmx::kSdef:
             skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[0]] * pos * skin.Unit.bdef2.Weight;
             skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[1]] * pos * (1 - skin.Unit.bdef2.Weight );
             break;
         case Pmx::kBdef4:
             for (int k = 0; k < 4; k++)
                 skinned += m_Skinning[skin.Unit.bdef4.BoneIndex[k]] * pos * skin.Unit.bdef4.Weight[k];
-            break;
-        case Pmx::kSdef:
-            SkinSDEF( skinned, skin.Unit.sdef, pos );
             break;
         };
         position[i] = skinned;
