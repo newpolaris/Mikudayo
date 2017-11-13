@@ -132,10 +132,10 @@ void Mikudayo::Startup( void )
     m_Scene->AddChild( instance );
 #endif
 
-#define HALLOWEEN 1
+// #define HALLOWEEN 1
 // #define BOARD 1
 // #define FLOOR 1
-// #define STAGE 1
+#define STAGE 1
 
     ModelInfo stage;
 #if BOARD
@@ -168,12 +168,13 @@ void Mikudayo::Startup( void )
     // info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
     // info.ModelFile = L"Model/Tda式初音ミク背中見せデフォ服 Ver1.00/Tda式初音ミク背中見せデフォ服 ver1.0无高光.pmx";
     info.MotionFile = motion;
+    info.DefaultShader = L"MultiLight";
 
     instance = ModelManager::Load( info );
     if (instance)
         m_Scene->AddChild( instance );
 
-#if 0
+#if STAGE
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
     OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
     mirror->SetTransform( rotation );

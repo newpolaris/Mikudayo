@@ -445,6 +445,9 @@
     <None Include="Shaders\PCFKernels.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\MikuColorVS.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Mikudayo.rc">

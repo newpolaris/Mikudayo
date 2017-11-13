@@ -14,6 +14,8 @@
 #include "CompiledShaders/MikuColor3PS.h"
 #include "CompiledShaders/MikuOutlineVS.h"
 #include "CompiledShaders/MikuOutlinePS.h"
+#include "CompiledShaders/MultiLightColorVS.h"
+#include "CompiledShaders/MultiLightColorPS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredFinalPS.h"
 #include "CompiledShaders/DeferredFinal2PS.h"
@@ -109,19 +111,17 @@ void PmxModel::Initialize()
     ShadowPSO->Finalize();
 
     RenderPipelineList Default;
-    RenderPipelinePtr OpaquePSO, GBufferPSO, FinalPSO;
     {
-        OpaquePSO = std::make_shared<GraphicsPSO>();
+        RenderPipelinePtr OpaquePSO = std::make_shared<GraphicsPSO>();
         OpaquePSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
         OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
         OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pMikuColorPS ) );;
         OpaquePSO->SetRasterizerState( RasterizerDefault );
         OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
         OpaquePSO->Finalize();
-
         AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
 
-        FinalPSO = std::make_shared<GraphicsPSO>();
+        RenderPipelinePtr FinalPSO = std::make_shared<GraphicsPSO>();
         FinalPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
         FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
         FinalPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
@@ -129,13 +129,16 @@ void PmxModel::Initialize()
         FinalPSO->SetDepthStencilState( DepthStateTestEqual );
         FinalPSO->Finalize();
 
-        GBufferPSO = std::make_shared<GraphicsPSO>();
+        RenderPipelinePtr GBufferPSO = std::make_shared<GraphicsPSO>();
         GBufferPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
         GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
         GBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
         GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
+
+        Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
+        Default[kRenderQueueDeferredFinal] = FinalPSO;
 
         RenderPipelinePtr ReflectedPSO = std::make_shared<GraphicsPSO>();
         *ReflectedPSO = *OpaquePSO;
@@ -153,14 +156,24 @@ void PmxModel::Initialize()
 
         AutoFillPSO( ReflectorPSO, kRenderQueueReflectorOpaque, Default );
 
-        Default[kRenderQueueDeferredGBuffer] = GBufferPSO;
-        Default[kRenderQueueDeferredFinal] = FinalPSO;
         Default[kRenderQueueOutline] = OutlinePSO;
         Default[kRenderQueueShadow] = ShadowPSO;
         Default[kRenderQueueDepth] = DepthPSO;
         Default[kRenderQueueSkinning] = SkinningPSO;
     }
-    Techniques.emplace( L"Default", std::move( Default ) );
+    Techniques.emplace( L"Default", Default );
+    RenderPipelineList MultiLight = Default;
+    {
+        RenderPipelinePtr OpaquePSO = std::make_shared<GraphicsPSO>();
+        OpaquePSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pMultiLightColorVS ) );
+        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pMultiLightColorPS ) );
+        OpaquePSO->SetRasterizerState( RasterizerDefault );
+        OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
+        OpaquePSO->Finalize();
+        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, MultiLight );
+    }
+    Techniques.emplace( L"MultiLight", MultiLight );
 }
 
 void PmxModel::Shutdown()
