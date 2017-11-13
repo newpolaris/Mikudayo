@@ -54,9 +54,39 @@ float2x4 TransformOrthToDualQuaternion( float4 quaternion, float4 translate )
 	);
 }
 
-float2x4 BlendedDualQuaternion2( float2x4 dq0, float2x4 dq1, float weight )
+float2x4 BlendDualQuaternion2( float2x4 dq0, float2x4 dq1, float weight )
 {
     float2x4 blendedDQ = lerp(dq0, dq1, weight);
+    // normalize
+    float normDQ = length(blendedDQ[0]);
+    return blendedDQ / normDQ;
+}
+
+// Seek shortest rotation
+float2x4 BlendDualQuaternionShortest2( float2x4 dq0, float2x4 dq1, float weight )
+{
+    float2x4 blendedDQ = dq0 * weight;
+    float weight1 = 1 - weight;
+    if (dot( dq0[0], dq1[0] ) < 0)
+        weight1 = -weight1;
+    blendedDQ += dq1 * weight1;
+    // normalize
+    float normDQ = length(blendedDQ[0]);
+    return blendedDQ / normDQ;
+}
+
+float2x4 BlendDualQuaternionShortest4( float2x4 dq[4], float4 weight )
+{
+    float2x4 blendedDQ = 0;
+    float4 rot = dq[0][0];
+    for (int i = 0; i < 4; i++)
+    {
+        float w = weight[i];
+        if (dot( rot, dq[i][0] ) < 0)
+            w *= -1;
+        blendedDQ += dq[i] * w;
+    }
+    // normalize
     float normDQ = length(blendedDQ[0]);
     return blendedDQ / normDQ;
 }

@@ -86,6 +86,8 @@ public:
 
 	GraphicsPipelineState* GetState();
 
+    D3D11_RASTERIZER_DESC GetRasterizerState() const;
+
 	void SetBlendState( const D3D11_BLEND_DESC& BlendDesc );
 	void SetRasterizerState( const D3D11_RASTERIZER_DESC& RasterizerDesc );
 	void SetDepthStencilState( const D3D11_DEPTH_STENCIL_DESC& DepthStencilDesc );

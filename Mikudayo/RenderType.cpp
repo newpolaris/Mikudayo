@@ -9,9 +9,12 @@ void AutoFillPSO( RenderPipelinePtr& basePSO, uint32_t baseIndex, RenderPipeline
 
     RenderPipelinePtr baseTowSidedPSO, transparentPSO, transparentTwoSidedPSO;
 
+    D3D11_RASTERIZER_DESC twosided = basePSO->GetRasterizerState();
+    twosided.CullMode = D3D11_CULL_NONE;
+
     baseTowSidedPSO = std::make_shared<GraphicsPSO>();
     *baseTowSidedPSO = *basePSO;
-    baseTowSidedPSO->SetRasterizerState( RasterizerTwoSided );
+    baseTowSidedPSO->SetRasterizerState( twosided );
     baseTowSidedPSO->Finalize();
 
     transparentPSO = std::make_shared<GraphicsPSO>();
@@ -21,7 +24,7 @@ void AutoFillPSO( RenderPipelinePtr& basePSO, uint32_t baseIndex, RenderPipeline
 
     transparentTwoSidedPSO = std::make_shared<GraphicsPSO>();
     *transparentTwoSidedPSO = *transparentPSO;
-    transparentTwoSidedPSO->SetRasterizerState( RasterizerTwoSided );
+    transparentTwoSidedPSO->SetRasterizerState( twosided );
     transparentTwoSidedPSO->Finalize();
 
     list[baseIndex] = basePSO;

@@ -1,6 +1,8 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
+#define HANDLE_SDEF_USING_DQBS 1
+
 // Per-vertex data used as input to the vertex shader.
 struct VertexInput
 {
@@ -77,13 +79,26 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
             output.normal += weight[i] * TransformBoneNormal( input.normal, boneID[i] );
         }
     }
+#if HANDLE_SDEF_USING_DQBS
     else if (type == Sdef)
     {
         const uint2 boneID = SkinUnit.Load2( baseOffset + 4 );
         const float weight1 = 1 - asfloat(SkinUnit.Load( baseOffset + 12 ));
         float2x4 dq0 = BoneDualQuaternion( boneID.x );
         float2x4 dq1 = BoneDualQuaternion( boneID.y );
-        float2x4 blended = BlendedDualQuaternion2( dq0, dq1, weight1 );
+        float2x4 blended = BlendDualQuaternion2( dq0, dq1, weight1 );
+        output.position = TransformPositionDualQuat( input.position, blended[0], blended[1] );
+        output.normal = TransformNormalDualQuat( input.normal, blended[0], blended[1] );
+    }
+#endif
+    else if (type == Qdef)
+    {
+        const uint4 boneID = SkinUnit.Load4( baseOffset + 4 );
+        const float4 weight = asfloat(SkinUnit.Load4( baseOffset + 20 ));
+        float2x4 dq[4];
+        for (int i = 0; i < 4; i++)
+            dq[i] = BoneDualQuaternion( boneID[i] );
+        float2x4 blended = BlendDualQuaternionShortest4( dq, weight );
         output.position = TransformPositionDualQuat( input.position, blended[0], blended[1] );
         output.normal = TransformNormalDualQuat( input.normal, blended[0], blended[1] );
     }

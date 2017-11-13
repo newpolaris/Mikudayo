@@ -119,7 +119,7 @@ void PmxModel::Initialize()
         OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
         OpaquePSO->Finalize();
 
-        AutoFillPSO( OpaquePSO, 0, Default );
+        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
 
         FinalPSO = std::make_shared<GraphicsPSO>();
         FinalPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
@@ -136,8 +136,6 @@ void PmxModel::Initialize()
         GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
-
-        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
 
         RenderPipelinePtr ReflectedPSO = std::make_shared<GraphicsPSO>();
         *ReflectedPSO = *OpaquePSO;

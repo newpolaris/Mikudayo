@@ -138,6 +138,11 @@ GraphicsPipelineState* GraphicsPSO::GetState()
 	return m_PSOState;
 }
 
+D3D11_RASTERIZER_DESC GraphicsPSO::GetRasterizerState() const
+{
+    return m_PSODesc->Rasterizer.Desc;
+}
+
 void GraphicsPSO::SetBlendState( const D3D11_BLEND_DESC& BlendDesc )
 {
 	m_PSODesc->Blend.Desc = CD3D11_BLEND_DESC( BlendDesc );
