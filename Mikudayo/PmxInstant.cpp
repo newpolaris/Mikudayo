@@ -5,6 +5,8 @@
 #include "KeyFrameAnimation.h"
 #include "PrimitiveUtility.h"
 #include "Visitor.h"
+#include "TaskManager.h"
+#include "Math/SimpleMath.h"
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
 #include "Bullet/Joint.h"
@@ -22,15 +24,6 @@ namespace {
 		kTextureSphere,
 		kTextureToon,
 		kTextureMax
-	};
-
-	struct VertexProperty
-	{
-		XMFLOAT3 Normal;
-		XMFLOAT2 UV;
-        uint32_t BoneID[4] = {0, };
-        float    Weight[4] = {0.f };
-		float    EdgeSize;
 	};
 
     template <typename T>
@@ -56,12 +49,13 @@ struct PmxInstant::Context final
     bool LoadMotion( const std::wstring& FilePath );
     void JoinWorld( btDynamicsWorld* world );
     void LeaveWorld( btDynamicsWorld* world );
+    void Skinning( GraphicsContext& gfxContext, Visitor& visitor );
     void SetPosition( const Vector3& postion );
     void SetupSkeleton( const std::vector<PmxModel::Bone>& Bones );
     void Update( float kFrameTime );
     void UpdateAfterPhysics( float kFrameTime );
 
-    BoundingBox GetBoundingBox() const;
+    Math::BoundingBox GetBoundingBox() const;
     Matrix4 GetTransform() const;
     void SetTransform( const Matrix4& transform );
 
@@ -73,6 +67,7 @@ protected:
 
     void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
     void PerformTransform( uint32_t i );
+    void SoftwareSkinning();
     void UpdateChildPose( int32_t idx );
     void UpdateIK( const PmxModel::IKAttr& ik );
     void UpdatePose();
@@ -104,8 +99,12 @@ protected:
 
     std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
 
-    VertexBuffer m_AttributeBuffer;
     VertexBuffer m_PositionBuffer;
+    VertexBuffer m_PositionSkinBuffer;
+    VertexBuffer m_NormalBuffer;
+    VertexBuffer m_NormalSkinBuffer;
+    VertexBuffer m_TextureCoordBuffer;
+    VertexBuffer m_EdgeScaleBuffer;
 };
 
 PmxInstant::Context::Context( PmxModel& model, PmxInstant* parent ) :
@@ -123,21 +122,20 @@ void PmxInstant::Context::Clear()
     ASSERT( g_DynamicsWorld != nullptr );
     LeaveWorld( g_DynamicsWorld );
 
-	m_AttributeBuffer.Destroy();
 	m_PositionBuffer.Destroy();
+    m_PositionSkinBuffer.Destroy();
+    m_NormalBuffer.Destroy();
+    m_NormalSkinBuffer.Destroy();
+    m_TextureCoordBuffer.Destroy();
+    m_EdgeScaleBuffer.Destroy();
 }
 
 void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    std::vector<Matrix4> SkinData;
-    SkinData.reserve( m_Skinning.size() );
-    for (auto& orth : m_Skinning)
-        SkinData.emplace_back( orth );
-    auto numByte = GetVectorSize(SkinData);
-
-    gfxContext.SetDynamicConstantBufferView( 1, numByte, SkinData.data(), { kBindVertex } );
-	gfxContext.SetVertexBuffer( 0, m_AttributeBuffer.VertexBufferView() );
-	gfxContext.SetVertexBuffer( 1, m_PositionBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 0, m_PositionSkinBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_NormalSkinBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 2, m_TextureCoordBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 3, m_EdgeScaleBuffer.VertexBufferView() );
 	gfxContext.SetIndexBuffer( m_Model.m_IndexBuffer.IndexBufferView() );
 
     for (auto& mesh : m_Model.m_Mesh)
@@ -162,16 +160,20 @@ void PmxInstant::Context::DrawBone()
 
 bool PmxInstant::Context::LoadModel()
 {
-	m_VertexMorphedPos = m_Model.m_VertexPosition;
-	m_AttributeBuffer.Create( m_Model.m_Name + L"_AttrBuf",
-		static_cast<uint32_t>(m_Model.m_VertexAttribute.size()),
-		sizeof( VertexProperty ),
-		m_Model.m_VertexAttribute.data() );
+	m_VertexMorphedPos = m_Model.m_Position;
 
-	m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf",
-		static_cast<uint32_t>(m_Model.m_VertexPosition.size()),
-		sizeof( XMFLOAT3 ),
-		m_Model.m_VertexPosition.data() );
+    m_PositionSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
+    m_NormalSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
+
+#define BufferCreate( Buffer, Type ) \
+    Buffer.Create( m_Model.m_Name, uint32_t(m_Model.Type.size()), sizeof(m_Model.Type.front()), m_Model.Type.data() );
+
+    BufferCreate( m_PositionBuffer, m_Position );
+    BufferCreate( m_NormalBuffer, m_Normal );
+    BufferCreate( m_TextureCoordBuffer, m_TextureCoord );
+    BufferCreate( m_EdgeScaleBuffer, m_EdgeScale );
+    BufferCreate( m_PositionSkinBuffer, m_Position );
+    BufferCreate( m_NormalSkinBuffer, m_Normal );
 
 	SetupSkeleton( m_Model.m_Bones );
 
@@ -295,6 +297,27 @@ void PmxInstant::Context::LeaveWorld( btDynamicsWorld* world )
     }
 }
 
+void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
+{
+    // If there's no motion data. Update is not needed.
+    if (m_BoneMotions.size() <= 0)
+        return;
+    const auto numByte = GetVectorSize( m_Skinning );
+    gfxContext.SetDynamicConstantBufferView( 0, numByte, m_Skinning.data(), { kBindVertex } );
+	gfxContext.SetVertexBuffer( 0, m_PositionBuffer.VertexBufferView() );
+	gfxContext.SetVertexBuffer( 1, m_NormalBuffer.VertexBufferView() );
+    D3D11_BUFFER_HANDLE handle[] = { m_PositionSkinBuffer.GetHandle(), m_NormalSkinBuffer.GetHandle() };
+    UINT offset[2] = { 0, 0 };
+    gfxContext.SetStreamOutTargets( 2, handle, offset );
+    gfxContext.SetDynamicDescriptor( 0, m_Model.m_SkinningUnitbuffer.GetSRV(), { kBindVertex } );
+    auto& material = m_Model.m_Materials[0];
+    visitor.Visit( material );
+    gfxContext.Draw( UINT( m_Model.m_Position.size() ), 0 );
+
+    D3D11_BUFFER_HANDLE clear[] = { nullptr, nullptr };
+    gfxContext.SetStreamOutTargets( 2, clear, nullptr );
+}
+
 void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames )
 {
     if (frames.size() <= 0)
@@ -386,6 +409,33 @@ void PmxInstant::Context::PerformTransform( uint32_t i )
     m_LocalPose[i].SetTranslation( translation );
 }
 
+// UNDONE: SKINNING NORMAL
+void PmxInstant::Context::SoftwareSkinning()
+{ 
+    std::vector<Vector3> position( m_VertexMorphedPos.size() );
+    TaskManager::parallel_for(0, position.size(), [&](size_t i) {
+        const auto& skin = m_Model.m_SkinningUnit[i];
+        const Vector3 pos( m_VertexMorphedPos[i] );
+        Vector3 skinned( kZero );
+        switch (skin.Type) {
+        case Pmx::kBdef1:
+            skinned = m_Skinning[skin.Unit.bdef1.BoneIndex] * pos;
+            break;
+        case Pmx::kBdef2:
+        case Pmx::kSdef:
+            skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[0]] * pos * skin.Unit.bdef2.Weight;
+            skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[1]] * pos * (1 - skin.Unit.bdef2.Weight );
+            break;
+        case Pmx::kBdef4:
+            for (int k = 0; k < 4; k++)
+                skinned += m_Skinning[skin.Unit.bdef4.BoneIndex[k]] * pos * skin.Unit.bdef4.Weight[k];
+            break;
+        };
+        position[i] = skinned;
+    });
+    m_PositionSkinBuffer.Create( m_Model.m_Name + L"_PosBuf", uint32_t(position.size()), sizeof(Vector3), position.data() );
+}
+
 void PmxInstant::Context::Update( float kFrameTime )
 {
     if (m_MorphMotions.size() > 0)
@@ -420,13 +470,10 @@ void PmxInstant::Context::Update( float kFrameTime )
 			for (auto i = 0; i < m_MorphDelta.size(); i++)
 				XMStoreFloat3( &m_VertexMorphedPos[baseFace.m_MorphIndices[i]], m_MorphDelta[i]);
 
-			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf",
-				static_cast<uint32_t>(m_VertexMorphedPos.size()),
-				sizeof( XMFLOAT3 ),
-				m_VertexMorphedPos.data() );
+			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", static_cast<uint32_t>(m_VertexMorphedPos.size()), sizeof( XMFLOAT3 ), m_VertexMorphedPos.data() );
 		}
 	}
-	{
+    {
         //
         // in initialize m_LocalPoseDefault and in every motion data
         // position is already translated by offset from parent
@@ -435,16 +482,16 @@ void PmxInstant::Context::Update( float kFrameTime )
         m_LocalPose = m_LocalPoseDefault;
 
         const size_t numMotions = m_BoneMotions.size();
-		for (auto i = 0; i < numMotions; i++)
-			m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
+        for (auto i = 0; i < numMotions; i++)
+            m_BoneMotions[i].Interpolate( kFrameTime, m_LocalPose[i] );
         UpdatePose();
-		for (auto& ik : m_Model.m_IKs)
+        for (auto& ik : m_Model.m_IKs)
             UpdateIK( ik );
-		const size_t numBones = m_Model.m_Bones.size();
+        const size_t numBones = m_Model.m_Bones.size();
         for (auto i = 0; i < numBones; i++)
             PerformTransform( i );
         UpdatePose();
-	}
+    }
 }
 
 void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
@@ -457,9 +504,11 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
     const size_t numBones = m_Model.m_Bones.size();
     for (auto i = 0; i < numBones; i++)
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
+
+    // SoftwareSkinning();
 }
 
-BoundingBox PmxInstant::Context::GetBoundingBox() const
+Math::BoundingBox PmxInstant::Context::GetBoundingBox() const
 {
 	if (m_BoneMotions.size() > 0)
         return m_ModelTransform * m_Skinning[m_Model.m_RootBoneIndex] * m_Model.m_BoundingBox;
@@ -512,17 +561,17 @@ void PmxInstant::Context::UpdateChildPose( int32_t idx )
 #include <glm/gtx/quaternion.hpp>
 #pragma warning(pop)
 
-inline Vector3 Convert(const glm::vec3& v )
+inline Vector3 Convert2(const glm::vec3& v )
 {
     return Vector3( v.x, v.y, v.z );
 }
 
-inline glm::vec3 Convert(const Vector3& v )
+inline glm::vec3 Convert2(const Math::Vector3& v )
 {
     return glm::vec3( v.GetX(), v.GetY(), v.GetZ() );
 }
 
-inline glm::quat Convert( const Quaternion& q )
+inline glm::quat Convert2( const Math::Quaternion& q )
 {
     XMFLOAT4 v;
     XMStoreFloat4( &v, q);
@@ -607,11 +656,9 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
                     rotFinish = Quaternion( Vector4( std::sin( a ), 0, 0, std::cos( a ) ) );
                 }
             #else
-                //
-                // MMD-Agent PMDIK
-                //
-                /* when this is the first iteration, we force rotating to the maximum angle toward limited direction */
-                /* this will help convergence the whole IK step earlier for most of models, especially for legs */
+                // Use code from 'MMD-Agent'
+                // when this is the first iteration, we force rotating to the maximum angle toward limited direction
+                // this will help convergence the whole IK step earlier for most of models, especially for legs
                 if (n == 0)
                 {
                     if (theta < 0.0f)
@@ -674,10 +721,9 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 			Quaternion q0( axis, -rotationAngle );
         #endif
 
-			// if (false)
 			if (ik.Link[k].bLimit)
 			{
-                Vector3 euler = Convert(glm::eulerAngles( Convert( q0 ) ));
+                Vector3 euler = Convert2(glm::eulerAngles( Convert2( q0 ) ));
                 // due to rightHand min, max is swap needed
                 Vector3 MinLimit = ik.Link[k].MaxLimit;
                 MinLimit -= Vector3( Scalar( 0.005 ) );
@@ -807,7 +853,12 @@ void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
     m_Context->DrawBone();
 }
 
-BoundingBox PmxInstant::GetBoundingBox() const
+void PmxInstant::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
+{
+    m_Context->Skinning( gfxContext, visitor );
+}
+
+Math::BoundingBox PmxInstant::GetBoundingBox() const
 {
     return m_Context->GetBoundingBox();
 }

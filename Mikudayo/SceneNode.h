@@ -26,6 +26,7 @@ public:
     virtual void AddChild( SceneNodePtr pNode );
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor );
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor );
+    virtual void Skinning( GraphicsContext& gfxContext, Visitor& visitor );
     virtual void Update( float deltaT );
     virtual void UpdateAfterPhysics( float deltaT );
     virtual SceneNodeType GetType() const;

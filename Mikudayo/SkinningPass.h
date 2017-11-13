@@ -1,11 +1,11 @@
 #pragma once
 #include "RenderPass.h"
 
-class RenderBonePass : public RenderPass
+class SkinningPass : public RenderPass
 {
 public:
 
-    RenderBonePass();
+    SkinningPass();
 
     // Inherited from Visitor
     virtual bool Visit( SceneNode& node ) override;

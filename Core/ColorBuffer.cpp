@@ -153,5 +153,5 @@ void ColorBuffer::Destroy()
 
 bool ColorBuffer::IsTransparent() const
 {
-    return HasAlpha( m_Format );
+    return DirectX::HasAlpha( m_Format );
 }

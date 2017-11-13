@@ -53,8 +53,8 @@ void GpuBuffer::Create( const std::wstring& name, uint32_t NumElements, uint32_t
 
 	D3D11_BUFFER_DESC Desc;
 	Desc.ByteWidth = static_cast<UINT>(m_BufferSize);
-	Desc.BindFlags = m_BindFlags;
 	Desc.Usage = m_Usage;
+	Desc.BindFlags = m_BindFlags;
 	Desc.CPUAccessFlags = m_CPUAccessFlags;
 	Desc.MiscFlags = m_MiscFlags;
 	Desc.StructureByteStride = 0;

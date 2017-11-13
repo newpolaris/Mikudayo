@@ -105,25 +105,28 @@ namespace Pmx
         void Fill( bufferstream& is, uint8_t byteSize );
     };
 
+    enum ESkiningType : uint8_t {
+        kBdef1 = 0, kBdef2, kBdef4, kSdef, kQdef, kMaxType
+    };
+
+    union SkinUnit {
+        Bdef1Unit bdef1;
+        Bdef2Unit bdef2;
+        Bdef4Unit bdef4;
+        SdefUnit sdef;
+        QdefUnit qdef;
+    };
+
     struct Vertex
     {
         enum { kMaxAddUV = 4 };
-        enum ESkiningType  : uint8_t
-        { kBdef1 = 0, kBdef2, kBdef4, kSdef, kQdef, kMaxType };
 
         XMFLOAT3 Pos;
         XMFLOAT3 Normal;
         XMFLOAT2 UV;
         XMFLOAT4 AddUV[kMaxAddUV];
-
+        SkinUnit Unit;
         ESkiningType SkinningType;
-        union {
-            Bdef1Unit bdef1;
-            Bdef2Unit bdef2;
-            Bdef4Unit bdef4;
-            SdefUnit sdef;
-            QdefUnit qdef;
-        };
         float EdgeScale;
 
         void Fill( bufferstream & is, bool bRH, uint8_t numAddUV, uint8_t boneByteSize );

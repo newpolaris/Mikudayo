@@ -100,15 +100,15 @@ namespace Pmx
 		Read( is, SkinningType );
 
         // clear union
-        sdef = {};
+        Unit.sdef = {};
 
         switch (SkinningType)
         {
-        case kBdef1: bdef1.Fill( is, boneByteSize ); break;
-        case kBdef2: bdef2.Fill( is, boneByteSize ); break;
-        case kBdef4: bdef4.Fill( is, boneByteSize ); break;
-        case kSdef: sdef.Fill( is, boneByteSize ); break;
-        case kQdef: qdef.Fill( is, boneByteSize ); break;
+        case kBdef1: Unit.bdef1.Fill( is, boneByteSize ); break;
+        case kBdef2: Unit.bdef2.Fill( is, boneByteSize ); break;
+        case kBdef4: Unit.bdef4.Fill( is, boneByteSize ); break;
+        case kSdef: Unit.sdef.Fill( is, boneByteSize ); break;
+        case kQdef: Unit.qdef.Fill( is, boneByteSize ); break;
         default: ASSERT(FALSE); break;
         }
 

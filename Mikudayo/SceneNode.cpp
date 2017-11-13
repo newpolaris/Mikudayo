@@ -30,6 +30,11 @@ void SceneNode::RenderBone( GraphicsContext& gfxContext, Visitor& visitor )
     (gfxContext), (visitor);
 }
 
+void SceneNode::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
+{
+    (gfxContext), (visitor);
+}
+
 void SceneNode::Update( float deltaT )
 {
     (deltaT);

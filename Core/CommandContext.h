@@ -260,6 +260,7 @@ public:
 	void SetViewport( FLOAT x, FLOAT y, FLOAT w, FLOAT h, FLOAT minDepth = 0.0f, FLOAT maxDepth = 1.0f );
 	void SetScissor( const D3D11_RECT& rect );
 	void SetScissor( UINT left, UINT top, UINT right, UINT bottom );
+    void SetStreamOutTargets( UINT Offset, const D3D11_BUFFER_HANDLE Handle[], const UINT* pOffsets );
 	void SetViewportAndScissor( const D3D11_VIEWPORT& vp, const D3D11_RECT& rect );
 	void SetViewportAndScissor( UINT x, UINT y, UINT w, UINT h );
 	void SetStencilRef( UINT StencilRef );

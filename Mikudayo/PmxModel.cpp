@@ -5,13 +5,15 @@
 #include "Pmx.h"
 #include "Color.h"
 #include "LinearColor.h"
+#include "StreamOutDesc.h"
 
-#include "CompiledShaders/PmxColorVS.h"
-#include "CompiledShaders/PmxColorPS.h"
-#include "CompiledShaders/PmxColor2PS.h"
-#include "CompiledShaders/PmxColor3PS.h"
-#include "CompiledShaders/OutlineVS.h"
-#include "CompiledShaders/OutlinePS.h"
+#include "CompiledShaders/PmxSkinningSO.h"
+#include "CompiledShaders/MikuColorVS.h"
+#include "CompiledShaders/MikuColorPS.h"
+#include "CompiledShaders/MikuColor2PS.h"
+#include "CompiledShaders/MikuColor3PS.h"
+#include "CompiledShaders/MikuOutlineVS.h"
+#include "CompiledShaders/MikuOutlinePS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredFinalPS.h"
 #include "CompiledShaders/DeferredFinal2PS.h"
@@ -20,15 +22,26 @@
 using namespace Utility;
 using namespace Graphics;
 
-namespace Pmx {
+namespace {
     std::vector<InputDesc> VertElem
     {
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONE_ID", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "EDGE_SCALE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 2, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "EDGE_SCALE", 0, DXGI_FORMAT_R32_FLOAT, 3, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    std::vector<InputDesc> SkinningElem
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "SKIN_TYPE", 0, DXGI_FORMAT_R8_UINT, 2, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONE_WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    StreamOutEntries StreamOut {
+        { 0, "POSITION", 0, 0, 3, 0 },
+        { 0, "NORMAL", 0, 0, 3, 1 },
     };
 }
 
@@ -52,20 +65,29 @@ namespace {
 
 void PmxModel::Initialize()
 {
-    RenderPipelinePtr DeferredGBufferPSO, OutlinePSO, DepthPSO, ShadowPSO;
+    RenderPipelinePtr DeferredGBufferPSO, OutlinePSO, DepthPSO, ShadowPSO, SkinningPSO;
+
+    SkinningPSO = std::make_shared<GraphicsPSO>();
+    SkinningPSO->SetPrimitiveTopologyType( D3D11_PRIMITIVE_TOPOLOGY_POINTLIST ); // Required
+    SkinningPSO->SetInputLayout( (UINT)SkinningElem.size(), SkinningElem.data() );
+    SkinningPSO->SetStreamOutEntries( (UINT)StreamOut.size(), StreamOut.data() );
+    SkinningPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxSkinningSO ) );
+    SkinningPSO->SetGeometryShader( MY_SHADER_ARGS( g_pPmxSkinningSO ) );
+    SkinningPSO->SetDepthStencilState( DepthStateDisabled ); // Required
+    SkinningPSO->Finalize();
 
     DeferredGBufferPSO = std::make_shared<GraphicsPSO>();
-    DeferredGBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    DeferredGBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+    DeferredGBufferPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+    DeferredGBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
     DeferredGBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
     DeferredGBufferPSO->SetDepthStencilState( DepthStateReadWrite );
     DeferredGBufferPSO->SetRasterizerState( RasterizerDefault );
     DeferredGBufferPSO->Finalize();
 
     OutlinePSO = std::make_shared<GraphicsPSO>();
-    OutlinePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-    OutlinePSO->SetVertexShader( MY_SHADER_ARGS( g_pOutlineVS ) );
-    OutlinePSO->SetPixelShader( MY_SHADER_ARGS( g_pOutlinePS ) );
+    OutlinePSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+    OutlinePSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuOutlineVS ) );
+    OutlinePSO->SetPixelShader( MY_SHADER_ARGS( g_pMikuOutlinePS ) );
     OutlinePSO->SetRasterizerState( RasterizerDefaultCW );
     OutlinePSO->SetDepthStencilState( DepthStateReadWrite );
     OutlinePSO->Finalize();
@@ -75,7 +97,7 @@ void PmxModel::Initialize()
     DepthPSO->SetRasterizerState( RasterizerDefault );
     DepthPSO->SetBlendState( BlendNoColorWrite );
     DepthPSO->SetDepthStencilState( DepthStateReadWrite );
-    DepthPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
+    DepthPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
     DepthPSO->SetRenderTargetFormats( 0, nullptr, DepthFormat );
     DepthPSO->SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
     DepthPSO->Finalize();
@@ -90,36 +112,34 @@ void PmxModel::Initialize()
     RenderPipelinePtr OpaquePSO, GBufferPSO, FinalPSO;
     {
         OpaquePSO = std::make_shared<GraphicsPSO>();
-        OpaquePSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
-        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColorPS ) );;
+        OpaquePSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
+        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pMikuColorPS ) );;
         OpaquePSO->SetRasterizerState( RasterizerDefault );
         OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
         OpaquePSO->Finalize();
 
-        AutoFillPSO( OpaquePSO, 0, Default );
+        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
 
         FinalPSO = std::make_shared<GraphicsPSO>();
-        FinalPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        FinalPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+        FinalPSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
         FinalPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredFinalPS ) );
         FinalPSO->SetRasterizerState( RasterizerDefault );
         FinalPSO->SetDepthStencilState( DepthStateTestEqual );
         FinalPSO->Finalize();
 
         GBufferPSO = std::make_shared<GraphicsPSO>();
-        GBufferPSO->SetInputLayout( (UINT)Pmx::VertElem.size(), Pmx::VertElem.data() );
-        GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pPmxColorVS ) );
+        GBufferPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+        GBufferPSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuColorVS ) );
         GBufferPSO->SetPixelShader( MY_SHADER_ARGS( g_pDeferredGBufferPS ) );
         GBufferPSO->SetDepthStencilState( DepthStateReadWrite );
         GBufferPSO->SetRasterizerState( RasterizerDefault );
         GBufferPSO->Finalize();
 
-        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, Default );
-
         RenderPipelinePtr ReflectedPSO = std::make_shared<GraphicsPSO>();
         *ReflectedPSO = *OpaquePSO;
-        ReflectedPSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor2PS ) );
+        ReflectedPSO->SetPixelShader( MY_SHADER_ARGS( g_pMikuColor2PS ) );
         ReflectedPSO->SetDepthStencilState( DepthStateReadWrite );
         ReflectedPSO->SetRasterizerState( RasterizerDefaultCW );
         ReflectedPSO->Finalize();
@@ -128,7 +148,7 @@ void PmxModel::Initialize()
 
         RenderPipelinePtr ReflectorPSO = std::make_shared<GraphicsPSO>();
         *ReflectorPSO = *OpaquePSO;
-        ReflectorPSO->SetPixelShader( MY_SHADER_ARGS( g_pPmxColor3PS ) );
+        ReflectorPSO->SetPixelShader( MY_SHADER_ARGS( g_pMikuColor3PS ) );
         ReflectorPSO->Finalize();
 
         AutoFillPSO( ReflectorPSO, kRenderQueueReflectorOpaque, Default );
@@ -138,6 +158,7 @@ void PmxModel::Initialize()
         Default[kRenderQueueOutline] = OutlinePSO;
         Default[kRenderQueueShadow] = ShadowPSO;
         Default[kRenderQueueDepth] = DepthPSO;
+        Default[kRenderQueueSkinning] = SkinningPSO;
     }
     Techniques.emplace( L"Default", std::move( Default ) );
 }
@@ -154,6 +175,7 @@ PmxModel::PmxModel() :
 
 void PmxModel::Clear()
 {
+    m_SkinningUnitbuffer.Destroy();
     m_IndexBuffer.Destroy();
 }
 
@@ -230,6 +252,8 @@ bool PmxModel::GenerateResource( void )
 	m_IndexBuffer.Create( m_Name + L"_IndexBuf", static_cast<uint32_t>(m_Indices.size()),
         sizeof( m_Indices[0] ), m_Indices.data() );
 
+    m_SkinningUnitbuffer.Create( m_Name + L"_SkinBuf", uint32_t(m_SkinningUnit.size()), sizeof(SkinTypeUnit), m_SkinningUnit.data() );
+
 	for (auto& material : m_Materials)
 	{
         for (auto i = 0; i < material.TexturePathes.size(); i++)
@@ -266,38 +290,21 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 	m_Name = pmx.m_Description.Name;
     m_TextureRoot = Path(FilePath).parent_path().generic_wstring();
 
-	m_VertexAttribute.resize( pmx.m_Vertices.size() );
-	m_VertexPosition.resize( pmx.m_Vertices.size() );
+    size_t vertexSize = pmx.m_Vertices.size();
+	m_Position.resize( vertexSize );
+    m_Normal.resize( vertexSize );
+    m_TextureCoord.resize( vertexSize );
+    m_SkinningUnit.resize( vertexSize );
+    m_EdgeScale.resize( vertexSize );
+
 	for (auto i = 0; i < pmx.m_Vertices.size(); i++)
 	{
-		m_VertexPosition[i] = pmx.m_Vertices[i].Pos;
-		m_VertexAttribute[i].Normal = pmx.m_Vertices[i].Normal;
-		m_VertexAttribute[i].UV = pmx.m_Vertices[i].UV;
-        // Not supported
-        ASSERT( pmx.m_Vertices[i].SkinningType != Vertex::kQdef );
-        // Convert to 4-element linear skinning
-        switch (pmx.m_Vertices[i].SkinningType)
-        {
-        case Vertex::kBdef1:
-            m_VertexAttribute[i].BoneID[0] = pmx.m_Vertices[i].bdef1.BoneIndex;
-            m_VertexAttribute[i].Weight[0] = 1.f;
-            break;
-        case Vertex::kSdef: // ignore rotation center, r0 and r1 treat as Bdef2
-        case Vertex::kBdef2:
-            m_VertexAttribute[i].BoneID[0] = pmx.m_Vertices[i].bdef2.BoneIndex[0];
-            m_VertexAttribute[i].BoneID[1] = pmx.m_Vertices[i].bdef2.BoneIndex[1];
-            m_VertexAttribute[i].Weight[0] = pmx.m_Vertices[i].bdef2.Weight;
-            m_VertexAttribute[i].Weight[1] = 1 - pmx.m_Vertices[i].bdef2.Weight;
-            break;
-        case Vertex::kBdef4:
-            for (int k = 0; k < 4; k++)
-            {
-                m_VertexAttribute[i].BoneID[k] = pmx.m_Vertices[i].bdef4.BoneIndex[k];
-                m_VertexAttribute[i].Weight[k] = pmx.m_Vertices[i].bdef4.Weight[k];
-            }
-            break;
-        }
-		m_VertexAttribute[i].EdgeSize = pmx.m_Vertices[i].EdgeScale;
+		m_Position[i] = pmx.m_Vertices[i].Pos;
+		m_Normal[i] = pmx.m_Vertices[i].Normal;
+		m_TextureCoord[i] = pmx.m_Vertices[i].UV;
+        m_SkinningUnit[i].Type = pmx.m_Vertices[i].SkinningType;
+        m_SkinningUnit[i].Unit = pmx.m_Vertices[i].Unit;
+		m_EdgeScale[i] = pmx.m_Vertices[i].EdgeScale;
 	}
     std::copy(pmx.m_Indices.begin(), pmx.m_Indices.end(), std::back_inserter(m_Indices));
 
@@ -347,7 +354,7 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 		mesh.IndexCount = material.NumVertex;
 		mesh.IndexOffset = IndexOffset;
         mesh.BoundSphere = ComputeBoundingSphereFromVertices(
-            m_VertexPosition, m_Indices, mesh.IndexCount, mesh.IndexOffset );
+            m_Position, m_Indices, mesh.IndexCount, mesh.IndexOffset );
         mesh.MaterialIndex = i;
         m_Mesh.push_back(mesh);
 
@@ -433,7 +440,7 @@ const ManagedTexture* PmxModel::LoadTexture( std::wstring ImageName, bool bSRGB 
 bool PmxModel::SetBoundingBox()
 {
     BoundingBox box;
-    for (auto& vert : m_VertexPosition)
+    for (auto& vert : m_Position)
         box.Merge( vert );
     m_BoundingBox = box;
 

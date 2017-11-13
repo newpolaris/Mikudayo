@@ -47,6 +47,7 @@ public:
 
     D3D_PRIMITIVE_TOPOLOGY TopologyType;
 	std::vector<InputDesc> InputDescList;
+    StreamOutEntries StreamOutDescList;
     ShaderByteCode VS;
     ShaderByteCode PS;
     ShaderByteCode DS;
@@ -137,6 +138,11 @@ GraphicsPipelineState* GraphicsPSO::GetState()
 	return m_PSOState;
 }
 
+D3D11_RASTERIZER_DESC GraphicsPSO::GetRasterizerState() const
+{
+    return m_PSODesc->Rasterizer.Desc;
+}
+
 void GraphicsPSO::SetBlendState( const D3D11_BLEND_DESC& BlendDesc )
 {
 	m_PSODesc->Blend.Desc = CD3D11_BLEND_DESC( BlendDesc );
@@ -199,6 +205,21 @@ void GraphicsPSO::SetInputLayout( UINT NumElements, const InputDesc* pInputEleme
 	}
 }
 
+void GraphicsPSO::SetStreamOutEntries( UINT NumElements, const StreamOutDesc* pStreamoutDescs )
+{
+	if (NumElements > 0)
+	{
+		ASSERT( pStreamoutDescs != nullptr );
+        StreamOutEntries Desc;
+		std::copy(pStreamoutDescs, pStreamoutDescs + NumElements, std::back_inserter(Desc));
+		m_PSODesc->StreamOutDescList.swap(Desc);
+	}
+	else
+	{
+		m_PSODesc->StreamOutDescList.clear();
+	}
+}
+
 void GraphicsPSO::SetVertexShader( const std::string& Name, const void* Binary, size_t Size )
 {
 	m_PSODesc->VS = ShaderByteCode { Name, const_cast<void*>(Binary), Size };
@@ -249,7 +270,9 @@ void GraphicsPSO::Finalize()
             State->RasterizerState = RasterizerState::Create( m_PSODesc->Rasterizer );
             State->VertexShader = Shader::Create( kVertexShader, m_PSODesc->VS );
             State->PixelShader = Shader::Create( kPixelShader, m_PSODesc->PS );
-            State->GeometryShader = Shader::Create( kGeometryShader, m_PSODesc->GS );
+            State->GeometryShader = (m_PSODesc->StreamOutDescList.size() > 0) 
+                ? Shader::Create( kStreamOutShader, m_PSODesc->GS, &(m_PSODesc->StreamOutDescList) )
+                : Shader::Create( kGeometryShader, m_PSODesc->GS );
             State->DomainShader = Shader::Create( kDomainShader, m_PSODesc->DS );
             State->HullShader = Shader::Create( kDomainShader, m_PSODesc->HS );
             s_GraphicsPSOHashMap[HashCode] = State;
@@ -322,6 +345,7 @@ size_t GraphicsPipelineStateDesc::Hash() const
 {
     size_t HashCode = Utility::HashState(&TopologyType);
     HashCode = Utility::HashState(InputDescList.data(), InputDescList.size(), HashCode);
+    HashCode = Utility::HashState(StreamOutDescList.data(), StreamOutDescList.size(), HashCode);
     HashCode = Utility::HashState(&VS, 1, HashCode);
     HashCode = Utility::HashState(&PS, 1, HashCode);
     HashCode = Utility::HashState(&DS, 1, HashCode);

@@ -65,6 +65,7 @@
     <ClInclude Include="ShadowCamera.h" />
     <ClInclude Include="SMAA.h" />
     <ClInclude Include="SSAO.h" />
+    <ClInclude Include="StreamOutDesc.h" />
     <ClInclude Include="SystemTime.h" />
     <ClInclude Include="TemporalEffects.h" />
     <ClInclude Include="TextRenderer.h" />
@@ -148,6 +149,7 @@
     <ClCompile Include="ShadowCamera.cpp" />
     <ClCompile Include="SMAA.cpp" />
     <ClCompile Include="SSAO.cpp" />
+    <ClCompile Include="StreamOutDesc.cpp" />
     <ClCompile Include="SystemTime.cpp" />
     <ClCompile Include="TemporalEffects.cpp" />
     <ClCompile Include="TextRenderer.cpp" />

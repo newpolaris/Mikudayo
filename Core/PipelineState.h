@@ -29,6 +29,7 @@ class DepthStencilState;
 class RasterizerState;
 class Shader;
 struct InputDesc;
+struct StreamOutDesc;
 struct GraphicsPipelineStateDesc;
 struct ComputePipelineStateDesc;
 
@@ -85,6 +86,8 @@ public:
 
 	GraphicsPipelineState* GetState();
 
+    D3D11_RASTERIZER_DESC GetRasterizerState() const;
+
 	void SetBlendState( const D3D11_BLEND_DESC& BlendDesc );
 	void SetRasterizerState( const D3D11_RASTERIZER_DESC& RasterizerDesc );
 	void SetDepthStencilState( const D3D11_DEPTH_STENCIL_DESC& DepthStencilDesc );
@@ -95,6 +98,7 @@ public:
 	void SetRenderTargetFormat( DXGI_FORMAT RTVFormat, DXGI_FORMAT DSVFormat, UINT MsaaCount = 1, UINT MsaaQuality = 0 );
 	void SetRenderTargetFormats( UINT NumRTVs, const DXGI_FORMAT* RTVFormats, DXGI_FORMAT DSVFormat, UINT MsaaCount = 1, UINT MsaaQuality = 0 );
 	void SetInputLayout( UINT NumElements, const InputDesc* pInputElementDescs );
+    void SetStreamOutEntries( UINT NumElements, const StreamOutDesc* pStreamoutDescs );
 	void SetVertexShader( const std::string& Name, const void* Binary, size_t Size );
 	void SetPixelShader( const std::string& Name, const void* Binary, size_t Size );
 	void SetGeometryShader( const std::string& Name, const void* Binary, size_t Size );
