@@ -421,8 +421,8 @@ namespace Pmx
         wstring Name;
         wstring NameEnglish;
         JointType Type;
-        uint32_t RigidBodyIndexA;
-        uint32_t RigidBodyIndexB;
+        int32_t RigidBodyIndexA;
+        int32_t RigidBodyIndexB;
         XMFLOAT3 Position;
         XMFLOAT3 Rotation;
         XMFLOAT3 LinearLowerLimit; // MoveLimitationMin (Constraint Position)(limits move)

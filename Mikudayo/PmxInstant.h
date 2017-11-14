@@ -18,14 +18,14 @@ class BoneRef
 public:
 
     BoneRef() {}
-    BoneRef( PmxInstant* inst, uint32_t i );
+    BoneRef( PmxInstant* inst, int32_t i );
 
     const Math::OrthogonalTransform GetTransform() const;
     void SetTransform( const Math::OrthogonalTransform& transform );
     void SetTransform( const btTransform& trnasform );
     void UpdateLocalTransform();
 
-    uint32_t m_Index = 0;
+    int32_t m_Index = 0; // valid check needed (-1)
     PmxInstant* m_Instance = nullptr;
 };
 
@@ -48,9 +48,9 @@ public:
     virtual Math::Matrix4 GetTransform() const override;
     virtual void SetTransform( const Math::Matrix4& );
 
-    const Math::OrthogonalTransform GetTransform( uint32_t i ) const;
-    void SetLocalTransform( uint32_t i, const Math::OrthogonalTransform& transform );
-    void UpdateLocalTransform( uint32_t i );
+    const Math::OrthogonalTransform GetTransform( int32_t i ) const;
+    void SetLocalTransform( int32_t i, const Math::OrthogonalTransform& transform );
+    void UpdateLocalTransform( int32_t i );
 
 protected:
 

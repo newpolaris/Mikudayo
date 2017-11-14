@@ -129,15 +129,7 @@ bool BulletPicking::PickBody( const btVector3 & From, const btVector3 & To, cons
             return false;
         m_Node = nullptr;
         m_Impact = From + (To - From)*raycast.fraction;
-        if (raycast.feature == btSoftBody::eFeature::Tetra)
-        {
-            btSoftBody::Tetra& tet = raycast.body->m_tetras[raycast.index];
-            m_Node = tet.m_n[0];
-            for (int i = 1; i < 4; ++i)
-                if ((m_Node->m_x - m_Impact).length2() >( tet.m_n[i]->m_x - m_Impact ).length2())
-                    m_Node = tet.m_n[i];
-        }
-        else if (raycast.feature == btSoftBody::eFeature::Face)
+        if (raycast.feature == btSoftBody::eFeature::Face)
         {
             btSoftBody::Face& f = raycast.body->m_faces[raycast.index];
             m_Node = f.m_n[0];
@@ -207,6 +199,9 @@ void LeaveProfileZoneDefault()
 
 btConstraintSolver* Physics::CreateSolverByType( SolverType t )
 {
+#if USE_BULLET_2_75
+    return new btSequentialImpulseConstraintSolver();
+#else
     btMLCPSolverInterface* mlcpSolver = NULL;
     switch (t)
     {
@@ -228,6 +223,7 @@ btConstraintSolver* Physics::CreateSolverByType( SolverType t )
     if (mlcpSolver)
         return new btMLCPSolver( mlcpSolver );
     return NULL;
+#endif
 }
 
 void Physics::Initialize( void )
@@ -236,9 +232,10 @@ void Physics::Initialize( void )
 
     BulletDebug::Initialize();
     PrimitiveBatch::Initialize();
-
+#if !USE_BULLET_2_75
     btSetCustomEnterProfileZoneFunc(EnterProfileZoneDefault);
     btSetCustomLeaveProfileZoneFunc(LeaveProfileZoneDefault);
+#endif
 
     Config = std::make_unique<btSoftBodyRigidBodyCollisionConfiguration>();
     Broadphase = std::make_unique<btDbvtBroadphase>();
@@ -259,8 +256,8 @@ void Physics::Initialize( void )
     DebugDrawer->setDebugMode(
         // btIDebugDraw::DBG_DrawAabb |
         btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits
-        // btIDebugDraw::DBG_DrawWireframe
+        btIDebugDraw::DBG_DrawConstraintLimits |
+        btIDebugDraw::DBG_DrawWireframe
     );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );
     auto pickCallback = []( btDynamicsWorld * world, btScalar timeStep ) {
@@ -280,8 +277,9 @@ void Physics::JobFunc()
             condJob.wait( lk, [] { return bStepJob; } );
             if (bExitJob)
                 break;
-
+        #if !USE_BULLET_2_75
             DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
+		#endif
             ASSERT( DynamicsWorld.get() != nullptr );
             DynamicsWorld->stepSimulation( m_deltaT, 2 );
 

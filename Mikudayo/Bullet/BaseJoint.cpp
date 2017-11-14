@@ -192,13 +192,11 @@ void BaseJoint::Build()
 void BaseJoint::JoinWorld( btDynamicsWorld* world )
 {
     world->addConstraint( m_Constraint.get() );
-    m_Constraint->setUserConstraintPtr( this );
 }
 
 void BaseJoint::LeaveWorld( btDynamicsWorld* world )
 {
     world->removeConstraint( m_Constraint.get() );
-    m_Constraint->setUserConstraintPtr( nullptr );
 }
 
 void BaseJoint::SetType( const JointType type )

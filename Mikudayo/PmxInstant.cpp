@@ -59,14 +59,14 @@ struct PmxInstant::Context final
     Matrix4 GetTransform() const;
     void SetTransform( const Matrix4& transform );
 
-    const OrthogonalTransform GetTransform( uint32_t i ) const;
-    void UpdateLocalTransform( uint32_t i );
-    void SetLocalTransform( uint32_t i, const OrthogonalTransform& transform );
+    const OrthogonalTransform GetTransform( int32_t i ) const;
+    void UpdateLocalTransform( int32_t i );
+    void SetLocalTransform( int32_t i, const OrthogonalTransform& transform );
 
 protected:
 
     void LoadBoneMotion( const std::vector<Vmd::BoneFrame>& frames );
-    void PerformTransform( uint32_t i );
+    void PerformTransform( int32_t i );
     void SoftwareSkinning();
     void UpdateChildPose( int32_t idx );
     void UpdateIK( const PmxModel::IKAttr& ik );
@@ -207,6 +207,8 @@ bool PmxInstant::Context::LoadModel()
 
     for (auto& it : m_Model.m_Joints)
     {
+        if (it.RigidBodyIndexB < 0 || it.RigidBodyIndexA < 0)
+            continue;
         auto body = std::make_shared<Joint>();
         body->SetName( it.Name );
         body->SetNameEnglish( it.NameEnglish );
@@ -361,7 +363,7 @@ void PmxInstant::Context::LoadBoneMotion( const std::vector<Vmd::BoneFrame>& fra
 
 // Use code from 'MMDAI'
 // Copyright (c) 2010-2014  hkrn
-void PmxInstant::Context::PerformTransform( uint32_t i )
+void PmxInstant::Context::PerformTransform( int32_t i )
 {
     Quaternion orientation( kIdentity );
     if (m_Model.m_Bones[i].bInherentRotation) {
@@ -525,19 +527,19 @@ void PmxInstant::Context::SetTransform( const Matrix4& transform )
     m_ModelTransform = transform;
 }
 
-const OrthogonalTransform PmxInstant::Context::GetTransform( uint32_t i ) const
+const OrthogonalTransform PmxInstant::Context::GetTransform( int32_t i ) const
 {
     return m_Pose[i];
 }
 
-void PmxInstant::Context::UpdateLocalTransform( uint32_t i )
+void PmxInstant::Context::UpdateLocalTransform( int32_t i )
 {
     auto parentIndex = m_Model.m_Bones[i].Parent;
     if (parentIndex >= 0)
         m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
 }
 
-void PmxInstant::Context::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
+void PmxInstant::Context::SetLocalTransform( int32_t i, const OrthogonalTransform& transform )
 {
     m_Pose[i] = transform;
 }
@@ -822,17 +824,17 @@ void PmxInstant::UpdateAfterPhysics( float deltaT )
     m_Context->UpdateAfterPhysics( deltaT );
 }
 
-const OrthogonalTransform PmxInstant::GetTransform( uint32_t i ) const
+const OrthogonalTransform PmxInstant::GetTransform( int32_t i ) const
 {
     return m_Context->GetTransform( i );
 }
 
-void PmxInstant::SetLocalTransform( uint32_t i, const OrthogonalTransform& transform )
+void PmxInstant::SetLocalTransform( int32_t i, const OrthogonalTransform& transform )
 {
     m_Context->SetLocalTransform( i, transform );
 }
 
-void PmxInstant::UpdateLocalTransform( uint32_t i )
+void PmxInstant::UpdateLocalTransform( int32_t i )
 {
     m_Context->UpdateLocalTransform( i );
 }
@@ -873,7 +875,7 @@ void PmxInstant::SetTransform( const Math::Matrix4& transform )
     m_Context->SetTransform( transform );
 }
 
-BoneRef::BoneRef( PmxInstant* inst, uint32_t i ) : m_Instance( inst ), m_Index( i )
+BoneRef::BoneRef( PmxInstant* inst, int32_t i ) : m_Instance( inst ), m_Index( i )
 {
 }
 

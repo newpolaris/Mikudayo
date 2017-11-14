@@ -95,9 +95,8 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
             Shape->calculateLocalInertia(massValue, localInertia);
         }
     }
-
     Vector3 BonePosition( kZero );
-    if (m_BoneRef.m_Instance != nullptr)
+    if (m_BoneRef.m_Instance != nullptr && m_BoneRef.m_Index >= 0)
         BonePosition = m_BoneRef.GetTransform().GetTranslation();
     m_Trans = btTransform( m_Rotation, m_Position - Convert(BonePosition) );
     m_InvTrans = m_Trans.inverse();
@@ -144,6 +143,8 @@ btTransform BaseRigidBody::GetTransfrom() const
 
 void BaseRigidBody::SyncLocalTransform()
 {
+    if (m_BoneRef.m_Index < 0) 
+        return;
 #if 0
     const int nconstraints = m_body->getNumConstraintRefs();
     for (int i = 0; i < nconstraints; i++) {
@@ -179,12 +180,14 @@ void BaseRigidBody::SyncLocalTransform()
 
 void BaseRigidBody::JoinWorld( btDynamicsWorld* world )
 {
+    // When use bullet 2.75, casting is needed
     world->addRigidBody( m_Body.get(), m_GroupID, m_CollisionGroupMask );
     m_Body->setUserPointer( this );
 }
 
 void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
 {
+    // When use bullet 2.75, casting is needed
     world->removeRigidBody( m_Body.get() );
     m_Body->setUserPointer( nullptr );
 }

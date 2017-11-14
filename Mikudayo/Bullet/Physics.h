@@ -14,18 +14,20 @@ struct btSoftBodyWorldInfo;
 #define BT_THREADSAFE 1
 #define BT_NO_SIMD_OPERATOR_OVERLOADS 1
 #include "btBulletDynamicsCommon.h"
-#include "LinearMath/btThreads.h"
 #include "LinearMath/btQuickprof.h"
 #include "BulletSoftBody/btSoftBodyHelpers.h"
 #include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
-#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
 #include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h"
+#if !USE_BULLET_2_75
+#include "LinearMath/btThreads.h"
 #include "BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h"
+#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
 #include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
 #include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
 #include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
 #include "BulletDynamics/MLCPSolvers/btLemkeSolver.h"
+#endif
 #pragma warning(pop)
 
 namespace Math
