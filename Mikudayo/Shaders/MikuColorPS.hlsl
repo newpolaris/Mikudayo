@@ -95,6 +95,9 @@ PixelShaderOutput main(PixelShaderInput input)
     emissive *= texMirrorEmmisive;
 #endif
     float3 normal = normalize( input.normalWS );
+    if (any( input.normalWS ))
+        normal = normalize( normal );
+
     // Complete projection by doing division by w.
     float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
     if (!any(saturate(shadowCoord.xy) != shadowCoord.xy))

@@ -23,7 +23,6 @@ PixelShaderInput main(VertexShaderInput input)
     Material mat = Mat;
 
     float3 position = input.position;
-    float3 normal = input.normal;
 
     // Transform the vertex position into projected space.
     matrix worldViewProjMatrix = mul( projection, mul( view, model ) );
@@ -31,18 +30,20 @@ PixelShaderInput main(VertexShaderInput input)
     output.positionHS = mul( worldViewProjMatrix, float4(position, 1) );
     output.shadowPositionCS = mul( viewToShadow, float4(output.positionWS, 1) );
     output.eyeWS = cameraPosition - mul( (float3x3)model, position );
-    output.normalWS = normalize(mul( (float3x3)model, normal ));
+    float3 normalWS = mul( (float3x3)model, input.normal );
+    if (any( normalWS ))
+        normalWS = normalize( normalWS );
+    output.normalWS = normalWS;
     output.color.rgb = AmbientColor;
     if (!mat.bUseToon) {
-        output.color.rgb += max( 0, dot( output.normalWS, -SunDirectionWS ) ) * DiffuseColor.rgb;
+        output.color.rgb += max( 0, dot( normalWS, -SunDirectionWS ) ) * DiffuseColor.rgb;
     }
     output.color.a = DiffuseColor.a;
     output.color = saturate( output.color );
 	output.texCoord = input.texcoord;
     if ( mat.sphereOperation != kSphereNone ) {
-        float2 normalVS = mul( (float3x3)view, output.normalWS ).xy;
-        output.spTex.x = normalVS.x * 0.5 + 0.5;
-        output.spTex.y = normalVS.y * -0.5 + 0.5;
+        float2 normalVS = mul( (float3x3)view, normalWS ).xy;
+        output.spTex = normalVS * float2(0.5, -0.5) + float2(0.5, 0.5);
     }
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );
     output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.specularPower ) * SpecularColor;

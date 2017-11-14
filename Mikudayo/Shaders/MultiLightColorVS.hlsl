@@ -24,7 +24,6 @@ PixelShaderInput main(VertexShaderInput input)
     Material mat = Mat;
 
     float3 position = input.position;
-    float3 normal = input.normal;
 
     // Transform the vertex position into projected space.
     matrix worldViewProjMatrix = mul( projection, mul( view, model ) );
@@ -32,22 +31,24 @@ PixelShaderInput main(VertexShaderInput input)
     output.positionHS = mul( worldViewProjMatrix, float4(position, 1) );
     output.shadowPositionCS = mul( viewToShadow, float4(output.positionWS, 1) );
     output.eyeWS = cameraPosition - mul( (float3x3)model, position );
-    output.normalWS = normalize(mul( (float3x3)model, normal ));
+    float3 normalWS = mul( (float3x3)model, input.normal );
+    if (any( normalWS ))
+        normalWS = normalize( normalWS );
+    output.normalWS = normalWS;
 
-    output.color.rgb = max(0, dot(output.normalWS, -LightDirection) * MainHLamb + (1 - MainHLamb))*ambientColor*MainLightParam;
+    output.color.rgb = max(0, dot(normalWS, -LightDirection) * MainHLamb + (1 - MainHLamb))*ambientColor*MainLightParam;
     float3 subsum = 0;
     for (int i = 0; i < 16; i++) {
         float3 p = float3(LightPos[i].xy, -LightPos[i].z);
-        subsum += max(0, dot(output.normalWS, normalize(p)) * SubHLamb + (1 - SubHLamb))*ambientColor*SubLightParam;
+        subsum += max(0, dot(normalWS, normalize(p)) * SubHLamb + (1 - SubHLamb))*ambientColor*SubLightParam;
     }
     
     output.color.rgb += (subsum / (16 * LightScale))*1.0;
     output.color.a = smoothstep( 0, 0.9, DiffuseColor.a );
 	output.texCoord = input.texcoord;
     if ( mat.sphereOperation != kSphereNone ) {
-        float2 normalVS = mul( (float3x3)view, output.normalWS ).xy;
-        output.spTex.x = normalVS.x * 0.5 + 0.5;
-        output.spTex.y = normalVS.y * -0.5 + 0.5;
+        float2 normalVS = mul( (float3x3)view, normalWS ).xy;
+        output.spTex = normalVS * float2(0.5, -0.5) + float2(0.5, 0.5);
     }
     output.emissive = float4(0, 0, 0, MaterialDiffuse.a);
 #if AUTOLUMINOUS

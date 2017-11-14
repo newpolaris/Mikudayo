@@ -60,7 +60,9 @@ PixelShaderOutput main(PixelShaderInput input)
     clip(-DistanceFromReflector( input.positionWS ));
 #endif
 
-    float3 normal = normalize( input.normalWS );
+    float3 normal = input.normalWS;
+    if (any( normal ))
+        normal = normalize( normal );
     float3 view = normalize(input.eyeWS);
     float3 HalfVector = normalize( view + -LightDirection );
     float3 Specular = pow( max( 0, dot( HalfVector, normal ) ), SpecularPower + SP_Power ) * (SpecularColor + SP_Add) * SP_Scale * MainLightParam;
