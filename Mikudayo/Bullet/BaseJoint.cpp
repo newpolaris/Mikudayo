@@ -59,8 +59,8 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
     case JointType::kGeneric6Dof:
     {
         auto pConstraint = std::make_shared<btGeneric6DofConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
-        pConstraint->setLinearUpperLimit( m_LinearLowerLimit );
-        pConstraint->setLinearLowerLimit( m_LinearUpperLimit );
+        pConstraint->setLinearLowerLimit( m_LinearLowerLimit );
+        pConstraint->setLinearUpperLimit( m_LinearUpperLimit );
         pConstraint->setAngularLowerLimit( m_AngularLowerLimit );
         pConstraint->setAngularUpperLimit( m_AngularUpperLimit );
 
@@ -69,8 +69,8 @@ btTypedConstraintPtr BaseJoint::CreateConstraint()
     case JointType::kGeneric6DofSpring:
     {
         auto pConstraint = std::make_shared<btGeneric6DofSpringConstraint>( *pBodyA, *pBodyB, frameInA, frameInB, true );
-        pConstraint->setLinearUpperLimit( m_LinearLowerLimit );
-        pConstraint->setLinearLowerLimit( m_LinearUpperLimit );
+        pConstraint->setLinearLowerLimit( m_LinearLowerLimit );
+        pConstraint->setLinearUpperLimit( m_LinearUpperLimit );
         pConstraint->setAngularLowerLimit( m_AngularLowerLimit );
         pConstraint->setAngularUpperLimit( m_AngularUpperLimit );
 
