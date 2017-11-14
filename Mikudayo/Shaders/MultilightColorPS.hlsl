@@ -1,5 +1,6 @@
 #include "CommonInclude.hlsli"
 #include "MultiLight.hlsli"
+#include "MikuColorVS.hlsli"
 #include "Shadow.hlsli"
 
 //
@@ -25,45 +26,6 @@ struct PixelShaderOutput
     float4 emissive : SV_Target1; // emissive color output (R11G11B10_FLOAT)
 };
 
-struct Material
-{
-	float3 diffuse;
-	float alpha;
-	float3 specular;
-	float specularPower;
-	float3 ambient;
-    int sphereOperation;
-    int bUseTexture;
-    int bUseToon;
-    float EdgeSize;
-    float4 EdgeColor;
-    float4 MaterialToon;
-};
-
-cbuffer Constants: register(b0)
-{
-	matrix view;
-	matrix projection;
-    matrix viewToShadow;
-    float3 cameraPositionWS;
-};
-
-cbuffer MaterialConstants : register(b4)
-{
-    Material Mat;
-};
-
-static const int kSphereNone = 0;
-static const int kSphereMul = 1;
-static const int kSphereAdd = 2;
-
-cbuffer PSConstants : register(b5)
-{
-    float3 SunDirectionWS;
-    float3 SunColor;
-    float4 ShadowTexelSize;
-}
-
 cbuffer ReflectorPlane : register(b11)
 {
     float4 reflectPlane;
@@ -84,12 +46,7 @@ float DistanceFromReflector( float3 position )
     return dot(reflectPlane.xyz, position.xyz) + reflectPlane.a;
 }
 
-static float3 LightSpecular = SunColor;
-static float3 LightDirection = SunDirectionWS;
-static float3 MaterialSpecular = Mat.specular;
-static float3 SpecularColor = MaterialSpecular * LightSpecular;
 static float SpecularPower = Mat.specularPower;
-static const float4 MaterialToon = Mat.MaterialToon;
 
 #if !REFLECTED
 [earlydepthstencil]

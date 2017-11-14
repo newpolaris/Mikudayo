@@ -33,19 +33,19 @@ public:
         std::wstring Path;
     };
 
-	__declspec(align(16))
     struct MaterialCB
 	{
 		XMFLOAT4 Diffuse;
 		XMFLOAT3 Specular;
 		float SpecularPower;
 		XMFLOAT3 Ambient;
-		int32_t SphereOperation;
-		int32_t bUseTexture;
-		int32_t bUseToon;
         float EdgeSize;
         XMFLOAT4 EdgeColor;
         Color MaterialToon;
+		int32_t SphereOperation;
+		int32_t bUseTexture;
+		int32_t bUseToon;
+        int32_t PAD32;
 	};
 
     struct Material : public IMaterial

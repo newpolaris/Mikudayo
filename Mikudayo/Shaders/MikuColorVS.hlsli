@@ -24,12 +24,12 @@ struct Material
 	float3 specular;
 	float specularPower;
 	float3 ambient;
-    int sphereOperation;
-    int bUseTexture;
-    int bUseToon;
     float EdgeSize;
     float4 EdgeColor;
     float4 MaterialToon;
+    int sphereOperation;
+    int bUseTexture;
+    int bUseToon;
 };
 
 cbuffer MaterialConstants : register(b4)
