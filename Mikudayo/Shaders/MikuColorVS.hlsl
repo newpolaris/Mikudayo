@@ -46,7 +46,9 @@ PixelShaderInput main(VertexShaderInput input)
         output.spTex = normalVS * float2(0.5, -0.5) + float2(0.5, 0.5);
     }
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );
-    output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.specularPower ) * SpecularColor;
+    float specular = max( 0, dot( halfVector, output.normalWS ) );
+    if (any(specular))
+        output.specular = pow( specular, mat.specularPower ) * SpecularColor;
     output.emissive = float4(0, 0, 0, MaterialDiffuse.a);
 #if AUTOLUMINOUS
     if (IsEmission)
@@ -54,7 +56,7 @@ PixelShaderInput main(VertexShaderInput input)
         output.emissive = MaterialDiffuse;
         // from Autoluminous 'EmittionPower0'
         float factor = max( 1, (mat.specularPower - 100) / 7 );
-        output.emissive.rgb *= factor*10;
+        output.emissive.rgb *= factor;
         output.color.rgb += lerp(float3(1, 1, 1), output.color.rgb, 0.0) * factor;
     }
 #endif

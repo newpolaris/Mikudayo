@@ -112,7 +112,9 @@ PixelShaderInput main(VertexShaderInput input)
     output.emissive = float4(MaterialEmissive, MaterialDiffuse.a);
 	output.texCoord = input.texcoord;
     float3 halfVector = normalize( normalize( output.eyeWS ) + -SunDirectionWS );
-    output.specular = pow( max( 0, dot( halfVector, output.normalWS ) ), mat.shininess ) * SpecularColor;
+    float specular = max( 0.00001, dot( halfVector, output.normalWS ) );
+    if (any(specular))
+        output.specular = pow( specular, mat.shininess ) * SpecularColor;
 #if AUTOLUMINOUS
     if (IsEmission)
     {
