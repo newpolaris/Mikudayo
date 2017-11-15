@@ -56,8 +56,8 @@ PixelShaderInput main(VertexShaderInput input)
         output.emissive = MaterialDiffuse;
         // from Autoluminous 'EmittionPower0'
         float factor = max( 1, (mat.specularPower - 100) / 7 );
-        output.emissive.rgb *= factor;
-        output.color.rgb += lerp(float3(1, 1, 1), output.color.rgb, 0.0) * factor;
+        output.emissive.rgb *= factor*2;
+        output.color.rgb *= factor*2;
     }
 #endif
     output.ambient = AmbientColor;

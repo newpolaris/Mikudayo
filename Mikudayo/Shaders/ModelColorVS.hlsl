@@ -121,7 +121,7 @@ PixelShaderInput main(VertexShaderInput input)
         output.emissive.rgb += MaterialDiffuse.rgb;
         // from Autoluminous 'EmittionPower0'
         float factor = max( 1, (mat.shininess - 100) / 7 );
-        output.emissive.rgb *= factor*2;
+        output.emissive.rgb *= factor*5;
         output.color.rgb *= factor*2;
     }
 #endif
