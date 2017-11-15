@@ -87,18 +87,23 @@ namespace Math
 	INLINE float Clamp( float v, float a, float b ) { return Clamp(Scalar(v), Scalar(a), Scalar(b)); }
 
 	INLINE Scalar Length( Vector3 v ) { return Scalar(XMVector3Length(v)); }
+	INLINE Scalar Length( Quaternion q ) { return Scalar(XMQuaternionLength(q)); }
 	INLINE Scalar LengthSquare( Vector3 v ) { return Scalar(XMVector3LengthSq(v)); }
 	INLINE Scalar LengthRecip( Vector3 v ) { return Scalar(XMVector3ReciprocalLength(v)); }
 	INLINE Scalar Dot( Vector3 v1, Vector3 v2 ) { return Scalar(XMVector3Dot(v1, v2)); }
 	INLINE Scalar Dot( Vector4 v1, Vector4 v2 ) { return Scalar(XMVector4Dot(v1, v2)); }
+	INLINE Scalar Dot( Quaternion q1, Quaternion q2 ) { return Scalar(XMVector4Dot(q1, q2)); }
 	INLINE Vector3 Cross( Vector3 v1, Vector3 v2 ) { return Vector3(XMVector3Cross(v1, v2)); }
 	INLINE Vector3 Normalize( Vector3 v ) { return Vector3(XMVector3Normalize(v)); }
 	INLINE Vector4 Normalize( Vector4 v ) { return Vector4(XMVector4Normalize(v)); }
 	INLINE Quaternion Normalize( Quaternion q ) { return Quaternion(XMQuaternionNormalize(q)); }
+    INLINE DualQuaternion Normalize( DualQuaternion dq ) { Scalar mag = Length( dq.Real ); return dq / mag; }
 	INLINE bool Near( Scalar v1, Scalar v2, Scalar eps ) { return XMVector3NearEqual( v1, v2, eps ); }
 	INLINE bool Near( Vector3 v1, Vector3 v2, Vector3 eps ) { return XMVector3NearEqual( v1, v2, eps ); }
 	INLINE bool Near( Vector4 v1, Vector4 v2, Vector4 eps ) { return XMVector4NearEqual( v1, v2, eps ); }
-        INLINE bool Near( XMFLOAT2 v1, XMFLOAT2 v2, Scalar eps ) { XMVECTOR vec1 = XMLoadFloat2( &v1 ), vec2 = XMLoadFloat2( &v2 ); return XMVector2NearEqual( vec1, vec2, eps ); }
+	INLINE bool Near( Quaternion q1, Quaternion q2, Vector4 eps ) { return XMVector4NearEqual( q1, q2, eps ); }
+    INLINE bool Near( DualQuaternion q1, DualQuaternion q2, Vector4 eps ) { return Near( q1.Real, q2.Real, eps ) && Near( q1.Dual, q2.Dual, eps ); }
+    INLINE bool Near( XMFLOAT2 v1, XMFLOAT2 v2, Scalar eps ) { XMVECTOR vec1 = XMLoadFloat2( &v1 ), vec2 = XMLoadFloat2( &v2 ); return XMVector2NearEqual( vec1, vec2, eps ); }
 	INLINE Matrix3 Transpose( const Matrix3& mat ) { return Matrix3(XMMatrixTranspose(mat)); }
 
 	// inline Matrix3 Inverse( const Matrix3& mat ) { TBD }

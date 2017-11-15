@@ -5,10 +5,8 @@
 
 using namespace Math;
 
-//
-// Wikipedia
-//
-Vector3 Quaternion::toEuler( void ) const
+// Use code from 'Wikipedia'
+Vector3 Quaternion::Euler( void ) const
 {
 	XMFLOAT4 q;
 	DirectX::XMStoreFloat4( &q, *this );

@@ -55,6 +55,9 @@
     <ClCompile Include="PMX\BasicModel.cpp">
       <Filter>Source Files\PMX</Filter>
     </ClCompile>
+    <ClCompile Include="Math\DualQuaternion.cpp">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PMX\Common.h">

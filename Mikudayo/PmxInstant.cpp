@@ -6,6 +6,8 @@
 #include "PrimitiveUtility.h"
 #include "Visitor.h"
 #include "TaskManager.h"
+#include "GLMMath.h"
+#include "Math/DualQuaternion.h"
 #include "Math/SimpleMath.h"
 #include "Bullet/Physics.h"
 #include "Bullet/RigidBody.h"
@@ -299,11 +301,15 @@ void PmxInstant::Context::LeaveWorld( btDynamicsWorld* world )
     }
 }
 
-void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
-{
+#if 0
+bool PmxInstant::Context::
     // If there's no motion data. Update is not needed.
     if (m_BoneMotions.size() <= 0)
         return;
+#endif
+
+void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
+{
     const auto numByte = GetVectorSize( m_Skinning );
     gfxContext.SetDynamicConstantBufferView( 0, numByte, m_Skinning.data(), { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_PositionBuffer.VertexBufferView() );
@@ -424,13 +430,26 @@ void PmxInstant::Context::SoftwareSkinning()
             skinned = m_Skinning[skin.Unit.bdef1.BoneIndex] * pos;
             break;
         case Pmx::kBdef2:
-        case Pmx::kSdef:
             skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[0]] * pos * skin.Unit.bdef2.Weight;
             skinned += m_Skinning[skin.Unit.bdef2.BoneIndex[1]] * pos * (1 - skin.Unit.bdef2.Weight );
             break;
         case Pmx::kBdef4:
             for (int k = 0; k < 4; k++)
                 skinned += m_Skinning[skin.Unit.bdef4.BoneIndex[k]] * pos * skin.Unit.bdef4.Weight[k];
+            break;
+        case Pmx::kSdef:
+            auto o0 = m_Skinning[skin.Unit.sdef.BoneIndex[0]];
+            auto o1 = m_Skinning[skin.Unit.sdef.BoneIndex[1]];
+            float weight0 = skin.Unit.sdef.Weight; 
+            float weight1 = 1 - weight0;
+            DualQuaternion dq00( o0 ), dq10( o1 );
+            dq00 = Normalize( dq00 );
+            dq10 = Normalize( dq10 );
+            if (float(Dot( dq00.Real, dq10.Real )) < 0)
+                weight1 = -weight1;
+            DualQuaternion blended = dq00 * weight0 + dq10 * weight1;
+            blended = Normalize( blended );
+            skinned = blended.Transform( pos );
             break;
         };
         position[i] = skinned;
@@ -507,7 +526,7 @@ void PmxInstant::Context::UpdateAfterPhysics( float kFrameTime )
     for (auto i = 0; i < numBones; i++)
         m_Skinning[i] = m_Pose[i] * m_toRoot[i];
 
-    // SoftwareSkinning();
+    SoftwareSkinning();
 }
 
 Math::BoundingBox PmxInstant::Context::GetBoundingBox() const
@@ -554,35 +573,6 @@ void PmxInstant::Context::UpdateChildPose( int32_t idx )
 
 	for (auto c : m_Model.m_Bones[idx].Child)
 		UpdateChildPose( c );
-}
-
-#pragma warning(push)
-#pragma warning(disable: 4201)
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
-#pragma warning(pop)
-
-inline Vector3 Convert2(const glm::vec3& v )
-{
-    return Vector3( v.x, v.y, v.z );
-}
-
-inline glm::vec3 Convert2(const Math::Vector3& v )
-{
-    return glm::vec3( v.GetX(), v.GetY(), v.GetZ() );
-}
-
-inline glm::quat Convert2( const Math::Quaternion& q )
-{
-    XMFLOAT4 v;
-    XMStoreFloat4( &v, q);
-    glm::quat g;
-    g.x = v.x;
-    g.y = v.y;
-    g.z = v.z;
-    g.w = v.w;
-    return g;
 }
 
 //
@@ -674,8 +664,8 @@ void PmxInstant::Context::UpdateIK(const PmxModel::IKAttr& ik)
 					// The value obtained from the test
 					//
 					const Scalar PMDMinRotX = 0.10f;
-					auto next = rotNext.toEuler();
-					auto base = rotBase.toEuler();
+					auto next = rotNext.Euler();
+					auto base = rotBase.Euler();
 
 					auto sum = Clamp( next.GetX() + base.GetX(), PMDMinRotX, Scalar(XM_PI) );
 					next = Vector3( sum - base.GetX(), 0.f, 0.f );
@@ -857,7 +847,7 @@ void PmxInstant::RenderBone( GraphicsContext& Context, Visitor& visitor )
 
 void PmxInstant::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    m_Context->Skinning( gfxContext, visitor );
+    // m_Context->Skinning( gfxContext, visitor );
 }
 
 Math::BoundingBox PmxInstant::GetBoundingBox() const

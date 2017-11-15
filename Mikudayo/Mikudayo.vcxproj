@@ -121,6 +121,7 @@
     <ClCompile Include="DeferredLighting.cpp" />
     <ClCompile Include="ForwardLighting.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="GLMMath.cpp" />
     <ClCompile Include="IndexOptimizePostTransform.cpp" />
     <ClCompile Include="KeyFrameAnimation.cpp" />
     <ClCompile Include="main.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="DeferredLighting.h" />
     <ClInclude Include="ForwardLighting.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="GLMMath.h" />
     <ClInclude Include="IndexOptimizePostTransform.h" />
     <ClInclude Include="KeyFrameAnimation.h" />
     <ClInclude Include="Material.h" />

@@ -177,6 +177,9 @@
     <ClCompile Include="SkinningPass.cpp">
       <Filter>Source Files\RenderPass</Filter>
     </ClCompile>
+    <ClCompile Include="GLMMath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -343,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="SkinningPass.h">
       <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="GLMMath.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
