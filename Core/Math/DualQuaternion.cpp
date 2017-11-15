@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "DualQuaternion.h"
 
+#define USE_GLM_METHOD 1
+
 using namespace Math;
 
 DualQuaternion::DualQuaternion()
@@ -29,18 +31,17 @@ DualQuaternion::DualQuaternion( OrthogonalTransform o ) :
 // Use code from 'glm'
 Vector3 DualQuaternion::Transform( const Vector3& v ) const
 {
-    Vector3 R( Real );
-    Vector3 D( Dual );
     // diff < 1e-5
 #if !USE_GLM_METHOD
     Vector3 translate = (D*Real.GetW() - Vector3(Real)*Dual.GetW() + Cross(Vector3(Real), Vector3(Dual))) * 2.f;
     return Real * v + Vector3( translate );
 #else
+    Vector3 R( Real ), D( Dual );
     return (Cross( R, Cross( R, v ) + v * Real.GetW() + D ) + D*Real.GetW() - R * Dual.GetW()) * 2 + v;
 #endif
 }
 
-Vector3 DualQuaternion::Rotate( const Vector3& vector ) const
+Vector3 DualQuaternion::Rotate( const Vector3& v ) const
 {
-    return Vector3( Real * vector );
+    return Vector3( Real * v );
 }

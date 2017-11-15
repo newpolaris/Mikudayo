@@ -15,12 +15,12 @@ namespace Physics
     // set default gravity 
     // some tweak for the simulation to match that of MikuMikuDance
     const float Scale = 10.f;
-    const float EarthGravity = -9.8f;
+    const float EarthGravity = 9.8f;
 
     NumVar m_GravityAccel( "Application/Physics/Gravity Acceleration", EarthGravity, -100, 100, 1 );
-    NumVar m_GravityX( "Application/Physics/Gravity X", 0, -1, 1, 1 );
-    NumVar m_GravityY( "Application/Physics/Gravity Y", -1, -1, 1, 1 );
-    NumVar m_GravityZ( "Application/Physics/Gravity Z", 0, -1, 1, 1 );
+    NumVar m_GravityX( "Application/Physics/Gravity X", 0, -1, 1, 0.1 );
+    NumVar m_GravityY( "Application/Physics/Gravity Y", -1, -1, 1, 0.1 );
+    NumVar m_GravityZ( "Application/Physics/Gravity Z", 0, -1, 1, 0.1 );
 
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
     int m_SolverMode = SOLVER_SIMD |

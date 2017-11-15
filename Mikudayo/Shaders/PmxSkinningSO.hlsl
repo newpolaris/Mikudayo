@@ -87,10 +87,10 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
     else if (type == Sdef)
     {
         const uint2 boneID = SkinUnit.Load2( baseOffset + 4 );
-        const float weight1 = 1 - asfloat(SkinUnit.Load( baseOffset + 12 ));
+        const float weight = asfloat(SkinUnit.Load( baseOffset + 12 ));
         float2x4 dq0 = BoneDualQuaternion( boneID.x );
         float2x4 dq1 = BoneDualQuaternion( boneID.y );
-        float2x4 blended = BlendDualQuaternion2( dq0, dq1, weight1 );
+        float2x4 blended = BlendDualQuaternion2( dq0, dq1, weight );
         output.position = TransformPositionDualQuat( input.position, blended[0], blended[1] );
         output.normal = TransformNormalDualQuat( input.normal, blended[0], blended[1] );
     }
@@ -102,7 +102,7 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
         float2x4 dq[4];
         for (int i = 0; i < 4; i++)
             dq[i] = BoneDualQuaternion( boneID[i] );
-        float2x4 blended = BlendDualQuaternionShortest4( dq, weight );
+        float2x4 blended = BlendDualQuaternion4( dq, weight );
         output.position = TransformPositionDualQuat( input.position, blended[0], blended[1] );
         output.normal = TransformNormalDualQuat( input.normal, blended[0], blended[1] );
     }

@@ -32,50 +32,48 @@ float3 Slerp( float3 n0, float3 n1, float t )
     return phi;
 }
 
-float3 TransformPositionDualQuat( float3 position, float4 realDQ, float4 dualDQ )
+float3 TransformPositionDualQuat( float3 v, float4 realDQ, float4 dualDQ )
 {
-    return position +
-        2 * cross( realDQ.xyz, cross(realDQ.xyz, position) + realDQ.w*position ) +
+    return v +
+        2 * cross( realDQ.xyz, cross(realDQ.xyz, v) + realDQ.w*v) +
         2 * (realDQ.w * dualDQ.xyz - dualDQ.w * realDQ.xyz + 
             cross( realDQ.xyz, dualDQ.xyz));
 }
  
 float3 TransformNormalDualQuat( float3 normal, float4 realDQ, float4 dualDQ )
 {
-    return normal + 2.0 * cross( realDQ.xyz, cross( realDQ.xyz, normal ) + 
-                          realDQ.w * normal );
+    return normal + 
+        2 * cross( realDQ.xyz, cross( realDQ.xyz, normal ) + realDQ.w * normal );
 }
 
-float2x4 DualQuaternion( float4 quaternion, float4 translate )
+float2x4 DualQuaternion( float4 q, float4 t )
 {
-	return float2x4(
-        quaternion,
-        MultiplyQuaternion( translate * 0.5, quaternion )
-	);
+    float4 d = float4(
+        +0.5 * (t.x*q.w + t.y*q.z - t.z*q.y),
+        +0.5 * (-t.x*q.z + t.y*q.w + t.z*q.x),
+        +0.5 * (t.x*q.y - t.y*q.x + t.z*q.w),
+        -0.5 * (t.x*q.x + t.y*q.y + t.z*q.z));
+    return float2x4(q, d);
 }
 
-float2x4 BlendDualQuaternion2( float2x4 dq0, float2x4 dq1, float weight )
+float2x4 NormalizeDQ( float2x4 dq )
 {
-    float2x4 blendedDQ = lerp(dq0, dq1, weight);
-    // normalize
-    float normDQ = length(blendedDQ[0]);
-    return blendedDQ / normDQ;
+    float normDQ = length(dq[0]);
+    return dq / normDQ;
 }
 
 // Seek shortest rotation
-float2x4 BlendDualQuaternionShortest2( float2x4 dq0, float2x4 dq1, float weight )
+float2x4 BlendDualQuaternion2( float2x4 dq0, float2x4 dq1, float weight )
 {
     float2x4 blendedDQ = dq0 * weight;
     float weight1 = 1 - weight;
     if (dot( dq0[0], dq1[0] ) < 0)
         weight1 = -weight1;
     blendedDQ += dq1 * weight1;
-    // normalize
-    float normDQ = length(blendedDQ[0]);
-    return blendedDQ / normDQ;
+    return NormalizeDQ( blendedDQ );
 }
 
-float2x4 BlendDualQuaternionShortest4( float2x4 dq[4], float4 weight )
+float2x4 BlendDualQuaternion4( float2x4 dq[4], float4 weight )
 {
     float2x4 blendedDQ = 0;
     float4 rot = dq[0][0];
@@ -86,7 +84,5 @@ float2x4 BlendDualQuaternionShortest4( float2x4 dq[4], float4 weight )
             w *= -1;
         blendedDQ += dq[i] * w;
     }
-    // normalize
-    float normDQ = length(blendedDQ[0]);
-    return blendedDQ / normDQ;
+    return NormalizeDQ( blendedDQ );
 }
