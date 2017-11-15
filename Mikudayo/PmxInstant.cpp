@@ -327,7 +327,7 @@ void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visito
     UINT offset[2] = { 0, 0 };
     gfxContext.SetStreamOutTargets( 2, handle, offset );
     gfxContext.SetDynamicDescriptor( 0, m_Model.m_SkinningUnitbuffer.GetSRV(), { kBindVertex } );
-    auto& material = m_Model.m_Materials[0];
+    auto& material = m_Model.m_Materials[0]; // use any
     visitor.Visit( material );
     gfxContext.Draw( UINT( m_Model.m_Position.size() ), 0 );
 

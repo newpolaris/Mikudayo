@@ -436,6 +436,8 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         it = m_Bones.begin();
     m_RootBoneIndex = static_cast<uint32_t>(std::distance( m_Bones.begin(), it ));
 
+    m_Morphs = std::move( pmx.m_Morphs );
+
     m_RigidBodies = std::move( pmx.m_RigidBodies );
     m_Joints = std::move( pmx.m_Joints );
 
@@ -522,4 +524,9 @@ bool PmxModel::Material::IsTwoSided() const
 RenderPipelinePtr PmxModel::Material::GetPipeline( RenderQueue Queue ) 
 {
     return Techniques[Queue];
+}
+
+bool PmxModel::Mesh::IsIntersect( const Frustum& frustumWS ) const
+{
+    return frustumWS.IntersectSphere( BoundSphere );
 }

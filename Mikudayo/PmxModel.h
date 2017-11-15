@@ -73,6 +73,7 @@ public:
         int32_t IndexOffset;
 		uint32_t IndexCount;
         Math::BoundingSphere BoundSphere;
+        bool IsIntersect( const Frustum& frustumWS ) const override;
 	};
 	
 	struct Bone
@@ -125,6 +126,8 @@ public:
     std::vector<Bone> m_Bones;
     std::vector<IKAttr> m_IKs;
 
+    // Morph
+    std::vector<Pmx::Morph> m_Morphs;
     // RigidBody
     std::vector<Pmx::RigidBody> m_RigidBodies;
     std::vector<Pmx::Joint> m_Joints;

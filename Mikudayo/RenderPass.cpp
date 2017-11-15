@@ -3,12 +3,29 @@
 #include "RenderArgs.h"
 #include "SceneNode.h"
 #include "Material.h"
+#include "Mesh.h"
 
 using namespace Math;
 
 RenderPass::RenderPass( RenderQueue Queue ) : 
     m_RenderQueue( Queue )
 {
+}
+
+bool RenderPass::Enable( IMesh& mesh )
+{
+    bool bEnable = true;
+    if (m_RenderArgs)
+    {
+        const Frustum& frustum = m_RenderArgs->m_Camera.GetWorldSpaceFrustum();
+        bEnable = mesh.IsIntersect( frustum );
+    }
+    return bEnable;
+}
+
+bool RenderPass::Enable( SceneNode& node )
+{
+    return node.GetType() != kSceneMirror;
 }
 
 void RenderPass::SetRenderArgs( RenderArgs& args )
@@ -21,8 +38,10 @@ void RenderPass::SetRenderQueue( RenderQueue queue )
     m_RenderQueue = queue;
 }
 
-bool RenderPass::Visit( IMesh& )
+bool RenderPass::Visit( IMesh& mesh )
 {
+    if (!Enable( mesh ))
+        return false;
     return true;
 }
 
@@ -57,9 +76,4 @@ bool RenderPass::Visit( SceneNode& node )
         node.Render( context, *this );
     }
     return true;
-}
-
-bool RenderPass::Enable( SceneNode& node )
-{
-    return node.GetType() != kSceneMirror;
 }
