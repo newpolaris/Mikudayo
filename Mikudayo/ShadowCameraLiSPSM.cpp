@@ -9,7 +9,7 @@
 using namespace Math;
 
 const bool bLeftHand = false;
-BoolVar m_bUseLispSM("Application/Camera/Use LispSM", false);
+BoolVar m_bUseLispSM("Application/Camera/Use LispSM", true);
 
 //calculates the up vector for the light coordinate frame
 Vector3 calcUpVec( Vector3 viewDir, Vector3 lightDir )

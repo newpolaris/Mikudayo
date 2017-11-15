@@ -21,7 +21,11 @@
 #include "SkinningPass.h"
 #include "ForwardLighting.h"
 #include "TaskManager.h"
+
+// Effects
+#include "PostEffects.h"
 #include "TemporalEffects.h"
+#include "Diffuse.h"
 
 using namespace Math;
 using namespace GameCore;
@@ -107,80 +111,37 @@ void Mikudayo::Startup( void )
 
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
-
-    // g_SceneColorBuffer.SetClearColor( Color(1.f, 1.f, 1.f, 1.f).FromSRGB() );
-
-    std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
-    #if 0
-        { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
-        { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
-        { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
-        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
-        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
-    #endif
-    };
-    for (auto& info : primitves)
-        m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
+    Diffuse::Enable = true;
 
     m_Scene = std::make_shared<Scene>();
-
-    SceneNodePtr instance;
-#if 0
-    const std::wstring testModel = L"Model/PDF 2nd Freely Tomorrow Stage/Freely Tomorrow Stage.x";
-    // const std::wstring testModel = L"Model/vikings_islands/Islands.obj";
-    instance = ModelManager::Load( testModel );
-    m_Scene->AddChild( instance );
-#endif
-
-// #define HALLOWEEN 1
-// #define BOARD 1
-// #define FLOOR 1
-#define STAGE 1
-
     ModelInfo stage;
-#if BOARD
-    stage.ModelFile = L"Model/黒白チェスステージ/黒白チェスステージ.pmx";
-#elif HALLOWEEN
-    stage.ModelFile = L"Model/HalloweenStage/halloween.Pmx";
-#elif FLOOR
-    stage.ModelFile = L"Model/Floor.pmx";
-#elif STAGE
+    SceneNodePtr instance;
     instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
-    if (instance)
-        m_Scene->AddChild( instance );
+    if (instance) m_Scene->AddChild( instance );
     stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
-#endif
     instance = ModelManager::Load( stage );
-    if (instance)
-        m_Scene->AddChild( instance );
+    if (instance) m_Scene->AddChild( instance );
 
-    // const std::wstring motion = L"Motion/nekomimi_lat.vmd";
     const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
-    // const std::wstring motion = L"";
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
 
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
-    info.ModelFile = L"Model/Tda/Tda式初音ミク・アペンド_Ver1.10.pmx";
     info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    // info.ModelFile = L"Model/on_SHIMAKAZE_v090/onda_mod_SHIMAKAZE_v091.pmx";
-    // info.ModelFile = L"Model/Tda式改変ミク　JKStyle/Tda式改変ミク　JKStyle.pmx";
-    // info.ModelFile = L"Model/Tda式初音ミク背中見せデフォ服 Ver1.00/Tda式初音ミク背中見せデフォ服 ver1.0无高光.pmx";
+    info.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
+    info.ModelFile = L"E:/MMD/Model/tda死神萝莉2/tda死神萝莉/sishen.pmx";
     info.MotionFile = motion;
     info.DefaultShader = L"MultiLight";
 
     instance = ModelManager::Load( info );
-    if (instance)
-        m_Scene->AddChild( instance );
+    if (instance) m_Scene->AddChild( instance );
 
-#if STAGE
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
     OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
     mirror->SetTransform( rotation );
     mirror->SetType( kSceneMirror );
     m_Scene->AddChild( mirror );
-#endif
 }
 
 void Mikudayo::Cleanup( void )
@@ -323,9 +284,6 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
-    Utility::DebugTexture( Context, g_ShadowBuffer.GetSRV() );
-    // Utility::DebugTexture( Context, g_aBloomUAV1[0].GetSRV() );
-    // Utility::DebugTexture( Context, g_ReflectColorBuffer.GetSRV() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 }
 
