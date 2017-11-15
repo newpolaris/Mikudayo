@@ -24,6 +24,8 @@
 using namespace Utility;
 using namespace Graphics;
 
+BoolVar DisplayNotExistImage( "Application/Model/Display Not Exist Image", true );
+
 namespace {
     std::vector<InputDesc> VertElem
     {
@@ -447,7 +449,7 @@ const ManagedTexture* PmxModel::LoadTexture( std::wstring ImageName, bool bSRGB 
     const std::wstring filePath = GetImagePath( ImageName );
     if (!filePath.empty())
         return TextureManager::LoadFromFile( filePath, bSRGB );
-    return &TextureManager::GetMagentaTex2D();
+    return DisplayNotExistImage ? &TextureManager::GetMagentaTex2D() : nullptr;
 }
 
 bool PmxModel::SetBoundingBox()
