@@ -112,29 +112,13 @@ void Mikudayo::Startup( void )
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
     Diffuse::Enable = true;
+    Physics::m_GravityAccel = 2.f;
+    Physics::m_GravityY = 0.5f;
 
     m_Scene = std::make_shared<Scene>();
-    ModelInfo stage;
-    SceneNodePtr instance;
-    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
-    if (instance) m_Scene->AddChild( instance );
-    stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
-    instance = ModelManager::Load( stage );
-    if (instance) m_Scene->AddChild( instance );
-
-    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
-    const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
-
-    m_Motion.LoadMotion( cameraMotion );
-
     ModelInfo info;
-    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    info.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
-    info.ModelFile = L"E:/MMD/Model/tda死神萝莉2/tda死神萝莉/sishen.pmx";
-    info.MotionFile = motion;
-    info.DefaultShader = L"MultiLight";
-
-    instance = ModelManager::Load( info );
+    info.ModelFile = L"C:/Users/newpolaris/Projects/MMD/Model/Model/Tda式初音ミク・アペンドVer1.10/Tda式初音ミク・アペンド_Ver1.10.pmx";
+    SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
@@ -201,12 +185,11 @@ void Mikudayo::Update( float deltaT )
     if (!EngineProfiling::IsPaused())
         m_Frame = m_Frame + deltaT * 30.f;
     {
-        // TODO: Try lock (delay physics update - motion only)
         Physics::Wait();
         m_Scene->UpdateSceneAfterPhysics( m_Frame );
-        // TODO: Move draw call here and fix frame step
         m_Scene->UpdateScene( m_Frame );
-        Physics::Update( deltaT );
+        if (!EngineProfiling::IsPaused())
+            Physics::Update( deltaT );
         m_Motion.Update( m_Frame );
     }
     for (auto& primitive : m_Primitives)

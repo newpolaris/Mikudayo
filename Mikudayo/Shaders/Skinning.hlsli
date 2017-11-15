@@ -46,7 +46,7 @@ float3 TransformNormalDualQuat( float3 normal, float4 realDQ, float4 dualDQ )
                           realDQ.w * normal );
 }
 
-float2x4 TransformOrthToDualQuaternion( float4 quaternion, float4 translate )
+float2x4 DualQuaternion( float4 quaternion, float4 translate )
 {
 	return float2x4(
         quaternion,

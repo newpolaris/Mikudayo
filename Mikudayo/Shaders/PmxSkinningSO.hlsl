@@ -1,7 +1,7 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
-#define HANDLE_SDEF_USING_DQBS 1
+#define HANDLE_SDEF_USING_DQBS 0
 
 // Per-vertex data used as input to the vertex shader.
 struct VertexInput
@@ -42,7 +42,7 @@ float3 TransformBoneNormal( float3 noraml, uint boneIndex )
 
 float2x4 BoneDualQuaternion( uint boneIndex )
 {
-    return TransformOrthToDualQuaternion( boneOrtho[boneIndex][0], boneOrtho[boneIndex][1] );
+    return DualQuaternion( boneOrtho[boneIndex][0], boneOrtho[boneIndex][1] );
 }
 
 // Simple shader to do vertex processing on the GPU.
@@ -58,7 +58,11 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
         output.position = TransformBonePosition( input.position, boneID );
         output.normal = TransformBoneNormal( input.normal, boneID );
     }
+    #if HANDLE_SDEF_USING_DQBS
     else if (type == Bdef2)
+    #else
+    else if (type == Bdef2 || type == Sdef)
+    #endif
     {
         const uint2 boneID = SkinUnit.Load2( baseOffset + 4 );
         const float weight1 = 1 - asfloat(SkinUnit.Load( baseOffset + 12 ));

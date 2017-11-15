@@ -8,14 +8,20 @@
 
 namespace Physics
 {
-    BoolVar s_bInterpolation( "Application/Physics/Motion Interpolation", true );
+    BoolVar m_bInterpolation( "Application/Physics/Motion Interpolation", true );
     BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
 
-    // use scalar from MMD-Agent
+    // use scalar from MMD-Agent, PMX Editor
     // set default gravity 
     // some tweak for the simulation to match that of MikuMikuDance
-    const float gScale = 10.f;
-    const float EarthGravity = -9.8f * gScale;
+    const float Scale = 10.f;
+    const float EarthGravity = -9.8f;
+
+    NumVar m_GravityAccel( "Application/Physics/Gravity Acceleration", EarthGravity, -100, 100, 1 );
+    NumVar m_GravityX( "Application/Physics/Gravity X", 0, -1, 1, 1 );
+    NumVar m_GravityY( "Application/Physics/Gravity Y", -1, -1, 1, 1 );
+    NumVar m_GravityZ( "Application/Physics/Gravity Z", 0, -1, 1, 1 );
+
     SolverType m_SolverType = SOLVER_TYPE_SEQUENTIAL_IMPULSE;
     int m_SolverMode = SOLVER_SIMD |
         SOLVER_USE_WARMSTARTING |
@@ -65,6 +71,8 @@ namespace Physics
         btSoftBody::Node* m_Node = nullptr;
         btPoint2PointConstraint* m_PickedConstraint = nullptr;
     } m_Picking;
+
+    void UpdateGravity();
 };
 
 using namespace Physics;
@@ -243,14 +251,14 @@ void Physics::Initialize( void )
     Solver = std::make_unique<btSequentialImpulseConstraintSolver>();
     Solver.reset( CreateSolverByType( m_SolverType ) );
     DynamicsWorld = std::make_unique<btSoftRigidDynamicsWorld>( Dispatcher.get(), Broadphase.get(), Solver.get(), Config.get() );
+    ASSERT( DynamicsWorld != nullptr );
+    UpdateGravity();
+    DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
+
     SoftBodyWorldInfo.m_broadphase = Broadphase.get();
     SoftBodyWorldInfo.m_dispatcher = Dispatcher.get();
     SoftBodyWorldInfo.m_gravity = DynamicsWorld->getGravity();
     SoftBodyWorldInfo.m_sparsesdf.Initialize();
-
-    ASSERT( DynamicsWorld != nullptr );
-    DynamicsWorld->setGravity( btVector3( 0, EarthGravity, 0 ) );
-    DynamicsWorld->getSolverInfo().m_solverMode = m_SolverMode;
 
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
@@ -277,8 +285,9 @@ void Physics::JobFunc()
             condJob.wait( lk, [] { return bStepJob; } );
             if (bExitJob)
                 break;
+            UpdateGravity();
         #if !USE_BULLET_2_75
-            DynamicsWorld->setLatencyMotionStateInterpolation( s_bInterpolation );
+            DynamicsWorld->setLatencyMotionStateInterpolation( m_bInterpolation );
 		#endif
             ASSERT( DynamicsWorld.get() != nullptr );
             DynamicsWorld->stepSimulation( m_deltaT, 2 );
@@ -364,6 +373,11 @@ void Physics::Update( float deltaT )
     m_deltaT = deltaT;
     bStepJob = true;
 	condJob.notify_one();
+}
+
+void Physics::UpdateGravity( void )
+{
+    DynamicsWorld->setGravity( btVector3( m_GravityX, m_GravityY, m_GravityZ ) * m_GravityAccel * Scale );
 }
 
 void Physics::UpdatePicking( D3D11_VIEWPORT MainViewport, const Math::BaseCamera& Camera )

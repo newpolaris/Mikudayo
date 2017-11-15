@@ -51,6 +51,11 @@ namespace Physics
 	extern btSoftRigidDynamicsWorld* g_DynamicsWorld;
     extern btSoftBodyWorldInfo* g_SoftBodyWorldInfo;
 
+    extern NumVar m_GravityAccel;
+    extern NumVar m_GravityX;
+    extern NumVar m_GravityY;
+    extern NumVar m_GravityZ;
+
     void Initialize( void );
     bool MovePickBody(const btVector3& From, const btVector3& To, const btVector3& Forward );
     bool PickBody( const btVector3& From, const btVector3& To, const btVector3& Forward );
