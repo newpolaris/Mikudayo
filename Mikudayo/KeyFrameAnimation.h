@@ -40,6 +40,7 @@ namespace Animation
 	{
 	public:
 		std::wstring m_Name;
+        std::wstring m_NameEnglish;
 		std::vector<MorphKeyFrame> m_KeyFrames;
 		std::vector<uint32_t> m_MorphIndices;
 		std::vector<Vector3> m_MorphVertices;

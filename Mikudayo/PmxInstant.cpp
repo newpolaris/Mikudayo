@@ -95,12 +95,10 @@ protected:
     std::vector<AffineTransform> m_BoneAttribute;
 
     std::map<std::wstring, uint32_t> m_MorphIndex;
-    std::vector<Vector3> m_MorphDelta; // tempolar space to store morphed position delta
-    enum { kMorphBase = 0 }; // m_MorphMotions's first slot is reserved as base (original) position data
     std::vector<Animation::MorphMotion> m_MorphMotions;
     std::vector<RigidBodyPtr> m_RigidBodies;
     std::vector<JointPtr> m_Joints;
-    std::vector<XMFLOAT3> m_VertexMorphedPos; // temporal vertex positions which affected by face animation
+    std::vector<XMFLOAT3> m_Position; // temporal vertex positions which affected by morph animation
 
     bool m_bVertexUpdated;
 
@@ -166,8 +164,6 @@ void PmxInstant::Context::DrawBone()
 
 bool PmxInstant::Context::LoadModel()
 {
-	m_VertexMorphedPos = m_Model.m_Position;
-
     m_PositionSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
     m_NormalSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
 
@@ -182,6 +178,23 @@ bool PmxInstant::Context::LoadModel()
     BufferCreate( m_NormalSkinBuffer, m_Normal );
 
 	SetupSkeleton( m_Model.m_Bones );
+
+    m_MorphMotions.resize( m_Model.m_Morphs.size() );
+	for ( auto i = 0; i < m_Model.m_Morphs.size(); i++ )
+	{
+		auto& morph = m_Model.m_Morphs[i];
+		m_MorphIndex[morph.Name] = i;
+        auto numVertices = morph.VertexList.size();
+        auto& motion = m_MorphMotions[i];
+        motion.m_Name = morph.Name;
+        motion.m_NameEnglish = morph.NameEnglish;
+        motion.m_MorphVertices.reserve( numVertices );
+		for (auto& vert : morph.VertexList)
+        {
+			motion.m_MorphIndices.push_back( vert.VertexIndex );
+			motion.m_MorphVertices.push_back( vert.Position );
+        }
+	}
 
     for (auto& it : m_Model.m_RigidBodies)
     {
@@ -272,7 +285,6 @@ bool PmxInstant::Context::LoadMotion( const std::wstring& motionPath )
         if (m_MorphIndex.count(frame.FaceName) > 0)
         {
             auto& motion = m_MorphMotions[m_MorphIndex[frame.FaceName]];
-            motion.m_Name = frame.FaceName;
             motion.InsertKeyFrame( key );
         }
 	}
@@ -431,10 +443,10 @@ void PmxInstant::Context::PerformTransform( int32_t i )
 // UNDONE: SKINNING NORMAL
 void PmxInstant::Context::SoftwareSkinning()
 { 
-    std::vector<Vector3> position( m_VertexMorphedPos.size() );
+    std::vector<Vector3> position( m_Model.m_Position.size() );
     TaskManager::parallel_for(0, position.size(), [&](size_t i) {
         const auto& skin = m_Model.m_SkinningUnit[i];
-        const Vector3 pos( m_VertexMorphedPos[i] );
+        const Vector3 pos( m_Model.m_Position[i] );
         Vector3 skinned( kZero );
         switch (skin.Type) {
         case Pmx::kBdef1:
@@ -472,36 +484,31 @@ void PmxInstant::Context::Update( float kFrameTime )
 {
     if (m_MorphMotions.size() > 0)
 	{
-		//
-		// http://blog.goo.ne.jp/torisu_tetosuki/e/8553151c445d261e122a3a31b0f91110
-		//
-        auto elemByte = sizeof( decltype(m_MorphDelta)::value_type );
-        memset( m_MorphDelta.data(), 0, elemByte*m_MorphDelta.size() );
-
-		for (auto i = kMorphBase+1; i < m_MorphMotions.size(); i++)
+        // tempolar space to store morphed position delta
+        std::vector<Vector3> Delta(m_Model.m_Position.size());
+        memset( Delta.data(), 0, GetVectorSize(Delta) );
+		for (auto i = 0; i < m_MorphMotions.size(); i++)
 		{
 			auto& motion = m_MorphMotions[i];
+            if (motion.m_KeyFrames.size() == 0)
+                continue;
 			motion.Interpolate( kFrameTime );
-			if (std::fabsf( motion.m_WeightPre - motion.m_Weight ) < 0.1e-2)
+			if (std::fabsf( motion.m_WeightPre - motion.m_Weight ) < 0.1e-4)
 				continue;
 			m_bVertexUpdated = true;
 			auto weight = motion.m_Weight;
 			for (auto k = 0; k < motion.m_MorphVertices.size(); k++)
 			{
                 auto idx = motion.m_MorphIndices[k];
-				m_MorphDelta[idx] += weight * motion.m_MorphVertices[k];
+				Delta[idx] += weight * motion.m_MorphVertices[k];
 			}
 		}
 		if (m_bVertexUpdated)
 		{
-            auto& baseFace = m_MorphMotions[kMorphBase];
-			for (auto i = 0; i < m_MorphDelta.size(); i++)
-                m_MorphDelta[i] += baseFace.m_MorphVertices[i];
-
-			for (auto i = 0; i < m_MorphDelta.size(); i++)
-				XMStoreFloat3( &m_VertexMorphedPos[baseFace.m_MorphIndices[i]], m_MorphDelta[i]);
-
-			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", static_cast<uint32_t>(m_VertexMorphedPos.size()), sizeof( XMFLOAT3 ), m_VertexMorphedPos.data() );
+            m_Position.resize( m_Model.m_Position.size() );
+            for (auto i = 0; i < Delta.size(); i++)
+                DirectX::XMStoreFloat3( &m_Position[i], Delta[i] + m_Model.m_Position[i]);
+			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", static_cast<uint32_t>(m_Position.size()), sizeof(XMFLOAT3), m_Position.data() );
 		}
 	}
     {

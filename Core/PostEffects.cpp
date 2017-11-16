@@ -81,7 +81,7 @@ namespace PostEffects
     NumVar AdaptationRate("Graphics/HDR/Adaptation Rate", 0.05f, 0.01f, 1.0f, 0.01f);
     ExpVar Exposure("Graphics/HDR/Exposure", 1.0f, -8.0f, 8.0f, 0.25f);
     BoolVar DrawHistogram("Graphics/HDR/Draw Histogram", false);
-    BoolVar BloomEnable("Graphics/Bloom/Enable", false);
+    BoolVar BloomEnable("Graphics/Bloom/Enable", true);
     NumVar BloomThreshold("Graphics/Bloom/Threshold", 4.0f, 0.0f, 8.0f, 0.1f);		// The threshold luminance above which a pixel will start to bloom
     NumVar BloomStrength("Graphics/Bloom/Strength", 0.1f, 0.0f, 2.0f, 0.05f);		// A modulator controlling how much bloom is added back into the image
     NumVar BloomUpsampleFactor("Graphics/Bloom/Scatter", 0.65f, 0.0f, 1.0f, 0.05f);	// Controls the "focus" of the blur.  High values spread out more causing a haze.
