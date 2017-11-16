@@ -23,6 +23,11 @@ namespace Math {
     }
 }
 
+bool BoundingBox::IsValid( void ) const
+{
+    return DirectX::XMVector3Less( m_Min, m_Max );
+}
+
 void BoundingBox::Merge( const Vector3& vec )
 {
     m_Min = Min( m_Min, vec );

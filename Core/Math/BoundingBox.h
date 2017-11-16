@@ -37,6 +37,8 @@ namespace Math
         FrustumCorner GetCorners( void ) const;
         FrustumPlanes GetPlanes( void ) const;
 
+        bool IsValid( void ) const;
+
         void Merge( const Vector3& vec );
         void Merge( const BoundingBox& box );
         bool Intersect( float* hitDist, const Vector3& origPt, const Vector3& dir ) const;
