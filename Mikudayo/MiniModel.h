@@ -199,6 +199,6 @@ protected:
 
 inline Math::BoundingBox MiniModel::GetBoundingBox() const
 {
-    return Math::BoundingBox(m_Header.boundingBox.min, m_Header.boundingBox.max);
+    return m_Transform * Math::BoundingBox(m_Header.boundingBox.min, m_Header.boundingBox.max);
 }
 
