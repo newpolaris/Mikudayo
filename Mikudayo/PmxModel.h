@@ -2,12 +2,13 @@
 
 #include <string>
 #include <vector>
-#include "Math/BoundingBox.h"
 #include "IModel.h"
 #include "Mesh.h"
 #include "Material.h"
 #include "Pmx.h"
 #include "RenderPass.h"
+#include "Math/BoundingBox.h"
+#include "Math/BoundingFrustum.h"
 
 using namespace Math;
 
@@ -73,7 +74,7 @@ public:
         int32_t IndexOffset;
 		uint32_t IndexCount;
         Math::BoundingSphere BoundSphere;
-        bool IsIntersect( const Frustum& frustumWS ) const override;
+        bool IsIntersect( const BoundingFrustum& frustumWS ) const override;
 	};
 	
 	struct Bone
@@ -142,7 +143,7 @@ public:
 
     IndexBuffer m_IndexBuffer;
     ByteAddressBuffer m_SkinningUnitbuffer;
-    BoundingBox m_BoundingBox;
+    Math::BoundingBox m_BoundingBox;
 
     static void Initialize();
     static void Shutdown();

@@ -56,11 +56,17 @@ void Diffuse::Render( ComputeContext& Compute )
     Context.SetDynamicDescriptor( 0, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
     Context.SetRenderTarget( g_PostEffectsBufferTyped.GetRTV() );
     Context.SetViewportAndScissor( 0, 0, g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight() );
-    FullScreenTriangle::Draw( Context );
+    {
+        ScopedTimer _prof0( L"Diffuse Pass 0", Compute );
+        FullScreenTriangle::Draw( Context );
+    }
     Context.SetPipelineState( DiffusePass2 );
     Context.SetRenderTarget( g_PreviousColorBuffer.GetRTV() );
     Context.SetDynamicDescriptor( 0, g_PostEffectsBufferTyped.GetSRV(), { kBindPixel } );
     Context.SetDynamicDescriptor( 1, g_SceneColorBuffer.GetSRV(), { kBindPixel } );
-    FullScreenTriangle::Draw( Context );
+    {
+        ScopedTimer _prof1( L"Diffuse Pass 1", Compute );
+        FullScreenTriangle::Draw( Context );
+    }
     Context.CopyBuffer( g_SceneColorBuffer, g_PreviousColorBuffer );
 }

@@ -6,6 +6,7 @@
 #include "Color.h"
 #include "LinearColor.h"
 #include "StreamOutDesc.h"
+#include "Math/BoundingFrustum.h"
 
 #include "CompiledShaders/PmxSkinningSO.h"
 #include "CompiledShaders/MikuColorVS.h"
@@ -525,7 +526,7 @@ RenderPipelinePtr PmxModel::Material::GetPipeline( RenderQueue Queue )
     return Techniques[Queue];
 }
 
-bool PmxModel::Mesh::IsIntersect( const Frustum& frustumWS ) const
+bool PmxModel::Mesh::IsIntersect( const BoundingFrustum& frustumWS ) const
 {
     return frustumWS.IntersectSphere( BoundSphere );
 }

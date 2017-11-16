@@ -50,7 +50,7 @@ void DefaultMaterial::Bind( GraphicsContext& gfxContext )
     gfxContext.SetDynamicConstantBufferView( 4, sizeof( material ), &material, { kBindVertex, kBindPixel } );
 }
 
-RenderPipelinePtr DefaultMaterial::GetPipeline( RenderQueue Queue )
+RenderPipelinePtr DefaultMaterial::GetPipeline( RenderQueue )
 {
     return nullptr;
 }

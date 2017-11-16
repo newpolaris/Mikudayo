@@ -127,11 +127,11 @@
     <ClCompile Include="Bullet\CollistionTest.cpp" />
     <ClCompile Include="Bullet\LinearMath.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Math\BoundingBox.cpp" />
-    <ClCompile Include="Math\BoundingPlane.cpp" />
-    <ClCompile Include="Math\BoundingSphere.cpp" />
-    <ClCompile Include="Math\DualQuaternion.cpp" />
-    <ClCompile Include="Math\Frustum.cpp" />
+    <ClCompile Include="Math\BoundingBoxTest.cpp" />
+    <ClCompile Include="Math\BoundingPlaneTest.cpp" />
+    <ClCompile Include="Math\BoundingSphereTest.cpp" />
+    <ClCompile Include="Math\DualQuaternionTest.cpp" />
+    <ClCompile Include="Math\BoundingFrustumTest.cpp" />
     <ClCompile Include="Math\Math.cpp" />
     <ClCompile Include="Math\MiniBall.cpp" />
     <ClCompile Include="PMX\BasicModel.cpp">

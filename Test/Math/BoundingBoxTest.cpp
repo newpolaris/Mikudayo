@@ -22,10 +22,10 @@ TEST(BoundingBoxTest, OrthogonalTransform)
 TEST(BoundingBoxTest, FrustumCorner)
 {
     float Left = -1.f, Right = 1.f, Bottom = -1.f, Top = 1.f, Near = 0.1f, Far = 10000.f;
-    Vector3 min( Left, Bottom, Near ), max( Right, Top, Far );
+    Vector3 min( Left, Bottom, -Far ), max( Right, Top, -Near );
 
     Matrix4 Proj = OrthographicMatrix( Left, Right, Bottom, Top, Near, Far, false );
-    Frustum frustum( Proj );
+    BoundingFrustum frustum( Proj );
     BoundingBox box( min, max );
     auto corners = box.GetCorners();
 

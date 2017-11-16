@@ -51,43 +51,22 @@ BoundingFrustum::BoundingFrustum( const Matrix4& Matrix )
     for (uint32_t i = 0; i < 6; i++)
         m_FrustumPlanes[i] = BoundingPlane( Vector4( DirectX::XMPlaneNormalize( plane[i] ) ) );
 
-#if 0
-    for (int i = 0; i < 8; i++)  // compute extrema
-    {
-    #if !NORMALIZE_PLANE
-        const Vector4& p0 = (i & 1) ? plane[4] : plane[5];
-        const Vector4& p1 = (i & 2) ? plane[3] : plane[2];
-        const Vector4& p2 = (i & 4) ? plane[0] : plane[1];
-    #else
-        const Vector4& p0 = (i & 1) ? m_FrustumPlanes[4] : m_FrustumPlanes[5];
-        const Vector4& p1 = (i & 2) ? m_FrustumPlanes[3] : m_FrustumPlanes[2];
-        const Vector4& p2 = (i & 4) ? m_FrustumPlanes[0] : m_FrustumPlanes[1];
-    #endif
-
-        ASSERT( PlaneIntersection( m_FrustumCorners[i], p0, p1, p2 ) );
-    }
-#else
     // kNearLowerLeft, kNearUpperLeft, kNearLowerRight, kNearUpperRight,
     // kFarLowerLeft, kFarUpperLeft, kFarLowerRight, kFarUpperRight
 
     Matrix4 invViewProj = Invert( Matrix );
     std::vector<Vector3> corners = {
-        Vector3( -1, -1, 0 ),
-        Vector3( -1, 1, 0 ),
-        Vector3( 1, -1, 0 ),
-        Vector3( 1, 1, 0 ),
-        Vector3( -1, -1, 1 ),
-        Vector3( -1, 1, 1 ),
-        Vector3( 1, -1, 1 ),
-        Vector3( 1, 1, 1 ),
+        Vector3( -1, -1, 0 ), Vector3( -1, 1, 0 ),
+        Vector3( +1, -1, 0 ), Vector3( +1, 1, 0 ),
+        Vector3( -1, -1, 1 ), Vector3( -1, 1, 1 ),
+        Vector3( +1, -1, 1 ), Vector3( +1, 1, 1 ),
     };
     for (uint8_t i = 0; i < 8; i++)
         m_FrustumCorners[i] = invViewProj.Transform( corners[i] );
-#endif
 }
 
 // NVIDIA's PracticalPSM
-bool BoundingFrustum::IntersectBox( BoundingBox box )
+bool BoundingFrustum::IntersectBox( const BoundingBox& box ) const
 {
     bool intersect = false;
     const Vector3 minpt = box.m_Min, maxpt = box.m_Max;
@@ -103,6 +82,17 @@ bool BoundingFrustum::IntersectBox( BoundingBox box )
             return false;
         if (XMVector3Less( DirectX::XMPlaneDotCoord( Vector4( m_FrustumPlanes[i] ), pVertex ), zero ))
             intersect = true;
+    }
+    return true;
+}
+
+bool BoundingFrustum::IntersectSphere( const BoundingSphere& sphere ) const
+{
+    float radius = sphere.GetRadius();
+    for (int i = 0; i < 6; ++i)
+    {
+        if (m_FrustumPlanes[i].DistanceFromPoint( sphere.GetCenter() ) + radius < 0.0f)
+            return false;
     }
     return true;
 }

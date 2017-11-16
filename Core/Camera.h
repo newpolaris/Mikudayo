@@ -1,20 +1,11 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-// Developed by Minigraph
-//
+// Use code from 'ModelViewer'
 // Author:  James Stanard
-//
+// Copyright (c) Microsoft. All rights reserved.
 
 #pragma once
 
 #include "VectorMath.h"
-#include "Math/Frustum.h"
+#include "Math/BoundingFrustum.h"
 
 namespace Math
 {
@@ -56,8 +47,8 @@ namespace Math
 		const Matrix4& GetProjMatrix() const { return m_ProjMatrix; }
 		const Matrix4& GetViewProjMatrix() const { return m_ViewProjMatrix; }
 		const Matrix4& GetReprojectionMatrix() const { return m_ReprojectMatrix; }
-		const Frustum& GetViewSpaceFrustum() const { return m_FrustumVS; }
-		const Frustum& GetWorldSpaceFrustum() const { return m_FrustumWS; }
+		const BoundingFrustum& GetViewSpaceFrustum() const { return m_FrustumVS; }
+		const BoundingFrustum& GetWorldSpaceFrustum() const { return m_FrustumWS; }
 
 	protected:
 
@@ -93,8 +84,8 @@ namespace Math
 		// Projects a clip-space coordinate to the previous frame (useful for temporal effects).
 		Matrix4 m_ReprojectMatrix;
 
-		Frustum m_FrustumVS;		// View-space view frustum
-		Frustum m_FrustumWS;		// World-space view frustum
+		BoundingFrustum m_FrustumVS;		// View-space view frustum
+		BoundingFrustum m_FrustumWS;		// World-space view frustum
 
 		float m_NearClip;
 		float m_FarClip;

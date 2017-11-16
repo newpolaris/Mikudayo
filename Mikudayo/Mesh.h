@@ -2,16 +2,16 @@
 
 namespace Math
 {
-    class Frustum;
+    class BoundingFrustum;
 }
 
 class IMesh
 {
 public:
-    virtual bool IsIntersect( const Math::Frustum& frustumWS ) const;
+    virtual bool IsIntersect( const Math::BoundingFrustum& frustumWS ) const;
 };
 
-inline bool IMesh::IsIntersect( const Math::Frustum& frustumWS ) const
+inline bool IMesh::IsIntersect( const Math::BoundingFrustum& frustumWS ) const
 {
     (frustumWS);
     return true;

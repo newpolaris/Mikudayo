@@ -44,6 +44,10 @@ struct PmxInstant::Context final
 {
     Context( PmxModel& model, PmxInstant* parent );
     ~Context();
+
+    bool IsDynamic( void ) const;
+    bool IsSkinUpdate( void ) const;
+
     void Clear( void );
     void Draw( GraphicsContext& gfxContext, Visitor& visitor );
     void DrawBone( void );
@@ -51,7 +55,6 @@ struct PmxInstant::Context final
     bool LoadMotion( const std::wstring& FilePath );
     void JoinWorld( btDynamicsWorld* world );
     void LeaveWorld( btDynamicsWorld* world );
-    bool SkinUpdateCheck( void );
     void Skinning( GraphicsContext& gfxContext, Visitor& visitor );
     void SetPosition( const Vector3& postion );
     void SetupSkeleton( const std::vector<PmxModel::Bone>& Bones );
@@ -122,6 +125,14 @@ PmxInstant::Context::~Context()
     Clear();
 }
 
+bool PmxInstant::Context::IsDynamic( void ) const
+{
+    // If there's no motion data. Update is not needed.
+    if (m_BoneMotions.size() > 0)
+        return true;
+    return m_Model.m_RigidBodies.size() > 0;
+}
+
 void PmxInstant::Context::Clear()
 {
     ASSERT( g_DynamicsWorld != nullptr );
@@ -145,7 +156,7 @@ void PmxInstant::Context::Draw( GraphicsContext& gfxContext, Visitor& visitor )
 
     for (auto& mesh : m_Model.m_Mesh)
 	{
-        if (!visitor.Visit( mesh ))
+        if (!visitor.Visit( mesh, *m_Parent ))
             continue;
         auto& material = m_Model.m_Materials[mesh.MaterialIndex];
         if (!visitor.Visit( material ))
@@ -321,19 +332,16 @@ void PmxInstant::Context::LeaveWorld( btDynamicsWorld* world )
 }
 
 // Skinning difference check, vertex update flag check
-bool PmxInstant::Context::SkinUpdateCheck()
+bool PmxInstant::Context::IsSkinUpdate() const
 {
     if (m_bVertexUpdated)
         return true;
-    // If there's no motion data. Update is not needed.
-    if (m_BoneMotions.size() > 0)
-        return true;
-    return m_Model.m_RigidBodies.size() > 0;
+    return IsDynamic();
 }
 
 void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
 {
-    if (!SkinUpdateCheck()) return;
+    if (!IsSkinUpdate()) return;
     if (m_bVertexUpdated)
         m_VertexMorphBuffer.Create( m_Model.m_Name + L"_MorphBuf", uint32_t(m_Delta.size()), sizeof(Vector3), m_Delta.data() );
     const auto numByte = GetVectorSize( m_Skinning );
@@ -816,6 +824,11 @@ bool PmxInstant::Load()
 bool PmxInstant::LoadMotion( const std::wstring& motion )
 {
     return m_Context->LoadMotion( motion );
+}
+
+bool PmxInstant::IsDynamic( void ) const
+{
+    return m_Context->IsDynamic();
 }
 
 void PmxInstant::Update( float deltaT )

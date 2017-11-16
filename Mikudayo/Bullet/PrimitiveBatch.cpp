@@ -5,7 +5,7 @@
 #include "IRigidBody.h"
 
 #include "Math/BoundingSphere.h"
-#include "Math/Frustum.h"
+#include "Math/BoundingFrustum.h"
 
 #include "CompiledShaders/BulletPrimitiveVS.h"
 #include "CompiledShaders/BulletPrimitivePS.h"
@@ -123,7 +123,7 @@ void PrimitiveBatch::Shutdown()
 }
 
 void PrimitiveBatch::Append( ShapeType Type,
-    const AffineTransform& Transform, const Vector3& Size, const Frustum& CameraFrustum )
+    const AffineTransform& Transform, const Vector3& Size, const BoundingFrustum& CameraFrustum )
 {
     auto GetScale = [](ShapeType Type, Vector3 Vec) {
         switch (Type) {

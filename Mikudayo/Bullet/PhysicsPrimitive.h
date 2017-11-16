@@ -11,7 +11,7 @@ class GraphicsContext;
 class BaseRigidBody;
 namespace Math
 {
-    class Frustum;
+    class BoundingFrustum;
 }
 
 namespace Primitive
@@ -34,7 +34,7 @@ namespace Primitive
 
         void Create( const PhysicsPrimitiveInfo& Info );
         void Destroy();
-        void Draw( const Math::Frustum& CameraFrustum );
+        void Draw( const Math::BoundingFrustum& CameraFrustum );
         void Update();
 
         ShapeType m_Type;

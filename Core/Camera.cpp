@@ -29,10 +29,11 @@ const float Math::g_ClearDepth = 1.0f;
 const Vector3& BaseCamera::GetForwardZ() const
 {
 #if LEFT
-    return Vector3( 0, 0, 1 );
+    static const Vector3 forward( 0, 0, +1 );
 #else
-    return Vector3( 0, 0, -1 );
+    static const Vector3 forward( 0, 0, -1 );
 #endif
+    return forward;
 }
 
 //
@@ -69,7 +70,7 @@ void BaseCamera::Update()
     m_ClipToWorld = Invert(m_ViewProjMatrix);
 	m_ReprojectMatrix = m_PreviousViewProjMatrix * m_ClipToWorld;
 
-	m_FrustumVS = Frustum( m_ProjMatrix );
+	m_FrustumVS = BoundingFrustum( m_ProjMatrix );
 	m_FrustumWS = m_CameraToWorld * m_FrustumVS;
 }
 

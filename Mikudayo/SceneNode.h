@@ -22,6 +22,8 @@ public:
 
     SceneNode();
 
+    virtual bool IsDynamic( void ) const;
+
     virtual void Accept( Visitor& visitor );
     virtual void AddChild( SceneNodePtr pNode );
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor );
@@ -29,9 +31,10 @@ public:
     virtual void Skinning( GraphicsContext& gfxContext, Visitor& visitor );
     virtual void Update( float deltaT );
     virtual void UpdateAfterPhysics( float deltaT );
+
+    virtual Math::BoundingBox GetBoundingBox() const;
     virtual SceneNodeType GetType() const;
     virtual void SetType( SceneNodeType type );
-    virtual Math::BoundingBox GetBoundingBox() const;
     virtual Math::Matrix4 GetTransform() const;
     virtual void SetTransform( const Math::Matrix4& transform );
 
@@ -52,3 +55,8 @@ protected:
     NodeList m_Children;
     NodeNameMap m_ChildrenByName;
 };
+
+inline bool SceneNode::IsDynamic( void ) const
+{
+    return false;
+}

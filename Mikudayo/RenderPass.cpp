@@ -4,6 +4,7 @@
 #include "SceneNode.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "Math/BoundingFrustum.h"
 
 using namespace Math;
 
@@ -17,15 +18,31 @@ bool RenderPass::Enable( IMesh& mesh )
     bool bEnable = true;
     if (m_RenderArgs)
     {
-        const Frustum& frustum = m_RenderArgs->m_Camera.GetWorldSpaceFrustum();
+        const BoundingFrustum& frustum = m_RenderArgs->m_Camera.GetWorldSpaceFrustum();
         bEnable = mesh.IsIntersect( frustum );
     }
     return bEnable;
 }
 
+bool RenderPass::Enable( IMesh& mesh, SceneNode& node )
+{
+    bool bEnable = true;
+    if (!node.IsDynamic())
+        bEnable = Enable( mesh );
+    return bEnable;
+}
+
 bool RenderPass::Enable( SceneNode& node )
 {
-    return node.GetType() != kSceneMirror;
+    bool bEnable = true;
+    if (m_RenderArgs)
+    {
+        const BoundingFrustum& frustum = m_RenderArgs->m_Camera.GetWorldSpaceFrustum();
+        const Math::BoundingBox& box = node.GetBoundingBox();
+        bEnable = frustum.IntersectBox( box );
+    }
+    bEnable &= node.GetType() != kSceneMirror;
+    return bEnable;
 }
 
 void RenderPass::SetRenderArgs( RenderArgs& args )
@@ -41,6 +58,13 @@ void RenderPass::SetRenderQueue( RenderQueue queue )
 bool RenderPass::Visit( IMesh& mesh )
 {
     if (!Enable( mesh ))
+        return false;
+    return true;
+}
+
+bool RenderPass::Visit( IMesh& mesh, SceneNode& node )
+{
+    if (!Enable( mesh, node ))
         return false;
     return true;
 }

@@ -44,7 +44,7 @@ void PhysicsPrimitive::Destroy()
     m_Body->LeaveWorld( g_DynamicsWorld );
 }
 
-void PhysicsPrimitive::Draw(const Math::Frustum& CameraFrustum)
+void PhysicsPrimitive::Draw(const Math::BoundingFrustum& CameraFrustum)
 {
     PrimitiveBatch::Append(
         m_Type,

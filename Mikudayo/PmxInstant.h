@@ -38,6 +38,8 @@ public:
     bool Load();
     bool LoadMotion( const std::wstring& motion );
 
+    virtual bool IsDynamic( void ) const override;
+
     virtual void Accept( Visitor& visitor ) override;
     virtual void Render( GraphicsContext& Context, Visitor& visitor ) override;
     virtual void RenderBone( GraphicsContext& Context, Visitor& visitor ) override;
