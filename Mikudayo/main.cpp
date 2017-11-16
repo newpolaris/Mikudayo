@@ -112,6 +112,7 @@ void Mikudayo::Startup( void )
     // TemporalEffects::EnableTAA = true;
     // PostEffects::EnableHDR = true;
     Diffuse::Enable = true;
+    PostEffects::BloomStrength = 0.2f;
 
     m_Scene = std::make_shared<Scene>();
     ModelInfo stage;
@@ -131,7 +132,6 @@ void Mikudayo::Startup( void )
     info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     info.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
     info.MotionFile = motion;
-    info.DefaultShader = L"MultiLight";
 
     instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
@@ -155,6 +155,16 @@ void Mikudayo::Cleanup( void )
     Forward::Shutdown();
     Physics::Shutdown();
     TaskManager::Shutdown();
+}
+
+const BaseCamera& Mikudayo::GetCamera()
+{
+    if (m_CameraType == kCameraVirtual)
+        return m_Camera;
+    else if (m_CameraType == kCameraShadow)
+        return m_SunShadow;
+    else
+        return m_SecondCamera;
 }
 
 void Mikudayo::Update( float deltaT )
@@ -200,10 +210,9 @@ void Mikudayo::Update( float deltaT )
     if (!EngineProfiling::IsPaused())
         m_Frame = m_Frame + deltaT * 30.f;
     {
-        // TODO: Try lock (delay physics update - motion only)
+        // Update order is modified to hide physics update cost
         Physics::Wait();
         m_Scene->UpdateSceneAfterPhysics( m_Frame );
-        // TODO: Move draw call here and fix frame step
         m_Scene->UpdateScene( m_Frame );
         Physics::Update( deltaT );
         m_Motion.Update( m_Frame );
@@ -284,14 +293,4 @@ void Mikudayo::RenderUI( GraphicsContext& Context )
         m_Scene->Render( m_RenderBonePass, args );
     Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
-}
-
-const BaseCamera& Mikudayo::GetCamera()
-{
-    if (m_CameraType == kCameraVirtual)
-        return m_Camera;
-    else if (m_CameraType == kCameraShadow)
-        return m_SunShadow;
-    else
-        return m_SecondCamera;
 }
