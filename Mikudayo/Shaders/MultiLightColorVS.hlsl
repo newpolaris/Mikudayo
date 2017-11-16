@@ -1,3 +1,6 @@
+//
+// Port code 'MultiLight'
+//
 #include "CommonInclude.hlsli"
 #include "MikuColorVS.hlsli"
 #include "MultiLight.hlsli"

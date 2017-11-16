@@ -1,11 +1,10 @@
+//
+// Port code 'MultiLight'
+//
 #include "CommonInclude.hlsli"
 #include "MultiLight.hlsli"
 #include "MikuColorVS.hlsli"
 #include "Shadow.hlsli"
-
-//
-// Use code full.fx, AutoLuminous4.fx
-//
 
 struct PixelShaderInput
 {
