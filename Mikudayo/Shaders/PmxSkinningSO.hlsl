@@ -1,13 +1,14 @@
 #include "CommonInclude.hlsli"
 #include "Skinning.hlsli"
 
-#define HANDLE_SDEF_USING_DQBS 0
+#define HANDLE_SDEF_USING_DQBS 1
 
 // Per-vertex data used as input to the vertex shader.
 struct VertexInput
 {
     float3 position : POSITION;
 	float3 normal : NORMAL;
+    float3 delta : DELTA;
 };
 
 struct StreamOut
@@ -49,13 +50,13 @@ float2x4 BoneDualQuaternion( uint boneIndex )
 StreamOut main(VertexInput input, uint id : SV_VertexID )
 {
     StreamOut output = (StreamOut)0;
-
+    float3 position = input.position + input.delta;
     const uint baseOffset = id * elementSize;
     const uint type = SkinUnit.Load( baseOffset );
     if (type == Bdef1)
     {
         const uint boneID = SkinUnit.Load( baseOffset + 4 );
-        output.position = TransformBonePosition( input.position, boneID );
+        output.position = TransformBonePosition( position, boneID );
         output.normal = TransformBoneNormal( input.normal, boneID );
     }
     #if HANDLE_SDEF_USING_DQBS
@@ -66,7 +67,7 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
     {
         const uint2 boneID = SkinUnit.Load2( baseOffset + 4 );
         const float weight1 = 1 - asfloat(SkinUnit.Load( baseOffset + 12 ));
-	    float3 p0 = TransformBonePosition( input.position, boneID.x );
+	    float3 p0 = TransformBonePosition( position, boneID.x );
 	    float3 p1 = TransformBonePosition( input.position, boneID.y );
 	    float3 n0 = TransformBoneNormal( input.normal, boneID.x );
 	    float3 n1 = TransformBoneNormal( input.normal, boneID.y );
@@ -79,7 +80,7 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
         const float4 weight = asfloat(SkinUnit.Load4( baseOffset + 20 ));
         for (int i = 0; i < 4; i++)
         {
-            output.position += weight[i] * TransformBonePosition( input.position, boneID[i] );
+            output.position += weight[i] * TransformBonePosition( position, boneID[i] );
             output.normal += weight[i] * TransformBoneNormal( input.normal, boneID[i] );
         }
     }
@@ -91,7 +92,7 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
         float2x4 dq0 = BoneDualQuaternion( boneID.x );
         float2x4 dq1 = BoneDualQuaternion( boneID.y );
         float2x4 blended = BlendDualQuaternion2( dq0, dq1, weight );
-        output.position = TransformPositionDualQuat( input.position, blended[0], blended[1] );
+        output.position = TransformPositionDualQuat( position, blended[0], blended[1] );
         output.normal = TransformNormalDualQuat( input.normal, blended[0], blended[1] );
     }
 #endif
@@ -103,7 +104,7 @@ StreamOut main(VertexInput input, uint id : SV_VertexID )
         for (int i = 0; i < 4; i++)
             dq[i] = BoneDualQuaternion( boneID[i] );
         float2x4 blended = BlendDualQuaternion4( dq, weight );
-        output.position = TransformPositionDualQuat( input.position, blended[0], blended[1] );
+        output.position = TransformPositionDualQuat( position, blended[0], blended[1] );
         output.normal = TransformNormalDualQuat( input.normal, blended[0], blended[1] );
     }
     return output;

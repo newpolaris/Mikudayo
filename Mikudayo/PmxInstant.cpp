@@ -98,10 +98,11 @@ protected:
     std::vector<Animation::MorphMotion> m_MorphMotions;
     std::vector<RigidBodyPtr> m_RigidBodies;
     std::vector<JointPtr> m_Joints;
-    std::vector<XMFLOAT3> m_Position; // temporal vertex positions which affected by morph animation
+    std::vector<Vector3> m_Delta; // tempolar space to store morphed position delta
 
     bool m_bVertexUpdated;
 
+    VertexBuffer m_VertexMorphBuffer;
     VertexBuffer m_PositionBuffer;
     VertexBuffer m_PositionSkinBuffer;
     VertexBuffer m_NormalBuffer;
@@ -179,6 +180,8 @@ bool PmxInstant::Context::LoadModel()
 
 	SetupSkeleton( m_Model.m_Bones );
 
+    m_Delta.resize( m_Model.m_Position.size() );
+    memset( m_Delta.data(), 0, GetVectorSize( m_Delta ) );
     m_MorphMotions.resize( m_Model.m_Morphs.size() );
 	for ( auto i = 0; i < m_Model.m_Morphs.size(); i++ )
 	{
@@ -331,10 +334,13 @@ bool PmxInstant::Context::SkinUpdateCheck()
 void PmxInstant::Context::Skinning( GraphicsContext& gfxContext, Visitor& visitor )
 {
     if (!SkinUpdateCheck()) return;
+    if (m_bVertexUpdated)
+        m_VertexMorphBuffer.Create( m_Model.m_Name + L"_MorphBuf", uint32_t(m_Delta.size()), sizeof(Vector3), m_Delta.data() );
     const auto numByte = GetVectorSize( m_Skinning );
     gfxContext.SetDynamicConstantBufferView( 0, numByte, m_Skinning.data(), { kBindVertex } );
 	gfxContext.SetVertexBuffer( 0, m_PositionBuffer.VertexBufferView() );
 	gfxContext.SetVertexBuffer( 1, m_NormalBuffer.VertexBufferView() );
+    gfxContext.SetVertexBuffer( 2, m_VertexMorphBuffer.VertexBufferView() );
     D3D11_BUFFER_HANDLE handle[] = { m_PositionSkinBuffer.GetHandle(), m_NormalSkinBuffer.GetHandle() };
     UINT offset[2] = { 0, 0 };
     gfxContext.SetStreamOutTargets( 2, handle, offset );
@@ -484,31 +490,22 @@ void PmxInstant::Context::Update( float kFrameTime )
 {
     if (m_MorphMotions.size() > 0)
 	{
-        // tempolar space to store morphed position delta
-        std::vector<Vector3> Delta(m_Model.m_Position.size());
-        memset( Delta.data(), 0, GetVectorSize(Delta) );
+        memset( m_Delta.data(), 0, GetVectorSize(m_Delta) );
 		for (auto i = 0; i < m_MorphMotions.size(); i++)
 		{
 			auto& motion = m_MorphMotions[i];
             if (motion.m_KeyFrames.size() == 0)
                 continue;
 			motion.Interpolate( kFrameTime );
-			if (std::fabsf( motion.m_WeightPre - motion.m_Weight ) < 0.1e-4)
+			if (std::fabsf( motion.m_WeightPre - motion.m_Weight ) < 0.1e-5)
 				continue;
 			m_bVertexUpdated = true;
 			auto weight = motion.m_Weight;
 			for (auto k = 0; k < motion.m_MorphVertices.size(); k++)
 			{
                 auto idx = motion.m_MorphIndices[k];
-				Delta[idx] += weight * motion.m_MorphVertices[k];
+				m_Delta[idx] += weight * motion.m_MorphVertices[k];
 			}
-		}
-		if (m_bVertexUpdated)
-		{
-            m_Position.resize( m_Model.m_Position.size() );
-            for (auto i = 0; i < Delta.size(); i++)
-                DirectX::XMStoreFloat3( &m_Position[i], Delta[i] + m_Model.m_Position[i]);
-			m_PositionBuffer.Create( m_Model.m_Name + L"_PosBuf", static_cast<uint32_t>(m_Position.size()), sizeof(XMFLOAT3), m_Position.data() );
 		}
 	}
     {
