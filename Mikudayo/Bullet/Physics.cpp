@@ -197,12 +197,16 @@ void BulletPicking::ReleasePickBody()
 
 void EnterProfileZoneDefault(const char* name)
 {
+#ifndef RELEASE
     PushProfilingMarker( Utility::MakeWStr(std::string(name)), nullptr );
+#endif
 }
 
 void LeaveProfileZoneDefault()
 {
+#ifndef RELEASE
     PopProfilingMarker( nullptr );
+#endif
 }
 
 btConstraintSolver* Physics::CreateSolverByType( SolverType t )
