@@ -46,7 +46,12 @@ void MikuCamera::UpdateViewMatrix()
 	auto dist = GetDistanceVector();
 	auto cameraPos = trans * dist;
 	auto up = m_Rotation * Vector3( kYUnitVector );
-	SetEyeAtUp( cameraPos, m_Position, up );
+    // To maintain camera direction, prevent reverse
+    auto direction = m_Position - cameraPos;
+    if (m_Distance > 0)
+        direction = -direction;
+    SetLookDirection( direction, up );
+    SetPosition( cameraPos );
 }
 
 void MikuCamera::UpdateProjMatrix()

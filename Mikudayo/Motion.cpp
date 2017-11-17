@@ -57,6 +57,6 @@ void Motion::Animate( Math::MikuCamera& camera )
 	camera.SetFOV( m_CameraFrame.FovY );
 	camera.SetDistance( m_CameraFrame.Distance );
 	camera.SetPositionUI( m_CameraFrame.Position );
-	camera.SetRotationUI( m_CameraFrame.Rotation );
+	camera.SetRotationUI( Normalize(m_CameraFrame.Rotation) );
 	camera.UpdateProjMatrix();
 }
