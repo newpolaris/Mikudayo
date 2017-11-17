@@ -52,13 +52,14 @@ bool SkydomeModel::Load( const ModelInfo& info )
 {
     BaseModel::Load( info );
 
+    m_Transform = Matrix4::MakeScale(5000) * OrthogonalTransform(Quaternion( 0, -XM_PIDIV2, 0 ));
     auto material = std::make_shared<BaseMaterial>();
     const ManagedTexture* texture = TextureManager::LoadFromFile( info.ModelFile, Gamma::bSRGB );
     material->textures[BaseMaterial::kDiffuse] = texture;
     material->shader = m_DefaultShader;
     m_Materials.emplace_back(material);
 
-    GeometryGenerator::MeshData sphere = GeometryGenerator().CreateSphere( 5000, 30, 30 );
+    GeometryGenerator::MeshData sphere = GeometryGenerator().CreateSphere( 1, 16, 16 );
     auto indices = sphere.GetIndices16();
     auto vertices = sphere.Vertices;
 

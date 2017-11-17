@@ -13,7 +13,7 @@ float2 ComputeSphereCoord( float3 normal )
     return coord;
 }
 
-float4 main( float2 texcoord : Texcoord ) : SV_Target
+float4 main( float2 texcoord : TexCoord ) : SV_Target
 {
     return texDiffuse.Sample(sampler1, texcoord );
 }
