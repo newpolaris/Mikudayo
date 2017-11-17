@@ -591,19 +591,24 @@ void StartSave(void*)
 std::function<void(void*)> StartSaveFunc = StartSave;
 static CallbackTrigger Save("Save Settings", StartSaveFunc, nullptr); 
 
-void StartLoad(void*)
+
+void EngineTuning::LoadSettings( const std::string& SettingsFile )
 {
 	FILE* settingsFile;
-	fopen_s(&settingsFile, "engineTuning.txt", "rb");
+	fopen_s(&settingsFile, SettingsFile.c_str(), "rb");
 	if (settingsFile != nullptr)
 	{
 		VariableGroup::sm_RootGroup.LoadSettingsFromFile(settingsFile);
 		fclose(settingsFile);
 	}
 }
+
+void StartLoad(void*)
+{
+    EngineTuning::LoadSettings( "engineTuning.txt" );
+}
 std::function<void(void*)> StartLoadFunc = StartLoad;
 static CallbackTrigger Load("Load Settings", StartLoadFunc, nullptr); 
-
 
 void EngineTuning::Display( GraphicsContext& Context, float x, float y, float w, float h )
 {

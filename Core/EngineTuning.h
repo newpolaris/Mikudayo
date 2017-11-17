@@ -172,6 +172,7 @@ namespace EngineTuning
 	void Initialize( void );
 	void Update( float frameTime );
 	void Display( GraphicsContext& Context, float x, float y, float w, float h );
+    void LoadSettings( const std::string& SettingsFile );
 	bool IsFocused( void );
 
 } // namespace EngineTuning
