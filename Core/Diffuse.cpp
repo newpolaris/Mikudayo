@@ -69,4 +69,6 @@ void Diffuse::Render( ComputeContext& Compute )
         FullScreenTriangle::Draw( Context );
     }
     Context.CopyBuffer( g_SceneColorBuffer, g_PreviousColorBuffer );
+    Context.SetDynamicDescriptor( 0, D3D11_SRV_HANDLE( nullptr ), { kBindPixel } );
+    Context.SetDynamicDescriptor( 1, D3D11_SRV_HANDLE( nullptr ), { kBindPixel } );
 }
