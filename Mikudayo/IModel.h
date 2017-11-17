@@ -5,7 +5,9 @@ using namespace Math;
 enum ModelType
 {
     kModelDefault,
+    kModelPMD,
     kModelPMX,
+    kModelSkydome,
     kModelUnknown,
 };
 
@@ -26,7 +28,7 @@ struct ModelInfo
 {
     std::wstring ModelFile;
     std::wstring MotionFile;
-    std::wstring DefaultShader = L"Default";
+    std::wstring DefaultShader;
     ModelType Type = kModelUnknown;
     CustomShaderInfo Shader;
 };

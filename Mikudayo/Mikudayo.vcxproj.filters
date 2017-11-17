@@ -16,24 +16,21 @@
     <Filter Include="Source Files\Bullet">
       <UniqueIdentifier>{d82a62ad-7256-4891-9cf3-04460f9bac60}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\MMD">
-      <UniqueIdentifier>{93c8fd1f-8bd1-4646-8a3d-4e043bca5819}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\RenderPass">
       <UniqueIdentifier>{2a320a56-6c1f-42a4-8d4e-8c4d41d51dc5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Camera">
       <UniqueIdentifier>{d613c282-6585-4939-b95d-5a62bf93c1d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Scene">
+      <UniqueIdentifier>{1ddfe905-e188-40d8-9187-21a651c6bd33}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Scene\MMD">
+      <UniqueIdentifier>{93c8fd1f-8bd1-4646-8a3d-4e043bca5819}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyFrameAnimation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeometryGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
@@ -57,13 +54,7 @@
     <ClCompile Include="SoftBodyManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PrimitiveUtility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DeferredLighting.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Bullet\RigidBody.cpp">
@@ -73,13 +64,13 @@
       <Filter>Source Files\Bullet</Filter>
     </ClCompile>
     <ClCompile Include="PmxInstant.cpp">
-      <Filter>Source Files\MMD</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClCompile>
     <ClCompile Include="PmxModel.cpp">
-      <Filter>Source Files\MMD</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClCompile>
     <ClCompile Include="Pmx.cpp">
-      <Filter>Source Files\MMD</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClCompile>
     <ClCompile Include="RenderBonePass.cpp">
       <Filter>Source Files\RenderPass</Filter>
@@ -100,57 +91,12 @@
       <Filter>Source Files\RenderPass</Filter>
     </ClCompile>
     <ClCompile Include="Vmd.cpp">
-      <Filter>Source Files\MMD</Filter>
-    </ClCompile>
-    <ClCompile Include="Bullet\BaseJoint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Bone.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelAssimp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelH3D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelOptimize.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IndexOptimizePostTransform.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MiniModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseMaterial.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseMesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelAccessory.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClCompile>
     <ClCompile Include="ForwardLighting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TaskManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Motion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Bullet\BaseSoftBody.cpp">
@@ -180,15 +126,75 @@
     <ClCompile Include="GLMMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Bullet\BaseJoint.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseMaterial.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseMesh.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseModel.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Bone.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryGenerator.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexOptimizePostTransform.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyFrameAnimation.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="MiniModel.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelAccessory.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelAssimp.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelH3D.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelManager.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Motion.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelOptimize.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="PrimitiveUtility.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneNode.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="SkydomeModel.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPipelineManager.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderType.cpp">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="XmlReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyFrameAnimation.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeometryGenerator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\BaseRigidBody.h">
@@ -215,19 +221,10 @@
     <ClInclude Include="SoftBodyManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="PrimitiveUtility.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="DeferredLighting.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="SceneNode.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Visitor.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\RigidBody.h">
@@ -240,13 +237,13 @@
       <Filter>Source Files\Bullet</Filter>
     </ClInclude>
     <ClInclude Include="PmxInstant.h">
-      <Filter>Source Files\MMD</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClInclude>
     <ClInclude Include="PmxModel.h">
-      <Filter>Source Files\MMD</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClInclude>
     <ClInclude Include="Pmx.h">
-      <Filter>Source Files\MMD</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClInclude>
     <ClInclude Include="RenderBonePass.h">
       <Filter>Source Files\RenderPass</Filter>
@@ -267,60 +264,12 @@
       <Filter>Source Files\RenderPass</Filter>
     </ClInclude>
     <ClInclude Include="Vmd.h">
-      <Filter>Source Files\MMD</Filter>
-    </ClInclude>
-    <ClInclude Include="Bone.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModelManager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderType.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderArgs.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseModel.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModelAssimp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IndexOptimizePostTransform.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MiniModel.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseMaterial.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseMesh.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseModelTypes.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IModel.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModelAccessory.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Scene\MMD</Filter>
     </ClInclude>
     <ClInclude Include="ForwardLighting.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TaskManager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Motion.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Bullet\BaseSoftBody.h">
@@ -348,6 +297,78 @@
       <Filter>Source Files\RenderPass</Filter>
     </ClInclude>
     <ClInclude Include="GLMMath.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseMaterial.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseMesh.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseModel.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseModelTypes.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Bone.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryGenerator.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="IModel.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexOptimizePostTransform.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyFrameAnimation.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniModel.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelAccessory.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelAssimp.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelManager.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Motion.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="PrimitiveUtility.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneNode.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="SkydomeModel.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderArgs.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPipelineManager.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderType.h">
+      <Filter>Source Files\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="XmlReader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -425,6 +446,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\MultiLightColorPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkydomeColorVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkydomeColorPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -39,7 +39,8 @@ bool RenderPass::Enable( SceneNode& node )
     {
         const BoundingFrustum& frustum = m_RenderArgs->m_Camera.GetWorldSpaceFrustum();
         const Math::BoundingBox& box = node.GetBoundingBox();
-        bEnable = frustum.IntersectBox( box );
+		// BoundingBox default constructor (Skydome)
+        bEnable |= box.IsValid() ? frustum.IntersectBox( box ) : true;
     }
     bEnable &= node.GetType() != kSceneMirror;
     return bEnable;

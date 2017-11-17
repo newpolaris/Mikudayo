@@ -142,6 +142,7 @@
     <ClCompile Include="PmxModel.cpp" />
     <ClCompile Include="RenderBonePass.cpp" />
     <ClCompile Include="RenderPass.cpp" />
+    <ClCompile Include="RenderPipelineManager.cpp" />
     <ClCompile Include="RenderType.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneNode.cpp" />
@@ -149,6 +150,7 @@
     <ClCompile Include="ShadowCameraUniform.cpp" />
     <ClCompile Include="ShadowCasterPass.cpp" />
     <ClCompile Include="SkinningPass.cpp" />
+    <ClCompile Include="SkydomeModel.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -158,6 +160,7 @@
     <ClCompile Include="TaskManager.cpp" />
     <ClCompile Include="TransparentPass.cpp" />
     <ClCompile Include="Vmd.cpp" />
+    <ClCompile Include="XmlReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseMaterial.h" />
@@ -203,6 +206,7 @@
     <ClInclude Include="RenderArgs.h" />
     <ClInclude Include="RenderBonePass.h" />
     <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="RenderPipelineManager.h" />
     <ClInclude Include="RenderType.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
@@ -210,12 +214,14 @@
     <ClInclude Include="ShadowCameraUniform.h" />
     <ClInclude Include="ShadowCasterPass.h" />
     <ClInclude Include="SkinningPass.h" />
+    <ClInclude Include="SkydomeModel.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TaskManager.h" />
     <ClInclude Include="TransparentPass.h" />
     <ClInclude Include="Visitor.h" />
     <ClInclude Include="Vmd.h" />
+    <ClInclude Include="XmlReader.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\BulletLinePS.hlsl">
@@ -342,6 +348,16 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\PmxSkinningSO.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkydomeColorPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkydomeColorVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>

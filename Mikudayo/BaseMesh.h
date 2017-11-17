@@ -6,6 +6,8 @@
 
 struct BaseMesh : IMesh
 {
+    BaseMesh();
+
     Math::BoundingBox boundingBox;
     MaterialPtr material;
 

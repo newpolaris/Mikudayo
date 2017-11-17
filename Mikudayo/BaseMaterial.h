@@ -6,6 +6,8 @@ class Visitor;
 
 struct BaseMaterial : IMaterial
 {
+    BaseMaterial();
+
     Math::Vector3 diffuse;
     Math::Vector3 specular;
     Math::Vector3 ambient;
@@ -17,7 +19,7 @@ struct BaseMaterial : IMaterial
     enum { kDiffuse, kSpecular, kEmissive, kNormal, kLightmap, kReflection, kTexCount = 6 };
     const IColorBuffer* textures[kTexCount];
     std::wstring name;
-
+    std::wstring shader;
     bool IsTransparent() const override;
     void Bind( GraphicsContext& gfxContext ) override;
     RenderPipelinePtr GetPipeline( RenderQueue Queue ) override;

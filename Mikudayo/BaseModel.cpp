@@ -67,7 +67,7 @@ void BaseModel::Initialize()
 
     AutoFillPSO( ReflectedPSO, kRenderQueueReflectOpaque, Default );
 
-    Techniques.emplace( L"Default", std::move( Default ) );
+    Techniques.emplace( L"Default", Default );
 }
 
 void BaseModel::Shutdown()
@@ -75,14 +75,21 @@ void BaseModel::Shutdown()
     Techniques.clear();
 }
 
-RenderPipelinePtr BaseMaterial::GetPipeline( RenderQueue Queue ) 
+void BaseModel::AppendTechniques( const std::wstring& Name, RenderPipelineList&& List )
 {
-    return Techniques[L"Default"][Queue];
+    Techniques[Name] = std::move(List);
+}
+
+const RenderPipelineList& BaseModel::FindTechniques( const std::wstring& Name )
+{
+    if (Techniques.count(Name))
+        return Techniques[Name];
+    return PipelineListEmpty;
 }
 
 BaseModel::BaseModel() : m_DefaultShader(L"Default")
 {
-    m_Transform = Matrix4::MakeScale( 10.f );
+    m_Transform = Matrix4::MakeScale( 1.f );
 }
 
 void BaseModel::Clear()
@@ -96,7 +103,8 @@ void BaseModel::Clear()
 bool BaseModel::Load( const ModelInfo& info )
 {
     m_FileName = info.ModelFile;
-    m_DefaultShader = info.DefaultShader;
+    if (!info.DefaultShader.empty())
+        m_DefaultShader = info.DefaultShader;
 
     return true;
 }

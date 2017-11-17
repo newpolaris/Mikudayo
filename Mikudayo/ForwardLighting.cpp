@@ -150,7 +150,6 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
     GraphicsContext& gfxContext = args.gfxContext;
     {
         ScopedTimer _forward( L"Forward Pass", gfxContext );
-        gfxContext.ClearColor( g_EmissiveColorMSBuffer );
         D3D11_RTV_HANDLE rtvs[] = {
             g_SceneColorMSBuffer.GetRTV(),
             g_EmissiveColorMSBuffer.GetRTV(),

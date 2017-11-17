@@ -17,6 +17,7 @@
 #include "TextUtility.h"
 #include "BaseMaterial.h"
 #include "BaseMesh.h"
+#include "LinearColor.h"
 #include <assert.h>
 
 #include <assimp/Importer.hpp>
@@ -446,13 +447,14 @@ void AssimpModel::LoadMaterials()
         material->opacity = pMaterial.opacity;
         material->shininess = pMaterial.shininess;
         material->specularStrength = pMaterial.specularStrength;
+        material->shader = m_DefaultShader;
         const IColorBuffer** MatTextures = material->textures;
-        MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, true);
-        MatTextures[1] = LoadTexture(pMaterial.texSpecularPath, true);
-        MatTextures[2] = LoadTexture(pMaterial.texEmissivePath, true);
+        MatTextures[0] = LoadTexture(pMaterial.texDiffusePath, Gamma::bSRGB);
+        MatTextures[1] = LoadTexture(pMaterial.texSpecularPath, Gamma::bSRGB);
+        MatTextures[2] = LoadTexture(pMaterial.texEmissivePath, Gamma::bSRGB);
         MatTextures[3] = LoadTexture(pMaterial.texNormalPath, false);
-        MatTextures[4] = LoadTexture(pMaterial.texLightmapPath, true);
-        MatTextures[5] = LoadTexture(pMaterial.texReflectionPath, true);
+        MatTextures[4] = LoadTexture(pMaterial.texLightmapPath, Gamma::bSRGB);
+        MatTextures[5] = LoadTexture(pMaterial.texReflectionPath, Gamma::bSRGB);
         m_Materials.push_back( std::move( material ) );
     }
 }

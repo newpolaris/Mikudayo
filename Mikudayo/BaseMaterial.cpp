@@ -1,7 +1,23 @@
 #include "stdafx.h"
 #include "BaseMaterial.h"
+#include "BaseModel.h"
 
 using namespace Math;
+
+BaseMaterial::BaseMaterial() :
+    diffuse(Scalar(1.f)),
+    specular(kZero),
+    ambient(kZero),
+    emissive(kZero),
+    transparent(kZero),
+    opacity(1.f),
+    shininess(0.f),
+    specularStrength(0.f),
+    shader(L"Default")
+{
+    for (auto i = 0; i < kTexCount; i++)
+        textures[i] = nullptr;
+}
 
 bool BaseMaterial::IsTransparent() const
 {
@@ -35,4 +51,10 @@ void BaseMaterial::Bind( GraphicsContext& gfxContext )
     for (auto i = 0; i < _countof( textures ); i++)
         material.bTexture[i] = (SRV[i] == nullptr ? 0 : 1);
     gfxContext.SetDynamicConstantBufferView( 4, sizeof( material ), &material, { kBindVertex, kBindPixel } );
+}
+
+RenderPipelinePtr BaseMaterial::GetPipeline( RenderQueue Queue ) 
+{
+    const RenderPipelineList& list = BaseModel::FindTechniques( shader );
+    return list[Queue];
 }

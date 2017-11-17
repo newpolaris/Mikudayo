@@ -15,6 +15,7 @@ enum RenderQueue
     kRenderQueueSkinning,
     kRenderQueueOutline,
     kRenderQueueShadow,
+    kRenderQueueSkydome,
     kRenderQueueReflectOpaque,
     kRenderQueueReflectOpaqueTwoSided,
     kRenderQueueReflectTransparent,
@@ -29,6 +30,7 @@ enum RenderQueue
 
 typedef std::shared_ptr<class GraphicsPSO> RenderPipelinePtr;
 typedef std::array<RenderPipelinePtr, kRenderQueueMax> RenderPipelineList;
+static const RenderPipelineList PipelineListEmpty;
 
 void AutoFillPSO( RenderPipelinePtr& basePSO, uint32_t baseIndex, RenderPipelineList& list );
 

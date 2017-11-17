@@ -3,6 +3,7 @@
 #include "IModel.h"
 #include "BaseModelTypes.h"
 #include "SceneNode.h"
+#include "RenderType.h"
 
 class BaseModel : public IModel, public SceneNode
 {
@@ -10,6 +11,8 @@ public:
 
     static void Initialize();
     static void Shutdown();
+    static void AppendTechniques( const std::wstring& Name, RenderPipelineList&& List );
+    static const RenderPipelineList& FindTechniques( const std::wstring& Name );
 
     BaseModel();
 

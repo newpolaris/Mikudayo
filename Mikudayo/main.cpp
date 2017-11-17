@@ -35,7 +35,7 @@ using namespace Math;
 class Mikudayo : public GameCore::IGameApp
 {
 public:
-	Mikudayo()
+	Mikudayo() : m_SkydomePass(kRenderQueueSkydome)
 	{
 	}
 
@@ -70,6 +70,7 @@ private:
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
     std::shared_ptr<Scene> m_Scene;
 
+    RenderPass m_SkydomePass;
     SkinningPass m_RenderSkinPass;
     RenderBonePass m_RenderBonePass;
 	ShadowCasterPass m_ShadowCasterPass;
@@ -109,19 +110,9 @@ void Mikudayo::Startup( void )
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
-    // TemporalEffects::EnableTAA = true;
-    // PostEffects::EnableHDR = true;
-    Diffuse::Enable = true;
-    PostEffects::BloomStrength = 0.2f;
-
+    // Engine Parameter
+    // EngineTuning::LoadSettings( "ClubMajesticHDR.txt" );
     m_Scene = std::make_shared<Scene>();
-    ModelInfo stage;
-    SceneNodePtr instance;
-    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
-    if (instance) m_Scene->AddChild( instance );
-    stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
-    instance = ModelManager::Load( stage );
-    if (instance) m_Scene->AddChild( instance );
 
     const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
@@ -133,14 +124,14 @@ void Mikudayo::Startup( void )
     info.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
     info.MotionFile = motion;
 
-    instance = ModelManager::Load( info );
+    SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 
-    SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
-    OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
-    mirror->SetTransform( rotation );
-    mirror->SetType( kSceneMirror );
-    m_Scene->AddChild( mirror );
+    ModelInfo sky;
+    sky.Type = kModelSkydome;
+    sky.ModelFile = L"Model/Skydome/dawn8k.png";
+    instance = ModelManager::Load( sky );
+    if (instance) m_Scene->AddChild( instance );
 }
 
 void Mikudayo::Cleanup( void )
@@ -252,6 +243,7 @@ void Mikudayo::RenderScene( void )
     {
         gfxContext.ClearColor( g_SceneColorMSBuffer );
         gfxContext.ClearDepth( g_SceneDepthMSBuffer );
+        gfxContext.ClearColor( g_EmissiveColorMSBuffer );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 
         struct VSConstants
@@ -263,13 +255,14 @@ void Mikudayo::RenderScene( void )
         } vsConstants;
         vsConstants.view = m_ViewMatrix;
         vsConstants.projection = m_ProjMatrix;
-        vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
         vsConstants.cameraPosition = m_CameraPosition;
+        vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
         gfxContext.SetDynamicDescriptor( 62, g_ShadowBuffer.GetSRV(), { kBindPixel } );
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Forward::Render( m_Scene, args );
+        m_Scene->Render( m_SkydomePass, args );
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );

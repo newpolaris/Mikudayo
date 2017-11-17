@@ -485,7 +485,8 @@ bool PmxModel::SetCustomShader( const CustomShaderInfo& Data )
 
 bool PmxModel::SetDefaultShader( const std::wstring& Name )
 {
-    m_DefaultShader = Name;
+    if (!Name.empty())
+        m_DefaultShader = Name;
     return true;
 }
 
