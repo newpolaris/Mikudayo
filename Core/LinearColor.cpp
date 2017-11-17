@@ -3,7 +3,7 @@
 #include "Color.h"
 
 // Need to also change 'ShaderUtility.hlsli' COLOR_FORMAT_PC_DEFAULT
-#define LinearColor 0
+#define LinearColor 1
 
 namespace Gamma
 {
