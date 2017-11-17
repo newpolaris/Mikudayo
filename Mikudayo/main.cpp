@@ -129,7 +129,7 @@ void Mikudayo::Startup( void )
 
     ModelInfo sky;
     sky.Type = kModelSkydome;
-    sky.ModelFile = L"Model/Skydome/dawn8k.png";
+    sky.ModelFile = L"Model/Skydome/incskies_023_8k_c2.png";
     instance = ModelManager::Load( sky );
     if (instance) m_Scene->AddChild( instance );
 }
