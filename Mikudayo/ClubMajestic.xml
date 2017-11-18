@@ -1,0 +1,15 @@
+<Root>
+    <EngineTunning>ClubMajesticHDR.txt</EngineTunning>
+    <ModelList>
+        <Model>
+            <ModelFile>Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx</ModelFile>
+            <MotionFile>Motion/クラブマジェスティ.vmd</ModelFile>
+        </Model>
+        <Model>
+            <ModelType>Skydome</ModelType>
+            <ModelFile>Model/Skydome/dawn8k.png</ModelFile>
+        </Model>
+    </ModelList>
+    <CameraMotion>Motion/クラブマジェスティカメラモーション.vmd</CameraMotion>
+</Root>
+

@@ -65,7 +65,7 @@ private:
 // Therefore, we add an operation that maps or unmaps the constant
 // buffer immediately before the drawing operation.
 //
-#define GRAPHICS_DEBUG
+// #define GRAPHICS_DEBUG
 
 #ifdef GRAPHICS_DEBUG
 struct ConstantBufferAllocator

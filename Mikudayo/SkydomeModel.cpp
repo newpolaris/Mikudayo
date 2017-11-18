@@ -52,7 +52,7 @@ bool SkydomeModel::Load( const ModelInfo& info )
 {
     BaseModel::Load( info );
 
-    m_Transform = Matrix4::MakeScale(5000) * OrthogonalTransform(Quaternion( 0, -XM_PIDIV2, 0 ));
+    m_Transform = Matrix4::MakeScale(5000) * OrthogonalTransform(Quaternion( 0, XM_PIDIV2, 0 ));
     auto material = std::make_shared<BaseMaterial>();
     const ManagedTexture* texture = TextureManager::LoadFromFile( info.ModelFile, Gamma::bSRGB );
     material->textures[BaseMaterial::kDiffuse] = texture;
