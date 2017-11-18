@@ -33,7 +33,7 @@ MIKU.VIEWER
 - Ported from [MiniEngine](https://github.com/Microsoft/DirectX-Graphics-Samples/) DIRECTX 12
 
 ### DOWNLOAD
-- \[[ClubMajestic.zip](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Achive/ClubMajestic.zip)\]. 
+- \[[ClubMajestic.zip](https://github.com/newpolaris/Mikudayo/raw/ClubMajestic/Archive/ClubMajestic.zip)\]. 
 
 ### References
 * A sampling of shadow techniques \[[link](https://mynameismjp.wordpress.com/)\].
