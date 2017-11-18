@@ -1,5 +1,7 @@
 #include "Diffuse.hlsli"
 
+// Use code from [Diffuse]
+
 SamplerState LinearSampler : register(s0);
 Texture2D<float3> SourceColor : register(t0);
 Texture2D<float3> OriginColor : register(t1);
