@@ -298,6 +298,10 @@ bool FxContainer::Load()
     std::stringstream buffer;
     buffer << in.rdbuf();
     std::string str = buffer.str();
+    if (str.empty()) {
+        wprintf( L"Fail to open file %ws\n", m_FilePath.c_str() );
+        return false;
+    }
 
     auto path = Path(m_FilePath);
     auto source = path.filename().generic_string();
@@ -318,6 +322,7 @@ bool FxContainer::Load()
         std::string output( message );
         std::wstring woutput = Utility::MakeWStr( output );
         OutputDebugString( woutput.c_str() );
+        printf("%s", output.c_str());
         return false;
     }
 

@@ -76,7 +76,7 @@ namespace Vmd
 		}
 	}
 
-	void VMD::Fill( bufferstream & is, bool bRH )
+	void VMD::Fill( bufferstream& is, bool bRH )
 	{
         m_IsValid = false;
 
@@ -85,7 +85,7 @@ namespace Vmd
 		Read( is, Magic );
 		if (strncmp( Magic, "Vocaloid Motion Data", 20 ))
 		{
-			std::cerr << "invalid vmd file." << std::endl;
+			std::cerr << "Invalid VMD file." << std::endl;
 			return;
 		}
 		char verBuf[10];

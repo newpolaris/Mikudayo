@@ -14,7 +14,7 @@ namespace FxManager
 {
     void Initialize();
     void Shutdown();
-    void Load( const FxInfo& Fx );
-    void Load( const std::vector<FxInfo>& Fx );
+    bool Load( const FxInfo& Fx );
+    bool Load( const std::vector<FxInfo>& Fx );
     FxTechniqueSetPtr GetTechniques(const std::string& Fx);
 }

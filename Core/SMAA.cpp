@@ -23,6 +23,8 @@ namespace SMAA
 {
     BoolVar Enable("Graphics/AA/SMAA/Enable", false);
 
+    bool bInitialize = false;
+
     GraphicsPSO m_RemoveGammaPSO;
     Texture m_AreaTexture;
     Texture m_SearchTexture;
@@ -34,8 +36,10 @@ namespace SMAA
 void SMAA::Initialize( void )
 {
     FxInfo fx { "SMAA", L"Shaders/SMAA.fx" };
-    FxManager::Load( fx );
+    if (!FxManager::Load( fx )) return;
+
     FxTechniqueSetPtr techniques = FxManager::GetTechniques( "SMAA" );
+    if (!techniques) return;
     m_EdgeDetection = techniques->RequestTechnique( "LumaEdgeDetection", FullScreenTriangle::InputLayout );
     m_BlendingWeightCalculation = techniques->RequestTechnique( "BlendingWeightCalculation", FullScreenTriangle::InputLayout );
     m_NeighborhoodBlending = techniques->RequestTechnique( "NeighborhoodBlending", FullScreenTriangle::InputLayout );
@@ -46,6 +50,8 @@ void SMAA::Initialize( void )
     m_RemoveGammaPSO.SetVertexShader( MY_SHADER_ARGS(g_pScreenQuadVS) );
     m_RemoveGammaPSO.SetPixelShader( MY_SHADER_ARGS(g_pRemoveGammaPS) );
     m_RemoveGammaPSO.Finalize();
+
+    bInitialize = true;
 }
 
 void SMAA::Shutdown( void )
@@ -60,8 +66,12 @@ void SMAA::Shutdown( void )
 
 void SMAA::Render(ComputeContext& Context )
 {
-    ScopedTimer _prof( L"SMAA", Context );
+    if (!bInitialize) {
+        WARN_ONCE_IF( !bInitialize, "Unable initialize SMAA" );
+        Enable = false;
+    }
 
+    ScopedTimer _prof( L"SMAA", Context );
     GraphicsContext& gfxContext = Context.GetGraphicsContext();
 
     // linear color source

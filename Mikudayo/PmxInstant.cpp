@@ -285,8 +285,10 @@ bool PmxInstant::Context::LoadMotion( const std::wstring& motionPath )
 
 	Vmd::VMD vmd;
 	vmd.Fill( bs, m_bRightHand );
-	if (!vmd.IsValid())
+    if (!vmd.IsValid()) {
+        wprintf( L"Fail to import motion %ws\n", motionPath.c_str() );
         return false;
+    }
 
     LoadBoneMotion( vmd.BoneFrames );
 

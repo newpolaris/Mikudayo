@@ -299,8 +299,10 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
 
     Pmx::PMX pmx;
     pmx.Fill( bs, true );
-    if (!pmx.IsValid())
+    if (!pmx.IsValid()) {
+        wprintf( L"Fail to import model %ws\n", FilePath.c_str() );
         return false;
+    }
 
 	m_Name = pmx.m_Description.Name;
     m_TextureRoot = Path(FilePath).parent_path().generic_wstring();

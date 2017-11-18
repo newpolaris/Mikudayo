@@ -126,8 +126,10 @@ void Mikudayo::Startup( void )
     if (instance) m_Scene->AddChild( instance );
 
     instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
-    instance->SetTransform( Matrix4::MakeScale( 10 ) );
-    if (instance) m_Scene->AddChild( instance );
+    if (instance) {
+        instance->SetTransform( Matrix4::MakeScale( 10 ) );
+        m_Scene->AddChild( instance );
+    }
     ModelInfo stage;
     stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
     instance = ModelManager::Load( stage );
@@ -141,9 +143,11 @@ void Mikudayo::Startup( void )
 
     SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
     OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
-    mirror->SetTransform( rotation );
-    mirror->SetType( kSceneMirror );
-    m_Scene->AddChild( mirror );
+    if (mirror) {
+        mirror->SetTransform( rotation );
+        mirror->SetType( kSceneMirror );
+        m_Scene->AddChild( mirror );
+    }
 }
 
 void Mikudayo::Cleanup( void )
