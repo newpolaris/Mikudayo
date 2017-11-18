@@ -111,28 +111,39 @@ void Mikudayo::Startup( void )
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     // Engine Parameter
-    // EngineTuning::LoadSettings( "ClubMajesticHDR.txt" );
+    EngineTuning::LoadSettings( "ClubMajestic.txt" );
     m_Scene = std::make_shared<Scene>();
 
-    const std::wstring motion = L"Motion/クラブマジェスティ.vmd";
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
-
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
     info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    info.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
-    info.MotionFile = motion;
+    info.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    info.DefaultShader = L"MultiLight";
 
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 
-    ModelInfo sky;
-    sky.Type = kModelSkydome;
-    sky.ModelFile = L"Model/Skydome/dawn.png";
-    sky.ModelFile = L"Model/Skydome/incskies_023_2k.hdr";
-    // instance = ModelManager::Load( sky );
-    // if (instance) m_Scene->AddChild( instance );
+    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
+    instance->SetTransform( Matrix4::MakeScale( 10 ) );
+    if (instance) m_Scene->AddChild( instance );
+    ModelInfo stage;
+    stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
+    instance = ModelManager::Load( stage );
+    if (instance) m_Scene->AddChild( instance );
+
+    ModelInfo skydome;
+    skydome.ModelFile = L"Model/スカイドーム_もやの夜BB1_配布物/Skydome_BB1/BB101.jpg";
+    skydome.Type = kModelSkydome;
+    instance = ModelManager::Load( skydome );
+    if (instance) m_Scene->AddChild( instance );
+
+    SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
+    OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
+    mirror->SetTransform( rotation );
+    mirror->SetType( kSceneMirror );
+    m_Scene->AddChild( mirror );
 }
 
 void Mikudayo::Cleanup( void )

@@ -1,0 +1,103 @@
+   + Application ...
+        + Animation ...
+             Frame:  0.000000
+        + Camera ...
+             Camera Type:  CameraMain
+             Main Camera Move:  Camera Motion
+             Use LispSM:  on
+        + Deferred ...
+             Light Boundary:  off
+        + Lighting ...
+             Sun Color B:  100.000000
+             Sun Color G:  100.000000
+             Sun Color R:  100.000000
+             Sun Dir X:  0.000000
+             Sun Dir Y:  -0.300000
+             Sun Dir Z:  -0.800000
+        + Model ...
+             Display Not Exist Image:  off
+             Draw Bone:  off
+             Draw Bounding Shphere:  off
+             Exclude Range:  1000.000000
+             Exclude Sky Box:  on
+        + Physics ...
+             Debug Draw:  off
+             Gravity Acceleration:  9.800000
+             Gravity X:  0.000000
+             Gravity Y:  -1.000000
+             Gravity Z:  0.000000
+             Motion Interpolation:  on
+        Profile Thread:  0.000000
+   Display Frame Rate:  off
+   Display Profiler:  off
+   + Graphics ...
+        + AA ...
+             + FXAA ...
+                  Always Recompute Log-Luma:  off
+                  Contrast Threshold:  0.166000
+                  Contrast Threshold Min:  0.083300
+                  Debug:  off
+                  Enable:  off
+                  ForceCS:  on
+                  Subpixel Removal:  0.500000
+             + SMAA ...
+                  Enable:  off
+             + TAA ...
+                  Blend Factor:  1.000000
+                  Enable:  off
+                  Reset:  off
+                  Sharpness:  0.500000
+                  Speed Limit:  64.000000
+        + Bloom ...
+             Enable:  on
+             High Quality:  on
+             Scatter:  0.900000
+             Strength:  0.200000
+             Threshold:  1.800000
+        + Depth of Field ...
+             AntiSparkle:  1.000000
+             Debug Mode:  Off
+             Debug Tiles:  off
+             Enable:  off
+             FG Range:  100.000000
+             Focal Center:  0.100000
+             Focal Radius:  0.100000
+             Force Fast Path:  off
+             Force Slow Path:  off
+             Median Alpha:  off
+             Median Filter:  on
+             PreFilter:  on
+        + Diffuse ...
+             Enable:  on
+             Extent:  0.015000
+        + Display ...
+             Bicubic Filter Weight:  -0.750000
+             HDR Debug Mode:  HDR
+             Magnify Pixels:  Off
+             Native Resolution:  1920x1080
+             Paper White (nits):  200.000000
+             Peak Brightness (nits):  1000.000000
+             Sharpness Sample Rotation:  45.000000
+             Sharpness Sample Spread:  1.000000
+             Sharpness Strength:  0.100000
+             Upsample Filter:  Sharpening
+        + HDR ...
+             Adaptation Rate:  0.010000
+             Adaptive Exposure:  off
+             Draw Histogram:  off
+             Enable:  off
+             Exposure:  1.000000
+             Key:  0.140000
+             Max Exposure:  32.000000
+             Min Exposure:  0.015625
+        + Motion Blur ...
+             Enable:  off
+        + SSAO ...
+             Always Linearize Z:  on
+             Async Compute:  off
+             Debug Draw:  off
+             Enable:  on
+   + Timing ...
+        Drop Random Frames:  off
+        Limit To 30Hz:  off
+        VSync:  on
