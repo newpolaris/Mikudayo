@@ -129,9 +129,10 @@ void Mikudayo::Startup( void )
 
     ModelInfo sky;
     sky.Type = kModelSkydome;
-    sky.ModelFile = L"Model/Skydome/incskies_023_8k_c2.png";
-    instance = ModelManager::Load( sky );
-    if (instance) m_Scene->AddChild( instance );
+    sky.ModelFile = L"Model/Skydome/dawn.png";
+    sky.ModelFile = L"Model/Skydome/incskies_023_2k.hdr";
+    // instance = ModelManager::Load( sky );
+    // if (instance) m_Scene->AddChild( instance );
 }
 
 void Mikudayo::Cleanup( void )
@@ -230,7 +231,7 @@ void Mikudayo::RenderScene( void )
 	gfxContext.SetDynamicConstantBufferView( 5, sizeof(psConstants), &psConstants, { kBindVertex, kBindPixel } );
 
     m_Scene->Render( m_RenderSkinPass, args );
-    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow };
+    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow, SamplerPointClamp };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
     {
         ScopedTimer _prof(L"Render Shadow Map", gfxContext);
@@ -262,6 +263,9 @@ void Mikudayo::RenderScene( void )
 
         ScopedTimer _prof( L"Render Color", gfxContext );
         Forward::Render( m_Scene, args );
+    }
+    {
+        ScopedTimer _prof( L"Skydome", gfxContext );
         m_Scene->Render( m_SkydomePass, args );
     }
     {
