@@ -4,11 +4,11 @@ MIKU.VIEWER
 ### MikuMikuDance(MMD) Viewer ##
 
 ## Club Majestic
-[![link text](./Screenshots/ClubMajestic.png)](https://youtu.be/BZ52loTWcMw)
-[![link text](./Screenshots/Mirror_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Mirror.png)
-[![link text](./Screenshots/HDR_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/HDR.png)
-[![link text](./Screenshots/Rimlight_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Rimlight.png)
-[![link text](./Screenshots/Physics_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Physics.png)
+[![link text](./Screenshots/ClubMajestic.jpg)](https://youtu.be/BZ52loTWcMw)
+[![link text](./Screenshots/Mirror_s.jpg)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Mirror.jpg)
+[![link text](./Screenshots/HDR_s.jpg)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/HDR.jpg)
+[![link text](./Screenshots/Rimlight_s.jpg)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Rimlight.jpg)
+[![link text](./Screenshots/Physics_s.jpg)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Physics.jpg)
 - ORIGINAL: [クラブ=マジェスティ](https://www.youtube.com/watch?v=Zh3CS6xtS3A)
 
 ### Features
