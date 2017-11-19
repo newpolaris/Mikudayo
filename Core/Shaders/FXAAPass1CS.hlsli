@@ -59,9 +59,9 @@ DAMAGES.
 
 #include "FXAARootSignature.hlsli"
 
-RWByteAddressBuffer WorkCount : register(u0);
+RWBuffer<float3> ColorQueue : register(u0);
 RWByteAddressBuffer WorkQueue : register(u1);
-RWBuffer<float3> ColorQueue : register(u2);
+RWByteAddressBuffer WorkCount : register(u2);
 #if SUPPORT_TYPED_UAV_LOADS
   Texture2D<float3> Color : register(t0);
   float3 FetchColor( int2 st ) { return Color[st]; }
