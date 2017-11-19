@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma warning(disable: 4324)
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <memory>

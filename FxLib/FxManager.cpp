@@ -32,19 +32,23 @@ FxTechniqueSetPtr FxManager::GetTechniques( const std::string& Fx )
     return it->second;
 }
 
-void FxManager::Load( const FxInfo& Fx )
+bool FxManager::Load( const FxInfo& Fx )
 {
     auto cont = std::make_shared<FxContainer>( Fx.FilePath );
-    if (cont->Load())
-        m_FxList[Fx.Name].swap( cont );
+    if (!cont->Load())
+        return false;
+    m_FxList[Fx.Name].swap( cont );
+    return true;
 }
 
-void FxManager::Load( const std::vector<FxInfo>& Fx )
+bool FxManager::Load( const std::vector<FxInfo>& Fx )
 {
     for (auto& fx : Fx)
     {
         auto cont = std::make_shared<FxContainer>( fx.FilePath );
-        if (cont->Load())
-            m_FxList[fx.Name].swap(cont);
+        if (!cont->Load())
+            return false;
+        m_FxList[fx.Name].swap( cont );
     }
+    return true;
 }

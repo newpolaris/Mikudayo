@@ -494,7 +494,7 @@ namespace Pmx
         // In PMX 1.0 magic is "pmx ", so judge by using ignore case compare
 		if (_strnicmp( m_Magic, "PMX ", 4 ))
 		{
-			std::cerr << "invalid pmx file." << std::endl;
+			std::cerr << "Invalid PMX file." << std::endl;
 			return;
 		}
 
