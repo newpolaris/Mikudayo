@@ -427,9 +427,9 @@ void CommandContext::WriteResource( ID3D11Resource* Handle, const void* Data, si
 	m_CommandList->Unmap( Handle, 0 );
 }
 
-void CommandContext::SetConstants( UINT Slot, UINT NumConstants, const void * pConstants, BindList BindList )
+void CommandContext::SetConstants( UINT Slot, UINT NumConstants, const void* pConstants, BindList BindList )
 {
-	m_InternalCB.Update(pConstants, sizeof(UINT) * NumConstants );
+	m_InternalCB.Update(pConstants, sizeof(UINT)*NumConstants );
 	m_InternalCB.UploadAndBind( *this, Slot, BindList );
 }
 
@@ -554,7 +554,18 @@ void GraphicsContext::SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DS
     SetRenderTargets( 1, RTVs, DSV );
 }
 
-void GraphicsContext::ClearColor( ColorBuffer & Target )
+void GraphicsContext::ClearUAV( GpuBuffer& Target )
+{
+    const UINT ClearColor[4] = {};
+	m_CommandList->ClearUnorderedAccessViewUint( Target.GetUAV(), ClearColor );
+}
+
+void GraphicsContext::ClearUAV( ColorBuffer& Target )
+{
+	m_CommandList->ClearUnorderedAccessViewFloat( Target.GetUAV(), Target.GetClearColor().GetPtr() );
+}
+
+void GraphicsContext::ClearColor( ColorBuffer& Target )
 {
 	m_CommandList->ClearRenderTargetView( Target.GetRTV(), Target.GetClearColor().GetPtr() );
 }

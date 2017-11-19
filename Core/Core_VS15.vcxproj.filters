@@ -41,9 +41,6 @@
     <Filter Include="Shaders\Diffuse">
       <UniqueIdentifier>{73e31801-3507-4102-ad0e-0913a37c8a02}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\SMAA">
-      <UniqueIdentifier>{26562145-0509-4fd2-a42f-37c51ac96cc1}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -700,6 +697,12 @@
     </FxCompile>
     <FxCompile Include="Shaders\FullScreenTriangleVS.hlsl">
       <Filter>Shaders\Misc</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2HDebug2CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FXAAPass2VDebug2CS.hlsl">
+      <Filter>Shaders\FXAA</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

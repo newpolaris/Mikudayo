@@ -52,6 +52,9 @@ public:
 	D3D11_INDEX_BUFFER_VIEW IndexBufferView( uint32_t StartIndex = 0 ) const;
 
     D3D11_BUFFER_HANDLE GetHandle(void) { return m_Buffer.Get(); }
+	size_t GetBufferSize() const { return m_BufferSize; }
+    uint32_t GetElementCount() const { return m_ElementCount; }
+    uint32_t GetElementSize() const { return m_ElementSize; }
 
 protected:
 
