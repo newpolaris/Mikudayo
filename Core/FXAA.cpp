@@ -140,9 +140,9 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
 
             D3D11_UAV_HANDLE Pass1UAVs[] =
             {
-                g_FXAAColorQueue.GetUAV(),
-                g_FXAAWorkQueue.GetUAV(),
                 g_FXAAWorkCounters.GetUAV(),
+                g_FXAAWorkQueue.GetUAV(),
+                g_FXAAColorQueue.GetUAV(),
                 g_LumaBuffer.GetUAV()
             };
 			
@@ -189,16 +189,14 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
             Context.TransitionResource(g_FXAAColorQueue, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             Context.TransitionResource(Target, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-            Context.SetDynamicDescriptor( 0, D3D11_SRV_HANDLE( nullptr ) );
-            Context.SetDynamicDescriptor( 0, Target.GetUAV() );
+            Context.SetDynamicDescriptor( 0, D3D11_UAV_HANDLE( nullptr ) );
             Context.SetDynamicDescriptor( 1, D3D11_UAV_HANDLE( nullptr ) );
             Context.SetDynamicDescriptor( 2, D3D11_UAV_HANDLE( nullptr ) );
-            Context.SetDynamicDescriptor( 3, D3D11_UAV_HANDLE( nullptr ) );
-            Context.SetDynamicDescriptor( 4, D3D11_UAV_HANDLE( nullptr ) );
 
             Context.SetDynamicDescriptor( 0, g_LumaBuffer.GetSRV() );
             Context.SetDynamicDescriptor( 1, g_FXAAWorkQueue.GetSRV() );
             Context.SetDynamicDescriptor( 2, g_FXAAColorQueue.GetSRV() );
+            Context.SetDynamicDescriptor( 0, Target.GetUAV() );
 
             // The final phase involves processing pixels on the work queues and writing them
             // back into the color buffer.  Because the two source pixels required for linearly
@@ -215,6 +213,7 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
             Context.SetDynamicDescriptor( 0, D3D11_SRV_HANDLE( nullptr ) );
             Context.SetDynamicDescriptor( 1, D3D11_SRV_HANDLE( nullptr ) );
             Context.SetDynamicDescriptor( 2, D3D11_SRV_HANDLE( nullptr ) );
+            Context.SetDynamicDescriptor( 3, D3D11_SRV_HANDLE( nullptr ) );
         }
     }
 }
