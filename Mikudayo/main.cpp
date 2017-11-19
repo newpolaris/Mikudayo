@@ -80,7 +80,7 @@ CREATE_APPLICATION( Mikudayo )
 
 enum { kCameraMain, kCameraVirtual, kCameraShadow };
 const char* CameraNames[] = { "CameraMain", "CameraVirtual", "CameraShadow" };
-EnumVar m_CameraType("Application/Camera/Camera Type", kCameraVirtual, 3, CameraNames );
+EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNames );
 
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
@@ -105,13 +105,11 @@ void Mikudayo::Startup( void )
 
     const Vector3 eye = Vector3(0.0f, 20.0f, 15.0f);
     m_Camera.SetEyeAtUp( eye, Vector3(0.0, 20.f, 0.f), Vector3(kYUnitVector) );
-    m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 20000.0f );
+    m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 10000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
-    // Engine Parameter
-    EngineTuning::LoadSettings( "ClubMajestic.txt" );
     m_Scene = std::make_shared<Scene>();
 
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
@@ -121,27 +119,21 @@ void Mikudayo::Startup( void )
     info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
     info.DefaultShader = L"MultiLight";
-
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 
-    instance = ModelManager::Load( L"Model/Villa Fortuna Stage/screens.x" );
-    if (instance) {
-        instance->SetTransform( Matrix4::MakeScale( 10 ) );
-        m_Scene->AddChild( instance );
-    }
     ModelInfo stage;
-    stage.ModelFile = L"Model/Villa Fortuna Stage/villa_fontana.pmx";
+    stage.ModelFile = L"Stage/黒白チェスステージ/黒白チェスステージ.pmx";
     instance = ModelManager::Load( stage );
     if (instance) m_Scene->AddChild( instance );
 
     ModelInfo skydome;
-    skydome.ModelFile = L"Model/スカイドーム_もやの夜BB1_配布物/Skydome_BB1/BB101.jpg";
+    skydome.ModelFile = L"Stage/Skydome/incskies_030_8k.png";
     skydome.Type = kModelSkydome;
     instance = ModelManager::Load( skydome );
     if (instance) m_Scene->AddChild( instance );
 
-    SceneNodePtr mirror = ModelManager::Load( L"Model/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
+    SceneNodePtr mirror = ModelManager::Load( L"Stage/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
     OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
     if (mirror) {
         mirror->SetTransform( rotation );
@@ -257,9 +249,9 @@ void Mikudayo::RenderScene( void )
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     {
-        gfxContext.ClearColor( g_SceneColorMSBuffer );
-        gfxContext.ClearDepth( g_SceneDepthMSBuffer );
-        gfxContext.ClearColor( g_EmissiveColorMSBuffer );
+        gfxContext.ClearColor( g_SceneColorBuffer );
+        gfxContext.ClearDepth( g_SceneDepthBuffer );
+        gfxContext.ClearColor( g_EmissiveColorBuffer );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 
         struct VSConstants

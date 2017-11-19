@@ -10,7 +10,7 @@ MikuCamera::MikuCamera() :
 	m_Position( 0.f, 10.f, 0.0 ),
     m_OrthFovY( 15.f )
 {
-	SetPerspective( 30.f*XM_PI/180.f, 9.0f / 16.0f, 0.5f, 20000.f );
+	SetPerspective( 30.f*XM_PI/180.f, 9.0f / 16.0f, 0.5f, 10000.f );
 	UpdateViewMatrix();
 	UpdateProjMatrix();
 }
