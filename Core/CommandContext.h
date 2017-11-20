@@ -212,7 +212,9 @@ public:
     void SetDynamicDescriptor( UINT Offset, const D3D11_SRV_HANDLE Handle );
     void SetDynamicDescriptor( UINT Offset, const D3D11_UAV_HANDLE Handle );
 	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_SRV_HANDLE Handles[] );
+	void SetDynamicDescriptors( UINT Offset, const std::vector<D3D11_SRV_HANDLE>& Handles );
 	void SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_UAV_HANDLE Handles[], const UINT *pUAVInitialCounts = nullptr );
+	void SetDynamicDescriptors( UINT Offset, const std::vector<D3D11_UAV_HANDLE>& Handles, const UINT *pUAVInitialCounts = nullptr );
     void SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle );
     void SetDynamicSamplers( UINT Offset, UINT Count, const D3D11_SAMPLER_HANDLE Handles[] );
 

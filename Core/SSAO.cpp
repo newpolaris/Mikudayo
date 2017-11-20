@@ -336,8 +336,8 @@ void SSAO::Render( GraphicsContext& GfxContext, const float* ProjMat, float Near
             Context.SetPipelineState(s_DebugSSAOCS);
             Context.Dispatch2D(g_SSAOFullScreen.GetWidth(), g_SSAOFullScreen.GetHeight());
         }
-        Context.SetDynamicDescriptor( 0, D3D11_UAV_HANDLE( nullptr ) );
-        Context.SetDynamicDescriptor( 0, D3D11_SRV_HANDLE( nullptr ) );
+        Context.SetDynamicDescriptor(0, UAV_NULL);
+        Context.SetDynamicDescriptor(0, SRV_NULL);
         return;
     }
 
@@ -407,12 +407,7 @@ void SSAO::Render( GraphicsContext& GfxContext, const float* ProjMat, float Near
     Context.TransitionResource(g_DepthDownsize2, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     Context.TransitionResource(g_DepthDownsize3, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     Context.TransitionResource(g_DepthDownsize4, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-    Context.SetDynamicDescriptor( 0, D3D11_UAV_HANDLE(nullptr) );
-    Context.SetDynamicDescriptor( 1, D3D11_UAV_HANDLE(nullptr) );
-    Context.SetDynamicDescriptor( 2, D3D11_UAV_HANDLE(nullptr) );
-    Context.SetDynamicDescriptor( 3, D3D11_UAV_HANDLE(nullptr) );
-    Context.SetDynamicDescriptor( 4, D3D11_UAV_HANDLE(nullptr) );
+    Context.SetDynamicDescriptors(0, std::vector<D3D11_UAV_HANDLE>(5, nullptr));
 
     // Phase 2:  Render SSAO for each sub-tile
     if (HierarchyDepth > 3)

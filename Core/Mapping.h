@@ -17,6 +17,9 @@ using D3D11_DSV_HANDLE = ID3D11DepthStencilView*;
 using D3D11_SAMPLER_HANDLE = ID3D11SamplerState*;
 using D3D11_BUFFER_HANDLE = ID3D11Buffer*;
 
+static const D3D11_UAV_HANDLE UAV_NULL = nullptr;
+static const D3D11_SRV_HANDLE SRV_NULL = nullptr;
+
 struct D3D11_VERTEX_BUFFER_VIEW
 {
 	ID3D11Buffer* Buffer;

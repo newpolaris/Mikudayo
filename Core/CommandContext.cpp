@@ -353,9 +353,19 @@ void ComputeContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11
 	m_CommandList->CSSetShaderResources( Offset, Count, Handles );
 }
 
+void ComputeContext::SetDynamicDescriptors( UINT Offset, const std::vector<D3D11_SRV_HANDLE>& Handles )
+{
+    SetDynamicDescriptors( Offset, UINT( Handles.size() ), Handles.data() );
+}
+
 void ComputeContext::SetDynamicDescriptors( UINT Offset, UINT Count, const D3D11_UAV_HANDLE Handles[], const UINT *pUAVInitialCounts )
 {
     m_CommandList->CSSetUnorderedAccessViews( Offset, Count, Handles, pUAVInitialCounts );
+}
+
+void ComputeContext::SetDynamicDescriptors( UINT Offset, const std::vector<D3D11_UAV_HANDLE>& Handles, const UINT *pUAVInitialCounts )
+{
+    SetDynamicDescriptors( Offset, UINT( Handles.size() ), Handles.data(), pUAVInitialCounts );
 }
 
 void CommandContext::SetDynamicSampler( UINT Offset, const D3D11_SAMPLER_HANDLE Handle,
