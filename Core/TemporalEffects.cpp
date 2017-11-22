@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -119,6 +119,8 @@ void TemporalEffects::ClearHistory( CommandContext& Context )
 
     if (EnableTAA)
     {
+        gfxContext.TransitionResource(g_TemporalColor[0], D3D12_RESOURCE_STATE_RENDER_TARGET);
+        gfxContext.TransitionResource(g_TemporalColor[1], D3D12_RESOURCE_STATE_RENDER_TARGET, true);
         gfxContext.ClearColor(g_TemporalColor[0]);
         gfxContext.ClearColor(g_TemporalColor[1]);
     }
@@ -173,8 +175,7 @@ void TemporalEffects::ApplyTemporalAA(ComputeContext& Context)
         s_JitterDeltaX, s_JitterDeltaY
     };
 
-    Context.SetDynamicConstantBufferView(3, sizeof(cbv), &cbv);
-
+    Context.SetDynamicConstantBufferView(1, sizeof(cbv), &cbv);
     Context.TransitionResource(g_VelocityBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     Context.TransitionResource(g_SceneColorBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     Context.TransitionResource(g_TemporalColor[Src], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);

@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "TemporalRS.hlsli"
@@ -165,9 +165,14 @@ void main(uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex, uint3 GTid 
     const uint ldsHalfPitch = kLdsPitch / 2;
 
     // Prefetch an 16x8 tile of pixels (8x8 colors) including a 1 pixel border
-    // 10x18 IDs with 4 IDs per thread = 45 threads
+    // 10x18 IDs with 4 IDs per thread = 180/4 = 45 threads
+    // So, only first 45 threads are need to work only once
+    // Since it use gather to process 4 samples in one execution loop
     for (uint i = GI; i < 45; i += 64)
     {
+        // Little confused bu, just like
+        // TopLeftIdx = 0 to end
+        // TopLeftST = (Gid.xy * uint2(8, 8) + GTid) * uint2(2, 1) + Offset
         uint X = (i % ldsHalfPitch) * 2;
         uint Y = (i / ldsHalfPitch) * 2;
         uint TopLeftIdx = X + Y * kLdsPitch;
@@ -183,7 +188,7 @@ void main(uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex, uint3 GTid 
         float4 R4 = InColor.GatherRed(LinearSampler, UV);
         float4 G4 = InColor.GatherGreen(LinearSampler, UV);
         float4 B4 = InColor.GatherBlue(LinearSampler, UV);
-        StoreRGB(TopLeftIdx, float3(R4.w, G4.w, B4.w));
+        StoreRGB(TopLeftIdx + 0, float3(R4.w, G4.w, B4.w));
         StoreRGB(TopLeftIdx + 1, float3(R4.z, G4.z, B4.z));
         StoreRGB(TopLeftIdx + kLdsPitch, float3(R4.x, G4.x, B4.x));
         StoreRGB(TopLeftIdx + 1 + kLdsPitch, float3(R4.y, G4.y, B4.y));
@@ -191,6 +196,7 @@ void main(uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex, uint3 GTid 
 
     GroupMemoryBarrierWithGroupSync();
 
+    // Process left one and then right one.
     uint Idx0 = GTid.x * 2 + GTid.y * kLdsPitch + kLdsPitch + 1;
     uint Idx1 = Idx0 + 1;
 
@@ -199,6 +205,7 @@ void main(uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex, uint3 GTid 
     float3 BoxMin, BoxMax;
     GetBBoxForPair(Idx0, Idx1, BoxMin, BoxMax);
 
+    // Same, process left one and then right one.
     uint2 ST0 = DTid.xy * uint2(2, 1);
     ApplyTemporalBlend(ST0, Idx0, BoxMin, BoxMax);
 
