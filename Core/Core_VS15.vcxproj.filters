@@ -749,5 +749,11 @@
     <FxCompile Include="Shaders\LinearizeDepthCS.hlsl">
       <Filter>Shaders\SSAO</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\MotionBlur.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\MotionVector.hlsl">
+      <Filter>Shaders\MotionBlur</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

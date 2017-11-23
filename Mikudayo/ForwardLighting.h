@@ -16,7 +16,7 @@ namespace Forward
     using namespace Math;
 
     void Initialize( void );
-    void Render( std::shared_ptr<Scene>& scene, RenderArgs& args );
     void Shutdown( void );
+    void Render( std::shared_ptr<Scene>& scene, RenderArgs& args );
     void UpdateLights( const Math::BaseCamera& C );
 }

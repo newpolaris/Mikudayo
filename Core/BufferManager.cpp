@@ -121,7 +121,7 @@ void Graphics::InitializeRenderingBuffers( uint32_t bufferWidth, uint32_t buffer
         g_EmissiveColorBuffer.Create( L"Emissive Buffer", bufferWidth, bufferHeight, 1, DefaultHdrColorFormat, esram );
         g_ReflectColorBuffer.Create( L"Main Color Buffer", bufferWidth, bufferHeight, 1, DefaultHdrColorFormat, esram );
         g_ReflectEmissiveBuffer.Create( L"Emissive Buffer", bufferWidth, bufferHeight, 1, DefaultHdrColorFormat, esram );
-        g_VelocityBuffer.Create( L"Motion Vectors", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
+        g_VelocityBuffer.Create( L"Motion Vectors", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R11G11B10_FLOAT );
         g_PostEffectsBuffer.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DXGI_FORMAT_R32_UINT );
         g_PostEffectsBufferTyped.Create( L"Post Effects Buffer", bufferWidth, bufferHeight, 1, DefaultHdrColorFormat );
 

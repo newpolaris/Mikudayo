@@ -190,6 +190,7 @@ void TemporalEffects::ApplyTemporalAA(ComputeContext& Context)
     Context.SetDynamicDescriptor(0, g_TemporalColor[Dst].GetUAV());
 
     Context.Dispatch2D(g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight(), 16, 8);
+    Context.SetDynamicDescriptor(1, SRV_NULL );
 }
 
 void TemporalEffects::SharpenImage(ComputeContext& Context, ColorBuffer& TemporalColor)
@@ -208,4 +209,5 @@ void TemporalEffects::SharpenImage(ComputeContext& Context, ColorBuffer& Tempora
     Context.SetDynamicDescriptor(0, TemporalColor.GetSRV());
     Context.SetDynamicDescriptor(0, g_SceneColorBuffer.GetUAV());
     Context.Dispatch2D(g_SceneColorBuffer.GetWidth(), g_SceneColorBuffer.GetHeight());
+    Context.SetDynamicDescriptor(0, UAV_NULL );
 }
