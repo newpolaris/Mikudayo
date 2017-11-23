@@ -9,6 +9,7 @@ MIKU.VIEWER
 [![link text](./Screenshots/HDR_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/HDR.jpg)
 [![link text](./Screenshots/Rimlight_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Rimlight.jpg)
 [![link text](./Screenshots/Physics_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Physics.jpg)
+- Youtube : [Link](https://youtu.be/BZ52loTWcMw)
 - ORIGINAL: [クラブ=マジェスティ](https://www.youtube.com/watch?v=Zh3CS6xtS3A)
 
 ### Features
@@ -33,7 +34,8 @@ MIKU.VIEWER
 - Ported from [MiniEngine](https://github.com/Microsoft/DirectX-Graphics-Samples/) DIRECTX 12
 
 ### DOWNLOAD
-- \[[ClubMajestic.zip](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Achive/ClubMajestic.zip)\]. 
+- WINDOWS 10 Required
+- \[[ClubMajestic.zip](https://github.com/newpolaris/Mikudayo/raw/ClubMajestic/Archive/ClubMajestic.zip)\]. 
 
 ### References
 * A sampling of shadow techniques \[[link](https://mynameismjp.wordpress.com/)\].
