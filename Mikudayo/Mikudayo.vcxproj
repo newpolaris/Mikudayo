@@ -276,7 +276,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\DepthViewerVS.hlsl">
+    <FxCompile Include="Shaders\MikuDepthVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
@@ -295,6 +295,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\ModelDepthVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\ModelPrimitivePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -369,6 +374,7 @@
     <None Include="packages.config" />
     <None Include="Shaders\CommonInclude.hlsli" />
     <None Include="Shaders\MikuColorVS.hlsli" />
+    <None Include="Shaders\ModelColorVS.hlsli" />
     <None Include="Shaders\MultiLight.hlsli" />
     <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\MikuHeader.hlsli" />

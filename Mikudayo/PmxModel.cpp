@@ -9,6 +9,7 @@
 #include "Math/BoundingFrustum.h"
 
 #include "CompiledShaders/PmxSkinningSO.h"
+#include "CompiledShaders/MikuDepthVS.h"
 #include "CompiledShaders/MikuColorVS.h"
 #include "CompiledShaders/MikuColorPS.h"
 #include "CompiledShaders/MikuColor2PS.h"
@@ -20,7 +21,6 @@
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredFinalPS.h"
 #include "CompiledShaders/DeferredFinal2PS.h"
-#include "CompiledShaders/DepthViewerVS.h"
 
 using namespace Utility;
 using namespace Graphics;
@@ -103,7 +103,7 @@ void PmxModel::Initialize()
     DepthPSO->SetDepthStencilState( DepthStateReadWrite );
     DepthPSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
     DepthPSO->SetRenderTargetFormats( 0, nullptr, DepthFormat );
-    DepthPSO->SetVertexShader( MY_SHADER_ARGS( g_pDepthViewerVS ) );
+    DepthPSO->SetVertexShader( MY_SHADER_ARGS( g_pMikuDepthVS ) );
     DepthPSO->Finalize();
 
     ShadowPSO = std::make_shared<GraphicsPSO>();

@@ -116,7 +116,6 @@ float DistanceFromReflector( float3 position )
 }
 
 #if !REFLECTED
-[earlydepthstencil]
 #endif
 PixelShaderOutput main(PixelShaderInput input)
 { 

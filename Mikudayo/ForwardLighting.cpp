@@ -156,18 +156,14 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
         };
         gfxContext.ClearColor( g_SceneColorBuffer );
         gfxContext.ClearColor( g_EmissiveColorBuffer );
-        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
+        gfxContext.ClearDepth( g_SceneDepthBuffer );
+        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         DefaultPass defaultPass;
         scene->Render( defaultPass, args );
     }
     {
         ScopedTimer _outline( L"Outline Pass", gfxContext );
         scene->Render( m_OutlinePass, args );
-    }
-    {
-        ScopedTimer _reflect( L"Reflect Pass", gfxContext );
-        MirrorPass mirror( scene );
-        scene->Render( mirror, args );
     }
     gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
 }

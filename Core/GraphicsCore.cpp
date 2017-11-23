@@ -32,7 +32,6 @@
 #include "FullScreenTriangle.h"
 #include "SystemTime.h"
 #include "TemporalEffects.h"
-#include "SSAO.h"
 #include "DebugHelper.h"
 #define FREEIMAGE_LIB
 #include "FreeImage.h"
