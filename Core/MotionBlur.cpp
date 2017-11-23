@@ -61,7 +61,7 @@ void MotionBlur::Shutdown( void )
 // hyperbolic Z for the reprojection.  Nevertheless, the reduced bandwidth and decompress eliminate
 // make Linear Z the better choice.  (The choice also lets you evict the depth buffer from ESRAM.)
 
-void MotionBlur::GenerateCameraVelocityBuffer( CommandContext& BaseContext, const Camera& camera, bool UseLinearZ )
+void MotionBlur::GenerateCameraVelocityBuffer( CommandContext& BaseContext, const BaseCamera& camera, bool UseLinearZ )
 {
     GenerateCameraVelocityBuffer(BaseContext, camera.GetReprojectionMatrix(), camera.GetNearClip(), camera.GetFarClip(), UseLinearZ);
 }
@@ -98,6 +98,7 @@ void MotionBlur::RenderObjectBlur( CommandContext& BaseContext, ColorBuffer& vel
 
     Vector4 screenDimensions = Vector4( float(g_SceneColorBuffer.GetWidth()), float(g_SceneColorBuffer.GetHeight()), 0, 0 );
     ComputeContext& Context = BaseContext.GetComputeContext();
+    Context.SetDynamicSampler( 0, SamplerLinearClamp );
     Context.SetDynamicConstantBufferView( 0, sizeof(screenDimensions), &screenDimensions );
     Context.SetPipelineState( s_CameraBlurPSO );
     Context.SetDynamicDescriptor( 0, g_VelocityBuffer.GetSRV() );

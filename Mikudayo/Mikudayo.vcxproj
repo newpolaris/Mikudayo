@@ -150,6 +150,7 @@
     <ClCompile Include="ShadowCameraUniform.cpp" />
     <ClCompile Include="ShadowCasterPass.cpp" />
     <ClCompile Include="SkinningPass.cpp" />
+    <ClCompile Include="Skydome.cpp" />
     <ClCompile Include="SkydomeModel.cpp" />
     <ClCompile Include="SoftBodyManager.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -214,6 +215,7 @@
     <ClInclude Include="ShadowCameraUniform.h" />
     <ClInclude Include="ShadowCasterPass.h" />
     <ClInclude Include="SkinningPass.h" />
+    <ClInclude Include="Skydome.h" />
     <ClInclude Include="SkydomeModel.h" />
     <ClInclude Include="SoftBodyManager.h" />
     <ClInclude Include="stdafx.h" />
