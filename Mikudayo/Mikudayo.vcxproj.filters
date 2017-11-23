@@ -192,9 +192,6 @@
     <ClCompile Include="RenderType.cpp">
       <Filter>Source Files\Render</Filter>
     </ClCompile>
-    <ClCompile Include="XmlReader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Skydome.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -373,9 +370,6 @@
     </ClInclude>
     <ClInclude Include="RenderType.h">
       <Filter>Source Files\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="XmlReader.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Skydome.h">
       <Filter>Source Files\Render</Filter>
