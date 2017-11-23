@@ -20,7 +20,7 @@ static const uint kLdsRows = 10;
 
 RWTexture2D<float4> OutTemporal : register(u0);
 
-Texture2D<packed_velocity_t> VelocityBuffer : register(t0);
+Texture2D<float3> VelocityBuffer : register(t0);
 Texture2D<float3> InColor : register(t1);
 Texture2D<float4> InTemporal : register(t2);
 Texture2D<float> CurDepth : register(t3);
@@ -118,7 +118,8 @@ void ApplyTemporalBlend(uint2 ST, uint ldsIdx, float3 BoxMin, float3 BoxMax)
     float CompareDepth;
 
     // Get the velocity of the closest pixel in the '+' formation
-    float3 Velocity = UnpackVelocity(VelocityBuffer[ST + GetClosestPixel(ldsIdx, CompareDepth)]);
+    GetClosestPixel( ldsIdx, CompareDepth );
+    float3 Velocity = float3(0, 0, 0);// UnpackVelocity(VelocityBuffer[ST + GetClosestPixel(ldsIdx, CompareDepth)]);
 
     CompareDepth += Velocity.z;
 
@@ -170,9 +171,9 @@ void main(uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex, uint3 GTid 
     // Since it use gather to process 4 samples in one execution loop
     for (uint i = GI; i < 45; i += 64)
     {
-        // Little confused bu, just like
+        // Little confused. But, it is like
         // TopLeftIdx = 0 to end
-        // TopLeftST = (Gid.xy * uint2(8, 8) + GTid) * uint2(2, 1) + Offset
+        // TopLeftST = (Gid.xy * uint2(8, 8) + GTid) * uint2(2, 1) + Offset = DTid * uint2(2, 1) + Offset
         uint X = (i % ldsHalfPitch) * 2;
         uint Y = (i / ldsHalfPitch) * 2;
         uint TopLeftIdx = X + Y * kLdsPitch;

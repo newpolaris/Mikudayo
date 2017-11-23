@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #include "pch.h"
@@ -64,5 +64,9 @@ void DepthOfField::Initialize( void )
 }
 
 void DepthOfField::Shutdown( void )
+{
+}
+
+void DepthOfField::Render( CommandContext& BaseContext, float NearClipDist, float FarClipDist )
 {
 }
