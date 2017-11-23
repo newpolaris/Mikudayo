@@ -127,7 +127,7 @@ void CommandContext::InsertAliasBarrier( GpuResource& Before, GpuResource& After
     Before, After, FlushImmediate;
 }
 
-ComputeContext& ComputeContext::Begin( const std::wstring& ID )
+ComputeContext& ComputeContext::Begin( const std::wstring& ID, bool bAsync )
 {
     CommandContext& NewContext = CommandContext::Begin( kComputeContext, ID );
     return NewContext.GetComputeContext();

@@ -28,6 +28,7 @@ class BlendState;
 class DepthStencilState;
 class RasterizerState;
 class Shader;
+class RootSignature;
 struct InputDesc;
 struct StreamOutDesc;
 struct GraphicsPipelineStateDesc;
@@ -65,7 +66,11 @@ public:
     };
 
 	PSO() : m_LoadingState(kStateUnloaded) {}
+
     static void DestroyAll( void );
+
+    void SetRootSignature( const RootSignature& ) {}
+
 	virtual ~PSO() {}
 
     std::atomic<ELoadingState> m_LoadingState;

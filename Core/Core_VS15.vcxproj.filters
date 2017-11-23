@@ -41,6 +41,9 @@
     <Filter Include="Shaders\Diffuse">
       <UniqueIdentifier>{73e31801-3507-4102-ad0e-0913a37c8a02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\SSAO">
+      <UniqueIdentifier>{6c188dd4-60ee-4ca2-a0db-bcdfc4d985ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -271,6 +274,9 @@
     <ClInclude Include="FullScreenTriangle.h">
       <Filter>Source Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="RootSignature.h">
+      <Filter>Source Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -453,6 +459,9 @@
     <ClCompile Include="FullScreenTriangle.cpp">
       <Filter>Source Files\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="RootSignature.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Math\Functions.inl">
@@ -518,6 +527,12 @@
     </None>
     <None Include="Shaders\Diffuse.hlsli">
       <Filter>Shaders\Diffuse</Filter>
+    </None>
+    <None Include="Shaders\AoBlurAndUpsampleCS.hlsli">
+      <Filter>Shaders\SSAO</Filter>
+    </None>
+    <None Include="Shaders\AoRenderCS.hlsli">
+      <Filter>Shaders\SSAO</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -703,6 +718,36 @@
     </FxCompile>
     <FxCompile Include="Shaders\FXAAPass2VDebug2CS.hlsl">
       <Filter>Shaders\FXAA</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoBlurUpsampleBlendOutCS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoBlurUpsampleCS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoBlurUpsamplePreMinBlendOutCS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoBlurUpsamplePreMinCS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoPrepareDepthBuffers1CS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoPrepareDepthBuffers2CS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoRender1CS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\AoRender2CS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DebugSSAOCS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\LinearizeDepthCS.hlsl">
+      <Filter>Shaders\SSAO</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

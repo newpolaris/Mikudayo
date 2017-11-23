@@ -17,6 +17,7 @@ class ComputeContext;
 class Color;
 class GpuBuffer;
 class StructuredBuffer;
+class RootSignature;
 
 struct DWParam
 {
@@ -65,7 +66,7 @@ private:
 // Therefore, we add an operation that maps or unmaps the constant
 // buffer immediately before the drawing operation.
 //
-// #define GRAPHICS_DEBUG
+#define GRAPHICS_DEBUG
 
 #ifdef GRAPHICS_DEBUG
 struct ConstantBufferAllocator
@@ -194,10 +195,12 @@ protected:
 	ComputeContext();
 
 public:
-    static ComputeContext& Begin(const std::wstring& ID = L"");
+    static ComputeContext& Begin(const std::wstring& ID = L"", bool bAsync = false );
 
     void ClearUAV( GpuBuffer& Target );
     void ClearUAV( ColorBuffer& Target );
+
+    void SetRootSignature( const RootSignature& ) {}
 
 	void SetPipelineState( ComputePSO& PSO );
 

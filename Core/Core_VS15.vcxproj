@@ -61,6 +61,7 @@
     <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="PostEffects.h" />
     <ClInclude Include="RasterizerState.h" />
+    <ClInclude Include="RootSignature.h" />
     <ClInclude Include="SamplerManager.h" />
     <ClInclude Include="ShadowBuffer.h" />
     <ClInclude Include="ShadowCamera.h" />
@@ -145,6 +146,7 @@
     <ClCompile Include="PixelBuffer.cpp" />
     <ClCompile Include="PostEffects.cpp" />
     <ClCompile Include="RasterizerState.cpp" />
+    <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="SamplerManager.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShadowBuffer.cpp" />
@@ -164,6 +166,8 @@
   <ItemGroup>
     <None Include="Math\Functions.inl" />
     <None Include="packages.config" />
+    <None Include="Shaders\AoBlurAndUpsampleCS.hlsli" />
+    <None Include="Shaders\AoRenderCS.hlsli" />
     <None Include="Shaders\ColorSpaceUtility.hlsli" />
     <None Include="Shaders\Diffuse.hlsli" />
     <None Include="Shaders\FXAAPass1CS.hlsli" />
@@ -187,6 +191,14 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\AdaptExposureCS.hlsl" />
+    <FxCompile Include="Shaders\AoBlurUpsampleBlendOutCS.hlsl" />
+    <FxCompile Include="Shaders\AoBlurUpsampleCS.hlsl" />
+    <FxCompile Include="Shaders\AoBlurUpsamplePreMinBlendOutCS.hlsl" />
+    <FxCompile Include="Shaders\AoBlurUpsamplePreMinCS.hlsl" />
+    <FxCompile Include="Shaders\AoPrepareDepthBuffers1CS.hlsl" />
+    <FxCompile Include="Shaders\AoPrepareDepthBuffers2CS.hlsl" />
+    <FxCompile Include="Shaders\AoRender1CS.hlsl" />
+    <FxCompile Include="Shaders\AoRender2CS.hlsl" />
     <FxCompile Include="Shaders\ApplyBloom2CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
@@ -234,6 +246,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\DebugSSAOCS.hlsl" />
     <FxCompile Include="Shaders\DebugTexturePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -276,6 +289,7 @@
     </FxCompile>
     <FxCompile Include="Shaders\FXAAResolveWorkQueueCS.hlsl" />
     <FxCompile Include="Shaders\GenerateHistogramCS.hlsl" />
+    <FxCompile Include="Shaders\LinearizeDepthCS.hlsl" />
     <FxCompile Include="Shaders\MotionBlurFinalPassCS.hlsl" />
     <FxCompile Include="Shaders\MotionBlurFinalPassPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

@@ -239,15 +239,16 @@ void Mikudayo::RenderScene( void )
     m_Scene->Render( m_RenderSkinPass, args );
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow, SamplerPointClamp };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
-    {
-        ScopedTimer _prof(L"Render Shadow Map", gfxContext);
+    {   
+        ScopedTimer _prof( L"Render Shadow Map", gfxContext );
         m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, m_Camera );
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
-    {
+    {   
+        ScopedTimer _prof( L"Render Color", gfxContext );
         gfxContext.ClearColor( g_SceneColorBuffer );
         gfxContext.ClearDepth( g_SceneDepthBuffer );
         gfxContext.ClearColor( g_EmissiveColorBuffer );
@@ -267,11 +268,7 @@ void Mikudayo::RenderScene( void )
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
         gfxContext.SetDynamicDescriptor( 62, g_ShadowBuffer.GetSRV(), { kBindPixel } );
 
-        ScopedTimer _prof( L"Render Color", gfxContext );
         Forward::Render( m_Scene, args );
-    }
-    {
-        ScopedTimer _prof( L"Skydome", gfxContext );
         m_Scene->Render( m_SkydomePass, args );
     }
     {
