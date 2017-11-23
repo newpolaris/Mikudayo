@@ -559,6 +559,11 @@ void GraphicsContext::SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTV
 	m_CommandList->OMSetRenderTargets( NumRTVs, RTVs, DSV );
 }
 
+void GraphicsContext::SetRenderTargets( const std::vector<D3D11_RTV_HANDLE>& RTVs, D3D11_DSV_HANDLE DSV )
+{
+	m_CommandList->OMSetRenderTargets( UINT(RTVs.size()), RTVs.data(), DSV );
+}
+
 void GraphicsContext::SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DSV ) {
     D3D11_RTV_HANDLE RTVs[] = { RTV };
     SetRenderTargets( 1, RTVs, DSV );

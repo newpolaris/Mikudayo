@@ -154,7 +154,9 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
             g_SceneColorBuffer.GetRTV(),
             g_EmissiveColorBuffer.GetRTV(),
         };
-        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
+        gfxContext.ClearColor( g_SceneColorBuffer );
+        gfxContext.ClearColor( g_EmissiveColorBuffer );
+        gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV_DepthReadOnly() );
         DefaultPass defaultPass;
         scene->Render( defaultPass, args );
     }
@@ -167,12 +169,7 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
         MirrorPass mirror( scene );
         scene->Render( mirror, args );
     }
-
-    D3D11_RTV_HANDLE rtvs[] = {
-        g_SceneColorBuffer.GetRTV(),
-        g_EmissiveColorBuffer.GetRTV(),
-    };
-    gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
+    gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
 }
 
 void Forward::Shutdown( void )
