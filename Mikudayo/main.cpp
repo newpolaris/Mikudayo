@@ -24,6 +24,7 @@
 #include "DepthOfField.h"
 #include "TaskManager.h"
 #include "Skydome.h"
+#include "SSAO.h"
 
 // Effects
 #include "PostEffects.h"
@@ -235,7 +236,19 @@ void Mikudayo::RenderScene( void )
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
     RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
-    __declspec(align(16)) struct
+    struct VSConstants
+    {
+        Matrix4 view;
+        Matrix4 projection;
+        Matrix4 viewToShadow;
+        Vector3 cameraPosition;
+    } vsConstants;
+    vsConstants.view = m_ViewMatrix;
+    vsConstants.projection = m_ProjMatrix;
+    vsConstants.cameraPosition = m_CameraPosition;
+    vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
+
+    struct PSConstants
     {
         Vector3 LightDirection;
         Vector3 LightColor;
@@ -249,32 +262,31 @@ void Mikudayo::RenderScene( void )
     m_Scene->Render( m_RenderSkinPass, args );
     D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow, SamplerPointClamp };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
+    {
+        ScopedTimer _prof(L"Z PrePass", gfxContext);
+        gfxContext.TransitionResource(g_SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
+        gfxContext.ClearDepth(g_SceneDepthBuffer);
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
+        gfxContext.SetDepthStencilTarget(g_SceneDepthBuffer.GetDSV());
+        gfxContext.SetViewportAndScissor(m_MainViewport, m_MainScissor);
+        RenderPass depthPass(kRenderQueueDepth);
+        m_Scene->Render( depthPass, args );
+        gfxContext.SetDepthStencilTarget( nullptr );
+    }
+    SSAO::Render(gfxContext, GetCamera());
     {   
         ScopedTimer _prof( L"Render Shadow Map", gfxContext );
-        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, m_SecondCamera );
+        // To debug shadow map, shadow generate is sole on main camera
+        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, GetGraphicsCamera() );
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
+    if (!SSAO::DebugDraw)
     {   
         ScopedTimer _prof( L"Render Color", gfxContext );
-        gfxContext.ClearColor( g_SceneColorBuffer );
-        gfxContext.ClearDepth( g_SceneDepthBuffer );
-        gfxContext.ClearColor( g_EmissiveColorBuffer );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
-
-        struct VSConstants
-        {
-            Matrix4 view;
-            Matrix4 projection;
-            Matrix4 viewToShadow;
-            Vector3 cameraPosition;
-        } vsConstants;
-        vsConstants.view = m_ViewMatrix;
-        vsConstants.projection = m_ProjMatrix;
-        vsConstants.cameraPosition = m_CameraPosition;
-        vsConstants.viewToShadow = m_SunShadow.GetShadowMatrix();
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
         gfxContext.SetDynamicDescriptor( 62, g_ShadowBuffer.GetSRV(), { kBindPixel } );
 
@@ -283,6 +295,7 @@ void Mikudayo::RenderScene( void )
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );
+        gfxContext.SetDepthStencilTarget( g_SceneDepthBuffer.GetDSV() );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

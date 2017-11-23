@@ -258,6 +258,7 @@ public:
 
 	void SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTVs[] );
 	void SetRenderTargets( UINT NumRTVs, const D3D11_RTV_HANDLE RTVs[], D3D11_DSV_HANDLE DSV );
+	void SetRenderTargets( const std::vector<D3D11_RTV_HANDLE>& RTVs, D3D11_DSV_HANDLE DSV );
 	void SetRenderTarget( D3D11_RTV_HANDLE RTV ) { SetRenderTargets( 1, &RTV ); }
 	void SetRenderTarget( D3D11_RTV_HANDLE RTV, D3D11_DSV_HANDLE DSV );
 	void SetDepthStencilTarget( D3D11_DSV_HANDLE DSV ) { SetRenderTargets(0, nullptr, DSV); }

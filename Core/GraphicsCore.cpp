@@ -32,7 +32,6 @@
 #include "FullScreenTriangle.h"
 #include "SystemTime.h"
 #include "TemporalEffects.h"
-#include "SSAO.h"
 #include "DebugHelper.h"
 #define FREEIMAGE_LIB
 #include "FreeImage.h"
@@ -658,7 +657,7 @@ void Graphics::Initialize( void )
 	SetNativeResolution();
     TemporalEffects::Initialize();
     PostEffects::Initialize();
-    // SSAO::Initialize();
+    SSAO::Initialize();
     TextRenderer::Initialize();
     // GraphRenderer::Initialize();
     // ParticleEffects::Initialize(kMaxNativeWidth, kMaxNativeHeight);
@@ -695,7 +694,7 @@ void Graphics::Shutdown( void )
     TemporalEffects::Shutdown();
     PostEffects::Shutdown();
     Utility::Shutdown();
-    // SSAO::Shutdown();
+    SSAO::Shutdown();
     TextRenderer::Shutdown();
     // GraphRenderer::Shutdown();
     // ParticleEffects::Shutdown();

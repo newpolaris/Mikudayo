@@ -290,7 +290,7 @@ namespace SSAO
     }
 }
 
-void SSAO::Render( GraphicsContext& GfxContext, const Math::Camera& camera )
+void SSAO::Render( GraphicsContext& GfxContext, const Math::BaseCamera& camera )
 {
     const float* pProjMat = reinterpret_cast<const float*>(&camera.GetProjMatrix());
     Render(GfxContext, pProjMat, camera.GetNearClip(), camera.GetFarClip() );

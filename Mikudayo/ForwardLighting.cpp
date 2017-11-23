@@ -154,6 +154,9 @@ void Forward::Render( std::shared_ptr<Scene>& scene, RenderArgs& args )
             g_SceneColorBuffer.GetRTV(),
             g_EmissiveColorBuffer.GetRTV(),
         };
+        gfxContext.ClearColor( g_SceneColorBuffer );
+        gfxContext.ClearColor( g_EmissiveColorBuffer );
+        gfxContext.ClearDepth( g_SceneDepthBuffer );
         gfxContext.SetRenderTargets( _countof( rtvs ), rtvs, g_SceneDepthBuffer.GetDSV() );
         DefaultPass defaultPass;
         scene->Render( defaultPass, args );

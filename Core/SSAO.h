@@ -13,14 +13,14 @@
 
 #pragma once
 
-namespace Math { class Camera;  }
+namespace Math { class BaseCamera;  }
 
 namespace SSAO
 {
     void Initialize( void );
     void Shutdown( void );
     void Render(GraphicsContext& Context, const float* ProjMat, float NearClipDist, float FarClipDist );
-    void Render(GraphicsContext& Context, const Math::Camera& camera );
+    void Render(GraphicsContext& Context, const Math::BaseCamera& camera );
 
     extern BoolVar Enable;
     extern BoolVar DebugDraw;
