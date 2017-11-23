@@ -160,7 +160,6 @@
     <ClCompile Include="TaskManager.cpp" />
     <ClCompile Include="TransparentPass.cpp" />
     <ClCompile Include="Vmd.cpp" />
-    <ClCompile Include="XmlReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseMaterial.h" />
@@ -221,7 +220,6 @@
     <ClInclude Include="TransparentPass.h" />
     <ClInclude Include="Visitor.h" />
     <ClInclude Include="Vmd.h" />
-    <ClInclude Include="XmlReader.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\BulletLinePS.hlsl">

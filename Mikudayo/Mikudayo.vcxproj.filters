@@ -189,9 +189,6 @@
     <ClCompile Include="RenderType.cpp">
       <Filter>Source Files\RenderPass</Filter>
     </ClCompile>
-    <ClCompile Include="XmlReader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -367,9 +364,6 @@
     </ClInclude>
     <ClInclude Include="RenderType.h">
       <Filter>Source Files\RenderPass</Filter>
-    </ClInclude>
-    <ClInclude Include="XmlReader.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
