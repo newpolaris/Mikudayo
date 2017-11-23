@@ -39,6 +39,7 @@ Texture2D<float4> texToon : register(t3);
 
 Texture2D<float4> texReflectDiffuse : register(t60);
 Texture2D<float4> texReflectEmmisive : register(t61);
+Texture2D<float> texSSAO : register(t64);
 
 SamplerState sampler0 : register(s0);
 SamplerState sampler1 : register(s1);
@@ -65,6 +66,7 @@ PixelShaderOutput main(PixelShaderInput input)
     float4 color = input.color;
     float4 shadowColor = float4(saturate(input.ambient), color.a);
     float4 emissive = input.emissive;
+    uint2 pixelPos = input.positionHS.xy;
 
     if (mat.bUseTexture) {
         float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
@@ -100,17 +102,19 @@ PixelShaderOutput main(PixelShaderInput input)
 
     // Complete projection by doing division by w.
     float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    float comp = 1.0;
     if (!any(saturate(shadowCoord.xy) != shadowCoord.xy))
     {
         shadowCoord = saturate( shadowCoord );
-        float comp = GetShadow( input.shadowPositionCS, input.positionHS.xyz );
+        comp = GetShadow( input.shadowPositionCS, input.positionHS.xyz );
         if (mat.bUseToon) {
             float lightIntensity = dot( normal, -SunDirectionWS );
             comp = min( saturate( lightIntensity )*Toon, comp );
             shadowColor *= MaterialToon;
         }
-        color = lerp( shadowColor, color, comp );
     }
+    comp = min(comp, texSSAO[pixelPos]);
+    color = lerp( shadowColor, color, comp );
     output.color = color;
     output.emissive = color * emissive;
     return output;
