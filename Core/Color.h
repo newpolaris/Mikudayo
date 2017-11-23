@@ -8,7 +8,7 @@
 //
 // Developed by Minigraph
 //
-// Author:  James Stanard 
+// Author:  James Stanard
 //
 
 #pragma once
@@ -20,13 +20,13 @@ class Color
 {
 public:
 	Color( ) : m_value(DirectX::g_XMOne) {}
-	Color( FXMVECTOR vec );
-	Color( const XMVECTORF32& vec );
+	Color( DirectX::FXMVECTOR vec );
+	Color( const DirectX::XMVECTORF32& vec );
 	Color( float r, float g, float b, float a = 1.0f );
 	Color( uint16_t r, uint16_t g, uint16_t b, uint16_t a = 255, uint16_t bitDepth = 8 );
     Color( BYTE r, BYTE g, BYTE b );
 	explicit Color( uint32_t rgbaLittleEndian );
-		
+
 	float R() const { return DirectX::XMVectorGetX(m_value); }
 	float G() const { return DirectX::XMVectorGetY(m_value); }
 	float B() const { return DirectX::XMVectorGetZ(m_value); }
@@ -56,20 +56,20 @@ public:
 	// Pack an HDR color into 32-bits
 	uint32_t R11G11B10F(bool RoundToEven=false) const;
 
-	operator XMVECTOR() const { return m_value; }
+	operator DirectX::XMVECTOR() const { return m_value; }
 
 private:
-	XMVECTOR m_value;
+	DirectX::XMVECTOR m_value;
 };
 
-inline Color::Color( FXMVECTOR vec )
+inline Color::Color( DirectX::FXMVECTOR vec )
 {
 	m_value = vec;
 }
 
-inline Color::Color( const XMVECTORF32& vec )
+inline Color::Color( const DirectX::XMVECTORF32& vec )
 {
-	m_value = (XMVECTOR)vec;
+	m_value = (DirectX::XMVECTOR)vec;
 }
 
 inline Color::Color( float r, float g, float b, float a )
@@ -137,16 +137,18 @@ inline uint32_t Color::R8G8B8A8( void ) const
 	return a << 24 | b << 16 | g << 8 | r;
 }
 
-inline XMFLOAT4 FromSRGB(XMFLOAT4 c)
+inline DirectX::XMFLOAT4 FromSRGB(DirectX::XMFLOAT4 c)
 {
+    using namespace DirectX;
     FXMVECTOR C = XMLoadFloat4(&c);
     XMVECTOR V = Color(C).FromSRGB();
     XMStoreFloat4( &c, V );
     return c;
 };
 
-inline XMFLOAT3 FromSRGB(XMFLOAT3 c)
+inline DirectX::XMFLOAT3 FromSRGB(DirectX::XMFLOAT3 c)
 {
+    using namespace DirectX;
     FXMVECTOR C = XMLoadFloat3(&c);
     XMVECTOR V = Color(C).FromSRGB();
     XMStoreFloat3( &c, V );

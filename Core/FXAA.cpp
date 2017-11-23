@@ -49,7 +49,7 @@ namespace FXAA
     ComputePSO Pass2VDebugCS;
     IndirectArgsBuffer IndirectParameters;
 
-    BoolVar Enable("Graphics/AA/FXAA/Enable", true);
+    BoolVar Enable("Graphics/AA/FXAA/Enable", false);
     BoolVar DebugDraw("Graphics/AA/FXAA/Debug", false);
 
     // With a properly encoded luma buffer, [0.25 = "low", 0.2 = "medium", 0.15 = "high", 0.1 = "ultra"]

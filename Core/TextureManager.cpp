@@ -36,7 +36,7 @@ static UINT BytesPerPixel( DXGI_FORMAT Format )
 	return (UINT)DirectX::BitsPerPixel(Format) / 8;
 }
 
-Texture::Texture() : m_bTransparent(false) 
+Texture::Texture() : m_bTransparent(false)
 {
 }
 
@@ -150,7 +150,7 @@ bool Texture::CreateDDSFromMemory( const void* memBuffer, size_t bufferSize, boo
 void Texture::SetProperty( void )
 {
     using namespace DirectX;
-    if (m_pResource) 
+    if (m_pResource)
     {
         D3D11_RESOURCE_DIMENSION type;
         m_pResource->GetType( &type );
@@ -322,14 +322,16 @@ const ManagedTexture* TextureManager::LoadFromFile( const wstring& fileName, boo
 		const ManagedTexture* Tex = nullptr;
 		path.replace_extension( L".dds" );
         if (fs::exists(path) || fs::exists(s_RootPath/path))
-            Tex = LoadDDSFromFile( path.generic_wstring(), sRGB );
-		path.replace_extension( L".tga" );
-        if (fs::exists(path) || fs::exists(s_RootPath/path))
-            Tex = LoadTGAFromFile( path.generic_wstring(), sRGB );
-		path.replace_extension( L".png" );
-        Tex = LoadWISFromFile( path.generic_wstring(), sRGB );
+            return Tex = LoadDDSFromFile( path.generic_wstring(), sRGB );
+        path.replace_extension( L".tga" );
+        if (fs::exists( path ) || fs::exists( s_RootPath/path ))
+            return Tex = LoadTGAFromFile( path.generic_wstring(), sRGB );
+        path.replace_extension( L".png" );
+        if (fs::exists( path ) || fs::exists( s_RootPath/path ))
+            return Tex = LoadWISFromFile( path.generic_wstring(), sRGB );
 		return Tex;
 	}
+    return nullptr;
 }
 
 void ManagedTexture::SetToInvalidTexture( void )

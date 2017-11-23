@@ -286,8 +286,7 @@ void Graphics::Initialize( void )
 	ComPtr<ID3D11DeviceContext> pContext;
 
 #if _DEBUG
-	Microsoft::WRL::ComPtr<ID3D11Debug> debugnterface;
-
+	Microsoft::WRL::ComPtr<ID3D11Debug> debugInterface;
 #endif
 
 	// Obtain the DXGI factory

@@ -116,9 +116,8 @@ void Mikudayo::Startup( void )
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
-    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
+    info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    info.DefaultShader = L"MultiLight";
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 

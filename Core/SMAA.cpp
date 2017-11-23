@@ -69,6 +69,7 @@ void SMAA::Render(ComputeContext& Context )
     if (!bInitialize) {
         WARN_ONCE_IF( !bInitialize, "Unable initialize SMAA" );
         Enable = false;
+        return;
     }
 
     ScopedTimer _prof( L"SMAA", Context );
