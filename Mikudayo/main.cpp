@@ -38,7 +38,7 @@ using namespace Math;
 class Mikudayo : public GameCore::IGameApp
 {
 public:
-	Mikudayo() : m_CurrentCamera(m_Camera)
+	Mikudayo()
 	{
 	}
 
@@ -51,11 +51,11 @@ public:
 
 private:
     const BaseCamera& GetCamera();
+    const BaseCamera& GetGraphicsCamera();
 
     Camera m_Camera;
     MikuCamera m_SecondCamera;
     ShadowCameraLiSPSM m_SunShadow;
-    BaseCamera& m_CurrentCamera;
     std::unique_ptr<CameraController> m_CameraController;
     std::unique_ptr<MikuCameraController> m_SecondCameraController;
 	Motion m_Motion;
@@ -168,11 +168,17 @@ const BaseCamera& Mikudayo::GetCamera()
         return m_SecondCamera;
 }
 
+const BaseCamera& Mikudayo::GetGraphicsCamera()
+{
+    if (m_CameraType == kCameraVirtual)
+        return m_Camera;
+    return m_SecondCamera;
+}
+
 void Mikudayo::Update( float deltaT )
 {
     ScopedTimer _prof( L"Update" );
 
-    m_CurrentCamera = GetCamera();
     if (CameraMove == kCameraMoveMotion)
         m_Motion.Animate( m_SecondCamera );
 
@@ -184,10 +190,10 @@ void Mikudayo::Update( float deltaT )
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
 
-    m_CameraPosition = m_CurrentCamera.GetPosition();
-    m_ViewMatrix = m_CurrentCamera.GetViewMatrix();
-    m_ProjMatrix = m_CurrentCamera.GetProjMatrix();
-    m_ViewProjMatrix = m_CurrentCamera.GetViewProjMatrix();
+    m_CameraPosition = GetCamera().GetPosition();
+    m_ViewMatrix = GetCamera().GetViewMatrix();
+    m_ProjMatrix = GetCamera().GetProjMatrix();
+    m_ViewProjMatrix = GetCamera().GetViewProjMatrix();
 
     // We use viewport offsets to jitter sample positions from frame to frame (for TAA.)
     // D3D has a design quirk with fractional offsets such that the implicit scissor
@@ -221,13 +227,13 @@ void Mikudayo::Update( float deltaT )
     }
     for (auto& primitive : m_Primitives)
         primitive->Update();
-    Physics::UpdatePicking( m_MainViewport, m_CurrentCamera );
+    Physics::UpdatePicking( m_MainViewport, GetGraphicsCamera() );
 }
 
 void Mikudayo::RenderScene( void )
 {
 	GraphicsContext& gfxContext = GraphicsContext::Begin( L"Scene Render" );
-    RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, m_CurrentCamera };
+    RenderArgs args = { gfxContext, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     __declspec(align(16)) struct
     {
@@ -245,7 +251,7 @@ void Mikudayo::RenderScene( void )
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
     {   
         ScopedTimer _prof( L"Render Shadow Map", gfxContext );
-        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, m_Camera );
+        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, m_SecondCamera );
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
         m_Scene->Render( m_ShadowCasterPass, args );
@@ -279,21 +285,21 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof( L"Primitive Color", gfxContext );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
-            primitive->Draw( m_CurrentCamera.GetWorldSpaceFrustum() );
-        Physics::Render( gfxContext, m_CurrentCamera.GetViewProjMatrix() );
+            primitive->Draw( GetCamera().GetWorldSpaceFrustum() );
+        Physics::Render( gfxContext, GetCamera().GetViewProjMatrix() );
     }
     gfxContext.SetRenderTarget( nullptr );
 
     // Some systems generate a per-pixel velocity buffer to better track dynamic and skinned meshes.  Everything
     // is static in our scene, so we generate velocity from camera motion and the depth buffer.  A velocity buffer
     // is necessary for all temporal effects (and motion blur).
-    MotionBlur::GenerateCameraVelocityBuffer(gfxContext, m_CurrentCamera, true);
+    MotionBlur::GenerateCameraVelocityBuffer(gfxContext, GetGraphicsCamera(), true);
 
     TemporalEffects::ResolveImage(gfxContext);
 
     // Until I work out how to couple these two, it's "either-or".
     if (DepthOfField::Enable)
-        DepthOfField::Render(gfxContext, m_CurrentCamera.GetNearClip(), m_CurrentCamera.GetFarClip());
+        DepthOfField::Render(gfxContext, GetGraphicsCamera().GetNearClip(), GetGraphicsCamera().GetFarClip());
     else
         MotionBlur::RenderObjectBlur(gfxContext, g_VelocityBuffer);
 
@@ -302,11 +308,10 @@ void Mikudayo::RenderScene( void )
 
 void Mikudayo::RenderUI( GraphicsContext& Context )
 {
-    const BaseCamera& camera = m_CurrentCamera;
-    RenderArgs args = { Context, m_ViewMatrix, m_ProjMatrix, m_MainViewport, camera };
+    RenderArgs args = { Context, m_ViewMatrix, m_ProjMatrix, m_MainViewport, GetCamera() };
 
     if (s_bDrawBone)
         m_Scene->Render( m_RenderBonePass, args );
-    Physics::RenderDebug( Context, camera.GetViewProjMatrix() );
+    Physics::RenderDebug( Context, GetCamera().GetViewProjMatrix() );
 	Context.SetViewportAndScissor( m_MainViewport, m_MainScissor );
 }
