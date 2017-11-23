@@ -9,3 +9,7 @@ Build_VS14
 Build_VS15
 packages
 .vs
+Mikudayo/Model
+Mikudayo/Motion
+Mikudayo/Stage
+Mikudayo/ShaderCache
