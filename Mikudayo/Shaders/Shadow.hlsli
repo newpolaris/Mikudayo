@@ -1,7 +1,7 @@
 #include "ShadowDefine.hlsli"
 #include "PCFKernels.hlsli"
 
-Texture2DArray<float> texShadow : register(t62);
+Texture2DArray<float> texShadow : register(t65);
 SamplerComparisonState samplerShadow : register(s2);
 
 //

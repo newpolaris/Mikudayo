@@ -70,6 +70,7 @@ private:
     Matrix4 m_ViewProjMatrix;
     D3D11_VIEWPORT m_MainViewport;
     D3D11_RECT m_MainScissor;
+    D3D11_SRV_HANDLE m_ExtraTextures[2];
 
     btSoftBody* m_SoftBody;
     std::vector<Primitive::PhysicsPrimitivePtr> m_Primitives;
@@ -113,6 +114,9 @@ void Mikudayo::Startup( void )
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
     m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
+
+    m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
+    m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
     m_Scene = std::make_shared<Scene>();
 
@@ -273,14 +277,14 @@ void Mikudayo::RenderScene( void )
         m_Scene->Render( depthPass, args );
         gfxContext.SetDepthStencilTarget( nullptr );
     }
-    SSAO::Render(gfxContext, GetCamera());
+    SSAO::Render(gfxContext, GetGraphicsCamera());
     {   
         ScopedTimer _prof( L"Render Shadow Map", gfxContext );
         // To debug shadow map, shadow generate is sole on main camera
         m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, GetGraphicsCamera() );
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
-        m_Scene->Render( m_ShadowCasterPass, args );
+        // m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     if (!SSAO::DebugDraw)
@@ -288,7 +292,7 @@ void Mikudayo::RenderScene( void )
         ScopedTimer _prof( L"Render Color", gfxContext );
         gfxContext.SetViewportAndScissor( m_MainViewport, m_MainScissor );
         gfxContext.SetDynamicConstantBufferView( 0, sizeof( vsConstants ), &vsConstants, { kBindVertex } );
-        gfxContext.SetDynamicDescriptor( 62, g_ShadowBuffer.GetSRV(), { kBindPixel } );
+        gfxContext.SetDynamicDescriptors( 64, _countof(m_ExtraTextures), m_ExtraTextures, { kBindPixel } );
 
         Forward::Render( m_Scene, args );
         Skydome::Render( m_Scene, args );

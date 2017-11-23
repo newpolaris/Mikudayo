@@ -34,8 +34,8 @@ Texture2D<float4> texDiffuse : register(t1);
 Texture2D<float4> texSphere : register(t2);
 Texture2D<float4> texToon : register(t3);
 
-Texture2D<float4> texReflectDiffuse : register(t63);
-Texture2D<float4> texReflectEmmisive : register(t64);
+Texture2D<float4> texReflectDiffuse : register(t60);
+Texture2D<float4> texReflectEmmisive : register(t61);
 
 SamplerState sampler0 : register(s0);
 SamplerState sampler1 : register(s1);

@@ -119,8 +119,8 @@ bool Forward::MirrorPass::Visit( SceneNode& node )
     // Render mirror with alpha-blend
     Matrix4 model = node.GetTransform();
     context.SetDynamicConstantBufferView( 2, sizeof( model ), &model, { kBindVertex } );
-    context.SetDynamicDescriptor( 63, g_ReflectColorBuffer.GetSRV(), { kBindPixel } );
-    context.SetDynamicDescriptor( 64, g_ReflectEmissiveBuffer.GetSRV(), { kBindPixel } );
+    context.SetDynamicDescriptor( 60, g_ReflectColorBuffer.GetSRV(), { kBindPixel } );
+    context.SetDynamicDescriptor( 61, g_ReflectEmissiveBuffer.GetSRV(), { kBindPixel } );
     node.Render( context, *this );
 
     return true;
