@@ -48,15 +48,16 @@ SceneNodePtr ModelManager::Load( const ModelInfo& info )
         type = GetModelType( info.ModelFile );
     if (type == kModelPMX)
     {
-        if (m_Models.count( info.ModelFile ) == 0) 
+        // TODO: REMOVE Model/Instance pair
+        if (m_Models.count(info.ModelFile) == 0) 
         {
             auto model = std::make_shared<PmxModel>();
             if (!model->Load( info ))
                 return nullptr;
             m_Models[info.ModelFile] = model;
         }
-        auto base = m_Models[info.ModelFile];
-        auto model = std::make_shared<PmxInstant>(*base);
+        auto& base = m_Models[info.ModelFile];
+        auto model = std::make_shared<PmxInstant>(*base, info.Transform);
         if (!model->Load())
             return nullptr;
         model->LoadMotion( info.MotionFile );

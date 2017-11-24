@@ -118,6 +118,15 @@ void Mikudayo::Startup( void )
     m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
     m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
+    std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
+        { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
+        { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
+        { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
+        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
+        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
+    };
+    for (auto& info : primitves)
+        m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
     m_Scene = std::make_shared<Scene>();
 
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
@@ -126,7 +135,15 @@ void Mikudayo::Startup( void )
     ModelInfo info;
     info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    info.Transform = AffineTransform::MakeTranslation(Vector3(-10, 0, 0));
     SceneNodePtr instance = ModelManager::Load( info );
+    if (instance) m_Scene->AddChild( instance );
+
+    ModelInfo back;
+    back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
+    back.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    info.Transform = AffineTransform::MakeTranslation(Vector3(10, 0, 0));
+    instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );
 
     ModelInfo stage;

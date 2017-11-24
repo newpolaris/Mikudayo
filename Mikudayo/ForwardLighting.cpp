@@ -66,8 +66,9 @@ namespace Forward
         ReflectedPass( SceneNode& node, RenderQueue Queue ) : 
             DefaultPass(Queue), m_Node( node ) 
         {
-            Vector3 normal = node.GetTransform().Get3x3() * Vector3( 0, 0, 1 );
-            Vector3 position = Vector3( node.GetTransform().GetW() );
+            Matrix4 transform = node.GetTransform();
+            Vector3 normal = transform.Get3x3() * Vector3( 0, 0, 1 );
+            Vector3 position = Vector3( transform.GetW() );
             m_ReflectionPlane = Vector4( XMPlaneFromPointNormal( position, normal ) );
             m_ReflectMatrix = Matrix4( XMMatrixReflect( m_ReflectionPlane ) );
         }

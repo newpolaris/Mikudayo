@@ -31,6 +31,7 @@ struct ModelInfo
     std::wstring DefaultShader;
     ModelType Type = kModelUnknown;
     CustomShaderInfo Shader;
+    Math::AffineTransform Transform;
 };
 
 class IModel

@@ -6,10 +6,15 @@
 #include "PrimitiveBatch.h"
 #include "TextUtility.h"
 
+//
+// TODO:
+// Teleport support : http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=1150
+// Scaling support : https://gamedev.stackexchange.com/questions/90767/bullet-physics-scaling
+//
 namespace Physics
 {
     BoolVar m_bInterpolation( "Application/Physics/Motion Interpolation", true );
-    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
+    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
 
     // use scalar from MMD-Agent, PMX Editor
     // set default gravity 

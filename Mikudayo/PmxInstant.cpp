@@ -62,8 +62,8 @@ struct PmxInstant::Context final
     void UpdateAfterPhysics( float kFrameTime );
 
     Math::BoundingBox GetBoundingBox() const;
-    Matrix4 GetTransform() const;
-    void SetTransform( const Matrix4& transform );
+    AffineTransform GetTransform() const;
+    void SetTransform( const AffineTransform& transform );
 
     const OrthogonalTransform GetTransform( int32_t i ) const;
     void UpdateLocalTransform( int32_t i );
@@ -81,7 +81,7 @@ protected:
     PmxModel& m_Model;
     PmxInstant* m_Parent;
     bool m_bRightHand;
-    Matrix4 m_ModelTransform;
+    AffineTransform m_ModelTransform;
 
     // Skinning
     std::vector<Quaternion> localInherentOrientations;
@@ -560,19 +560,19 @@ Math::BoundingBox PmxInstant::Context::GetBoundingBox() const
     return m_ModelTransform * m_Model.m_BoundingBox;
 }
 
-Matrix4 PmxInstant::Context::GetTransform() const
+AffineTransform PmxInstant::Context::GetTransform() const
 {
     return m_ModelTransform;
 }
 
-void PmxInstant::Context::SetTransform( const Matrix4& transform )
+void PmxInstant::Context::SetTransform( const AffineTransform& transform )
 {
     m_ModelTransform = transform;
 }
 
 const OrthogonalTransform PmxInstant::Context::GetTransform( int32_t i ) const
 {
-    return m_Pose[i];
+    return OrthogonalTransform(m_ModelTransform) * m_Pose[i];
 }
 
 void PmxInstant::Context::UpdateLocalTransform( int32_t i )
@@ -584,7 +584,7 @@ void PmxInstant::Context::UpdateLocalTransform( int32_t i )
 
 void PmxInstant::Context::SetLocalTransform( int32_t i, const OrthogonalTransform& transform )
 {
-    m_Pose[i] = transform;
+    m_Pose[i] = ~OrthogonalTransform(m_ModelTransform) * transform;
 }
 
 void PmxInstant::Context::UpdateChildPose( int32_t idx )
@@ -771,7 +771,7 @@ void PmxInstant::Context::UpdatePose()
 
 void PmxInstant::Context::SetPosition( const Vector3& postion )
 {
-    m_ModelTransform = Matrix4::MakeTranslate( postion );
+    m_ModelTransform = AffineTransform::MakeTranslation( postion );
 }
 
 void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bones )
@@ -813,9 +813,10 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 	}
 }
 
-PmxInstant::PmxInstant( IModel& model ) :
+PmxInstant::PmxInstant( IModel& model, const AffineTransform& transform ) :
     m_Context( std::make_shared<Context>( dynamic_cast<PmxModel&>(model), this ) )
 {
+    SetTransform(transform);
 }
 
 bool PmxInstant::Load()
@@ -848,7 +849,7 @@ const OrthogonalTransform PmxInstant::GetTransform( int32_t i ) const
     return m_Context->GetTransform( i );
 }
 
-void PmxInstant::SetLocalTransform( int32_t i, const OrthogonalTransform& transform )
+void PmxInstant::SetTransform( int32_t i, const OrthogonalTransform& transform )
 {
     m_Context->SetLocalTransform( i, transform );
 }
@@ -884,12 +885,12 @@ Math::BoundingBox PmxInstant::GetBoundingBox() const
     return m_Context->GetBoundingBox();
 }
 
-Math::Matrix4 PmxInstant::GetTransform() const
+Math::AffineTransform PmxInstant::GetTransform() const
 {
     return m_Context->GetTransform();
 }
 
-void PmxInstant::SetTransform( const Math::Matrix4& transform )
+void PmxInstant::SetTransform( const Math::AffineTransform& transform )
 {
     m_Context->SetTransform( transform );
 }
@@ -913,7 +914,7 @@ void BoneRef::SetTransform( const btTransform& transform )
 
 void BoneRef::SetTransform( const OrthogonalTransform& transform )
 {
-    m_Instance->SetLocalTransform( m_Index, transform );
+    m_Instance->SetTransform( m_Index, transform );
 }
 
 void BoneRef::UpdateLocalTransform()
