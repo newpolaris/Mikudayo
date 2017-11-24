@@ -13,10 +13,10 @@
 #include "ShadowCamera.h"
 #include "ShadowCameraUniform.h"
 #include "ShadowCameraLiSPSM.h"
+#include "ShadowCasterPass.h"
 #include "CameraController.h"
 #include "MikuCameraController.h"
 #include "DebugHelper.h"
-#include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
 #include "SkinningPass.h"
 #include "ForwardLighting.h"
@@ -195,6 +195,9 @@ void Mikudayo::Update( float deltaT )
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
 
+    // To debug shadow map, shadow generate is sole on main camera
+    m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, GetGraphicsCamera() );
+
     m_CameraPosition = GetCamera().GetPosition();
     m_ViewMatrix = GetCamera().GetViewMatrix();
     m_ProjMatrix = GetCamera().GetProjMatrix();
@@ -280,11 +283,12 @@ void Mikudayo::RenderScene( void )
     SSAO::Render(gfxContext, GetGraphicsCamera());
     {   
         ScopedTimer _prof( L"Render Shadow Map", gfxContext );
-        // To debug shadow map, shadow generate is sole on main camera
-        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, GetGraphicsCamera() );
-        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
+        struct { Matrix4 View, Proj; } ShadowConstant;
+        ShadowConstant.View = m_SunShadow.GetViewMatrix();
+        ShadowConstant.Proj = m_SunShadow.GetProjMatrix();
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof(ShadowConstant), &ShadowConstant, { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
-        // m_Scene->Render( m_ShadowCasterPass, args );
+        m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     if (!SSAO::DebugDraw)
