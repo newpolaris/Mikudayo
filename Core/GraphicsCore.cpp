@@ -675,30 +675,27 @@ void Graphics::Terminate( void )
 
 void Graphics::Shutdown( void )
 {
-	TextureManager::Shutdown();
-    FullScreenTriangle::Clear();
-	CommandContext::DestroyAllContexts();
-    g_CommandManager.Shutdown();
     GpuTimeManager::Shutdown();
+    TemporalEffects::Shutdown();
+    PostEffects::Shutdown();
+    SSAO::Shutdown();
+    TextRenderer::Shutdown();
+    // GraphRenderer::Shutdown();
+    // ParticleEffects::Shutdown();
+    Utility::Shutdown();
+	FullScreenTriangle::Clear();
 	ConvertLDRToDisplayPS.Destroy();
 	SharpeningUpsamplePS.Destroy();
     PSO::DestroyAll();
-
+	TextureManager::Shutdown();
 	Shader::DestroyAll();
 	BlendState::DestroyAll();
 	RasterizerState::DestroyAll();
 	SamplerDesc::DestroyAll();
 	InputLayout::DestroyAll();
 	DepthStencilState::DestroyAll();
-
-    DestroyRenderingBuffers();
-    TemporalEffects::Shutdown();
-    PostEffects::Shutdown();
-    Utility::Shutdown();
-    SSAO::Shutdown();
-    TextRenderer::Shutdown();
-    // GraphRenderer::Shutdown();
-    // ParticleEffects::Shutdown();
+	CommandContext::DestroyAllContexts();
+    g_CommandManager.Shutdown();
 
 	DestroyRenderingBuffers();
 
