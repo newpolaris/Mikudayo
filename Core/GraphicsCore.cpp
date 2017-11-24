@@ -675,6 +675,7 @@ void Graphics::Terminate( void )
 
 void Graphics::Shutdown( void )
 {
+	TextureManager::Shutdown();
     FullScreenTriangle::Clear();
 	CommandContext::DestroyAllContexts();
     g_CommandManager.Shutdown();
@@ -698,7 +699,6 @@ void Graphics::Shutdown( void )
     TextRenderer::Shutdown();
     // GraphRenderer::Shutdown();
     // ParticleEffects::Shutdown();
-	TextureManager::Shutdown();
 
 	DestroyRenderingBuffers();
 
