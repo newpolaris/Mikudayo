@@ -65,6 +65,9 @@ namespace SSAO
     // is determined by the surface normal (such as with IBL), you might not want this side effect.
     NumVar Accentuation("Graphics/SSAO/Accentuation", 0.1f, 0.0f, 1.0f, 0.1f);
 
+    NumVar AcceptanceRate("Graphics/SSAO/Acceptance Rate (avoid so)", 0.0f, -0.5f, 0.5f, 0.005f);
+    NumVar MinDiff("Graphics/SSAO/Min Diff (avoid so)", 1.5f, 0.0f, 10.0f, 0.20f);
+
     IntVar HierarchyDepth("Graphics/SSAO/Hierarchy Depth", 3, 1, 4);
 }
 
@@ -162,7 +165,7 @@ namespace SSAO
         // This will transform a depth value from [0, thickness] to [0, 1].
         float InverseRangeFactor = 1.0f / ThicknessMultiplier;
 
-        __declspec(align(16)) float SsaoCB[28];
+        __declspec(align(16)) float SsaoCB[30];
 
         // The thicknesses are smaller for all off-center samples of the sphere.  Compute thicknesses relative
         // to the center sample.
@@ -220,6 +223,8 @@ namespace SSAO
         SsaoCB[25] = 1.0f / BufferHeight;
         SsaoCB[26] = 1.0f / -RejectionFalloff;
         SsaoCB[27] = 1.0f / (1.0f + Accentuation);
+        SsaoCB[28] = AcceptanceRate;
+        SsaoCB[29] = MinDiff;
 
         Context.SetDynamicConstantBufferView(1, sizeof(SsaoCB), SsaoCB);
         Context.SetDynamicDescriptor(0, Destination.GetUAV());

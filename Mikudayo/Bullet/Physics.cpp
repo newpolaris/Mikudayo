@@ -6,6 +6,11 @@
 #include "PrimitiveBatch.h"
 #include "TextUtility.h"
 
+//
+// TODO:
+// Teleport support : http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=1150
+// Scaling support : https://gamedev.stackexchange.com/questions/90767/bullet-physics-scaling
+//
 namespace Physics
 {
     BoolVar m_bInterpolation( "Application/Physics/Motion Interpolation", true );
@@ -267,8 +272,8 @@ void Physics::Initialize( void )
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
         // btIDebugDraw::DBG_DrawAabb |
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits |
+        // btIDebugDraw::DBG_DrawConstraints |
+        // btIDebugDraw::DBG_DrawConstraintLimits |
         btIDebugDraw::DBG_DrawWireframe
     );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );

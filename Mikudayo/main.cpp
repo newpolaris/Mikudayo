@@ -13,10 +13,10 @@
 #include "ShadowCamera.h"
 #include "ShadowCameraUniform.h"
 #include "ShadowCameraLiSPSM.h"
+#include "ShadowCasterPass.h"
 #include "CameraController.h"
 #include "MikuCameraController.h"
 #include "DebugHelper.h"
-#include "ShadowCasterPass.h"
 #include "RenderBonePass.h"
 #include "SkinningPass.h"
 #include "ForwardLighting.h"
@@ -118,15 +118,31 @@ void Mikudayo::Startup( void )
     m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
     m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
+    std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
+        { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
+        { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
+        { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
+        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
+        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
+    };
+    for (auto& info : primitves)
+        m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
     m_Scene = std::make_shared<Scene>();
-
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
     info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    info.Transform = AffineTransform::MakeTranslation(Vector3(-10, 0, 0));
     SceneNodePtr instance = ModelManager::Load( info );
+    if (instance) m_Scene->AddChild( instance );
+
+    ModelInfo back;
+    back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
+    back.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    back.Transform = AffineTransform::MakeTranslation(Vector3(10, 0, 0));
+    instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );
 
     ModelInfo stage;
@@ -147,6 +163,7 @@ void Mikudayo::Startup( void )
         mirror->SetType( kSceneMirror );
         m_Scene->AddChild( mirror );
     }
+
 }
 
 void Mikudayo::Cleanup( void )
@@ -194,6 +211,9 @@ void Mikudayo::Update( float deltaT )
 
     m_SunDirection = Vector3( m_SunDirX, m_SunDirY, m_SunDirZ );
     m_SunColor = Vector3( m_SunColorR, m_SunColorG, m_SunColorB );
+
+    // To debug shadow map, shadow generate is sole on main camera
+    m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, GetGraphicsCamera() );
 
     m_CameraPosition = GetCamera().GetPosition();
     m_ViewMatrix = GetCamera().GetViewMatrix();
@@ -280,11 +300,12 @@ void Mikudayo::RenderScene( void )
     SSAO::Render(gfxContext, GetGraphicsCamera());
     {   
         ScopedTimer _prof( L"Render Shadow Map", gfxContext );
-        // To debug shadow map, shadow generate is sole on main camera
-        m_SunShadow.UpdateMatrix( *m_Scene, m_SunDirection, GetGraphicsCamera() );
-        gfxContext.SetDynamicConstantBufferView( 0, sizeof( m_SunShadow.GetViewProjMatrix() ), &m_SunShadow.GetViewProjMatrix(), { kBindVertex } );
+        struct { Matrix4 View, Proj; } ShadowConstant;
+        ShadowConstant.View = m_SunShadow.GetViewMatrix();
+        ShadowConstant.Proj = m_SunShadow.GetProjMatrix();
+        gfxContext.SetDynamicConstantBufferView( 0, sizeof(ShadowConstant), &ShadowConstant, { kBindVertex } );
         g_ShadowBuffer.BeginRendering( gfxContext );
-        // m_Scene->Render( m_ShadowCasterPass, args );
+        m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
     if (!SSAO::DebugDraw)

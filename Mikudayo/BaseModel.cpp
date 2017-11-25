@@ -89,7 +89,7 @@ const RenderPipelineList& BaseModel::FindTechniques( const std::wstring& Name )
 
 BaseModel::BaseModel() : m_DefaultShader(L"Default")
 {
-    m_Transform = Matrix4::MakeScale( 1.f );
+    m_Transform = AffineTransform::MakeScale( 1.f );
 }
 
 void BaseModel::Clear()
@@ -105,6 +105,7 @@ bool BaseModel::Load( const ModelInfo& info )
     m_FileName = info.ModelFile;
     if (!info.DefaultShader.empty())
         m_DefaultShader = info.DefaultShader;
+    SetTransform(info.Transform);
 
     return true;
 }
@@ -125,12 +126,12 @@ void BaseModel::Render( GraphicsContext& gfxContext, Visitor& visitor )
 	}
 }
 
-Math::Matrix4 BaseModel::GetTransform() const
+Math::AffineTransform BaseModel::GetTransform() const
 {
     return m_Transform;
 }
 
-void BaseModel::SetTransform( const Math::Matrix4& transform )
+void BaseModel::SetTransform( const Math::AffineTransform& transform )
 {
     m_Transform = transform;
 }

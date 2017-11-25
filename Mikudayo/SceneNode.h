@@ -35,8 +35,8 @@ public:
     virtual Math::BoundingBox GetBoundingBox() const;
     virtual SceneNodeType GetType() const;
     virtual void SetType( SceneNodeType type );
-    virtual Math::Matrix4 GetTransform() const;
-    virtual void SetTransform( const Math::Matrix4& transform );
+    virtual Math::AffineTransform GetTransform() const;
+    virtual void SetTransform( const Math::AffineTransform& transform );
 
     typedef std::vector<SceneNodePtr> NodeList;
     typedef std::multimap<std::string, SceneNodePtr> NodeNameMap;

@@ -60,11 +60,11 @@ BoundingBox SceneNode::GetBoundingBox() const
     return BoundingBox();
 }
 
-Matrix4 SceneNode::GetTransform() const
+AffineTransform SceneNode::GetTransform() const
 {
-    return Matrix4( kIdentity );
+    return AffineTransform(kIdentity);
 }
 
-void SceneNode::SetTransform( const Math::Matrix4& )
+void SceneNode::SetTransform( const Math::AffineTransform& )
 {
 }

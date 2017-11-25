@@ -35,7 +35,7 @@ public:
 
     PmxInstant( IModel& model );
 
-    bool Load();
+    bool Load( const Math::AffineTransform& transform );
     bool LoadMotion( const std::wstring& motion );
 
     virtual bool IsDynamic( void ) const override;
@@ -47,11 +47,11 @@ public:
     virtual void UpdateAfterPhysics( float deltaT ) override;
     virtual void Skinning( GraphicsContext& gfxContext, Visitor& visitor ) override;
     virtual Math::BoundingBox GetBoundingBox() const override;
-    virtual Math::Matrix4 GetTransform() const override;
-    virtual void SetTransform( const Math::Matrix4& );
+    virtual Math::AffineTransform GetTransform() const override;
+    virtual void SetTransform( const Math::AffineTransform& transform );
 
     const Math::OrthogonalTransform GetTransform( int32_t i ) const;
-    void SetLocalTransform( int32_t i, const Math::OrthogonalTransform& transform );
+    void SetTransform( int32_t i, const Math::OrthogonalTransform& transform );
     void UpdateLocalTransform( int32_t i );
 
 protected:

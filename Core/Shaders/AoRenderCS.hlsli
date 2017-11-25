@@ -13,10 +13,10 @@
 
 #include "SSAORS.hlsli"
 
+#define MINIMUM_DIFF 1
 #ifndef INTERLEAVE_RESULT
 #define WIDE_SAMPLING 1
 #endif
-
 #ifdef INTERLEAVE_RESULT
 Texture2DArray<float> DepthTex : register(t0);
 #else
@@ -31,6 +31,8 @@ cbuffer CB1 : register(b1)
     float2 gInvSliceDimension;
     float  gRejectFadeoff;
     float  gRcpAccentuation;
+    float  gAcceptanceRate;
+    float  gMinDiff;
 }
 
 #if WIDE_SAMPLING
@@ -46,14 +48,24 @@ cbuffer CB1 : register(b1)
 #endif
 
 groupshared float DepthSamples[TILE_DIM * TILE_DIM];
+static const float sMinDiff = gMinDiff * 1e-6;
 
-float TestSamplePair( float frontDepth, float invRange, uint base, int offset )
+float TestSamplePair( float frontDepth, float depth, float invRange, uint base, int offset )
 {
     // "Disocclusion" measures the penetration distance of the depth sample within the sphere.
     // Disocclusion < 0 (full occlusion) -> the sample fell in front of the sphere
     // Disocclusion > 1 (no occlusion) -> the sample fell behind the sphere
     float disocclusion1 = DepthSamples[base + offset] * invRange - frontDepth;
     float disocclusion2 = DepthSamples[base - offset] * invRange - frontDepth;
+
+#if MINIMUM_DIFF
+    float a = DepthSamples[base + offset];
+    if (abs(depth - a) < sMinDiff)
+        disocclusion1 = 1;
+    float b = DepthSamples[base - offset];
+    if (abs(depth - b) < sMinDiff)
+        disocclusion2 = 1;
+#endif
 
     float pseudoDisocclusion1 = saturate(gRejectFadeoff * disocclusion1);
     float pseudoDisocclusion2 = saturate(gRejectFadeoff * disocclusion2);
@@ -64,7 +76,7 @@ float TestSamplePair( float frontDepth, float invRange, uint base, int offset )
         pseudoDisocclusion1 * pseudoDisocclusion2;
 }
 
-float TestSamples( uint centerIdx, uint x, uint y, float invDepth, float invThickness )
+float TestSamples( uint centerIdx, uint x, uint y, float depth, float invDepth, float invThickness )
 {
 #if WIDE_SAMPLING
     x <<= 1;
@@ -72,30 +84,30 @@ float TestSamples( uint centerIdx, uint x, uint y, float invDepth, float invThic
 #endif
 
     float invRange = invThickness * invDepth;
-    float frontDepth = invThickness - 0.5;
+    float frontDepth = invThickness - (0.50 + gAcceptanceRate);
 
     if (y == 0)
     {
         // Axial
         return 0.5 * (
-            TestSamplePair(frontDepth, invRange, centerIdx, x) +
-            TestSamplePair(frontDepth, invRange, centerIdx, x * TILE_DIM));
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, x) +
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, x * TILE_DIM));
     }
     else if (x == y)
     {
         // Diagonal
         return 0.5 * (
-            TestSamplePair(frontDepth, invRange, centerIdx, x * TILE_DIM - x) +
-            TestSamplePair(frontDepth, invRange, centerIdx, x * TILE_DIM + x));
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, x * TILE_DIM - x) +
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, x * TILE_DIM + x));
     }
     else
     {
         // L-Shaped
         return 0.25 * (
-            TestSamplePair(frontDepth, invRange, centerIdx, y * TILE_DIM + x) +
-            TestSamplePair(frontDepth, invRange, centerIdx, y * TILE_DIM - x) +
-            TestSamplePair(frontDepth, invRange, centerIdx, x * TILE_DIM + y) +
-            TestSamplePair(frontDepth, invRange, centerIdx, x * TILE_DIM - y));
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, y * TILE_DIM + x) +
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, y * TILE_DIM - x) +
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, x * TILE_DIM + y) +
+            TestSamplePair(frontDepth, depth, invRange, centerIdx, x * TILE_DIM - y));
     }
 }
 
@@ -132,7 +144,8 @@ void main( uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_Grou
 #else
     uint thisIdx = GTid.x + GTid.y * TILE_DIM + 4 * TILE_DIM + 4;
 #endif
-    const float invThisDepth = 1.0 / DepthSamples[thisIdx];
+    const float thisDepth = DepthSamples[thisIdx];
+    const float invThisDepth = 1.0 / thisDepth;
 
     float ao = 0.0;
 
@@ -140,27 +153,27 @@ void main( uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_Grou
 
 #ifdef SAMPLE_EXHAUSTIVELY
     // 68 samples:  sample all cells in *within* a circular radius of 5
-    ao += gSampleWeightTable[0].x * TestSamples(thisIdx, 1, 0, invThisDepth, gInvThicknessTable[0].x);
-    ao += gSampleWeightTable[0].y * TestSamples(thisIdx, 2, 0, invThisDepth, gInvThicknessTable[0].y);
-    ao += gSampleWeightTable[0].z * TestSamples(thisIdx, 3, 0, invThisDepth, gInvThicknessTable[0].z);
-    ao += gSampleWeightTable[0].w * TestSamples(thisIdx, 4, 0, invThisDepth, gInvThicknessTable[0].w);
-    ao += gSampleWeightTable[1].x * TestSamples(thisIdx, 1, 1, invThisDepth, gInvThicknessTable[1].x);
-    ao += gSampleWeightTable[2].x * TestSamples(thisIdx, 2, 2, invThisDepth, gInvThicknessTable[2].x);
-    ao += gSampleWeightTable[2].w * TestSamples(thisIdx, 3, 3, invThisDepth, gInvThicknessTable[2].w);
-    ao += gSampleWeightTable[1].y * TestSamples(thisIdx, 1, 2, invThisDepth, gInvThicknessTable[1].y);
-    ao += gSampleWeightTable[1].z * TestSamples(thisIdx, 1, 3, invThisDepth, gInvThicknessTable[1].z);
-    ao += gSampleWeightTable[1].w * TestSamples(thisIdx, 1, 4, invThisDepth, gInvThicknessTable[1].w);
-    ao += gSampleWeightTable[2].y * TestSamples(thisIdx, 2, 3, invThisDepth, gInvThicknessTable[2].y);
-    ao += gSampleWeightTable[2].z * TestSamples(thisIdx, 2, 4, invThisDepth, gInvThicknessTable[2].z);
+    ao += gSampleWeightTable[0].x * TestSamples(thisIdx, 1, 0, thisDepth, invThisDepth, gInvThicknessTable[0].x);
+    ao += gSampleWeightTable[0].y * TestSamples(thisIdx, 2, 0, thisDepth, invThisDepth, gInvThicknessTable[0].y);
+    ao += gSampleWeightTable[0].z * TestSamples(thisIdx, 3, 0, thisDepth, invThisDepth, gInvThicknessTable[0].z);
+    ao += gSampleWeightTable[0].w * TestSamples(thisIdx, 4, 0, thisDepth, invThisDepth, gInvThicknessTable[0].w);
+    ao += gSampleWeightTable[1].x * TestSamples(thisIdx, 1, 1, thisDepth, invThisDepth, gInvThicknessTable[1].x);
+    ao += gSampleWeightTable[2].x * TestSamples(thisIdx, 2, 2, thisDepth, invThisDepth, gInvThicknessTable[2].x);
+    ao += gSampleWeightTable[2].w * TestSamples(thisIdx, 3, 3, thisDepth, invThisDepth, gInvThicknessTable[2].w);
+    ao += gSampleWeightTable[1].y * TestSamples(thisIdx, 1, 2, thisDepth, invThisDepth, gInvThicknessTable[1].y);
+    ao += gSampleWeightTable[1].z * TestSamples(thisIdx, 1, 3, thisDepth, invThisDepth, gInvThicknessTable[1].z);
+    ao += gSampleWeightTable[1].w * TestSamples(thisIdx, 1, 4, thisDepth, invThisDepth, gInvThicknessTable[1].w);
+    ao += gSampleWeightTable[2].y * TestSamples(thisIdx, 2, 3, thisDepth, invThisDepth, gInvThicknessTable[2].y);
+    ao += gSampleWeightTable[2].z * TestSamples(thisIdx, 2, 4, thisDepth, invThisDepth, gInvThicknessTable[2].z);
 #else // SAMPLE_CHECKER
     // 36 samples:  sample every-other cell in a checker board pattern
-    ao += gSampleWeightTable[0].y * TestSamples(thisIdx, 2, 0, invThisDepth, gInvThicknessTable[0].y);
-    ao += gSampleWeightTable[0].w * TestSamples(thisIdx, 4, 0, invThisDepth, gInvThicknessTable[0].w);
-    ao += gSampleWeightTable[1].x * TestSamples(thisIdx, 1, 1, invThisDepth, gInvThicknessTable[1].x);
-    ao += gSampleWeightTable[2].x * TestSamples(thisIdx, 2, 2, invThisDepth, gInvThicknessTable[2].x);
-    ao += gSampleWeightTable[2].w * TestSamples(thisIdx, 3, 3, invThisDepth, gInvThicknessTable[2].w);
-    ao += gSampleWeightTable[1].z * TestSamples(thisIdx, 1, 3, invThisDepth, gInvThicknessTable[1].z);
-    ao += gSampleWeightTable[2].z * TestSamples(thisIdx, 2, 4, invThisDepth, gInvThicknessTable[2].z);
+    ao += gSampleWeightTable[0].y * TestSamples(thisIdx, 2, 0, thisDepth, invThisDepth, gInvThicknessTable[0].y);
+    ao += gSampleWeightTable[0].w * TestSamples(thisIdx, 4, 0, thisDepth, invThisDepth, gInvThicknessTable[0].w);
+    ao += gSampleWeightTable[1].x * TestSamples(thisIdx, 1, 1, thisDepth, invThisDepth, gInvThicknessTable[1].x);
+    ao += gSampleWeightTable[2].x * TestSamples(thisIdx, 2, 2, thisDepth, invThisDepth, gInvThicknessTable[2].x);
+    ao += gSampleWeightTable[2].w * TestSamples(thisIdx, 3, 3, thisDepth, invThisDepth, gInvThicknessTable[2].w);
+    ao += gSampleWeightTable[1].z * TestSamples(thisIdx, 1, 3, thisDepth, invThisDepth, gInvThicknessTable[1].z);
+    ao += gSampleWeightTable[2].z * TestSamples(thisIdx, 2, 4, thisDepth, invThisDepth, gInvThicknessTable[2].z);
 #endif
 
 #ifdef INTERLEAVE_RESULT

@@ -20,8 +20,8 @@ public:
     virtual bool Load( const ModelInfo& info ) override;
     virtual void Render( GraphicsContext& gfxContext, Visitor& visitor ) override;
 
-    virtual Math::Matrix4 GetTransform() const override;
-    virtual void SetTransform( const Math::Matrix4& transform ) override;
+    virtual Math::AffineTransform GetTransform() const override;
+    virtual void SetTransform( const Math::AffineTransform& transform ) override;
 
 protected:
 
@@ -31,7 +31,7 @@ protected:
     Materials m_Materials;
     Meshes m_Meshes;
 
-    Matrix4 m_Transform;
+    AffineTransform m_Transform;
     VertexBuffer m_VertexBuffer;
     IndexBuffer m_IndexBuffer;
     VertexBuffer m_VertexBufferDepth;
