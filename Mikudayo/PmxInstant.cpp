@@ -51,7 +51,7 @@ struct PmxInstant::Context final
     void Clear( void );
     void Draw( GraphicsContext& gfxContext, Visitor& visitor );
     void DrawBone( void );
-    bool LoadModel( void );
+    bool LoadModel( const AffineTransform& transform );
     bool LoadMotion( const std::wstring& FilePath );
     void JoinWorld( btDynamicsWorld* world );
     void LeaveWorld( btDynamicsWorld* world );
@@ -64,10 +64,9 @@ struct PmxInstant::Context final
     Math::BoundingBox GetBoundingBox() const;
     AffineTransform GetTransform() const;
     void SetTransform( const AffineTransform& transform );
-
     const OrthogonalTransform GetTransform( int32_t i ) const;
-    void UpdateLocalTransform( int32_t i );
-    void SetLocalTransform( int32_t i, const OrthogonalTransform& transform );
+    void SetTransform( int32_t i, const OrthogonalTransform& transform );
+    void UpdateTransform( int32_t i );
 
 protected:
 
@@ -174,7 +173,7 @@ void PmxInstant::Context::DrawBone()
         PrimitiveUtility::Append( PrimitiveUtility::kBoneMesh, m_ModelTransform * m_Skinning[i] * m_BoneAttribute[i] );
 }
 
-bool PmxInstant::Context::LoadModel()
+bool PmxInstant::Context::LoadModel( const AffineTransform& transform )
 {
     m_PositionSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
     m_NormalSkinBuffer.SetBindFlag( D3D11_BIND_STREAM_OUTPUT );
@@ -266,8 +265,12 @@ bool PmxInstant::Context::LoadModel()
         m_Joints[i]->Build();
     }
 
+    // HACK: See BaseRigidBody for detail
+    SetTransform( transform );
+
     ASSERT( g_DynamicsWorld != nullptr );
     JoinWorld( g_DynamicsWorld );
+
 
     return true;
 }
@@ -313,9 +316,10 @@ void PmxInstant::Context::JoinWorld( btDynamicsWorld* world )
 {
     if (world)
     {
-        for (auto& it : m_RigidBodies)
+        for (auto& it : m_RigidBodies) {
             it->JoinWorld( world );
-
+            it->UpdateTransform( world );
+        }
         for (auto& it : m_Joints)
             it->JoinWorld( world );
     }
@@ -572,17 +576,18 @@ void PmxInstant::Context::SetTransform( const AffineTransform& transform )
 
 const OrthogonalTransform PmxInstant::Context::GetTransform( int32_t i ) const
 {
+    ASSERT(i >= 0);
     return OrthogonalTransform(m_ModelTransform) * m_Pose[i];
 }
 
-void PmxInstant::Context::UpdateLocalTransform( int32_t i )
+void PmxInstant::Context::UpdateTransform( int32_t i )
 {
     auto parentIndex = m_Model.m_Bones[i].Parent;
     if (parentIndex >= 0)
         m_Pose[i] = m_Pose[parentIndex] * m_LocalPose[i];
 }
 
-void PmxInstant::Context::SetLocalTransform( int32_t i, const OrthogonalTransform& transform )
+void PmxInstant::Context::SetTransform( int32_t i, const OrthogonalTransform& transform )
 {
     m_Pose[i] = ~OrthogonalTransform(m_ModelTransform) * transform;
 }
@@ -813,15 +818,16 @@ void PmxInstant::Context::SetupSkeleton( const std::vector<PmxModel::Bone>& Bone
 	}
 }
 
-PmxInstant::PmxInstant( IModel& model, const AffineTransform& transform ) :
+PmxInstant::PmxInstant( IModel& model ) :
     m_Context( std::make_shared<Context>( dynamic_cast<PmxModel&>(model), this ) )
 {
-    SetTransform(transform);
+    // TODO: Due to rigidbody creation, PMX instantce can not have an initial transform at this time.
+    // SetTransform( transform );
 }
 
-bool PmxInstant::Load()
+bool PmxInstant::Load( const AffineTransform& transform )
 {
-    return m_Context->LoadModel();
+    return m_Context->LoadModel( transform );
 }
 
 bool PmxInstant::LoadMotion( const std::wstring& motion )
@@ -851,12 +857,12 @@ const OrthogonalTransform PmxInstant::GetTransform( int32_t i ) const
 
 void PmxInstant::SetTransform( int32_t i, const OrthogonalTransform& transform )
 {
-    m_Context->SetLocalTransform( i, transform );
+    m_Context->SetTransform( i, transform );
 }
 
 void PmxInstant::UpdateLocalTransform( int32_t i )
 {
-    m_Context->UpdateLocalTransform( i );
+    m_Context->UpdateTransform( i );
 }
 
 void PmxInstant::Accept( Visitor& visitor )

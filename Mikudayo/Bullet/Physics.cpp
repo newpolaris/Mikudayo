@@ -272,8 +272,8 @@ void Physics::Initialize( void )
     DebugDrawer = std::make_unique<BulletDebug::DebugDraw>();
     DebugDrawer->setDebugMode(
         // btIDebugDraw::DBG_DrawAabb |
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawConstraintLimits |
+        // btIDebugDraw::DBG_DrawConstraints |
+        // btIDebugDraw::DBG_DrawConstraintLimits |
         btIDebugDraw::DBG_DrawWireframe
     );
     DynamicsWorld->setDebugDrawer( DebugDrawer.get() );

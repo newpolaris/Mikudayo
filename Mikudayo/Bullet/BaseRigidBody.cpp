@@ -5,7 +5,7 @@
 
 using namespace Physics;
 
-BaseRigidBody::DefaultMotionState::DefaultMotionState( const btTransform& startTransform, BaseRigidBody * parent )
+BaseRigidBody::DefaultMotionState::DefaultMotionState( const btTransform& startTransform, BaseRigidBody* parent )
     : m_parentRigidBodyRef(parent),
       m_startTransform(startTransform),
       m_worldTransform(startTransform)
@@ -85,6 +85,15 @@ std::shared_ptr<btCollisionShape> BaseRigidBody::CreateShape() const
     }
 }
 
+//
+// The rigidbody is centered on the zero point.
+// 'm_Trans' has a difference to the bone's relative or zero point,
+// depending on the presence or absence of a bone.
+// If the model has a transform in this process, it will have an incorrect value.
+// Also, even if we give the local coordinates to the process,
+// When we create btRigidBody, it refer the transform through MotionState.
+// This will introduce an incorrect relative distance between joints.
+//
 std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* Shape )
 {
     btVector3 localInertia(0, 0, 0);
@@ -96,6 +105,7 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
         }
     }
     Vector3 BonePosition( kZero );
+	// If reference bone is exist, save a relative transform
     if (m_BoneRef.m_Instance != nullptr && m_BoneRef.m_Index >= 0)
         BonePosition = m_BoneRef.GetTransform().GetTranslation();
     m_Trans = btTransform( m_Rotation, m_Position - Convert(BonePosition) );
@@ -116,7 +126,6 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
     // additional damping can help avoiding lowpass jitter motion, help stability for ragdolls etc.
     info.m_additionalDamping = true;
     std::shared_ptr<btRigidBody> body = std::make_shared<btRigidBody>( info );
-    body->setActivationState( DISABLE_DEACTIVATION );
     body->setUserPointer( this );
     switch (m_Type) {
     case kStaticObject:
@@ -190,6 +199,22 @@ void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
     // When use bullet 2.75, casting is needed
     world->removeRigidBody( m_Body.get() );
     m_Body->setUserPointer( nullptr );
+}
+
+void BaseRigidBody::UpdateTransform( btDynamicsWorld* world )
+{
+    // http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=2513
+     
+    AffineTransform transform = (m_BoneRef.m_Index >= 0) ? m_BoneRef.GetTransform() : AffineTransform(kIdentity);
+    const btTransform newTransform = Convert(transform) * m_Trans;
+    m_MotionState->setWorldTransform(newTransform);
+    m_Body->setInterpolationWorldTransform( newTransform );
+    m_Body->setWorldTransform( newTransform );
+    m_Body->setActivationState( DISABLE_DEACTIVATION );
+    m_Body->activate();
+    world->getBroadphase()->getOverlappingPairCache()->cleanProxyFromPairs( m_Body->getBroadphaseHandle(), world->getDispatcher() );
+    m_Body->setLinearVelocity( btVector3( 0, 0, 0 ) );
+    m_Body->setAngularVelocity( btVector3( 0, 0, 0 ) );
 }
 
 void BaseRigidBody::SetAngularDamping( float value )

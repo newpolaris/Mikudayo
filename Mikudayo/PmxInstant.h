@@ -33,9 +33,9 @@ class PmxInstant : public SceneNode
 {
 public:
 
-    PmxInstant( IModel& model, const AffineTransform& transform );
+    PmxInstant( IModel& model );
 
-    bool Load();
+    bool Load( const Math::AffineTransform& transform );
     bool LoadMotion( const std::wstring& motion );
 
     virtual bool IsDynamic( void ) const override;

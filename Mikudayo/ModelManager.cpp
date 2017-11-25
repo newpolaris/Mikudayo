@@ -57,8 +57,8 @@ SceneNodePtr ModelManager::Load( const ModelInfo& info )
             m_Models[info.ModelFile] = model;
         }
         auto& base = m_Models[info.ModelFile];
-        auto model = std::make_shared<PmxInstant>(*base, info.Transform);
-        if (!model->Load())
+        auto model = std::make_shared<PmxInstant>(*base);
+        if (!model->Load(info.Transform))
             return nullptr;
         model->LoadMotion( info.MotionFile );
         return model;
