@@ -317,8 +317,8 @@ void PmxInstant::Context::JoinWorld( btDynamicsWorld* world )
     if (world)
     {
         for (auto& it : m_RigidBodies) {
+            it->UpdateTransform();
             it->JoinWorld( world );
-            it->UpdateTransform( world );
         }
         for (auto& it : m_Joints)
             it->JoinWorld( world );

@@ -126,6 +126,7 @@ std::shared_ptr<btRigidBody> BaseRigidBody::CreateRigidBody( btCollisionShape* S
     // additional damping can help avoiding lowpass jitter motion, help stability for ragdolls etc.
     info.m_additionalDamping = true;
     std::shared_ptr<btRigidBody> body = std::make_shared<btRigidBody>( info );
+    body->setActivationState( DISABLE_DEACTIVATION );
     body->setUserPointer( this );
     switch (m_Type) {
     case kStaticObject:
@@ -201,20 +202,24 @@ void BaseRigidBody::LeaveWorld( btDynamicsWorld* world )
     m_Body->setUserPointer( nullptr );
 }
 
-void BaseRigidBody::UpdateTransform( btDynamicsWorld* world )
+void BaseRigidBody::UpdateTransform()
 {
-    // http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?f=9&t=2513
-     
-    AffineTransform transform = (m_BoneRef.m_Index >= 0) ? m_BoneRef.GetTransform() : AffineTransform(kIdentity);
+    AffineTransform transform(kIdentity); 
+    if (m_BoneRef.m_Index >= 0 && m_BoneRef.m_Instance != nullptr)
+        transform = m_BoneRef.GetTransform();
     const btTransform newTransform = Convert(transform) * m_Trans;
     m_MotionState->setWorldTransform(newTransform);
-    m_Body->setInterpolationWorldTransform( newTransform );
+    m_Body->setInterpolationWorldTransform(newTransform);
     m_Body->setWorldTransform( newTransform );
-    m_Body->setActivationState( DISABLE_DEACTIVATION );
+}
+
+void BaseRigidBody::ResetMotionState( btDynamicsWorld* world )
+{
+    UpdateTransform();
     m_Body->activate();
     world->getBroadphase()->getOverlappingPairCache()->cleanProxyFromPairs( m_Body->getBroadphaseHandle(), world->getDispatcher() );
-    m_Body->setLinearVelocity( btVector3( 0, 0, 0 ) );
-    m_Body->setAngularVelocity( btVector3( 0, 0, 0 ) );
+    m_Body->setLinearVelocity(btVector3(0, 0, 0));
+    m_Body->setAngularVelocity(btVector3(0, 0, 0));
 }
 
 void BaseRigidBody::SetAngularDamping( float value )

@@ -14,7 +14,7 @@
 namespace Physics
 {
     BoolVar m_bInterpolation( "Application/Physics/Motion Interpolation", true );
-    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", true );
+    BoolVar s_bDebugDraw( "Application/Physics/Debug Draw", false );
 
     // use scalar from MMD-Agent, PMX Editor
     // set default gravity 
