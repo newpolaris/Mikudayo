@@ -141,7 +141,7 @@ void Mikudayo::Startup( void )
     ModelInfo back;
     back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    back.Transform = AffineTransform::MakeTranslation(Vector3(10, 0, 0));
+    back.Transform = AffineTransform::MakeTranslation(Vector3(0, 0, 0));
     instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );
 
@@ -320,7 +320,7 @@ void Mikudayo::RenderScene( void )
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );
-        gfxContext.SetDepthStencilTarget( g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

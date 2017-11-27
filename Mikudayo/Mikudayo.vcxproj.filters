@@ -490,6 +490,9 @@
     <None Include="Shaders\ModelColorVS.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\MikuColor.hlsli">
+      <Filter>Shaders\MMD</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Mikudayo.rc">
