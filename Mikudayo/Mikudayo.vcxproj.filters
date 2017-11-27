@@ -460,6 +460,12 @@
     <FxCompile Include="Shaders\ModelDepthVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\NchlColorPS.hlsl">
+      <Filter>Shaders\MMD</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\NchlColorVS.hlsl">
+      <Filter>Shaders\MMD</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Shadow.hlsli">
@@ -491,6 +497,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\MikuColor.hlsli">
+      <Filter>Shaders\MMD</Filter>
+    </None>
+    <None Include="Shaders\NchlColorVS.hlsli">
       <Filter>Shaders\MMD</Filter>
     </None>
   </ItemGroup>

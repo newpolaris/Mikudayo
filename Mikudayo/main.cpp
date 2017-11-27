@@ -134,6 +134,7 @@ void Mikudayo::Startup( void )
     ModelInfo info;
     info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    info.DefaultShader = L"NCHL";
     info.Transform = AffineTransform::MakeTranslation(Vector3(-10, 0, 0));
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
@@ -141,6 +142,7 @@ void Mikudayo::Startup( void )
     ModelInfo back;
     back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    back.DefaultShader = L"NCHL";
     back.Transform = AffineTransform::MakeTranslation(Vector3(0, 0, 0));
     instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );

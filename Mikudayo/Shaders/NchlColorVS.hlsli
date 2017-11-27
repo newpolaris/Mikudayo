@@ -1,12 +1,13 @@
-﻿#include "MikuColor.hlsli"
+#include "MikuColor.hlsli"
 
-static float4 DiffuseColor = float4(MaterialDiffuse.rgb*LightAmbient, saturate(MaterialDiffuse.a+0.01));
+// static const float4 DiffuseColor = float4(MaterialDiffuse.rgb*LightAmbient, saturate(MaterialDiffuse.a+0.01));
+static const float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
 
-static const float PI = 3.1415926;
+static const float  PI = 3.1415926;
 static const float  AmbLightPower = 2;
 static const float3 AmbColorXYZ = float3(90, 90, 100);
 static const float3 AmbColorRxyz = float3(100, 80, 60);
-static const float3 AmbientColor  = MaterialToon*MaterialEmissive;
+static const float3 AmbientColor  = MaterialToon.xyz*MaterialEmissive;
 
 static const float3 AmbLightColor0 = saturate(AmbColorXYZ*0.01); 
 static const float3 AmbLightColor1 = saturate(AmbColorRxyz*1.8/PI); 

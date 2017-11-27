@@ -12,8 +12,6 @@ struct PixelShaderInput
     float2 texCoord : TEXCOORD0;
     float2 spTex : TEXCOORD1;
     float3 normalWS : NORMAL;
-    float4 color : COLOR0;
-    float4 emissive : COLOR2;
 };
 
 // Simple shader to do vertex processing on the GPU.

@@ -349,6 +349,16 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\NchlColorPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\NchlColorVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\PmxSkinningSO.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Vertex</ShaderType>
@@ -372,6 +382,7 @@
     <None Include="Shaders\MikuColorVS.hlsli" />
     <None Include="Shaders\ModelColorVS.hlsli" />
     <None Include="Shaders\MultiLight.hlsli" />
+    <None Include="Shaders\NchlColorVS.hlsli" />
     <None Include="Shaders\PCFKernels.hlsli" />
     <None Include="Shaders\MikuHeader.hlsli" />
     <None Include="Shaders\Shadow.hlsli" />

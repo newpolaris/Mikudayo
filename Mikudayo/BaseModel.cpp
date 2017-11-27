@@ -9,7 +9,7 @@
 #include "CompiledShaders/ModelColor2PS.h"
 
 namespace {
-    std::map<std::wstring, RenderPipelineList> Techniques;
+    std::map<std::wstring, RenderPipelineList> s_Techniques;
 
     InputDesc VertElem[]
     {
@@ -67,23 +67,23 @@ void BaseModel::Initialize()
 
     AutoFillPSO( ReflectedPSO, kRenderQueueReflectOpaque, Default );
 
-    Techniques.emplace( L"Default", Default );
+    s_Techniques.emplace( L"Default", Default );
 }
 
 void BaseModel::Shutdown()
 {
-    Techniques.clear();
+    s_Techniques.clear();
 }
 
 void BaseModel::AppendTechniques( const std::wstring& Name, RenderPipelineList&& List )
 {
-    Techniques[Name] = std::move(List);
+    s_Techniques[Name] = std::move(List);
 }
 
 const RenderPipelineList& BaseModel::FindTechniques( const std::wstring& Name )
 {
-    if (Techniques.count(Name))
-        return Techniques[Name];
+    if (s_Techniques.count(Name))
+        return s_Techniques[Name];
     return PipelineListEmpty;
 }
 
