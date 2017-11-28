@@ -1,7 +1,6 @@
 #include "MikuColor.hlsli"
 
-// static const float4 DiffuseColor = float4(MaterialDiffuse.rgb*LightAmbient, saturate(MaterialDiffuse.a+0.01));
-static const float4 DiffuseColor = MaterialDiffuse * float4(LightDiffuse, 1.0);
+static const float4 DiffuseColor = float4(MaterialDiffuse.rgb*LightAmbient, MaterialDiffuse.a);
 
 static const float  PI = 3.1415926;
 static const float  AmbLightPower = 2;

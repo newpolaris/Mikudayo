@@ -108,11 +108,12 @@ void Mikudayo::Startup( void )
     ModelManager::Initialize();
     Forward::Initialize();
 
-    const Vector3 eye = Vector3(0.0f, 20.0f, 15.0f);
-    m_Camera.SetEyeAtUp( eye, Vector3(0.0, 20.f, 0.f), Vector3(kYUnitVector) );
+    const Vector3 eye = Vector3(0.0f, 20.0f, 25.0f);
+    const Vector3 at = Vector3( 0.0, 15.f, 0.f );
+    m_Camera.SetEyeAtUp( eye, at, Vector3(kYUnitVector) );
     m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 10000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
-    m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
+    m_SecondCamera.SetEyeAtUp( eye, at, Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
@@ -135,7 +136,7 @@ void Mikudayo::Startup( void )
     info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
     info.DefaultShader = L"NCHL";
-    info.Transform = AffineTransform::MakeTranslation(Vector3(-10, 0, 0));
+    info.Transform = AffineTransform::MakeTranslation(Vector3(-5, 0, 0));
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 
@@ -143,7 +144,7 @@ void Mikudayo::Startup( void )
     back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
     back.DefaultShader = L"NCHL";
-    back.Transform = AffineTransform::MakeTranslation(Vector3(0, 0, 0));
+    back.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
     instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );
 
