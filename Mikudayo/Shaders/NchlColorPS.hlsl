@@ -46,7 +46,7 @@ float Pow5(float n)
 
 PixelShaderOutput main(PixelShaderInput input)
 {
-    PixelShaderOutput output;
+    PixelShaderOutput output = (PixelShaderOutput)0;
     Material mat = Mat;
 
     float3 normal = input.normalWS;
@@ -54,26 +54,28 @@ PixelShaderOutput main(PixelShaderInput input)
         normal = normalize( normal );
 
     float3 view = normalize( input.eyeWS );
+    float4 albedo = float4(1, 1, 1, 1);
     if (mat.bUseTexture) {
         float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
-        MaterialDiffuse *= texColor;
+        albedo *= texColor;
     }
 
     // Complete projection by doing division by w.
     float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
+    float3 diffuseShadow = MaterialDiffuse.xyz;
     float comp = 1.0;
     if (!any(saturate(shadowCoord.xy) != shadowCoord.xy))
     {
         shadowCoord = saturate( shadowCoord );
         comp = GetShadow( input.shadowPositionCS, input.positionCS.xyz );
+        float lightIntensity = dot( normal, -SunDirectionWS );
         if (mat.bUseToon) {
-            float lightIntensity = dot( normal, -SunDirectionWS );
             comp = min( saturate( lightIntensity )*Toon, comp );
+            diffuseShadow *= MaterialToon;
         }
     }
     uint2 pixelPos = input.positionCS.xy;
     comp = min(comp, texSSAO[pixelPos]);
-    float3 a = MaterialEmissive * comp;
 
     float3 diffuseMaterial = MaterialDiffuse.rgb;
     float3 specularMaterial = MaterialSpecular.rgb;
@@ -81,8 +83,8 @@ PixelShaderOutput main(PixelShaderInput input)
 
     float3 Ln = -LightDirection;
     float3 light = LightAmbient;
-    float halfLambertTerm = max(dot( normal, Ln ), 0) * 0.5 + 0.5;
-    float3 diffuse = lerp(halfLambertTerm, a, 0.25);
+    float halfLambertTerm = max(dot(normal, Ln), 0) * 0.5 + 0.5;
+    float3 diffuse = lerp(diffuseShadow, diffuseMaterial, comp);
 
     float3 halfVec = normalize( view + Ln );
     float power = mat.specularPower;
@@ -90,9 +92,7 @@ PixelShaderOutput main(PixelShaderInput input)
     // treat specular material as F0
     float3 fresnel = lerp( specularMaterial, 1, base );
     float3 specular = light * fresnel * pow(saturate(dot(normal, halfVec)), 5);
-    float4 color = float4(diffuseMaterial*(diffuse + specular), DiffuseColor.a);
-
+    float4 color = float4(albedo*(diffuse+specular), DiffuseColor.a*MaterialDiffuse.a);
     output.color = color;
-    output.emissive = color;
     return output;
 }
