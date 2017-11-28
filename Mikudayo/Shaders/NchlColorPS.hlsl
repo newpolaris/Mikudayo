@@ -91,7 +91,8 @@ PixelShaderOutput main(PixelShaderInput input)
     float base = pow(1.0 - saturate(dot(view, halfVec)), 5.0);
     // treat specular material as F0
     float3 fresnel = lerp( specularMaterial, 1, base );
-    float3 specular = light * fresnel * pow(saturate(dot(normal, halfVec)), 5);
+    float roughnessFactor = (power + 8)*pow(saturate(dot(normal, halfVec)), power) / 8;
+    float3 specular = light * fresnel * roughnessFactor;
     float4 color = float4(albedo*(diffuse+specular), DiffuseColor.a*MaterialDiffuse.a);
     output.color = color;
     return output;
