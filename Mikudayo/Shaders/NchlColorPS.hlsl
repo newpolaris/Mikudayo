@@ -54,50 +54,12 @@ PixelShaderOutput main(PixelShaderInput input)
         normal = normalize( normal );
 
     float3 view = normalize( input.eyeWS );
-    float alpha = MaterialDiffuse.a;
-
-    const float lightScale = 8;
-    // remove over mat.diff + mat.spec <= 1
-    float3 diffuseMaterial = saturate(MaterialDiffuse.rgb + MaterialSpecular.rgb) - MaterialSpecular.rgb;
-    float3 specularMaterial = MaterialSpecular.rgb;
-    float3 light = LightAmbient * lightScale;
-
-    float halfLambertTerm = max(dot( normal, -LightDirection ), 0) * 0.5 + 0.5;
-    float3 diffuse = light * diffuseMaterial * halfLambertTerm * halfLambertTerm * 3 / (4 * PI);
-
-    float3 r = reflect( view, normal );
-    float power = mat.specularPower;
-    float3 specular = light * specularMaterial * pow(max(dot(-LightDirection, r), 0.0001f), power) * ((power + 1.0f) / (2.0 * PI));
-    float3 ambient = 0.1 * light * Mat.ambient;
-
-    float4 color = float4(diffuse + specular + ambient, DiffuseColor.a);
-
-    uint2 pixelPos = input.positionCS.xy;
-
     if (mat.bUseTexture) {
         float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
-        color *= texColor;
-        // shadowColor *= texColor;
+        MaterialDiffuse *= texColor;
     }
-
-#if 0
-    const bool bUseNormalTexture = mat.sphereOperation != kSphereNone;
-    if (bUseNormalTexture) {
-        float4 texColor = texSphere.Sample( sampler0, input.spTex );
-        if (mat.sphereOperation == kSphereAdd) {
-            color.rgb += texColor.rgb;
-            // shadowColor.rgb += texColor.rgb;
-        } else {
-            color.rgb *= texColor.rgb;
-            // shadowColor.rgb *= texColor.rgb;
-        }
-        color.a *= texColor.a;
-        shadowColor.a *= texColor.a;
-    }
-#endif
 
     // Complete projection by doing division by w.
-#if 0
     float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
     float comp = 1.0;
     if (!any(saturate(shadowCoord.xy) != shadowCoord.xy))
@@ -107,12 +69,29 @@ PixelShaderOutput main(PixelShaderInput input)
         if (mat.bUseToon) {
             float lightIntensity = dot( normal, -SunDirectionWS );
             comp = min( saturate( lightIntensity )*Toon, comp );
-            // shadowColor *= MaterialToon;
         }
     }
+    uint2 pixelPos = input.positionCS.xy;
     comp = min(comp, texSSAO[pixelPos]);
-#endif
-    // color = lerp( shadowColor, color, comp );
+    float3 a = MaterialEmissive * comp;
+
+    float3 diffuseMaterial = MaterialDiffuse.rgb;
+    float3 specularMaterial = MaterialSpecular.rgb;
+    float alpha = MaterialDiffuse.a;
+
+    float3 Ln = -LightDirection;
+    float3 light = LightAmbient;
+    float halfLambertTerm = max(dot( normal, Ln ), 0) * 0.5 + 0.5;
+    float3 diffuse = lerp(halfLambertTerm, a, 0.25);
+
+    float3 halfVec = normalize( view + Ln );
+    float power = mat.specularPower;
+    float base = pow(1.0 - saturate(dot(view, halfVec)), 5.0);
+    // treat specular material as F0
+    float3 fresnel = lerp( specularMaterial, 1, base );
+    float3 specular = light * fresnel * pow(saturate(dot(normal, halfVec)), 5);
+    float4 color = float4(diffuseMaterial*(diffuse + specular), DiffuseColor.a);
+
     output.color = color;
     output.emissive = color;
     return output;

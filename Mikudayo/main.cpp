@@ -119,15 +119,6 @@ void Mikudayo::Startup( void )
     m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
     m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
-    std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
-        { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
-        { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
-        { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
-        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
-        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
-    };
-    for (auto& info : primitves)
-        m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
     m_Scene = std::make_shared<Scene>();
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
     m_Motion.LoadMotion( cameraMotion );
@@ -150,6 +141,7 @@ void Mikudayo::Startup( void )
 
     ModelInfo stage;
     stage.ModelFile = L"Stage/黒白チェスステージ/黒白チェスステージ.pmx";
+    stage.DefaultShader = L"NCHL";
     instance = ModelManager::Load( stage );
     if (instance) m_Scene->AddChild( instance );
 
@@ -158,15 +150,6 @@ void Mikudayo::Startup( void )
     skydome.Type = kModelSkydome;
     instance = ModelManager::Load( skydome );
     if (instance) m_Scene->AddChild( instance );
-
-    SceneNodePtr mirror = ModelManager::Load( L"Stage/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
-    OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
-    if (mirror) {
-        mirror->SetTransform( rotation );
-        mirror->SetType( kSceneMirror );
-        m_Scene->AddChild( mirror );
-    }
-
 }
 
 void Mikudayo::Cleanup( void )
