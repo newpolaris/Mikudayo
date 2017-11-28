@@ -76,7 +76,9 @@ PixelShaderOutput main(PixelShaderInput input)
         }
     }
     uint2 pixelPos = input.positionCS.xy;
-    comp = min(comp, texSSAO[pixelPos]);
+    float3 ambient = MaterialEmissive;
+    float AmbientScale = 0.1;
+    ambient = AmbientScale * ambient * texSSAO[pixelPos];
 
     float3 diffuseMaterial = MaterialDiffuse.rgb;
     float3 specularMaterial = MaterialSpecular.rgb;
@@ -90,7 +92,7 @@ PixelShaderOutput main(PixelShaderInput input)
     float3 halfVec = normalize( view + Ln );
     float power = mat.specularPower;
     float base = pow(1.0 - saturate(dot(view, halfVec)), 5.0);
-    float Roughness = 0.1;
+    float Roughness = 0.5;
     float NV = dot(normal, view);
     float NH = dot(normal, halfVec);
     float VH = dot(view, halfVec);
@@ -100,7 +102,7 @@ PixelShaderOutput main(PixelShaderInput input)
     float D = Beckmann(Roughness, dot(view, halfVec));
     float G = min(1, min(2*NH*NV/VH, 2*NH*LN/VH));
     float3 specular = light * max(0, D*G/(4*NV*LN)) * comp;
-    float4 color = float4(albedo.rgb*lerp(diffuse, specular, specularMaterial), albedo.a*MaterialDiffuse.a);
+    float4 color = float4(ambient + albedo.rgb*(lerp(diffuse, specular, specularMaterial)), albedo.a*MaterialDiffuse.a);
     output.color = color;
     return output;
 }
