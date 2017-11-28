@@ -34,6 +34,7 @@ SamplerState sampler1 : register(s1);
 // Beckmanormal distribution
 float Beckmann(float m, float nh)
 {
+    m = max(0.0001, m);
     float nh2 = nh*nh;
     float m2 = m*m;
     return exp((nh2-1)/(nh2*m2)) / (PI*m2*nh2*nh2);
@@ -71,7 +72,7 @@ PixelShaderOutput main(PixelShaderInput input)
         float lightIntensity = dot( normal, -SunDirectionWS );
         if (mat.bUseToon) {
             comp = min( saturate( lightIntensity )*Toon, comp );
-            diffuseShadow *= MaterialToon;
+            diffuseShadow *= MaterialToon.xyz;
         }
     }
     uint2 pixelPos = input.positionCS.xy;
@@ -89,11 +90,17 @@ PixelShaderOutput main(PixelShaderInput input)
     float3 halfVec = normalize( view + Ln );
     float power = mat.specularPower;
     float base = pow(1.0 - saturate(dot(view, halfVec)), 5.0);
+    float Roughness = 0.1;
+    float NV = dot(normal, view);
+    float NH = dot(normal, halfVec);
+    float VH = dot(view, halfVec);
+    float LN = dot(Ln, normal);
     // treat specular material as F0
-    float3 fresnel = lerp( specularMaterial, 1, base );
-    float roughnessFactor = (power + 8)*pow(saturate(dot(normal, halfVec)), power) / 8;
-    float3 specular = light * fresnel * roughnessFactor;
-    float4 color = float4(albedo*(diffuse+specular), DiffuseColor.a*MaterialDiffuse.a);
+    float3 fresnel = lerp(0.1, 1, base);
+    float D = Beckmann(Roughness, dot(view, halfVec));
+    float G = min(1, min(2*NH*NV/VH, 2*NH*LN/VH));
+    float3 specular = light * max(0, D*G/(4*NV*LN)) * fresnel * comp;
+    float4 color = float4(albedo.rgb*diffuse+specular, albedo.a*MaterialDiffuse.a);
     output.color = color;
     return output;
 }

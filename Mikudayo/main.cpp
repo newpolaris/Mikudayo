@@ -141,7 +141,6 @@ void Mikudayo::Startup( void )
 
     ModelInfo stage;
     stage.ModelFile = L"Stage/黒白チェスステージ/黒白チェスステージ.pmx";
-    stage.DefaultShader = L"NCHL";
     instance = ModelManager::Load( stage );
     if (instance) m_Scene->AddChild( instance );
 
