@@ -96,11 +96,11 @@ PixelShaderOutput main(PixelShaderInput input)
     float VH = dot(view, halfVec);
     float LN = dot(Ln, normal);
     // treat specular material as F0
-    float3 fresnel = lerp(0.1, 1, base);
+    float3 fresnel = lerp(specularMaterial, 1, base);
     float D = Beckmann(Roughness, dot(view, halfVec));
     float G = min(1, min(2*NH*NV/VH, 2*NH*LN/VH));
-    float3 specular = light * max(0, D*G/(4*NV*LN)) * fresnel * comp;
-    float4 color = float4(albedo.rgb*diffuse+specular, albedo.a*MaterialDiffuse.a);
+    float3 specular = light * max(0, D*G/(4*NV*LN)) * comp;
+    float4 color = float4(albedo.rgb*lerp(diffuse, specular, specularMaterial), albedo.a*MaterialDiffuse.a);
     output.color = color;
     return output;
 }
