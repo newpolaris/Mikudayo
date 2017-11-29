@@ -10,7 +10,6 @@ struct PixelShaderInput
     float3 eyeWS : POSITION1;
     float4 shadowPositionCS : POSITION2;
     float2 texCoord : TEXCOORD0;
-    float2 spTex : TEXCOORD1;
     float3 normalWS : NORMAL;
 };
 

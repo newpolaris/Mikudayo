@@ -124,7 +124,7 @@ void Mikudayo::Startup( void )
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
-    info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
+    info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん_Shader.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
     info.DefaultShader = L"NCHL";
     info.Transform = AffineTransform::MakeTranslation(Vector3(-5, 0, 0));
@@ -132,7 +132,7 @@ void Mikudayo::Startup( void )
     if (instance) m_Scene->AddChild( instance );
 
     ModelInfo back;
-    back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
+    back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLD Shader.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
     back.DefaultShader = L"NCHL";
     back.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
@@ -269,7 +269,7 @@ void Mikudayo::RenderScene( void )
 	gfxContext.SetDynamicConstantBufferView( 5, sizeof(psConstants), &psConstants, { kBindVertex, kBindPixel } );
 
     m_Scene->Render( m_RenderSkinPass, args );
-    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow, SamplerPointClamp };
+    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerAnisoWrap, SamplerAnisoClamp, SamplerShadow, SamplerPointClamp };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
     {
         ScopedTimer _prof(L"Z PrePass", gfxContext);

@@ -12,7 +12,6 @@ struct PixelShaderInput
     float3 eyeWS : POSITION1;
     float4 shadowPositionCS : POSITION2;
     float2 texCoord : TEXCOORD0;
-    float2 spTex : TEXCOORD1;
     float3 normalWS : NORMAL;
 };
 
@@ -68,16 +67,20 @@ PixelShaderOutput main(PixelShaderInput input)
     uint2 pixelPos = input.positionCS.xy;
     float3 Vn = normalize(input.eyeWS);
     float3 Ln = normalize( -LightDirection );
-    
-    float3 normal = input.normalWS;
-    if (any( normal ))
-        normal = normalize( normal );
-    float3 Nn = normal;
 
     float specularMapVal = 1;
+    float3 Nn = input.normalWS;
     bool useNormalMap = (mat.sphereOperation != kSphereNone);
+    if (useNormalMap)
+    {
+        float3x3 tangentFrame = ComputeTangentFrame(input.normalWS, input.eyeWS, input.texCoord);
+        float4 texColor = texSphere.Sample( sampler1, input.texCoord );
+        Nn = mul(2.0*texColor.xyz - 1, tangentFrame);
+        specularMapVal = texColor.a;
+    }
+    if (any(Nn))
+        Nn = normalize(Nn);
     
-
     float rimPower = max(0, dot(Vn, -Ln));
     float NV = dot(Nn, Vn);
 
@@ -87,12 +90,12 @@ PixelShaderOutput main(PixelShaderInput input)
     float4 diffuseColor = DiffuseColor;
     if (mat.bUseTexture) {
         float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
-        ambientColor *= texColor;
+        ambientColor *= texColor.xyz;
         diffuseColor *= texColor;
     }
 
     // Halt Labert
-	float LN = dot(Ln, normal);
+	float LN = dot(Ln, Nn);
     float HLambert = LN*0.5 + 0.5;
    
     float ToonShade = smoothstep(SHADING_MIN, SHADING_MAX, HLambert);
@@ -103,7 +106,7 @@ PixelShaderOutput main(PixelShaderInput input)
     {
         shadowCoord = saturate( shadowCoord );
         ShadowMapVal = GetShadow( input.shadowPositionCS, input.positionCS.xyz );
-        float lightIntensity = dot( normal, -SunDirectionWS );
+        float lightIntensity = dot( Nn, -SunDirectionWS );
         ShadowMapVal = min( lightIntensity, ShadowMapVal );
     }
     float comp = lerp( ToonShade, ShadowMapVal*ToonShade, ShadowStrength*(1 - ShadowMapVal) );
@@ -111,7 +114,7 @@ PixelShaderOutput main(PixelShaderInput input)
 
     float ao = texSSAO[pixelPos];
     float3 aoColor = lerp(ao, sqrt(ao), 1-comp);
-    aoColor = lerp(MaterialToon.xyz*diffuseColor, aoColor, aoColor);
+    aoColor = lerp(MaterialToon.xyz*diffuseColor.xyz, aoColor, aoColor);
 
     float Amblamb = dot(Nn, (cross( Vn, Ln )))*0.5 + 0.5;
     float3 AmbLight = lerp(AmbLightColor0*(Amblamb*Amblamb),AmbLightColor1*(1-Amblamb),1-Amblamb)*AmbLightPower.rrr;
@@ -122,7 +125,7 @@ PixelShaderOutput main(PixelShaderInput input)
     float  BackHlamb = BackLightColor.r*(dot(-Ln,Nn)*0.5+0.5);
     float3 BackLight = BackLightColor*BackHlamb*BackHlamb*BackLightPower.rrr;
 
-    float3 Ambient = aoColor*(BackLight+(AmbLight*Hemisphere))*0.1;
+    float3 ambient = aoColor*(BackLight+(AmbLight*Hemisphere))*0.1;
 
     // specular
     float3 Hn = normalize(Vn + Ln);
@@ -140,23 +143,23 @@ PixelShaderOutput main(PixelShaderInput input)
     float G_I = min( 1, min(-2*NH_I*NV/VH_I, -2*NH_I*LN/VH_I) );
 
     if ( Gloss_Type )  {
-        Gloss = LightAmbient*Ambient*(saturate(0.5-(1-G_I)*(2+G_I)))*(GLOSS_EXTENT-1);  
+        Gloss = LightAmbient*ambient*(saturate(0.5-(1-G_I)*(2+G_I)))*(GLOSS_EXTENT-1);  
     } else if ( Enable_Gloss ) {
-        Gloss = LightAmbient*Ambient*GLOSS_TYPE;
+        Gloss = LightAmbient*ambient*GLOSS_TYPE;
     }
 
-    Ambient *= ambientColor;
+    ambient *= ambientColor;
 
     float Rim = saturate(1-NV*1.5);
     float3 RimLight = (Rim*lerp( comp*saturate(1 - BackHlamb)*BackLight, LightAmbient*SUBCOLOR*D, rimPower )*RIM_STRENGTH);
 
     float SpecularPower = mat.specularPower;
     float Sublamb = smoothstep( -0.3, 1.0, HLambert ) - smoothstep( 0.0, 1.1, HLambert );
-    float3 Subsurface = diffuseColor*SUBCOLOR*(Sublamb.rrr*SUBDEPTH)*sqrt( Rim*0.5 + 0.5 );
+    float3 Subsurface = diffuseColor.xyz*SUBCOLOR*(Sublamb.rrr*SUBDEPTH)*sqrt( Rim*0.5 + 0.5 );
     Subsurface *= lerp( SUBDEPTH / 100, 1, diffuse );
 
-    float3 SpecularTerm = saturate( specularMapVal*(Specular + Gloss) + max( Subsurface, RimLight ) )*face;
-    output.color = float4(diffuse + Ambient + SpecularTerm, diffuseColor.a);
+    float3 specularTerm = saturate( specularMapVal*(Specular + Gloss) + max( Subsurface, RimLight ) )*face;
+    output.color = float4(ambient + diffuse + specularTerm, diffuseColor.a);
 
     return output;
 }

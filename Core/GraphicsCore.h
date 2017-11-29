@@ -57,6 +57,7 @@ namespace Graphics
 
 	extern SamplerDesc SamplerLinearWrapDesc;
 	extern SamplerDesc SamplerAnisoWrapDesc;
+    extern SamplerDesc SamplerAnisoClampDesc;
 	extern SamplerDesc SamplerShadowDescGE;
     extern SamplerDesc SamplerShadowDescLE;
 	extern SamplerDesc SamplerLinearClampDesc;
@@ -67,6 +68,7 @@ namespace Graphics
 
 	extern D3D11_SAMPLER_HANDLE SamplerLinearWrap;
 	extern D3D11_SAMPLER_HANDLE SamplerAnisoWrap;
+	extern D3D11_SAMPLER_HANDLE SamplerAnisoClamp;
 	extern D3D11_SAMPLER_HANDLE SamplerShadowGE;
 	extern D3D11_SAMPLER_HANDLE SamplerShadowLE;
 	extern D3D11_SAMPLER_HANDLE SamplerShadow;
