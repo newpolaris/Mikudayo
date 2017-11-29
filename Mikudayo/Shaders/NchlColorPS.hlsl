@@ -89,7 +89,7 @@ PixelShaderOutput main(PixelShaderInput input)
 
     float3 Ln = -LightDirection;
     float3 light = LightAmbient;
-    float halfLambertTerm = max(dot(normal, Ln), 0) * 0.5 + 0.5;
+    float halfLambertTerm = max(dot(normal, Ln), 0)*0.5 + 0.5;
     float3 diffuse = lerp(diffuseShadow, diffuseMaterial, comp);
 
     float3 halfVec = normalize( view + Ln );
@@ -105,7 +105,14 @@ PixelShaderOutput main(PixelShaderInput input)
     float D = Beckmann(Roughness, dot(view, halfVec));
     float G = min(1, min(2*NH*NV/VH, 2*NH*LN/VH));
     float3 specular = light * max(0, D*G/(4*NV*LN)) * comp;
-    float4 color = float4(ambient + albedo.rgb*(lerp(diffuse, specular, specularMaterial)), albedo.a*MaterialDiffuse.a);
+
+    float rimPower = max(0, dot(view, -Ln)); 
+    float backHlamb = dot(-Ln, normal)*0.5 + 0.5;
+    float3 BackLight = BackLightColor*backHlamb*backHlamb*BackLightPower;
+    float rimRate = saturate(1 - NV*1.5);
+    float3 rim = (rimRate*lerp(comp*saturate(1 - backHlamb)*BackLight, LightAmbient*SUBCOLOR*D, rimPower)*RIM_STRENGTH);
+
+    float4 color = float4(ambient + rim + albedo.rgb*(lerp(diffuse, specular, specularMaterial)), albedo.a*MaterialDiffuse.a);
     output.color = color;
     return output;
 }
