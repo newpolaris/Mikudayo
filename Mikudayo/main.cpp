@@ -90,12 +90,12 @@ EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNam
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
 // Default values in MMD. Due to RH coord, z is inverted.
-NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
-NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
-NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunDirX("Application/Lighting/Sun Dir X", +0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -0.4f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -1.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunColorR("Application/Lighting/Sun Color R", 211.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorG("Application/Lighting/Sun Color G", 204.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorB("Application/Lighting/Sun Color B", 228.f, 0.0f, 255.0f, 1.0f );
 
 BoolVar s_bDrawBone( "Application/Model/Draw Bone", false );
 

@@ -93,9 +93,8 @@ PixelShaderOutput main(PixelShaderInput input)
 
     // Halt Labert
 	float LN = dot(Ln, normal);
-    float HLambert = (LN + 1) * 0.5f;
+    float HLambert = LN*0.5 + 0.5;
    
-
     float ToonShade = smoothstep(SHADING_MIN, SHADING_MAX, HLambert);
     // Complete projection by doing division by w.
     float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
@@ -111,20 +110,18 @@ PixelShaderOutput main(PixelShaderInput input)
     float3 diffuse = diffuseColor.xyz*comp;
 
     float ao = texSSAO[pixelPos];
+    float3 aoColor = lerp(ao, sqrt(ao), 1-comp);
+    aoColor = lerp(MaterialToon.xyz*diffuseColor, aoColor, aoColor);
 
-    float3 aoColor = lerp( ao, sqrt( ao ), 1 - comp );
-    aoColor = lerp( MaterialToon*diffuseColor, aoColor, aoColor );
-
-    float Amblamb = dot( Nn, (cross( Vn, Ln )) )*0.5 + 0.5;
+    float Amblamb = dot(Nn, (cross( Vn, Ln )))*0.5 + 0.5;
     float3 AmbLight = lerp(AmbLightColor0*(Amblamb*Amblamb),AmbLightColor1*(1-Amblamb),1-Amblamb)*AmbLightPower.rrr;
 
     float SdN = dot( SKYDIR, Nn )*0.5f + 0.5f;
     float3 Hemisphere = lerp(GROUNDCOLOR, SKYCOLOR, SdN*SdN);
 
-    float BackHlamb = BackLightColor*(dot(-Ln,Nn)*0.5f+0.5f);
+    float  BackHlamb = BackLightColor.r*(dot(-Ln,Nn)*0.5+0.5);
     float3 BackLight = BackLightColor*BackHlamb*BackHlamb*BackLightPower.rrr;
 
-    // ambient
     float3 Ambient = aoColor*(BackLight+(AmbLight*Hemisphere))*0.1;
 
     // specular
@@ -151,7 +148,7 @@ PixelShaderOutput main(PixelShaderInput input)
     Ambient *= ambientColor;
 
     float Rim = saturate(1-NV*1.5);
-    float3 RimLight = (Rim*lerp( comp*saturate( 1 - BackHlamb )*BackLight, LightAmbient*SUBCOLOR*D, rimPower )*RIM_STRENGTH);
+    float3 RimLight = (Rim*lerp( comp*saturate(1 - BackHlamb)*BackLight, LightAmbient*SUBCOLOR*D, rimPower )*RIM_STRENGTH);
 
     float SpecularPower = mat.specularPower;
     float Sublamb = smoothstep( -0.3, 1.0, HLambert ) - smoothstep( 0.0, 1.1, HLambert );
