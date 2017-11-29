@@ -75,10 +75,13 @@ PixelShaderOutput main(PixelShaderInput input)
             diffuseShadow *= MaterialToon.xyz;
         }
     }
-    uint2 pixelPos = input.positionCS.xy;
+    float AmbientScale = 0.2;
     float3 ambient = MaterialEmissive;
-    float AmbientScale = 0.1;
-    ambient = AmbientScale * ambient * texSSAO[pixelPos];
+    // hemisphere skylight
+    float skyLerp = dot(float3(0,1,0), normal);
+    float3 hemisphere = lerp(GROUNDCOLOR, SKYCOLOR, skyLerp);
+    uint2 pixelPos = input.positionCS.xy;
+    ambient = AmbientScale * ambient * hemisphere * texSSAO[pixelPos];
 
     float3 diffuseMaterial = MaterialDiffuse.rgb;
     float3 specularMaterial = MaterialSpecular.rgb;
