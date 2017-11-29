@@ -31,6 +31,21 @@ Texture2D<float> texSSAO : register(t64);
 SamplerState sampler0 : register(s0);
 SamplerState sampler1 : register(s1);
 
+float3x3 ComputeTangentFrame(float3 Normal, float3 View, float2 UV)
+{
+    float3 dp1 = ddx(View);
+    float3 dp2 = ddy(View);
+    float2 duv1 = ddx(UV);
+    float2 duv2 = ddy(UV);
+
+    float3x3 M = float3x3(dp1, dp2, cross(dp1, dp2));
+    float2x3 inverseM = float2x3(cross(M[1], M[2]), cross(M[2], M[0]));
+    float3 Tangent = mul(float2(duv1.x, duv2.x), inverseM);
+    float3 Binormal = mul(float2(duv1.y, duv2.y), inverseM);
+
+    return float3x3(normalize(Tangent), normalize(Binormal), Normal);
+}
+
 // Beckmanormal distribution
 float Beckmann(float m, float nh)
 {
@@ -50,69 +65,101 @@ PixelShaderOutput main(PixelShaderInput input)
     PixelShaderOutput output = (PixelShaderOutput)0;
     Material mat = Mat;
 
+    uint2 pixelPos = input.positionCS.xy;
+    float3 Vn = normalize(input.eyeWS);
+    float3 Ln = normalize( -LightDirection );
+    
     float3 normal = input.normalWS;
     if (any( normal ))
         normal = normalize( normal );
+    float3 Nn = normal;
 
-    float3 view = normalize( input.eyeWS );
-    float4 albedo = float4(1, 1, 1, 1);
+    float specularMapVal = 1;
+    bool useNormalMap = (mat.sphereOperation != kSphereNone);
+    
+
+    float rimPower = max(0, dot(Vn, -Ln));
+    float NV = dot(Nn, Vn);
+
+    bool face = MaterialDiffuse.a < 0.99 && NV < 0 ? 0 : 1;
+
+    float3 ambientColor = AmbientColor;
+    float4 diffuseColor = DiffuseColor;
     if (mat.bUseTexture) {
         float4 texColor = texDiffuse.Sample( sampler0, input.texCoord );
-        albedo *= texColor;
+        ambientColor *= texColor;
+        diffuseColor *= texColor;
     }
 
+    // Halt Labert
+	float LN = dot(Ln, normal);
+    float HLambert = (LN + 1) * 0.5f;
+   
+
+    float ToonShade = smoothstep(SHADING_MIN, SHADING_MAX, HLambert);
     // Complete projection by doing division by w.
     float3 shadowCoord = input.shadowPositionCS.xyz / input.shadowPositionCS.w;
-    float3 diffuseShadow = MaterialDiffuse.xyz;
-    float comp = 1.0;
+    float ShadowMapVal = 1.0;
     if (!any(saturate(shadowCoord.xy) != shadowCoord.xy))
     {
         shadowCoord = saturate( shadowCoord );
-        comp = GetShadow( input.shadowPositionCS, input.positionCS.xyz );
+        ShadowMapVal = GetShadow( input.shadowPositionCS, input.positionCS.xyz );
         float lightIntensity = dot( normal, -SunDirectionWS );
-        if (mat.bUseToon) {
-            comp = min( saturate( lightIntensity )*Toon, comp );
-            diffuseShadow *= MaterialToon.xyz;
-        }
+        ShadowMapVal = min( lightIntensity, ShadowMapVal );
     }
-    float AmbientScale = 0.2;
-    float3 ambient = MaterialEmissive;
-    // hemisphere skylight
-    float skyLerp = dot(float3(0,1,0), normal);
-    float3 hemisphere = lerp(GROUNDCOLOR, SKYCOLOR, skyLerp);
-    uint2 pixelPos = input.positionCS.xy;
-    ambient = AmbientScale * ambient * hemisphere * texSSAO[pixelPos];
+    float comp = lerp( ToonShade, ShadowMapVal*ToonShade, ShadowStrength*(1 - ShadowMapVal) );
+    float3 diffuse = diffuseColor.xyz*comp;
 
-    float3 diffuseMaterial = MaterialDiffuse.rgb;
-    float3 specularMaterial = MaterialSpecular.rgb;
-    float alpha = MaterialDiffuse.a;
+    float ao = texSSAO[pixelPos];
 
-    float3 Ln = -LightDirection;
-    float3 light = LightAmbient;
-    float halfLambertTerm = max(dot(normal, Ln), 0)*0.5 + 0.5;
-    float3 diffuse = lerp(diffuseShadow, diffuseMaterial, comp);
+    float3 aoColor = lerp( ao, sqrt( ao ), 1 - comp );
+    aoColor = lerp( MaterialToon*diffuseColor, aoColor, aoColor );
 
-    float3 halfVec = normalize( view + Ln );
-    float power = mat.specularPower;
-    float base = pow(1.0 - saturate(dot(view, halfVec)), 5.0);
-    float Roughness = 0.5;
-    float NV = dot(normal, view);
-    float NH = dot(normal, halfVec);
-    float VH = dot(view, halfVec);
-    float LN = dot(Ln, normal);
-    // treat specular material as F0
-    float3 fresnel = lerp(specularMaterial, 1, base);
-    float D = Beckmann(Roughness, dot(view, halfVec));
-    float G = min(1, min(2*NH*NV/VH, 2*NH*LN/VH));
-    float3 specular = light * max(0, D*G/(4*NV*LN)) * comp;
+    float Amblamb = dot( Nn, (cross( Vn, Ln )) )*0.5 + 0.5;
+    float3 AmbLight = lerp(AmbLightColor0*(Amblamb*Amblamb),AmbLightColor1*(1-Amblamb),1-Amblamb)*AmbLightPower.rrr;
 
-    float rimPower = max(0, dot(view, -Ln)); 
-    float backHlamb = dot(-Ln, normal)*0.5 + 0.5;
-    float3 BackLight = BackLightColor*backHlamb*backHlamb*BackLightPower;
-    float rimRate = saturate(1 - NV*1.5);
-    float3 rim = (rimRate*lerp(comp*saturate(1 - backHlamb)*BackLight, LightAmbient*SUBCOLOR*D, rimPower)*RIM_STRENGTH);
+    float SdN = dot( SKYDIR, Nn )*0.5f + 0.5f;
+    float3 Hemisphere = lerp(GROUNDCOLOR, SKYCOLOR, SdN*SdN);
 
-    float4 color = float4(ambient + rim + albedo.rgb*(lerp(diffuse, specular, specularMaterial)), albedo.a*MaterialDiffuse.a);
-    output.color = color;
+    float BackHlamb = BackLightColor*(dot(-Ln,Nn)*0.5f+0.5f);
+    float3 BackLight = BackLightColor*BackHlamb*BackHlamb*BackLightPower.rrr;
+
+    // ambient
+    float3 Ambient = aoColor*(BackLight+(AmbLight*Hemisphere))*0.1;
+
+    // specular
+    float3 Hn = normalize(Vn + Ln);
+    float  NH = dot(Nn, Hn);
+    float  VH = dot(Vn, Hn);
+    float D = Beckmann(ROUGHNESS, NH);
+    float G = min( 1, min(2*NH*NV/VH, 2*NH*LN/VH) );
+    float F = lerp( FRESNEL, 1, 1-Pow5(dot(Ln, Hn)) );
+    float3 Specular = max(0, F*D*G/NV)*LightAmbient*ShadowMapVal*SPECULAR_EXTENT;
+ 
+    float3 Gloss = float3(0,0,0);
+    float3 Hn_I = normalize(Vn - Ln);
+    float  NH_I = dot(Nn, Hn_I);
+    float  VH_I = dot(Vn, Hn_I);
+    float G_I = min( 1, min(-2*NH_I*NV/VH_I, -2*NH_I*LN/VH_I) );
+
+    if ( Gloss_Type )  {
+        Gloss = LightAmbient*Ambient*(saturate(0.5-(1-G_I)*(2+G_I)))*(GLOSS_EXTENT-1);  
+    } else if ( Enable_Gloss ) {
+        Gloss = LightAmbient*Ambient*GLOSS_TYPE;
+    }
+
+    Ambient *= ambientColor;
+
+    float Rim = saturate(1-NV*1.5);
+    float3 RimLight = (Rim*lerp( comp*saturate( 1 - BackHlamb )*BackLight, LightAmbient*SUBCOLOR*D, rimPower )*RIM_STRENGTH);
+
+    float SpecularPower = mat.specularPower;
+    float Sublamb = smoothstep( -0.3, 1.0, HLambert ) - smoothstep( 0.0, 1.1, HLambert );
+    float3 Subsurface = diffuseColor*SUBCOLOR*(Sublamb.rrr*SUBDEPTH)*sqrt( Rim*0.5 + 0.5 );
+    Subsurface *= lerp( SUBDEPTH / 100, 1, diffuse );
+
+    float3 SpecularTerm = saturate( specularMapVal*(Specular + Gloss) + max( Subsurface, RimLight ) )*face;
+    output.color = float4(diffuse + Ambient + SpecularTerm, diffuseColor.a);
+
     return output;
 }

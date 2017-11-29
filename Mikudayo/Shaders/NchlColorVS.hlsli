@@ -1,6 +1,6 @@
 #include "MikuColor.hlsli"
 
-static const float4 DiffuseColor = float4(MaterialDiffuse.rgb*LightAmbient, MaterialDiffuse.a);
+static const float4 DiffuseColor = float4(MaterialDiffuse.rgb*LightAmbient, saturate(MaterialDiffuse.a+0.01));
 
 static const float  PI = 3.1415926;
 static const float  AmbLightPower = 2;
@@ -24,12 +24,12 @@ static const float ShadowStrength = 0.6f;
 #define SHADING_MIN 0.0   // -0.5〜0.0
 #define SHADING_MAX 1.5   // 1.0〜2.0
 
-#define ROUGHNESS MaterialSpecular.r*2
-#define FRESNEL   MaterialSpecular.g*2
+#define ROUGHNESS 0.5
+#define FRESNEL   0.5
 
 #define SPECULAR_EXTENT 0.1
 
-#define GLOSS_EXTENT MaterialSpecular.b*2
+#define GLOSS_EXTENT 0
 #define GLOSS_TYPE comp*(saturate(0.5-(1-G)*(1+G_I)))*GLOSS_EXTENT*2
 
 static bool Enable_Gloss = GLOSS_EXTENT != 0;
@@ -37,5 +37,5 @@ static bool Gloss_Type = GLOSS_EXTENT > 1;
 
 #define RIM_STRENGTH 1.5
 
-#define SUBDEPTH SpecularPower
+#define SUBDEPTH 5
 #define SUBCOLOR MaterialToon.rgb
