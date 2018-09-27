@@ -20,10 +20,12 @@ MIKU.VIEWER
 - Shadow Map (LiSPSM)
 - Skinning (LB, DQB)
 - AA (MSAA, SMAA, FXAA)
-- HDR
+- HDR, Tonemapping, Exposure control
 - Bloom
+- SSAO (MiniEngien)
+- Multithreaded (resource create and bullet physics)
 
-### Effects
+### Effects used in MMD community
 - Auto Luminous4
 - Diffusion7
 - 多光源エフェクト
