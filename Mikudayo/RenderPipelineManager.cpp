@@ -4,7 +4,7 @@
 
 namespace
 {
-    std::map<std::wstring, RenderPipelineList> Techniques;
+    std::map<std::wstring, RenderPipelineList> g_Techniques;
 }
 
 RenderPipelineManager::RenderPipelineManager()
@@ -17,5 +17,5 @@ void RenderPipelineManager::Initialize()
 
 void RenderPipelineManager::Shutdown()
 {
-    Techniques.clear();
+    g_Techniques.clear();
 }

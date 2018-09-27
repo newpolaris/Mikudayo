@@ -96,8 +96,8 @@ PixelShaderOutput main(PixelShaderInput input)
     float4 texMirrorEmmisive = texReflectEmmisive.Load( int3(input.positionHS.xy, 0) );
     emissive *= texMirrorEmmisive;
 #endif
-    float3 normal = normalize( input.normalWS );
-    if (any( input.normalWS ))
+    float3 normal = input.normalWS;
+    if (any( normal ))
         normal = normalize( normal );
 
     // Complete projection by doing division by w.

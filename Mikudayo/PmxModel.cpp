@@ -18,6 +18,8 @@
 #include "CompiledShaders/MikuOutlinePS.h"
 #include "CompiledShaders/MultiLightColorVS.h"
 #include "CompiledShaders/MultiLightColorPS.h"
+#include "CompiledShaders/NchlColorVS.h"
+#include "CompiledShaders/NchlColorPS.h"
 #include "CompiledShaders/DeferredGBufferPS.h"
 #include "CompiledShaders/DeferredFinalPS.h"
 #include "CompiledShaders/DeferredFinal2PS.h"
@@ -63,7 +65,7 @@ namespace {
         L"toon10.bmp"
     };
 
-    std::map<std::wstring, RenderPipelineList> Techniques;
+    std::map<std::wstring, RenderPipelineList> s_Techniques;
 
 }
 
@@ -163,9 +165,9 @@ void PmxModel::Initialize()
         Default[kRenderQueueDepth] = DepthPSO;
         Default[kRenderQueueSkinning] = SkinningPSO;
     }
-    Techniques.emplace( L"Default", Default );
-    RenderPipelineList MultiLight = Default;
+    s_Techniques.emplace( L"Default", Default );
     {
+        RenderPipelineList MultiLight = Default;
         RenderPipelinePtr OpaquePSO = std::make_shared<GraphicsPSO>();
         OpaquePSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
         OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pMultiLightColorVS ) );
@@ -174,13 +176,25 @@ void PmxModel::Initialize()
         OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
         OpaquePSO->Finalize();
         AutoFillPSO( OpaquePSO, kRenderQueueOpaque, MultiLight );
+        s_Techniques.emplace( L"MultiLight", MultiLight );
     }
-    Techniques.emplace( L"MultiLight", MultiLight );
+    {
+        RenderPipelineList NCHL = Default;
+        RenderPipelinePtr OpaquePSO = std::make_shared<GraphicsPSO>();
+        OpaquePSO->SetInputLayout( (UINT)VertElem.size(), VertElem.data() );
+        OpaquePSO->SetVertexShader( MY_SHADER_ARGS( g_pNchlColorVS ) );
+        OpaquePSO->SetPixelShader( MY_SHADER_ARGS( g_pNchlColorPS ) );
+        OpaquePSO->SetRasterizerState( RasterizerDefault );
+        OpaquePSO->SetDepthStencilState( DepthStateReadWrite );
+        OpaquePSO->Finalize();
+        AutoFillPSO( OpaquePSO, kRenderQueueOpaque, NCHL );
+        s_Techniques.emplace( L"NCHL", NCHL );
+    }
 }
 
 void PmxModel::Shutdown()
 {
-    Techniques.clear();
+    s_Techniques.clear();
 }
 
 PmxModel::PmxModel() : 
@@ -363,8 +377,8 @@ bool PmxModel::LoadFromFile( const std::wstring& FilePath )
         mat.bOutline = material.BitFlag & Pmx::EMaterialFlag::kEnableEdge;
         mat.bCastShadowMap = material.BitFlag & Pmx::EMaterialFlag::kCastShadowMap;
         mat.bTwoSided = material.BitFlag & Pmx::EMaterialFlag::kCullOff;
-        if (Techniques.count( m_DefaultShader ))
-            mat.Techniques = Techniques[m_DefaultShader];
+        if (s_Techniques.count(m_DefaultShader))
+            mat.Techniques = s_Techniques[m_DefaultShader];
         m_Materials.push_back(mat);
 
         Mesh mesh;

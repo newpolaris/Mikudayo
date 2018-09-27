@@ -184,6 +184,7 @@ namespace Graphics
 
 	SamplerDesc SamplerLinearWrapDesc;
 	SamplerDesc SamplerAnisoWrapDesc;
+	SamplerDesc SamplerAnisoClampDesc;
 	SamplerDesc SamplerShadowDescGE;
 	SamplerDesc SamplerShadowDescLE;
 	SamplerDesc SamplerLinearClampDesc;
@@ -194,6 +195,7 @@ namespace Graphics
 
 	D3D11_SAMPLER_HANDLE SamplerLinearWrap;
 	D3D11_SAMPLER_HANDLE SamplerAnisoWrap;
+	D3D11_SAMPLER_HANDLE SamplerAnisoClamp;
 	D3D11_SAMPLER_HANDLE SamplerShadowGE;
 	D3D11_SAMPLER_HANDLE SamplerShadowLE;
 	D3D11_SAMPLER_HANDLE SamplerShadow;
@@ -504,10 +506,11 @@ void Graphics::Initialize( void )
 	SamplerLinearWrapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	SamplerLinearWrap = SamplerLinearWrapDesc.CreateDescriptor();
 
-	SamplerAnisoWrapDesc.MaxAnisotropy = 4;
 	SamplerAnisoWrap = SamplerAnisoWrapDesc.CreateDescriptor();
+	SamplerAnisoClampDesc.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
+	SamplerAnisoClamp = SamplerAnisoClampDesc.CreateDescriptor();
 
-	SamplerShadowDescGE.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    SamplerShadowDescGE.Filter = D3D11_FILTER_COMPARISON_ANISOTROPIC;
 	SamplerShadowDescGE.ComparisonFunc = D3D11_COMPARISON_GREATER_EQUAL;
 	SamplerShadowDescGE.SetTextureAddressMode(D3D11_TEXTURE_ADDRESS_CLAMP);
 	SamplerShadowGE = SamplerShadowDescGE.CreateDescriptor();

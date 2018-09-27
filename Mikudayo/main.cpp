@@ -90,12 +90,12 @@ EnumVar m_CameraType("Application/Camera/Camera Type", kCameraMain, 3, CameraNam
 NumVar m_Frame( "Application/Animation/Frame", 0, 0, 1e5, 1 );
 
 // Default values in MMD. Due to RH coord, z is inverted.
-NumVar m_SunDirX("Application/Lighting/Sun Dir X", -0.5f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -1.0f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -0.5f, -1.0f, 1.0f, 0.1f );
-NumVar m_SunColorR("Application/Lighting/Sun Color R", 157.f, 0.0f, 255.0f, 1.0f );
-NumVar m_SunColorG("Application/Lighting/Sun Color G", 157.f, 0.0f, 255.0f, 1.0f );
-NumVar m_SunColorB("Application/Lighting/Sun Color B", 157.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunDirX("Application/Lighting/Sun Dir X", +0.5f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirY("Application/Lighting/Sun Dir Y", -0.4f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunDirZ("Application/Lighting/Sun Dir Z", -1.0f, -1.0f, 1.0f, 0.1f );
+NumVar m_SunColorR("Application/Lighting/Sun Color R", 211.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorG("Application/Lighting/Sun Color G", 204.f, 0.0f, 255.0f, 1.0f );
+NumVar m_SunColorB("Application/Lighting/Sun Color B", 228.f, 0.0f, 255.0f, 1.0f );
 
 BoolVar s_bDrawBone( "Application/Model/Draw Bone", false );
 
@@ -108,40 +108,34 @@ void Mikudayo::Startup( void )
     ModelManager::Initialize();
     Forward::Initialize();
 
-    const Vector3 eye = Vector3(0.0f, 20.0f, 15.0f);
-    m_Camera.SetEyeAtUp( eye, Vector3(0.0, 20.f, 0.f), Vector3(kYUnitVector) );
+    const Vector3 eye = Vector3(0.0f, 20.0f, 25.0f);
+    const Vector3 at = Vector3( 0.0, 15.f, 0.f );
+    m_Camera.SetEyeAtUp( eye, at, Vector3(kYUnitVector) );
     m_Camera.SetPerspectiveMatrix( XM_PIDIV4, 9.0f/16.0f, 1.0f, 10000.0f );
     m_CameraController.reset(new CameraController(m_Camera, Vector3(kYUnitVector)));
-    m_SecondCamera.SetEyeAtUp( eye, Vector3(kZero), Vector3(kYUnitVector) );
+    m_SecondCamera.SetEyeAtUp( eye, at, Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
     m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
     m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
 
-    std::vector<Primitive::PhysicsPrimitiveInfo> primitves = {
-        { kPlaneShape, 0.f, Vector3( kZero ), Vector3( 0, -1, 0 ) },
-        { kBoxShape, 20.f, Vector3( 10, 1, 10 ), Vector3( 0, 2, 0 ) },
-        { kBoxShape, 20.f, Vector3( 2,1,5 ), Vector3( 10, 2, 0 ) },
-        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, 10 ) },
-        { kBoxShape, 20.f, Vector3( 8,1,2 ), Vector3( 0, 2, -13 ) },
-    };
-    for (auto& info : primitves)
-        m_Primitives.push_back( std::move( Primitive::CreatePhysicsPrimitive( info ) ) );
     m_Scene = std::make_shared<Scene>();
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
-    info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん.pmx";
+    info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん_Shader.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    info.Transform = AffineTransform::MakeTranslation(Vector3(-10, 0, 0));
+    info.DefaultShader = L"NCHL";
+    info.Transform = AffineTransform::MakeTranslation(Vector3(-5, 0, 0));
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
 
     ModelInfo back;
-    back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLDFix.pmx";
+    back.ModelFile = L"Model/駆逐艦天津風1.1/天津風_NoSPA.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    back.Transform = AffineTransform::MakeTranslation(Vector3(10, 0, 0));
+    back.DefaultShader = L"NCHL";
+    back.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
     instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );
 
@@ -155,15 +149,6 @@ void Mikudayo::Startup( void )
     skydome.Type = kModelSkydome;
     instance = ModelManager::Load( skydome );
     if (instance) m_Scene->AddChild( instance );
-
-    SceneNodePtr mirror = ModelManager::Load( L"Stage/Villa Fortuna Stage/MirrorWF/MirrorWF.pmx" );
-    OrthogonalTransform rotation( Quaternion( -XM_PI/2, 0, 0 ) );
-    if (mirror) {
-        mirror->SetTransform( rotation );
-        mirror->SetType( kSceneMirror );
-        m_Scene->AddChild( mirror );
-    }
-
 }
 
 void Mikudayo::Cleanup( void )
@@ -284,7 +269,7 @@ void Mikudayo::RenderScene( void )
 	gfxContext.SetDynamicConstantBufferView( 5, sizeof(psConstants), &psConstants, { kBindVertex, kBindPixel } );
 
     m_Scene->Render( m_RenderSkinPass, args );
-    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerLinearWrap, SamplerLinearClamp, SamplerShadow, SamplerPointClamp };
+    D3D11_SAMPLER_HANDLE Sampler[] = { SamplerAnisoWrap, SamplerAnisoClamp, SamplerShadow, SamplerPointClamp };
     gfxContext.SetDynamicSamplers( 0, _countof(Sampler), Sampler, { kBindPixel } );
     {
         ScopedTimer _prof(L"Z PrePass", gfxContext);
@@ -320,7 +305,7 @@ void Mikudayo::RenderScene( void )
     }
     {
         ScopedTimer _prof( L"Primitive Color", gfxContext );
-        gfxContext.SetDepthStencilTarget( g_SceneDepthBuffer.GetDSV() );
+        gfxContext.SetRenderTarget( g_SceneColorBuffer.GetRTV(), g_SceneDepthBuffer.GetDSV() );
         PrimitiveUtility::Flush( gfxContext );
         for (auto& primitive : m_Primitives)
             primitive->Draw( GetCamera().GetWorldSpaceFrustum() );

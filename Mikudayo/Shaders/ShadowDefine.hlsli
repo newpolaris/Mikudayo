@@ -6,7 +6,7 @@
 //
 // 2, 3, 5, 7
 //
-#define FilterSize_ 3
+#define FilterSize_ 5
 
 // Shadow filter method list
 #define ShadowModeSingle_ 0
