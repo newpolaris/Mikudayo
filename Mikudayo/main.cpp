@@ -132,7 +132,7 @@ void Mikudayo::Startup( void )
     if (instance) m_Scene->AddChild( instance );
 
     ModelInfo back;
-    back.ModelFile = L"Model/kLiR_Ara(LD)1.04/AraHaanLD Shader.pmx";
+    back.ModelFile = L"Model/駆逐艦天津風1.1/天津風_NoSPA.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
     back.DefaultShader = L"NCHL";
     back.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
