@@ -17,6 +17,8 @@ MIKU.VIEWER
 - Motion Blur
 - HDR
 - Bloom
+- SSAO
+- DOF
 
 ### Effects that used in MMD community
 - Auto Luminous4
@@ -24,7 +26,7 @@ MIKU.VIEWER
 - 多光源エフェクト
 - Mirror
 - Full
-- NCHL2 (Dev in progress)
+- NCHL2 (dev in progress)
 
 ### DIRECTX 11.1
 - Ported from [MiniEngine](https://github.com/Microsoft/DirectX-Graphics-Samples/) DIRECTX 12
