@@ -124,9 +124,8 @@ void Mikudayo::Startup( void )
     m_Motion.LoadMotion( cameraMotion );
 
     ModelInfo info;
-    info.ModelFile = L"Model/つみ式ミクさんv1.1/ミクさん_Shader.pmx";
+    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
     info.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    info.DefaultShader = L"NCHL";
     info.Transform = AffineTransform::MakeTranslation(Vector3(-5, 0, 0));
     SceneNodePtr instance = ModelManager::Load( info );
     if (instance) m_Scene->AddChild( instance );
@@ -134,7 +133,6 @@ void Mikudayo::Startup( void )
     ModelInfo back;
     back.ModelFile = L"Model/駆逐艦天津風1.1/天津風_NoSPA.pmx";
     back.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    back.DefaultShader = L"NCHL";
     back.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
     instance = ModelManager::Load( back );
     if (instance) m_Scene->AddChild( instance );

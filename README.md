@@ -4,7 +4,7 @@ MIKU.VIEWER
 ### MikuMikuDance(MMD) Viewer ##
 
 ## Club Majestic
-[![link text](./Screenshots/ClubMajestic.jpg)](https://youtu.be/BZ52loTWcMw)
+[![link text](./Screenshots/main.jpg)](./Screenshots/main.jpg)
 [![link text](./Screenshots/Mirror_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Mirror.jpg)
 [![link text](./Screenshots/HDR_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/HDR.jpg)
 [![link text](./Screenshots/Rimlight_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Rimlight.jpg)
@@ -33,7 +33,8 @@ MIKU.VIEWER
 - Ported from [MiniEngine](https://github.com/Microsoft/DirectX-Graphics-Samples/) DIRECTX 12
 
 ### DOWNLOAD
-- \[[ClubMajestic.zip](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Achive/ClubMajestic.zip)\]. 
+- WINDOWS 10 Required
+- \[[ClubMajestic.zip](https://github.com/newpolaris/Mikudayo/raw/ClubMajestic/Archive/ClubMajestic.zip)\]. 
 
 ### References
 * A sampling of shadow techniques \[[link](https://mynameismjp.wordpress.com/)\].
