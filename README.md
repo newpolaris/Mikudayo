@@ -36,8 +36,9 @@ MIKU.VIEWER
 - Ported from [MiniEngine](https://github.com/Microsoft/DirectX-Graphics-Samples/) DIRECTX 12
 
 ### DOWNLOAD
-- WINDOWS 10 Required
-- \[[ClubMajestic.zip](https://github.com/newpolaris/Mikudayo/raw/ClubMajestic/Archive/ClubMajestic.zip)\]. 
+- WINDOWS 10 & SDK 10.0.15063.0 required
+- Have issue on Intel Graphics HD etc.
+- ~~~\[[ClubMajestic.zip](https://github.com/newpolaris/Mikudayo/raw/ClubMajestic/Archive/ClubMajestic.zip)\]. ~~~
 
 ### References
 * A sampling of shadow techniques \[[link](https://mynameismjp.wordpress.com/)\].
