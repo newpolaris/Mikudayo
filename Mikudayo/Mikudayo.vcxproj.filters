@@ -502,6 +502,7 @@
     <None Include="Shaders\NchlColorVS.hlsli">
       <Filter>Shaders\MMD</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Mikudayo.rc">

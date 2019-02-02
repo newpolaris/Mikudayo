@@ -17,7 +17,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{70EA1ADD-A0DD-428F-BE50-4CA71CF0DBE8}</ProjectGuid>
     <RootNamespace>Mikudayo</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -75,6 +75,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\3rdParty\FreeImage\Source;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4324</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_ENABLE_EXTENDED_ALIGNED_STORAGE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -83,6 +84,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\3rdParty\FreeImage\Source;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4324</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_ENABLE_EXTENDED_ALIGNED_STORAGE;NDEBUG;PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -93,6 +95,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\3rdParty\FreeImage\Source;.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4324</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_ENABLE_EXTENDED_ALIGNED_STORAGE;NDEBUG;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -376,6 +379,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="packages.config" />
     <None Include="Shaders\CommonInclude.hlsli" />
     <None Include="Shaders\MikuColor.hlsli" />
@@ -405,7 +409,10 @@
     <ProjectReference Include="..\3rdParty\FreeImage\FreeImage.2013.vcxproj">
       <Project>{b39ed2b3-d53a-4077-b957-930979a3577d}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Core\Core_VS14.vcxproj">
+    <ProjectReference Include="..\3rdParty\zlib-win64\ZLib_VS15.vcxproj">
+      <Project>{ae5221d1-87e2-4428-8ef9-f25909c43291}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\Core_VS15.vcxproj">
       <Project>{ab949dfb-5aff-432f-ac31-73bd1c61b8a6}</Project>
     </ProjectReference>
     <ProjectReference Include="..\FxLib\FxLib.vcxproj">

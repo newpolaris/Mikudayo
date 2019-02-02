@@ -17,7 +17,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2FAF436B-3938-48FB-BCAD-0FA32665A247}</ProjectGuid>
     <RootNamespace>Test</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -76,6 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Mikudayo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <PreprocessorDefinitions>_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\3rdParty\gtest\lib;..\3rdParty\gmock\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -90,6 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Mikudayo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <PreprocessorDefinitions>_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING; NDEBUG;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -101,6 +103,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)..\3rdParty\gtest\include;$(SolutionDir)..\3rdParty\gmock\include;$(SolutionDir)..\3rdParty\miniball;$(SolutionDir)..\3rdParty\bullet3-2.86.1\src;$(SolutionDir)..\Mikudayo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <PreprocessorDefinitions>_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING; NDEBUG;PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\3rdParty\gtest\lib;..\3rdParty\gmock\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
