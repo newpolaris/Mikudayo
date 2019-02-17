@@ -5,11 +5,22 @@
 
 using namespace Physics;
 
+bool isnan(const btQuaternion& quaternion) noexcept
+{
+	return isnan(quaternion.x()) || isnan(quaternion.y()) || isnan(quaternion.z()) || isnan(quaternion.w());
+}
+
+bool isnan(const btTransform& transform) noexcept
+{
+	return isnan(transform.getBasis().determinant()) || isnan(transform.getOrigin().length2());
+}
+
 BaseRigidBody::DefaultMotionState::DefaultMotionState( const btTransform& startTransform, BaseRigidBody* parent )
     : m_parentRigidBodyRef(parent),
       m_startTransform(startTransform),
       m_worldTransform(startTransform)
 {
+	ASSERT(!isnan(startTransform));
 }
 
 BaseRigidBody::DefaultMotionState::~DefaultMotionState()
@@ -40,8 +51,8 @@ void BaseRigidBody::KinematicMotionState::getWorldTransform(btTransform &worldTr
     if (const BoneRef *boneRef = m_parentRigidBodyRef->boneRef()) {
         AffineTransform transform = boneRef->GetTransform();
         worldTransform = Convert(transform) * m_startTransform;
-    }
-    else {
+		ASSERT(!isnan(worldTransform));
+    } else {
         worldTransform.setIdentity();
     }
 }
@@ -276,6 +287,7 @@ void BaseRigidBody::SetRestitution( float value )
 void BaseRigidBody::SetRotation( const Quaternion& value )
 {
     m_Rotation = Convert(value);
+	ASSERT(!isnan(m_Rotation));
 }
 
 void BaseRigidBody::SetShapeType( ShapeType Type )

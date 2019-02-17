@@ -33,6 +33,12 @@ namespace {
     {
         return sizeof( T ) * vec.size();
     }
+
+	bool isnan(const XMFLOAT3& vec3) noexcept
+	{
+		using std::isnan;
+		return isnan(vec3.x) || isnan(vec3.y) || isnan(vec3.z);
+	}
 }
 
 BoolVar s_bDrawBoundingSphere( "Application/Model/Draw Bounding Shphere", false );
@@ -220,6 +226,7 @@ bool PmxInstant::Context::LoadModel( const AffineTransform& transform )
         body->SetShapeType( static_cast<ShapeType>(it.Shape) );
         body->SetSize( it.Size );
         body->SetPosition( it.Position );
+		ASSERT(!isnan(it.Rotation));
         const Quaternion rot( it.Rotation.x, it.Rotation.y, it.Rotation.z );
         body->SetRotation( rot );
         body->SetMass( it.Mass );

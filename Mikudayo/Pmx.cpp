@@ -448,6 +448,13 @@ namespace Pmx
 		Read( is, Size );
 		ReadPosition( is, Position, bRH );
 		ReadRotation( is, Rotation, bRH );
+		// TODO: how to handle nan, inf more better way ?
+		if (isnan(Rotation.x)) Rotation.x = 0.f;
+		if (isnan(Rotation.y)) Rotation.y = 0.f;
+		if (isnan(Rotation.z)) Rotation.z = 0.f;
+		ASSERT(!isnan(Rotation.x));
+		ASSERT(!isnan(Rotation.y));
+		ASSERT(!isnan(Rotation.z));
 		Read( is, Mass );
 		Read( is, LinearDamping );
 		Read( is, AngularDamping );
