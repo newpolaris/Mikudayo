@@ -116,9 +116,6 @@ void Mikudayo::Startup( void )
     m_SecondCamera.SetEyeAtUp( eye, at, Vector3(kYUnitVector) );
     m_SecondCameraController.reset(new MikuCameraController(m_SecondCamera, Vector3(kYUnitVector)));
 
-    m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
-    m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
-
     m_Scene = std::make_shared<Scene>();
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
     m_Motion.LoadMotion( cameraMotion );
@@ -291,6 +288,10 @@ void Mikudayo::RenderScene( void )
         m_Scene->Render( m_ShadowCasterPass, args );
         g_ShadowBuffer.EndRendering( gfxContext );
     }
+
+    m_ExtraTextures[0] = g_SSAOFullScreen.GetSRV();
+    m_ExtraTextures[1] = g_ShadowBuffer.GetSRV();
+
     if (!SSAO::DebugDraw)
     {   
         ScopedTimer _prof( L"Render Color", gfxContext );
