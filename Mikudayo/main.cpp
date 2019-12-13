@@ -120,30 +120,33 @@ void Mikudayo::Startup( void )
     const std::wstring cameraMotion = L"Motion/クラブマジェスティカメラモーション.vmd";
     m_Motion.LoadMotion( cameraMotion );
 
-    ModelInfo info;
-    info.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
-    info.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    info.Transform = AffineTransform::MakeTranslation(Vector3(-5, 0, 0));
-    SceneNodePtr instance = ModelManager::Load( info );
-    if (instance) m_Scene->AddChild( instance );
+    auto RegisterModel = [this](const ModelInfo& model)
+    {
+        SceneNodePtr instance = ModelManager::Load(model);
+        if (instance) 
+            m_Scene->AddChild(instance);
+    };
 
-    ModelInfo back;
-    back.ModelFile = L"Model/駆逐艦天津風1.1/天津風_NoSPA.pmx";
-    back.MotionFile = L"Motion/クラブマジェスティ.vmd";
-    back.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
-    instance = ModelManager::Load( back );
-    if (instance) m_Scene->AddChild( instance );
+    ModelInfo left;
+    left.ModelFile = L"Model/Tda式デフォ服ミク_ver1.1/Tda式初音ミク_デフォ服ver.pmx";
+    left.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    left.Transform = AffineTransform::MakeTranslation(Vector3(-5, 0, 0));
+    RegisterModel(left);
+
+    ModelInfo right;
+    right.ModelFile = L"Model/駆逐艦天津風1.1/天津風_NoSPA.pmx";
+    right.MotionFile = L"Motion/クラブマジェスティ.vmd";
+    right.Transform = AffineTransform::MakeTranslation(Vector3(5, 0, 0));
+    RegisterModel(right);
 
     ModelInfo stage;
     stage.ModelFile = L"Stage/黒白チェスステージ/黒白チェスステージ.pmx";
-    instance = ModelManager::Load( stage );
-    if (instance) m_Scene->AddChild( instance );
+    RegisterModel(stage);
 
     ModelInfo skydome;
     skydome.ModelFile = L"Stage/Skydome/incskies_030_8k.png";
     skydome.Type = kModelSkydome;
-    instance = ModelManager::Load( skydome );
-    if (instance) m_Scene->AddChild( instance );
+    RegisterModel(skydome);
 }
 
 void Mikudayo::Cleanup( void )
