@@ -170,10 +170,10 @@
     <Import Project="..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets')" />
     <Import Project="..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets" Condition="Exists('..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" />
     <Import Project="..\Mikudayo\packages\glm.0.9.8.4\build\native\glm.targets" Condition="Exists('..\Mikudayo\packages\glm.0.9.8.4\build\native\glm.targets')" />
-    <Import Project="..\Mikudayo\packages\boost.1.72.0.0\build\boost.targets" Condition="Exists('..\Mikudayo\packages\boost.1.72.0.0\build\boost.targets')" />
-    <Import Project="..\Mikudayo\packages\boost_filesystem-vc141.1.72.0.0\build\boost_filesystem-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_filesystem-vc141.1.72.0.0\build\boost_filesystem-vc141.targets')" />
-    <Import Project="..\Mikudayo\packages\boost_locale-vc141.1.72.0.0\build\boost_locale-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_locale-vc141.1.72.0.0\build\boost_locale-vc141.targets')" />
-    <Import Project="..\Mikudayo\packages\boost_system-vc141.1.72.0.0\build\boost_system-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_system-vc141.1.72.0.0\build\boost_system-vc141.targets')" />
+    <Import Project="..\Mikudayo\packages\boost.1.67.0.0\build\boost.targets" Condition="Exists('..\Mikudayo\packages\boost.1.67.0.0\build\boost.targets')" />
+    <Import Project="..\Mikudayo\packages\boost_filesystem-vc141.1.67.0.0\build\boost_filesystem-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_filesystem-vc141.1.67.0.0\build\boost_filesystem-vc141.targets')" />
+    <Import Project="..\Mikudayo\packages\boost_locale-vc141.1.67.0.0\build\boost_locale-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_locale-vc141.1.67.0.0\build\boost_locale-vc141.targets')" />
+    <Import Project="..\Mikudayo\packages\boost_system-vc141.1.67.0.0\build\boost_system-vc141.targets" Condition="Exists('..\Mikudayo\packages\boost_system-vc141.1.67.0.0\build\boost_system-vc141.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -183,9 +183,9 @@
     <Error Condition="!Exists('..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
     <Error Condition="!Exists('..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\Assimp.symbols.3.0.0\build\native\Assimp.symbols.targets'))" />
     <Error Condition="!Exists('..\Mikudayo\packages\glm.0.9.8.4\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\glm.0.9.8.4\build\native\glm.targets'))" />
-    <Error Condition="!Exists('..\Mikudayo\packages\boost.1.72.0.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost.1.72.0.0\build\boost.targets'))" />
-    <Error Condition="!Exists('..\Mikudayo\packages\boost_filesystem-vc141.1.72.0.0\build\boost_filesystem-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_filesystem-vc141.1.72.0.0\build\boost_filesystem-vc141.targets'))" />
-    <Error Condition="!Exists('..\Mikudayo\packages\boost_locale-vc141.1.72.0.0\build\boost_locale-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_locale-vc141.1.72.0.0\build\boost_locale-vc141.targets'))" />
-    <Error Condition="!Exists('..\Mikudayo\packages\boost_system-vc141.1.72.0.0\build\boost_system-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_system-vc141.1.72.0.0\build\boost_system-vc141.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost.1.67.0.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost.1.67.0.0\build\boost.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost_filesystem-vc141.1.67.0.0\build\boost_filesystem-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_filesystem-vc141.1.67.0.0\build\boost_filesystem-vc141.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost_locale-vc141.1.67.0.0\build\boost_locale-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_locale-vc141.1.67.0.0\build\boost_locale-vc141.targets'))" />
+    <Error Condition="!Exists('..\Mikudayo\packages\boost_system-vc141.1.67.0.0\build\boost_system-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Mikudayo\packages\boost_system-vc141.1.67.0.0\build\boost_system-vc141.targets'))" />
   </Target>
 </Project>
