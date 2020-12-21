@@ -521,7 +521,6 @@
     <None Include="Shaders\ShadowDefine.hlsli">
       <Filter>Shaders\Shadow</Filter>
     </None>
-    <None Include="packages.config" />
     <None Include="Shaders\ToneMappingUtility.hlsli">
       <Filter>Shaders\HDR</Filter>
     </None>
@@ -534,6 +533,7 @@
     <None Include="Shaders\AoRenderCS.hlsli">
       <Filter>Shaders\SSAO</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ScreenQuadVS.hlsl">
