@@ -10,9 +10,13 @@ MIKU.VIEWER
 [![link text](./Screenshots/Rimlight_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Rimlight.jpg)
 [![link text](./Screenshots/Physics_s.png)](https://raw.githubusercontent.com/newpolaris/Mikudayo/ClubMajestic/Screenshots/Physics.jpg)
 
-## Youtube link - Club Majestic
-- LINK: [Club Majestic](https://www.youtube.com/watch?v=BZ52loTWcMw)
-- ORIGINAL: [クラブ=マジェスティ](https://www.youtube.com/watch?v=Zh3CS6xtS3A)
+## Youtube link
+
+- [Bone and Physics](https://youtu.be/ZV6RnHrFd9s)
+- [Bullet Physics](https://youtu.be/sQ-_n6D7M24)
+- [Skinning and IK](https://youtu.be/Utq8EQ1RnxY)
+- [Club Majestic](https://www.youtube.com/watch?v=BZ52loTWcMw)
+
 
 ### Features
 - Model importer (PMX, X)
@@ -38,7 +42,6 @@ MIKU.VIEWER
 ### DOWNLOAD
 - WINDOWS 10 & SDK 10.0.15063.0 required
 - Have issue on Intel Graphics HD etc.
-- ~~~\[[ClubMajestic.zip](https://github.com/newpolaris/Mikudayo/raw/ClubMajestic/Archive/ClubMajestic.zip)\]. ~~~
 
 ### References
 * A sampling of shadow techniques \[[link](https://mynameismjp.wordpress.com/)\].
